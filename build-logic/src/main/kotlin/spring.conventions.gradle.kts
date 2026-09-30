@@ -10,4 +10,6 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Mockito's agent appends to the bootstrap classpath, which makes CDS warn on every test JVM.
+    jvmArgs("-Xshare:off")
 }
