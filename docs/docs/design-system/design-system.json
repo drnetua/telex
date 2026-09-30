@@ -1,0 +1,509 @@
+{
+ "v": 3,
+ "layout": "files",
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-30T18:39:56Z"
+ },
+ "title": "teleX",
+ "namespace": "TeleX",
+ "libraries": [
+  {
+   "name": "react",
+   "version": "18"
+  },
+  {
+   "name": "react-dom",
+   "version": "18"
+  }
+ ],
+ "sections": {},
+ "groups": [
+  "Logos",
+  "Icons"
+ ],
+ "assetGroups": {
+  "Logos": {
+   "name": "Logos",
+   "tile": "l",
+   "order": [
+    "telex-logo.png"
+   ],
+   "files": {
+    "telex-logo.png": {
+     "name": "telex-logo.png",
+     "blob": "f9e560c936b9c8bfd5f9742cc5079947",
+     "size": 608072,
+     "type": "image/png"
+    }
+   }
+  },
+  "Icons": {
+   "name": "Icons",
+   "tile": "xs",
+   "order": [
+    "activity.svg",
+    "alert-circle.svg",
+    "alert-triangle.svg",
+    "arrow-back-up.svg",
+    "arrow-forward-up.svg",
+    "ban.svg",
+    "bell.svg",
+    "bolt.svg",
+    "brand-telegram.svg",
+    "bulb.svg",
+    "calendar.svg",
+    "check.svg",
+    "checklist.svg",
+    "chevron-down.svg",
+    "chevron-right.svg",
+    "circle-check.svg",
+    "clock.svg",
+    "code.svg",
+    "cpu.svg",
+    "currency-dollar.svg",
+    "dots-vertical.svg",
+    "download.svg",
+    "eye.svg",
+    "file.svg",
+    "filter.svg",
+    "hand-stop.svg",
+    "help-circle.svg",
+    "history.svg",
+    "hourglass.svg",
+    "inbox.svg",
+    "info-circle.svg",
+    "lock.svg",
+    "logout.svg",
+    "menu-2.svg",
+    "message-circle.svg",
+    "messages.svg",
+    "paperclip.svg",
+    "pencil.svg",
+    "photo.svg",
+    "player-pause.svg",
+    "player-play.svg",
+    "plus.svg",
+    "refresh.svg",
+    "search.svg",
+    "selector.svg",
+    "send.svg",
+    "settings.svg",
+    "shield-lock.svg",
+    "sparkles.svg",
+    "target.svg",
+    "thumb-down.svg",
+    "thumb-up.svg",
+    "trash.svg",
+    "user.svg",
+    "users.svg",
+    "video.svg",
+    "wifi-off.svg",
+    "x.svg",
+    "layout-dashboard.svg",
+    "trending-up.svg",
+    "trending-down.svg",
+    "table.svg",
+    "chart-bar.svg",
+    "minus.svg"
+   ],
+   "files": {
+    "activity.svg": {
+     "name": "activity.svg",
+     "blob": "d23a174ae21a58a36931b8e862503b13",
+     "size": 365,
+     "type": "image/svg+xml"
+    },
+    "alert-circle.svg": {
+     "name": "alert-circle.svg",
+     "blob": "c2a48bade15193ef99d0599a2691c1b1",
+     "size": 431,
+     "type": "image/svg+xml"
+    },
+    "alert-triangle.svg": {
+     "name": "alert-triangle.svg",
+     "blob": "c1eed750b76dd8b6455b01b0b44f7d11",
+     "size": 533,
+     "type": "image/svg+xml"
+    },
+    "arrow-back-up.svg": {
+     "name": "arrow-back-up.svg",
+     "blob": "778d83737861c8b1fd40b33389716268",
+     "size": 404,
+     "type": "image/svg+xml"
+    },
+    "arrow-forward-up.svg": {
+     "name": "arrow-forward-up.svg",
+     "blob": "4e9ae3b8b6dd7b4e7289572b5ad6b1ae",
+     "size": 409,
+     "type": "image/svg+xml"
+    },
+    "ban.svg": {
+     "name": "ban.svg",
+     "blob": "56a45db1bbd1f6298d7d10888e07d4dc",
+     "size": 407,
+     "type": "image/svg+xml"
+    },
+    "bell.svg": {
+     "name": "bell.svg",
+     "blob": "b98ae7e5edd7ae42c81d31a3384091f9",
+     "size": 464,
+     "type": "image/svg+xml"
+    },
+    "bolt.svg": {
+     "name": "bolt.svg",
+     "blob": "5ab3b8d4c2871a69070ae0380eefdaaf",
+     "size": 373,
+     "type": "image/svg+xml"
+    },
+    "brand-telegram.svg": {
+     "name": "brand-telegram.svg",
+     "blob": "f79333897e57a9b792568008a6e19531",
+     "size": 388,
+     "type": "image/svg+xml"
+    },
+    "bulb.svg": {
+     "name": "bulb.svg",
+     "blob": "01038a198656d56c914eb4c59890f384",
+     "size": 509,
+     "type": "image/svg+xml"
+    },
+    "calendar.svg": {
+     "name": "calendar.svg",
+     "blob": "f22440e039fb2485315e6ddf9db105a1",
+     "size": 537,
+     "type": "image/svg+xml"
+    },
+    "check.svg": {
+     "name": "check.svg",
+     "blob": "79c7198a52a2a0a54a66018c62b03209",
+     "size": 355,
+     "type": "image/svg+xml"
+    },
+    "checklist.svg": {
+     "name": "checklist.svg",
+     "blob": "422acafccbca58a740b35511ca0c4572",
+     "size": 488,
+     "type": "image/svg+xml"
+    },
+    "chevron-down.svg": {
+     "name": "chevron-down.svg",
+     "blob": "58621ca88fe7c08547e6d96b0aa50c32",
+     "size": 359,
+     "type": "image/svg+xml"
+    },
+    "chevron-right.svg": {
+     "name": "chevron-right.svg",
+     "blob": "99a454274db52e7afb9687a76932acaf",
+     "size": 360,
+     "type": "image/svg+xml"
+    },
+    "circle-check.svg": {
+     "name": "circle-check.svg",
+     "blob": "021ee5dc5aa88e38a68ab2193ee54261",
+     "size": 412,
+     "type": "image/svg+xml"
+    },
+    "clock.svg": {
+     "name": "clock.svg",
+     "blob": "bd81d1a22023192a23c9468780ae5b34",
+     "size": 402,
+     "type": "image/svg+xml"
+    },
+    "code.svg": {
+     "name": "code.svg",
+     "blob": "5b420d7c6a333801d8e4608293da5d44",
+     "size": 408,
+     "type": "image/svg+xml"
+    },
+    "cpu.svg": {
+     "name": "cpu.svg",
+     "blob": "134261d3c77affd936ebab09e7c93675",
+     "size": 641,
+     "type": "image/svg+xml"
+    },
+    "currency-dollar.svg": {
+     "name": "currency-dollar.svg",
+     "blob": "27b37e0dc7606aac8b7494ca48e6dc41",
+     "size": 458,
+     "type": "image/svg+xml"
+    },
+    "dots-vertical.svg": {
+     "name": "dots-vertical.svg",
+     "blob": "925316a7a6c5ad06652c995cf221128f",
+     "size": 483,
+     "type": "image/svg+xml"
+    },
+    "download.svg": {
+     "name": "download.svg",
+     "blob": "5c74b4a16829208225e21d184565ae41",
+     "size": 440,
+     "type": "image/svg+xml"
+    },
+    "eye.svg": {
+     "name": "eye.svg",
+     "blob": "2917d0d25db0cf88b0ebc3a57b7044cb",
+     "size": 469,
+     "type": "image/svg+xml"
+    },
+    "file.svg": {
+     "name": "file.svg",
+     "blob": "0b43edd61ac5e8e469df40bb48a1a411",
+     "size": 446,
+     "type": "image/svg+xml"
+    },
+    "filter.svg": {
+     "name": "filter.svg",
+     "blob": "1e2eee2c33bafc468b8233314e6518a3",
+     "size": 442,
+     "type": "image/svg+xml"
+    },
+    "hand-stop.svg": {
+     "name": "hand-stop.svg",
+     "blob": "d4bf934146222f8a89ca53f7478883fd",
+     "size": 689,
+     "type": "image/svg+xml"
+    },
+    "help-circle.svg": {
+     "name": "help-circle.svg",
+     "blob": "77cbc68d0cf14ab145ae0337ae593ff9",
+     "size": 479,
+     "type": "image/svg+xml"
+    },
+    "history.svg": {
+     "name": "history.svg",
+     "blob": "0f5d0c271a5becf420a5bcb561c5d6df",
+     "size": 404,
+     "type": "image/svg+xml"
+    },
+    "hourglass.svg": {
+     "name": "hourglass.svg",
+     "blob": "46f58f998797e44e61e3db9310a94f7d",
+     "size": 529,
+     "type": "image/svg+xml"
+    },
+    "inbox.svg": {
+     "name": "inbox.svg",
+     "blob": "6c6091d63d4ec30a0bc2387af7336230",
+     "size": 455,
+     "type": "image/svg+xml"
+    },
+    "info-circle.svg": {
+     "name": "info-circle.svg",
+     "blob": "a7c166cd667fc0cc1de805edf714feca",
+     "size": 434,
+     "type": "image/svg+xml"
+    },
+    "lock.svg": {
+     "name": "lock.svg",
+     "blob": "a5b0defe18fdc84ea2fc482ae723c21a",
+     "size": 506,
+     "type": "image/svg+xml"
+    },
+    "logout.svg": {
+     "name": "logout.svg",
+     "blob": "b97c1f9335b5bdde6063c911126adfed",
+     "size": 476,
+     "type": "image/svg+xml"
+    },
+    "menu-2.svg": {
+     "name": "menu-2.svg",
+     "blob": "33ce1149226193d6bc2744f52f59ad50",
+     "size": 401,
+     "type": "image/svg+xml"
+    },
+    "message-circle.svg": {
+     "name": "message-circle.svg",
+     "blob": "e7ae73d14f65a180af029370d1cf058d",
+     "size": 522,
+     "type": "image/svg+xml"
+    },
+    "messages.svg": {
+     "name": "messages.svg",
+     "blob": "01d8a4a2bed401880a372a2d3c0762df",
+     "size": 478,
+     "type": "image/svg+xml"
+    },
+    "paperclip.svg": {
+     "name": "paperclip.svg",
+     "blob": "ba2af9aa2ca072dea98fbb64b34ff0e7",
+     "size": 436,
+     "type": "image/svg+xml"
+    },
+    "pencil.svg": {
+     "name": "pencil.svg",
+     "blob": "0eb18546cf5eacb5d58442a57781707a",
+     "size": 424,
+     "type": "image/svg+xml"
+    },
+    "photo.svg": {
+     "name": "photo.svg",
+     "blob": "6f86a16359125377a624ba8e3560663c",
+     "size": 557,
+     "type": "image/svg+xml"
+    },
+    "player-pause.svg": {
+     "name": "player-pause.svg",
+     "blob": "a2c45ac42ea5ea34b4ef18f1d5313162",
+     "size": 519,
+     "type": "image/svg+xml"
+    },
+    "player-play.svg": {
+     "name": "player-play.svg",
+     "blob": "42cfd3e52aa925c0e5251194f3c4747b",
+     "size": 365,
+     "type": "image/svg+xml"
+    },
+    "plus.svg": {
+     "name": "plus.svg",
+     "blob": "c0714595212f7d3ae5ebe29c0faf1ae7",
+     "size": 374,
+     "type": "image/svg+xml"
+    },
+    "refresh.svg": {
+     "name": "refresh.svg",
+     "blob": "528c706fa9e0c52164effed369a1db74",
+     "size": 434,
+     "type": "image/svg+xml"
+    },
+    "search.svg": {
+     "name": "search.svg",
+     "blob": "fe1e3b9b682b787e25bbd16c1f6e0fd2",
+     "size": 404,
+     "type": "image/svg+xml"
+    },
+    "selector.svg": {
+     "name": "selector.svg",
+     "blob": "8d3bb8966369ff988d1a2d2a63abcd46",
+     "size": 388,
+     "type": "image/svg+xml"
+    },
+    "send.svg": {
+     "name": "send.svg",
+     "blob": "7d6eb667d12c57281e64fa8a0c0e0377",
+     "size": 442,
+     "type": "image/svg+xml"
+    },
+    "settings.svg": {
+     "name": "settings.svg",
+     "blob": "2f56c490b9a2252a520b30113b33f160",
+     "size": 914,
+     "type": "image/svg+xml"
+    },
+    "shield-lock.svg": {
+     "name": "shield-lock.svg",
+     "blob": "ab37fe6992fa5d76a3141807df295431",
+     "size": 507,
+     "type": "image/svg+xml"
+    },
+    "sparkles.svg": {
+     "name": "sparkles.svg",
+     "blob": "7151bfef525212a93500ac325275d96b",
+     "size": 540,
+     "type": "image/svg+xml"
+    },
+    "target.svg": {
+     "name": "target.svg",
+     "blob": "ccd2787159e91f1ca1593701ef1d66d5",
+     "size": 479,
+     "type": "image/svg+xml"
+    },
+    "thumb-down.svg": {
+     "name": "thumb-down.svg",
+     "blob": "1be98940653aa978752108a86f6d6528",
+     "size": 494,
+     "type": "image/svg+xml"
+    },
+    "thumb-up.svg": {
+     "name": "thumb-up.svg",
+     "blob": "c722c405e58a711cccb189ff86fddb00",
+     "size": 492,
+     "type": "image/svg+xml"
+    },
+    "trash.svg": {
+     "name": "trash.svg",
+     "blob": "11ed5f847d34098de2cb28d1e9f7a8e5",
+     "size": 518,
+     "type": "image/svg+xml"
+    },
+    "user.svg": {
+     "name": "user.svg",
+     "blob": "7c1aefe6a27eeedca15da546ccaa0208",
+     "size": 428,
+     "type": "image/svg+xml"
+    },
+    "users.svg": {
+     "name": "users.svg",
+     "blob": "2a6acfe05cea57ca76517c7bb00ec947",
+     "size": 514,
+     "type": "image/svg+xml"
+    },
+    "video.svg": {
+     "name": "video.svg",
+     "blob": "2f55591d3b52aff63c0cae1d0fe7a29f",
+     "size": 516,
+     "type": "image/svg+xml"
+    },
+    "wifi-off.svg": {
+     "name": "wifi-off.svg",
+     "blob": "9f4ec6b1b9cfbbc9f11774d1473ee01a",
+     "size": 612,
+     "type": "image/svg+xml"
+    },
+    "x.svg": {
+     "name": "x.svg",
+     "blob": "4997d07a9bbb7430e519c47073244922",
+     "size": 373,
+     "type": "image/svg+xml"
+    },
+    "layout-dashboard.svg": {
+     "name": "layout-dashboard.svg",
+     "blob": "60a7fa33036f53d9905d8ca887930744",
+     "size": 702,
+     "type": "image/svg+xml"
+    },
+    "trending-up.svg": {
+     "name": "trending-up.svg",
+     "blob": "42ea1926dcd9f489086a994636da168a",
+     "size": 387,
+     "type": "image/svg+xml"
+    },
+    "trending-down.svg": {
+     "name": "trending-down.svg",
+     "blob": "229fc5ff18cda68610795b524944ca89",
+     "size": 389,
+     "type": "image/svg+xml"
+    },
+    "table.svg": {
+     "name": "table.svg",
+     "blob": "b168010bb866c9ace8a202fd76af497c",
+     "size": 464,
+     "type": "image/svg+xml"
+    },
+    "chart-bar.svg": {
+     "name": "chart-bar.svg",
+     "blob": "87e58d54f94b3bb68181c4978c36ceb4",
+     "size": 637,
+     "type": "image/svg+xml"
+    },
+    "minus.svg": {
+     "name": "minus.svg",
+     "blob": "f496113f880fdfe1f4a413a66a0c2cd1",
+     "size": 338,
+     "type": "image/svg+xml"
+    }
+   }
+  }
+ },
+ "blobs": {},
+ "docs": {
+  "readme": "project/README.md",
+  "sections": []
+ },
+ "lastChange": {
+  "by": "Anton",
+  "at": "2026-09-30T19:01:58Z",
+  "via": "Claude",
+  "note": "Metrics components C-38\u2026C-41 and chart series tokens"
+ }
+}

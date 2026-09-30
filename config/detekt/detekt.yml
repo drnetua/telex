@@ -1,0 +1,40 @@
+# Built upon detekt's default config (buildUponDefaultConfig). Only deviations live here.
+
+# The `integrationTest` JVM test suite gets the same relaxations detekt's defaults give `test`.
+comments:
+  KDocReferencesNonPublicProperty:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  UndocumentedPublicClass:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  UndocumentedPublicFunction:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  UndocumentedPublicProperty:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+complexity:
+  StringLiteralDuplication:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  TooManyFunctions:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+exceptions:
+  InstanceOfCheckForException:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  ThrowingExceptionsWithoutMessageOrCause:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  TooGenericExceptionCaught:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+naming:
+  FunctionNaming:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+performance:
+  ForEachOnRange:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  SpreadOperator:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+potential-bugs:
+  LateinitUsage:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+  UnsafeCallOnNullableType:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
+style:
+  MagicNumber:
+    excludes: ['**/test/**', '**/integrationTest/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']

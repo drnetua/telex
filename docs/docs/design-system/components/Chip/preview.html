@@ -1,0 +1,12 @@
+<!-- @dsCard group="Primitives" height=56 subtitle="Tabler primitive" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Chip</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-chips'},h(T.Chip,{icon:'messages'},'Work'),h(T.Chip,{icon:'messages'},'Clients'),h(T.Chip,{onRemove:false},'Read only')));
+</script>
+</body>
+</html>

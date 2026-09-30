@@ -1,0 +1,12 @@
+<!-- @dsCard group="Chats" height=200 subtitle="C-10" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>MediaThumb</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:8}},['photo','video','file','generated','unavailable'].map(function(k){return h(T.MediaThumb,{key:k,kind:k})})));
+</script>
+</body>
+</html>

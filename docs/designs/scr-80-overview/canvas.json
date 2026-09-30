@@ -1,0 +1,55 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-30T19:03:42Z"
+ },
+ "title": "teleX \u00b7 SCR-80 Overview",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 1480,
+   "title": "SCR-80 Overview \u00b7 desktop, light",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Dark.dc.html": {
+   "x": 1360,
+   "y": 0,
+   "w": 1280,
+   "h": 1480,
+   "title": "SCR-80 Overview \u00b7 desktop, dark",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Empty.dc.html": {
+   "x": 2720,
+   "y": 0,
+   "w": 1280,
+   "h": 900,
+   "title": "SCR-80 Overview \u00b7 first day, not enough data",
+   "expand": "fill"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Dark.dc.html",
+  "Empty.dc.html"
+ ],
+ "notes": {},
+ "designSystems": [
+  {
+   "title": "teleX",
+   "namespace": "telex",
+   "artifact": "https://claude.ai/artifact/294iF2F7j2pGFWYtxNA7ux",
+   "version": "1790795007-8cdc",
+   "copiedAt": "2026-09-30T19:03:42Z"
+  }
+ ]
+}

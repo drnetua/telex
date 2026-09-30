@@ -1,0 +1,49 @@
+[versions]
+# https://www.oracle.com/ua/java/technologies/downloads/
+java = "25"
+# https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
+kotlin = "2.4.10"
+# https://plugins.gradle.org/plugin/org.springframework.boot
+spring-boot = "4.1.1"
+# https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-bom
+spring-ai = "2.0.1"
+# https://mvnrepository.com/artifact/org.springframework.modulith/spring-modulith-bom
+spring-modulith = "2.1.1"
+# https://plugins.gradle.org/plugin/io.spring.dependency-management
+spring-dependency-management = "1.1.7"
+# https://plugins.gradle.org/plugin/dev.detekt
+detekt = "2.0.0-alpha.6"
+# https://plugins.gradle.org/plugin/com.commonsware.detektifier
+detektifier = "0.2.0"
+# https://plugins.gradle.org/plugin/com.diffplug.spotless
+spotless = "8.10.3"
+
+[libraries]
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+spring-dependency-management-gradle-plugin = { module = "io.spring.dependency-management:io.spring.dependency-management.gradle.plugin", version.ref = "spring-dependency-management" }
+spring-boot-gradle-plugin = { module = "org.springframework.boot:org.springframework.boot.gradle.plugin", version.ref = "spring-boot" }
+kotlin-spring-gradle-plugin = { module = "org.jetbrains.kotlin.plugin.spring:org.jetbrains.kotlin.plugin.spring.gradle.plugin", version.ref = "kotlin" }
+detekt-dev-gradle-plugin = { module = "dev.detekt:dev.detekt.gradle.plugin", version.ref = "detekt" }
+detekt-detektifier-gradle-plugin = { "module" = "com.commonsware.detektifier:com.commonsware.detektifier.gradle.plugin", version.ref = "detektifier" }
+spotless-gradle-plugin = { module = "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin", version.ref = "spotless" }
+spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith"}
+# Versions below are managed by the Spring Boot / Spring Modulith BOMs applied in the convention plugins.
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
+spring-modulith-starter-jdbc = { module = "org.springframework.modulith:spring-modulith-starter-jdbc" }
+spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+spring-modulith-docs = { module = "org.springframework.modulith:spring-modulith-docs" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }

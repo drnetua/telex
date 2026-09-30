@@ -1,0 +1,12 @@
+<!-- @dsCard group="Forms and feedback" height=380 subtitle="C-35" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>LoadState</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack'},h(T.LoadState,{state:'loading'}),h(T.LoadState,{state:'error'})));
+</script>
+</body>
+</html>

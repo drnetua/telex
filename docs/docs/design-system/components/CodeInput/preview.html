@@ -1,0 +1,12 @@
+<!-- @dsCard group="Forms and feedback" height=300 subtitle="C-32" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CodeInput</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack'},h(T.CodeInput,{value:'482'}),h(T.CodeInput,{state:'invalid',value:'48210'}),h(T.CodeInput,{state:'limited',value:''})));
+</script>
+</body>
+</html>

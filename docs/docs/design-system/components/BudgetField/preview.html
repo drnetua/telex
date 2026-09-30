@@ -1,0 +1,12 @@
+<!-- @dsCard group="Assistants" height=110 subtitle="C-23" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>BudgetField</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row tx-wrap',style:{alignItems:'flex-start',gap:24}},h(T.BudgetField,{period:'day',limit:1,spent:0.3}),h(T.BudgetField,{period:'month',limit:5,spent:4.2})));
+</script>
+</body>
+</html>

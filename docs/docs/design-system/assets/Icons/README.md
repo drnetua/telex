@@ -1,0 +1,1 @@
+Tabler Icons 3.48 (outline, 24px grid, 2px stroke), the subset teleX uses. The preview copies are inked `#404040` (gray-700) only so they show here; in code import them from `@tabler/icons-react`, where they take `currentColor`. Size 20px in buttons and nav, 16px beside `small` text, 24px+ for status glyphs.

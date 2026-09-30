@@ -1,0 +1,12 @@
+<!-- @dsCard group="Forms and feedback" height=230 subtitle="C-36" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Toast</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack'},['info','success','error','draft'].map(function(k){return h('div',{key:k},h(T.Toast,{kind:k}))})));
+</script>
+</body>
+</html>

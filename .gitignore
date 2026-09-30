@@ -1,0 +1,7 @@
+.claude/*.local.md
+.worktrees/
+.gradle/
+build/
+node_modules/
+frontend/dist/
+.idea/

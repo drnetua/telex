@@ -1,0 +1,12 @@
+<!-- @dsCard group="Chats" height=300 subtitle="C-06" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ChatRow</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-card',style:{padding:4,maxWidth:420}},h(T.ChatRow,{name:'Olena Kovalenko',hue:210,preview:'Can you review the Q3 deck today?',time:'12:03',unread:2,trace:1}),h(T.ChatRow,{name:'Design team',hue:30,preview:'Anna: PR #42 is ready',time:'11:40',account:'Work',selected:true}),h(T.ChatRow,{name:'Mom',hue:350,private:true,preview:'Call me when you can',time:'Tue'}),h(T.ChatRow,{name:'Family',hue:120,disabled:true,private:true,time:''})));
+</script>
+</body>
+</html>

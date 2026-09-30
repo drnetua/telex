@@ -1,0 +1,127 @@
+{
+  "slug": "_scaffold",
+  "tasks": [
+    {
+      "id": "S1",
+      "title": "Create the Gradle multi-project structure, the Spring Boot entry point and the 13 empty Modulith module packages + the shared kernel",
+      "layer": "scaffold",
+      "deps": [],
+      "acs": [],
+      "dod": "`./gradlew build` succeeds on the empty skeleton: settings.gradle.kts includes backend:app, backend:telegram-tdlib and frontend; backend/app applies spring.kotlin.service.conventions + spring.modulith.conventions + spring.ai.conventions + kotlin.detekt.conventions; TelexApplication boots; each of web, identity, messaging, triage, agents, tools, tasks, scheduling, audit, telegram, llm, decision, bot has a package-info.java with @ApplicationModule(allowedDependencies) per the map; telex.shared is an OPEN module; backend/telegram-tdlib applies spring.kotlin.module.conventions and exposes only an empty facade package telex.telegram.tdlib",
+      "files_hint": [
+        "settings.gradle.kts",
+        "build.gradle.kts",
+        "backend/app/build.gradle.kts",
+        "backend/app/src/main/kotlin/telex/TelexApplication.kt",
+        "backend/app/src/main/kotlin/telex/<module>/package-info.java",
+        "backend/app/src/main/kotlin/telex/shared/package-info.java",
+        "backend/app/src/main/resources/application.yaml",
+        "backend/telegram-tdlib/build.gradle.kts",
+        "gradle/libs.versions.toml"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "title": "Wire the backend test harness: unit tests with ModularityTest, an integrationTest JVM test suite with Testcontainers, and the app-boots smoke test",
+      "layer": "scaffold",
+      "deps": [
+        "S1"
+      ],
+      "acs": [],
+      "dod": "`./gradlew test` runs green without Docker and includes ModularityTest (ApplicationModules.verify() passes and writes the module documentation); `./gradlew integrationTest` runs a @SpringBootTest smoke test that boots the app against a Testcontainers pgvector Postgres; `./gradlew check` depends on integrationTest; the test-suite setup lives in a build-logic convention, not in backend/app",
+      "files_hint": [
+        "build-logic/src/main/kotlin/",
+        "backend/app/src/test/kotlin/telex/ModularityTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/ApplicationSmokeIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/TestcontainersConfiguration.kt"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "title": "Set up Flyway with a baseline migration and its rollback script, the rollback test, and compose.yaml with Postgres + pgvector",
+      "layer": "scaffold",
+      "deps": [
+        "S2"
+      ],
+      "acs": [],
+      "dod": "V202609300000__baseline.sql enables the vector extension and creates the Spring Modulith event_publication table; U202609300000__baseline.sql reverts it; MigrationRollbackIT applies up -> down -> up cleanly on Testcontainers; `docker compose up -d` at the repo root starts pgvector Postgres and the app connects to it with the local profile",
+      "files_hint": [
+        "backend/app/src/main/resources/db/migration/V202609300000__baseline.sql",
+        "backend/app/src/main/resources/db/rollback/U202609300000__baseline.sql",
+        "backend/app/src/integrationTest/kotlin/telex/MigrationRollbackIT.kt",
+        "compose.yaml"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "title": "Establish the shared conventions in code: UUIDv7 typed ids and the RFC 9457 problem handler",
+      "layer": "scaffold",
+      "deps": [
+        "S1"
+      ],
+      "acs": [],
+      "dod": "telex.shared exposes a UUIDv7 generator + a base for typed id value classes, with unit tests for time-ordering and version bits; telex.web has one @RestControllerAdvice that renders application/problem+json with `code` and `errors[]` extensions and type urn:telex:error:<code>, with a unit/slice test; ModularityTest still passes",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/shared/Ids.kt",
+        "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt",
+        "backend/app/src/test/kotlin/telex/shared/IdsTest.kt",
+        "backend/app/src/test/kotlin/telex/web/ProblemHandlerTest.kt"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "title": "Create the React + TypeScript + Vite + Tabler frontend as a pnpm workspace package, built by Gradle and served by Spring Web",
+      "layer": "scaffold",
+      "deps": [
+        "S1"
+      ],
+      "acs": [],
+      "dod": "Root build.gradle.kts defines :pnpmInstall and pnpm-workspace.yaml lists frontend; frontend/ applies pnpm.conventions; `pnpm run check` runs tsc --noEmit + ESLint + Prettier check + Vitest (one smoke test) green; `pnpm run build` output is copied into backend/app's static resources; an integration smoke test gets index.html from GET / and falls back to it for client-side routes; @tabler/core and @tabler/icons-react are installed and the app shell renders one placeholder page",
+      "files_hint": [
+        "build.gradle.kts",
+        "pnpm-workspace.yaml",
+        "frontend/build.gradle.kts",
+        "frontend/package.json",
+        "frontend/vite.config.ts",
+        "frontend/src/main.tsx",
+        "frontend/src/App.test.tsx",
+        "backend/app/build.gradle.kts"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "title": "Add the GitHub Actions CI workflow (build + unit + integration tests + lint for backend and frontend)",
+      "layer": "scaffold",
+      "deps": [
+        "S3",
+        "S4",
+        "S5"
+      ],
+      "acs": [],
+      "dod": ".github/workflows/ci.yml is valid, sets up JDK 25 and pnpm, caches Gradle and pnpm, and runs `./gradlew build integrationTest` (which includes spotlessCheck, detekt and pnpm check); commands match the map's machine keys",
+      "files_hint": [
+        ".github/workflows/ci.yml"
+      ],
+      "status": "done"
+    },
+    {
+      "id": "S7",
+      "title": "Update CLAUDE.md from the foundation map: real commands, layout and conventions",
+      "layer": "scaffold",
+      "deps": [
+        "S6"
+      ],
+      "acs": [],
+      "dod": "CLAUDE.md reflects docs/architecture-map.md: build/test/integrationTest/lint commands that actually work, single-test command, module layout under backend/app, telegram-tdlib isolation, migration + rollback convention, error and id conventions, frontend commands; no 'pre-code' wording remains",
+      "files_hint": [
+        "CLAUDE.md"
+      ],
+      "status": "done"
+    }
+  ]
+}

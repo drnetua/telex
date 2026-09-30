@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>teleX Overview</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/telex/tokens.css">
+<link rel="stylesheet" href="ds/telex/components/bundle.css">
+<script src="ds/telex/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;padding:0;background:var(--bg-body)}
+a{color:var(--primary)}a:hover{color:var(--primary-hover)}
+</style>
+</helmet>
+<div data-theme="{{theme}}" style="min-height: 100vh; background: var(--bg-body); color: var(--text-body); font-family: var(--font-sans); font-size: 14px; line-height: 20px;">
+<x-import component-from-global-scope="TeleX.AppShell" active="overview" inbox-count="{{inboxCount}}" style="display: block; min-height: 100vh;">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<h1 class="h1" style="margin: 0; color: var(--text-heading);">Overview</h1>
+<span class="small" style="color: var(--text-secondary);">What your assistants did, what it cost and how reliably they ran</span>
+</div>
+<x-import component-from-global-scope="TeleX.PeriodPicker" value="7d"></x-import>
+</div>
+<section aria-labelledby="needs-you" style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 24px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+<h2 id="needs-you" class="h3" style="margin: 0; color: var(--text-heading);">Needs you</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; flex-grow: 1;">
+<x-import component-from-global-scope="TeleX.Badge" tone="ai" icon="sparkles">4 drafts to approve</x-import>
+<x-import component-from-global-scope="TeleX.Badge" tone="warning" icon="help-circle">1 needs a check</x-import>
+<x-import component-from-global-scope="TeleX.Badge" tone="info" icon="calendar">2 tasks due today</x-import>
+</div>
+<a href="#inbox" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 8px 16px; border-radius: var(--radius-md); background: var(--primary); color: var(--on-primary); font-weight: 500; text-decoration: none;">Open Inbox</a>
+</section>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+<x-import component-from-global-scope="TeleX.KpiTile" label="Runs" value="393" delta="{{runsDelta}}" better="up" trend="{{runsTrend}}"></x-import>
+<x-import component-from-global-scope="TeleX.KpiTile" label="Spend" value="$6.05" delta="{{spendDelta}}" better="down" trend="{{spendTrend}}"></x-import>
+<x-import component-from-global-scope="TeleX.KpiTile" label="Errors and safety blocks" value="1.4%" delta="{{errDelta}}" better="down" trend="{{errTrend}}"></x-import>
+<x-import component-from-global-scope="TeleX.KpiTile" label="Time to draft, median" value="8.1 s" delta="{{ttdDelta}}" better="down" trend="{{ttdTrend}}"></x-import>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px;">
+<x-import component-from-global-scope="TeleX.TimeChart" title="Runs per day" subtitle="All assistants · Sep 24–30" series="{{runsSeries}}" labels="{{days}}"></x-import>
+<x-import component-from-global-scope="TeleX.TimeChart" title="Spend per day" subtitle="All assistants · daily budget $1.50" unit="$" budget="{{budget}}" series="{{spendSeries}}" labels="{{days}}"></x-import>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px;">
+<x-import component-from-global-scope="TeleX.Breakdown" title="Spend by assistant" subtitle="Sep 24–30 · $6.05 total · month forecast $25.90 of $30.00" items="{{spendItems}}"></x-import>
+<x-import component-from-global-scope="TeleX.TimeChart" title="Time to draft, median" subtitle="From incoming message to draft in Inbox" mode="line" unit="s" series="{{ttdSeries}}" labels="{{days}}"></x-import>
+</div>
+<p class="small" style="margin: 0; color: var(--text-secondary);">Figures exclude private chats. Click any tile or bar to open the matching runs.</p>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1280,"height":1480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme ?? 'light',
+      inboxCount: 7,
+      days: ['Sep 24', 'Sep 25', 'Sep 26', 'Sep 27', 'Sep 28', 'Sep 29', 'Sep 30'],
+      runsDelta: 12, runsTrend: [64, 77, 58, 26, 15, 70, 83],
+      spendDelta: 18, spendTrend: [0.9, 1.1, 0.8, 0.4, 0.25, 1.2, 1.4],
+      errDelta: -30, errTrend: [2.1, 1.8, 2.0, 1.6, 1.5, 1.2, 1.1],
+      ttdDelta: -9, ttdTrend: [9.0, 9.6, 9.0, 8.2, 7.9, 8.8, 8.4],
+      budget: 1.5,
+      runsSeries: [
+        { name: 'Reply helper', slot: 0, data: [42, 51, 38, 20, 12, 47, 55] },
+        { name: 'Weekly digest', slot: 1, data: [4, 4, 4, 0, 0, 4, 4] },
+        { name: 'Deadline catcher', slot: 2, data: [18, 22, 16, 6, 3, 19, 24] }
+      ],
+      spendSeries: [
+        { name: 'Reply helper', slot: 0, data: [0.6, 0.7, 0.5, 0.3, 0.2, 0.8, 0.9] },
+        { name: 'Weekly digest', slot: 1, data: [0.1, 0.1, 0.1, 0, 0, 0.1, 0.1] },
+        { name: 'Deadline catcher', slot: 2, data: [0.2, 0.3, 0.2, 0.1, 0.05, 0.3, 0.4] }
+      ],
+      spendItems: [
+        { name: 'Reply helper', value: 4.0, slot: 0 },
+        { name: 'Deadline catcher', value: 1.55, slot: 2 },
+        { name: 'Weekly digest', value: 0.5, slot: 1 }
+      ],
+      ttdSeries: [
+        { name: 'Reply helper', slot: 0, data: [7.9, 8.4, 8.1, 7.2, 6.9, 8.0, 7.6] },
+        { name: 'Deadline catcher', slot: 2, data: [11.2, 12.0, 10.8, 9.9, 9.5, 10.4, 10.1] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

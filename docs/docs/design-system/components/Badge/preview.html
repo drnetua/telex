@@ -1,0 +1,12 @@
+<!-- @dsCard group="Primitives" height=64 subtitle="Tabler primitive" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Badge</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row tx-wrap'},h(T.Badge,null,'Work'),h(T.Badge,{tone:'ai',icon:'sparkles'},'Draft'),h(T.Badge,{tone:'success'},'Running'),h(T.Badge,{tone:'warning'},'Needs consent'),h(T.Badge,{tone:'danger'},'Blocked'),h(T.Badge,{tone:'info'},'Due today')));
+</script>
+</body>
+</html>

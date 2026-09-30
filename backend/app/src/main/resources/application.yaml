@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: telex
+  threads:
+    virtual:
+      enabled: true
+  flyway:
+    locations: classpath:db/migration
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false # event_publication comes from the Flyway baseline

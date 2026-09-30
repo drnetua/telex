@@ -1,0 +1,6 @@
+# Local development against `docker compose up -d` at the repo root.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:${TELEX_DB_PORT:5432}/telex
+    username: telex
+    password: telex
