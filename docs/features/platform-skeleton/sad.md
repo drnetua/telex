@@ -423,32 +423,39 @@ Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim f
 
 ## 11. Risks and technical debt
 
-<!-- 🎯 Why: ⭐ collects EVERYTHING that can break — not only the technical. Without §11 risks get
-     discussed at standups and lost; debt lives only in the head of whoever accepted it.
-     📋 Write: a risk/debt table — severity — mitigation — owner. Accepted debt in its own block.
-     📌 The first risk is often a product risk, not a technical one. That's normal. -->
-
-<!-- Severity literals: Low / Medium / High for regular risks; "Open question" for rows created by
-     a Save-as-OQ resolution during the Socratic walk (see references/socratic.md). -->
-
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Worker lag may reach hours during a downstream outage> | Medium | <alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event-schema versioning in v1> | Medium | <ADR-NNNN planned for v2, tolerate unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from the Save-as-OQ> | <owner> |
+| **The mailbox is the master key.** Whoever reads an Owner's email can sign in as them, and from E02 on that means their Telegram (spec §1) | Medium | New-sign-in email to the address the account was created with (AC-98), session list + revoke (AC-93, AC-94), 90-day cap (AC-96). Anti-enumeration and rate limits deliberately deferred (spec §3) | Anton Husiev (PM) |
+| **Public exposure behind Cloudflare before E26.** Registration is open and sign-in emails have no rate limit, so anyone reaching the domain can create Owners or flood an address with sign-in emails | Medium | README warns against public exposure until E26 (spec §8 OQ-2, due before `/sdd:specify operator-console`). Stopgap if exposed: a Cloudflare rate-limiting rule or Cloudflare Access in front of the domain, which needs no app change | Anton Husiev (PM) |
+| **Passkeys are bound to the RP ID.** Changing the production domain (`TELEX_PUBLIC_URL` host) makes every registered Passkey unusable | Medium | ADR-0006 makes the RP ID an explicit, rarely changed setting. Email sign-in always remains (AC-92), and the README flags the setting as "choose once" | Anton Husiev (Architect) |
+| **No passkeys over LAN HTTP.** A phone opening teleX via the laptop's IP over HTTP isn't a secure context, so Passkeys fail there | Low | The Sign-in Code covers the phone/laptop case (AC-82). The README explains that Passkeys work on `localhost` or HTTPS | Anton Husiev (Architect) |
+| **The framework owns the passkey schema and endpoints.** A Spring Security upgrade may change the `user_entities` / `user_credentials` shape or the WebAuthn paths | Low | Versions pinned by the Boot BOM. Migrations create the tables explicitly (no auto-init). Playwright virtual-authenticator tests catch path changes (ADR-0002) | Anton Husiev (Architect) |
+| **Synchronous sign-in email.** A down or slow mail server fails or slows "send me a link" | Low | The transaction rolls back (no orphaned grant), and the SPA shows SCR-93 with Retry. Mailpit is local, so it only matters in production (ADR-0004) | Anton Husiev (Architect) |
+| **Notice email retried only on restart.** A failed "New sign-in to teleX" send stays an incomplete event publication until the app restarts | Low | `republish-outstanding-events-on-restart` on. Incomplete publications are visible in `event_publication`. A periodic resubmit can come with E26 Operator tooling (ADR-0004) | Anton Husiev (Architect) |
+| **Brownfield drift.** `docs/architecture-map.md` reflects the pre-scaffold commit `ce5eabf` and says "13 modules"; this feature adds `mail` as the 14th and is the first to add Spring Security, mail, a router and a Dockerfile | Low | Re-run `/sdd:survey` after this design, and update the tech spec's module list when `implement` lands the `mail` module | Anton Husiev (Architect) |
+| **Spec §8 OQ-1 is overdue** (due "before `/sdd:design`"): where "Connect Telegram" leads before E02 | Low | Design assumes the spec's default (a "Telegram linking is coming next" note, no stub E02 page). It doesn't affect the architecture, so it can close any time before `/sdd:screens` | Anton Husiev (PM) |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. the entity is immutable / unversioned — OK for v1, may need audit versioning in v2>
+- No cleanup of expired grants or ended sessions. Rows accumulate; add a purge job at about 100 000 `sign_in_grant` rows or with E26 (sad §7).
+- A Sign-in Code hash (SHA-256 of grant id + code) can be brute-forced offline from a leaked database, but it's useful only within the grant's 15 minutes. A keyed hash (HMAC with a server secret) can replace it without a schema change.
+- The in-house User-Agent mapper covers the major browsers and devices only; unknown agents get a neutral label.
+- No anti-enumeration and no rate limits on sign-in emails (spec §3, deferred to the public-installation work).
 
 ## 12. Glossary
 
-<!-- 🎯 Why: ⭐ the DOMAIN GLOSSARY that ends arguments a year later («checkpoint — weekly or
-     biweekly? quarter — calendar or fiscal?»).
-     📋 Write: a term / meaning table. Business + technical terms mixed.
-     📌 e.g. «Lesson | a unit inside a course made of blocks (text, video)». -->
+Canonical terms come from [`CONTEXT.md`](../../../CONTEXT.md) (repo root); the definitions there win. Terms marked **new** surfaced during design and aren't in CONTEXT yet. Recommend `/sdd:glossary platform-skeleton` for them.
 
 | Term | Meaning |
 |---|---|
-| <e.g. domain object A> | <its meaning in this domain> |
-| <e.g. domain object B> | <its meaning> |
-| <e.g. domain invariant name> | <the rule, in plain language> |
+| Owner | A person with a teleX account; someone becomes an Owner at sign-up, before any Telegram account is linked (CONTEXT) |
+| Operator | The person who deploys and administers a teleX installation; in E01, only the person who runs the one command (CONTEXT, spec §3) |
+| Sign-in Link | A single-use link in a sign-in email; opening and confirming it starts a Sign-in Session in that browser; it expires 15 minutes after it's sent, checked at the confirm (CONTEXT) |
+| Sign-in Code | The 6-digit code in the same email; typed in the browser that asked; shares the link's expiry and single use; 5 wrong codes void both (CONTEXT) |
+| Sign-in Session | The signed-in state of one Owner in one browser; ends on sign-out, revocation, 30 days without activity or 90 days after start (CONTEXT) |
+| Passkey | A passwordless sign-in key on the Owner's device or in a password manager, confirmed with biometrics or a PIN; has a name, a creation date and a last-used date (CONTEXT) |
+| Sign-in Grant (**new**) | The server-side record behind one sign-in email: hashes of its Sign-in Link token and Sign-in Code, wrong-attempt count, expiry, use and supersede marks. One grant = one single-use permission to sign in (ADR-0003) |
+| Canonical email (**new**) | An address lowercased, with any `+tag` before the `@` removed; two addresses with the same canonical form are one Owner (AC-34) |
+| Background request (**new**) | A request the SPA sends without the Owner doing anything (refetch on focus or interval); marked `X-Telex-Background: 1` and not counted as session activity (ADR-0005) |
+| Public URL (**new**) | `TELEX_PUBLIC_URL`, the address where an installation is reached; source of email links, cookie security and the passkey RP ID (ADR-0006) |
+| RP ID | WebAuthn relying-party ID, the domain a Passkey is bound to; the host of the Public URL (ADR-0006) |
+| Local mailbox | The Mailpit web page bundled with the one-command install, where every email teleX sends shows up (AC-33) |
