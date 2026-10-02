@@ -20,6 +20,7 @@ updated_at: "2026-10-02"
 - **Reference mockups** (for humans; downstream needs only this manifest):
   - `docs/teleX-screens/Onb01-SignIn.html` is the same as `docs/docs/design-system/preview/Onb01-SignIn.html`. It is the visual source for SCR-01 `default`, and for the auth layout that SCR-07, SCR-08 and SCR-09 share.
   - `docs/teleX-screens/Inbox.html` and `PhoneInbox.html` show the post-E06 Inbox inside `AppShell`. They are not the E01 SCR-10 and are cited only as the target that replaces `PageFrame`.
+  - `docs/teleX-screens/Empty.html` (cited in `spec.md` and the same as `preview/Empty.html`) is SCR-80 Overview on its first day, inside `AppShell`. It is the pattern source for SCR-10 `default`: an `EmptyState kind="first"` with one sentence and one action inside a surface card. Its frame and content (Overview, KPI tiles) are not E01.
   - `docs/teleX-screens/Onb02-Telegram.html` shows `CodeInput` used inside an onboarding card (E02), which supports the `CodeInput` reuse on SCR-07.
   - `docs/designs/scr-80-overview/` covers SCR-80 only and isn't used here.
 - **Sources for state derivation:** `spec.md` §5 (AC-33…AC-105), the `sad.md` §6 flows and their `alt`/`else` branches, the `contracts/openapi.yaml` error responses, and the `ux-flows.md` screen inventory.
