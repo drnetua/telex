@@ -8,7 +8,7 @@ plugins {
 
 rootProject.name = "tele-x"
 
-// The Spring Boot app: all 13 Modulith modules as packages of `telex` (ADR-0002).
+// The Spring Boot app: all 14 Modulith modules as packages of `telex` (ADR-0002).
 include("backend:app")
 
 // Kotlin facade over TDLib — the only project that sees org.drinkless.tdlib.* (ADR-0002).
