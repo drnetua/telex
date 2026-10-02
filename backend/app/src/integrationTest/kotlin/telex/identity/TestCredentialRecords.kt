@@ -32,6 +32,12 @@ object TestCredentialRecords {
 
         fun userEntityUserId(id: Bytes) = apply { delegate.userEntityUserId(id) }
 
+        fun publicKey(key: ByteArray) = apply { delegate.publicKey(ImmutablePublicKeyCose(key)) }
+
+        fun attestationObject(bytes: ByteArray) = apply { delegate.attestationObject(Bytes(bytes)) }
+
+        fun credentialId(id: Bytes) = apply { delegate.credentialId(id) }
+
         fun created(created: Instant?) = apply { created?.let { delegate.created(it) } }
 
         fun lastUsed(lastUsed: Instant?) = apply { this.lastUsed = lastUsed }
