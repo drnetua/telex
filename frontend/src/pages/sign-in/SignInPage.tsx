@@ -1,0 +1,70 @@
+import { type FormEvent, useState } from "react";
+import { useNavigate } from "react-router";
+import { ApiFailure } from "../../api/client";
+import { requestSignInEmail } from "../../api/signIn";
+import { Button } from "../../components/Button/Button";
+import { Icon } from "../../components/Icon/Icon";
+import { messages } from "../../messages";
+import { routeFailure } from "../auth/failure";
+
+const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+export function SignInPage() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [invalid, setInvalid] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const address = email.trim();
+    if (!EMAIL.test(address)) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    setSubmitting(true);
+    try {
+      const grant = await requestSignInEmail(address);
+      void navigate("/sign-in/check-email", {
+        state: { grantId: grant.grantId, email: grant.email },
+      });
+    } catch (error) {
+      setSubmitting(false);
+      if (error instanceof ApiFailure && error.status === 400) setInvalid(true);
+      else if (!routeFailure(error, () => requestSignInEmail(address))) throw error;
+    }
+  }
+
+  return (
+    <form noValidate onSubmit={(e) => void submit(e)}>
+      <h1 className="h2 text-center">{messages.signIn.title}</h1>
+      <p className="text-secondary text-center">{messages.signIn.tagline}</p>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="sign-in-email">
+          {messages.signIn.emailLabel}
+        </label>
+        <input
+          id="sign-in-email"
+          type="email"
+          autoComplete="email"
+          className={`form-control${invalid ? " is-invalid" : ""}`}
+          value={email}
+          readOnly={submitting}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        {invalid ? (
+          <div className="invalid-feedback d-flex align-items-center gap-1">
+            <Icon name="alert-circle" size={16} />
+            {messages.signIn.emailInvalid}
+          </div>
+        ) : null}
+      </div>
+      <Button type="submit" className="btn-primary w-100" busy={submitting}>
+        {submitting ? messages.signIn.submitting : messages.signIn.submit}
+      </Button>
+      <div className="hr-text">{messages.signIn.divider}</div>
+      <small className="text-secondary d-block text-center">{messages.signIn.note}</small>
+    </form>
+  );
+}

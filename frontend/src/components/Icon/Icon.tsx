@@ -1,4 +1,7 @@
 import {
+  IconAlertCircle,
+  IconBan,
+  IconClock,
   IconLogout,
   IconRefresh,
   IconSearch,
@@ -8,6 +11,9 @@ import {
 
 const icons = {
   search: IconSearch,
+  "alert-circle": IconAlertCircle,
+  ban: IconBan,
+  clock: IconClock,
   logout: IconLogout,
   "wifi-off": IconWifiOff,
   refresh: IconRefresh,

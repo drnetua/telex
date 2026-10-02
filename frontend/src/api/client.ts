@@ -5,6 +5,8 @@ export class ApiFailure extends Error {
     readonly status: number,
     readonly code: string,
     readonly route?: FailureRoute,
+    readonly attemptsLeft?: number,
+    readonly email?: string,
   ) {
     super(`${status} ${code}`);
   }
@@ -52,10 +54,23 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     return (response.status === 204 ? undefined : await response.clone().json()) as T;
   }
   let code = "internal-error";
+  let problem: { attemptsLeft?: number; email?: string } = {};
   try {
-    code = ((await response.json()) as { code?: string }).code ?? code;
+    const body = (await response.json()) as {
+      code?: string;
+      attemptsLeft?: number;
+      email?: string;
+    };
+    code = body.code ?? code;
+    problem = body;
   } catch {
     // non-problem body: keep the default code
   }
-  throw new ApiFailure(response.status, code, routeFor(response.status, code));
+  throw new ApiFailure(
+    response.status,
+    code,
+    routeFor(response.status, code),
+    problem.attemptsLeft,
+    problem.email,
+  );
 }
