@@ -1,12 +1,14 @@
 import {
   IconAlertCircle,
   IconBan,
+  IconBrandTelegram,
   IconClock,
   IconInfoCircle,
   IconLock,
   IconLogout,
   IconRefresh,
   IconSearch,
+  IconUser,
   IconWifiOff,
   type TablerIcon,
 } from "@tabler/icons-react";
@@ -15,6 +17,8 @@ const icons = {
   search: IconSearch,
   "alert-circle": IconAlertCircle,
   ban: IconBan,
+  "brand-telegram": IconBrandTelegram,
+  user: IconUser,
   clock: IconClock,
   "info-circle": IconInfoCircle,
   lock: IconLock,

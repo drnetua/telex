@@ -79,4 +79,15 @@ export const messages = {
       "This browser doesn't support passkeys. You can add one later from another device in Profile and security.",
     continue: "Continue",
   },
+  frame: {
+    profile: "Profile and security",
+    signOut: "Sign out",
+  },
+  inbox: {
+    title: "Inbox",
+    emptyTitle: "No Telegram account yet",
+    empty: "Connect your Telegram account to start.",
+    connect: "Connect Telegram",
+    note: "Telegram linking is coming next.",
+  },
 } as const;

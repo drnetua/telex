@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from "react-router";
-import { messages } from "../messages";
 import { CheckEmailPage } from "../pages/check-email/CheckEmailPage";
 import { CreatePasskeyPage } from "../pages/create-passkey/CreatePasskeyPage";
 import { ConfirmLinkPage } from "../pages/confirm-link/ConfirmLinkPage";
+import { InboxPage } from "../pages/inbox/InboxPage";
 import { SignInPage } from "../pages/sign-in/SignInPage";
 import { NotFoundPage } from "../pages/system/NotFoundPage";
 import { SessionEndedPage } from "../pages/system/SessionEndedPage";
@@ -28,10 +28,7 @@ export function AppRoutes() {
       </Route>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
-        <Route
-          path="/inbox"
-          element={<Placeholder title={messages.home.title} body={messages.home.body} />}
-        />
+        <Route path="/inbox" element={<InboxPage />} />
         <Route path="/profile" element={<Placeholder title="Profile and security" />} />
       </Route>
       <Route element={<BareSystemLayout />}>

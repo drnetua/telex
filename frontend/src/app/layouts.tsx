@@ -1,4 +1,5 @@
 import { Outlet } from "react-router";
+import { PageFrame } from "../components/PageFrame/PageFrame";
 import { messages } from "../messages";
 
 /** Bare layout for SCR-91/92/93: text wordmark, no session dependency. */
@@ -34,19 +35,8 @@ export function AuthLayout() {
 
 export function AppLayout() {
   return (
-    <div className="page">
-      <header className="navbar navbar-expand-md d-print-none">
-        <div className="container-xl">
-          <span className="navbar-brand">{messages.appName}</span>
-        </div>
-      </header>
-      <div className="page-wrapper">
-        <main className="page-body">
-          <div className="container-xl">
-            <Outlet />
-          </div>
-        </main>
-      </div>
-    </div>
+    <PageFrame>
+      <Outlet />
+    </PageFrame>
   );
 }
