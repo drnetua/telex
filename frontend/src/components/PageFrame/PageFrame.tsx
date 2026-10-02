@@ -18,7 +18,7 @@ export function PageFrame({ children }: { children: ReactNode }) {
           </Link>
           <div className="d-flex gap-2">
             <Button
-              className="btn-ghost-dark"
+              className="btn-ghost-dark touch-target"
               icon="user"
               aria-label={frame.profile}
               onClick={() => void navigate("/profile")}
@@ -26,7 +26,7 @@ export function PageFrame({ children }: { children: ReactNode }) {
               <span className="d-none d-md-inline">{frame.profile}</span>
             </Button>
             <Button
-              className="btn-ghost-dark"
+              className="btn-ghost-dark touch-target"
               icon="logout"
               aria-label={frame.signOut}
               busy={signOut.isPending}

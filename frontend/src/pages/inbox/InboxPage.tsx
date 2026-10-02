@@ -19,8 +19,6 @@ export function InboxPage() {
       <EmptyState
         kind="first"
         icon="brand-telegram"
-        title={text.emptyTitle}
-        headingLevel={2}
         action={
           <Button
             onClick={() => {

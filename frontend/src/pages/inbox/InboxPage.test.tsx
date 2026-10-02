@@ -41,6 +41,8 @@ describe("SCR-10 Inbox", () => {
     setup();
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
     expect(screen.getByText("Connect your Telegram account to start.")).toBeInTheDocument();
+    // C5: screens.md SCR-10 has the h1 and the sentence only, no extra heading.
+    expect(screen.getAllByRole("heading")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 

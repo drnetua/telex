@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { messages } from "../../messages";
 import { SignInPage } from "./SignInPage";
 
 function Where() {
@@ -81,5 +82,16 @@ describe("SCR-01 Sign in, email part", () => {
     expect(where.textContent).toContain("/sign-in/check-email");
     expect(where.textContent).toContain("g1");
     expect(where.textContent).toContain("me@example.com");
+  });
+
+  it("C7: an invalid address is announced and linked to the field", async () => {
+    setup();
+    await userEvent.type(screen.getByLabelText("Email"), "nope");
+    await userEvent.click(screen.getByRole("button", { name: "Email me a sign-in link" }));
+    const field = screen.getByLabelText("Email");
+    const error = screen.getByRole("alert");
+    expect(error).toHaveTextContent(messages.signIn.emailInvalid);
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(field).toHaveAttribute("aria-describedby", error.id);
   });
 });

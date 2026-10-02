@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Outlet } from "react-router";
+import logo from "../assets/telex-logo.png";
 import { PageFrame } from "../components/PageFrame/PageFrame";
 import { messages } from "../messages";
 
@@ -29,7 +30,9 @@ export function AuthLayout() {
   return (
     <div className="page page-center">
       <div className="container-tight py-4">
-        <div className="text-center mb-4 h2">{messages.appName}</div>
+        <div className="text-center mb-4">
+          <img src={logo} alt={messages.appName} width={96} height={96} />
+        </div>
         <div className="card card-md">
           <div className="card-body">
             <Outlet />

@@ -1,4 +1,10 @@
-import { useEffect, useId, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from "react";
 import { Button } from "../Button/Button";
 
 interface ConfirmDialogProps {
@@ -28,6 +34,33 @@ export function ConfirmDialog({
   tone = "danger",
 }: ConfirmDialogProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Move focus into the dialog on open and give it back to the opener on close.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    dialogRef.current?.querySelector<HTMLElement>("button:not(:disabled)")?.focus();
+    return () => opener?.focus?.();
+  }, []);
+
+  function trapTab(e: ReactKeyboardEvent) {
+    if (e.key !== "Tab") return;
+    const buttons = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ?? [],
+    );
+    const first = buttons[0];
+    const last = buttons[buttons.length - 1];
+    if (!first || !last) return;
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !busy) onCancel();
@@ -39,9 +72,11 @@ export function ConfirmDialog({
     <>
       <div
         className="modal modal-blur d-block"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        onKeyDown={trapTab}
       >
         <div className="modal-dialog modal-sm modal-dialog-centered">
           <div className="modal-content">
