@@ -1,5 +1,30 @@
-# Local Postgres + pgvector for the `local` profile. Set TELEX_DB_PORT if 5432 is taken.
+# `docker compose up` runs the whole installation (app + Postgres + Mailpit).
+# Developer loop: `docker compose up -d postgres mailpit` + bootRun --spring.profiles.active=local.
+# Set TELEX_DB_PORT if 5432 is taken.
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/telex
+      SPRING_DATASOURCE_USERNAME: telex
+      SPRING_DATASOURCE_PASSWORD: telex
+      TELEX_MAIL_HOST: mailpit
+      TELEX_MAIL_PORT: "1025"
+      TELEX_PUBLIC_URL: ${TELEX_PUBLIC_URL:-http://localhost:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   postgres:
     image: pgvector/pgvector:pg17
     environment:
