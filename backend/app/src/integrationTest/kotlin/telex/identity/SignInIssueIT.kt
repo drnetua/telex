@@ -17,6 +17,8 @@ import telex.shared.Uuid7
 import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
 
 /** AC-83 (incomplete address), AC-86 (preview is read-only), AC-103 (newest wins), AC-35 (15 minutes). */
 @SpringBootTest
@@ -136,6 +138,34 @@ class SignInIssueIT {
     }
 
     @Test
+    fun `AC-103 parallel requests for one address leave exactly one live grant`() {
+        val pool = Executors.newFixedThreadPool(PARALLEL)
+        try {
+            repeat(ROUNDS) {
+                jdbc.execute("DELETE FROM sign_in_grant")
+                val gate = CyclicBarrier(PARALLEL)
+                val calls =
+                    (1..PARALLEL).map {
+                        pool.submit {
+                            gate.await()
+                            signIn.request("Race+$it@mail.com")
+                        }
+                    }
+                calls.forEach { it.get() }
+                assertThat(
+                    jdbc.queryForObject(
+                        "SELECT count(*) FROM sign_in_grant WHERE used_at IS NULL AND superseded_at IS NULL",
+                        Int::class.java,
+                    ),
+                ).isEqualTo(1)
+                assertThat(grantCount()).isEqualTo(PARALLEL)
+            }
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
     fun `a mail failure rolls back the new grant and leaves the earlier one live`() {
         val first = signIn.request("anton@mail.com")
         mailer.failing = true
@@ -195,5 +225,10 @@ class SignInIssueIT {
         assertThat(p.code()).isEqualTo("sign-in-link-expired")
         assertThat(p.email()).isNull()
         assertThatThrownBy { signIn.preview("") }.isInstanceOf(DomainProblem::class.java)
+    }
+
+    private companion object {
+        const val PARALLEL = 8
+        const val ROUNDS = 5
     }
 }
