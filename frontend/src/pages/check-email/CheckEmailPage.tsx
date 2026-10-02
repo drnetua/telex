@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
-import { takeRememberedDestination } from "../../api/destination";
 import { redeemSignInCode, requestSignInEmail } from "../../api/signIn";
+import { landAfterSignIn } from "../../app/landing";
 import { Button } from "../../components/Button/Button";
 import { CodeInput } from "../../components/CodeInput/CodeInput";
 import type { IconName } from "../../components/Icon/Icon";
@@ -58,9 +58,7 @@ export function CheckEmailPage() {
     setSubmitting(true);
     try {
       const result = await redeemSignInCode(grant.grantId, code);
-      void navigate(result.createdAccount ? "/welcome/passkey" : takeRememberedDestination(), {
-        replace: true,
-      });
+      void navigate(landAfterSignIn(result.createdAccount), { replace: true });
     } catch (error) {
       setSubmitting(false);
       if (error instanceof ApiFailure && error.status === 422) {

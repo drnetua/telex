@@ -53,4 +53,14 @@ export const messages = {
     refusalBody: (address: string) => `Send a new link to ${address} to sign in.`,
     voidBody: (address: string) => `Request a new email to ${address} to sign in.`,
   },
+  confirmLink: {
+    title: "Sign in to teleX",
+    body: "Confirm to sign in on this device.",
+    continueAs: (address: string) => `Continue as ${address}`,
+    submitting: "Signing in",
+    note: "Nothing happens until you continue.",
+    unusableTitle: "This link can't be used",
+    unusableBody: "Open the newest email from teleX, or sign in again.",
+    back: "Back to sign in",
+  },
 } as const;
