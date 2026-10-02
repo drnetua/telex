@@ -60,7 +60,15 @@ class SignInApiIT(
         builder.header("Cookie", cookies)
         headers.forEach { (k, v) -> builder.header(k, v) }
         builder.POST(HttpRequest.BodyPublishers.ofString(body ?: ""))
-        return http.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+        val response = http.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+        ContractValidator.assertConforms(
+            "POST",
+            path,
+            body,
+            mapOf("Content-Type" to "application/json", "X-XSRF-TOKEN" to "csrf") + headers,
+            response,
+        )
+        return response
     }
 
     private class Mail(

@@ -69,7 +69,11 @@ class SessionsApiIT(
         b.header("Cookie", cookies).header("X-XSRF-TOKEN", "csrf")
         if (background) b.header("X-Telex-Background", "1")
         b.method(method, HttpRequest.BodyPublishers.noBody())
-        return http.send(b.build(), HttpResponse.BodyHandlers.ofString())
+        val response = http.send(b.build(), HttpResponse.BodyHandlers.ofString())
+        val headers =
+            mapOf("X-XSRF-TOKEN" to "csrf") + if (background) mapOf("X-Telex-Background" to "1") else emptyMap()
+        ContractValidator.assertConforms(method, path, null, headers, response)
+        return response
     }
 
     private fun ids(r: HttpResponse<String>) =
