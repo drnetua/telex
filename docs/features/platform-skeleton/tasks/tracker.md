@@ -35,7 +35,7 @@
 | T28 | Mark /me refetches as background and cover the untested SCR-64 and SCR-07 states | ui | Anton Husiev | S | T27 | done |
 | T29 | Bring the auth and signed-in pages in line with screens.md and the accessibility rules | ui | Anton Husiev | S | T28 | done |
 | T30 | Make the e2e run reliable: app healthcheck, pinned and type-checked e2e, strict AC-82 assertion, removed-passkey e2e | tests | Anton Husiev | S | T25 | done |
-| T31 | Keep the saved Retry across background failures and count page opens as activity | ui | Anton Husiev | S | — | todo |
+| T31 | Keep the saved Retry across background failures and count page opens as activity | ui | Anton Husiev | S | — | done |
 | T32 | Keep focus inside ConfirmDialog while busy and land it on a stable element after removal; ship a right-sized logo | ui | Anton Husiev | S | T31 | todo |
 | T33 | Prove the 44 px PageFrame touch targets at phone width in the browser | tests | Anton Husiev | S | T32 | todo |
 | T34 | Use contract error codes for passkey registration failures and validate the WebAuthn calls against openapi.yaml | wiring | Anton Husiev | S | — | todo |

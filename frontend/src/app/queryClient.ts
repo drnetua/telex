@@ -2,7 +2,8 @@ import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { ApiFailure } from "../api/client";
 
 export type Retry = () => Promise<unknown>;
-type Handler = (failure: ApiFailure, retry: Retry) => void;
+/** "query" failures come from background refetches; "action" failures from something the Owner did. */
+type Handler = (failure: ApiFailure, retry: Retry, source?: "query" | "action") => void;
 
 /** Single subscriber (the FailureBoundary) that reacts to routable failures. */
 export const failureBus: { handler: Handler } = { handler: () => undefined };
@@ -14,7 +15,7 @@ export function createAppQueryClient(): QueryClient {
     queryCache: new QueryCache({
       onError: (error, query) => {
         if (error instanceof ApiFailure && error.route) {
-          failureBus.handler(error, () => query.fetch());
+          failureBus.handler(error, () => query.fetch(), "query");
         }
       },
     }),

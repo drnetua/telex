@@ -1,5 +1,5 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { focusManager, QueryClientProvider } from "@tanstack/react-query";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -86,5 +86,81 @@ describe("SCR-93 Retry carries the page action's outcome (AC-102, AC-103)", () =
     const heading = await unavailable();
     expect(heading.closest(".card")).not.toBeNull();
     expect(heading.closest(".page-center")).not.toBeNull();
+  });
+});
+
+describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () => {
+  function routeFetch(state: { signOut: Response[]; me: () => Response }) {
+    return vi.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/v1/sign-out" && init?.method === "POST") {
+        return Promise.resolve(state.signOut.shift() ?? json(204, {}));
+      }
+      if (url === "/api/v1/me") return Promise.resolve(state.me());
+      if (url === "/api/v1/passkeys" || url === "/api/v1/sessions") {
+        return Promise.resolve(json(200, { items: [] }));
+      }
+      return Promise.resolve(json(404, { code: "not-found" }));
+    });
+  }
+
+  const blink = async () => {
+    await act(async () => {
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+    });
+  };
+
+  it("a failing focus refetch under SCR-93 does not replace the saved Retry", async () => {
+    let meUp = true;
+    const fetchMock = routeFetch({
+      signOut: [down(), new Response(null, { status: 204 })],
+      me: () => (meUp ? json(200, { ownerId: "o1", email: "me@example.com" }) : down()),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    setup("/profile");
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+    await unavailable();
+    meUp = false;
+    await blink();
+    await vi.waitFor(() =>
+      expect(fetchMock.mock.calls.filter(([u]) => u === "/api/v1/me").length).toBeGreaterThan(1),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await vi.waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([u, i]) => u === "/api/v1/sign-out" && i?.method === "POST"),
+      ).toHaveLength(2),
+    );
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "teleX is unavailable" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("a background failure during a successful Retry does not say 'Still no answer.'", async () => {
+    let meUp = true;
+    let finish: (r: Response) => void = () => undefined;
+    const slow = new Promise<Response>((resolve) => (finish = resolve));
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url === "/api/v1/sign-out" && init?.method === "POST") {
+        return fetchMock.mock.calls.filter(([u]) => u === "/api/v1/sign-out").length === 1
+          ? Promise.resolve(down())
+          : slow;
+      }
+      if (url === "/api/v1/me") {
+        return Promise.resolve(meUp ? json(200, { ownerId: "o1", email: "m@e.com" }) : down());
+      }
+      return Promise.resolve(json(200, { items: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    setup("/profile");
+    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+    await unavailable();
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    meUp = false;
+    await blink();
+    await act(async () => finish(new Response(null, { status: 204 })));
+    expect(screen.queryByText("Still no answer.")).not.toBeInTheDocument();
   });
 });
