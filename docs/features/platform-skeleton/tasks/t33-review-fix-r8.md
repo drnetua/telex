@@ -8,7 +8,7 @@ files_hint: ["e2e/tests/", "e2e/support/"]
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-02 re-review (R8)"
-status: "todo"
+status: "done"
 ---
 
 # T33 — Prove the 44 px PageFrame touch targets at phone width in the browser
