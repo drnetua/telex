@@ -41,10 +41,10 @@ class PasskeyRegistrationFilterTest {
     }
 
     @Test
-    fun `a database failure is 503 unavailable, not a 400`() {
+    fun `a database failure is 500 internal-error, not a 400`() {
         val r = register(DataAccessResourceFailureException("db down"))
 
-        assertThat(r.status).isEqualTo(503)
-        assertThat(r.contentAsString).contains("\"code\":\"unavailable\"")
+        assertThat(r.status).isEqualTo(500)
+        assertThat(r.contentAsString).contains("\"code\":\"internal-error\"")
     }
 }

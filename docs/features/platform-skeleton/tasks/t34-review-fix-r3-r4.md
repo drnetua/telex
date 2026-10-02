@@ -8,7 +8,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/web/security/PasskeyCeremonies.k
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-02 re-review (R3, R4)"
-status: "todo"
+status: "done"
 ---
 
 # T34 — Use contract error codes for passkey registration failures and validate the WebAuthn calls against openapi.yaml

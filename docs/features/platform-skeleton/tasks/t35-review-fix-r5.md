@@ -8,7 +8,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/identity/internal/owner/EmailAdd
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-02 re-review (R5)"
-status: "todo"
+status: "done"
 ---
 
 # T35 — Accept only a plain mailbox as an email address

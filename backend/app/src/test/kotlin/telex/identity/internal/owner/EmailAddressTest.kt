@@ -34,6 +34,12 @@ class EmailAddressTest {
         assertThat(EmailAddress.parse(raw)).isNull()
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["Name<a@b.com>", "\"Name\"<a@b.com>", "<a@b.com>", "group:a@b.com;", "a@b.com<c@d.com>"])
+    fun `a display name or group form is not a plain mailbox`(raw: String) {
+        assertThat(EmailAddress.parse(raw)).isNull()
+    }
+
     @Test
     fun `an address longer than 254 characters is refused`() {
         val tooLong = "a".repeat(250) + "@b.co"

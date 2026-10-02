@@ -191,8 +191,8 @@ class PasskeySignInHandlers(
 
 /**
  * Registration ceremonies need a live Sign-in Session (401 otherwise), and a registration that does not verify is a
- * 400 `passkey-registration-failed`; anything else (a database failure, say) is a 503 `unavailable`. Never an empty
- * body.
+ * 400 `passkey-registration-failed`; anything else (a database failure, say) is a 500 `internal-error`, as in
+ * ProblemHandler. Never an empty body.
  */
 class PasskeyRegistrationFilter(
     private val json: JsonMapper,
@@ -221,7 +221,13 @@ class PasskeyRegistrationFilter(
             } else {
                 logger.error("Passkey registration failed", e)
                 response.reset()
-                writeProblem(json, response, HttpStatus.SERVICE_UNAVAILABLE, "unavailable", "Try again in a moment.")
+                writeProblem(
+                    json,
+                    response,
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "internal-error",
+                    "Something went wrong on our side.",
+                )
             }
             return
         }

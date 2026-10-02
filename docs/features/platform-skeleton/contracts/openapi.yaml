@@ -423,6 +423,17 @@ paths:
                 attestation: "none"
         "401": { $ref: "#/components/responses/NotSignedIn" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: Finding or creating the user entity failed on our side (a database failure, say)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:internal-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Something went wrong on our side."
+                code: "internal-error"
 
   /webauthn/register:
     post:
@@ -464,6 +475,17 @@ paths:
                 code: "passkey-registration-failed"
         "401": { $ref: "#/components/responses/NotSignedIn" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: The registration failed for a reason on our side (a database failure, say) — no passkey added
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:internal-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Something went wrong on our side."
+                code: "internal-error"
 
   /webauthn/authenticate/options:
     post:
@@ -747,8 +769,10 @@ components:
       type: string
       maxLength: 254
       description: |
-        A complete address: a non-empty name, one `@`, and a domain containing a dot (`me@localhost` is refused,
-        AC-83). Validated by the service with the same rule as the SPA.
+        A complete, plain RFC 5322 mailbox: a non-empty name, one `@`, and a domain containing a dot
+        (`me@localhost` is refused, AC-83). Display-name and group forms such as `Name<a@b.com>` are refused.
+        The service validates it; the SPA's check is a looser subset hint, so the service may refuse an address
+        the SPA let through (for example `a..b@x.com`).
       pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
 
     # ---- Sign-in

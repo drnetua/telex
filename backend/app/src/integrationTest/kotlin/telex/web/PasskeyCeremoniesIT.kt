@@ -70,7 +70,7 @@ class PasskeyCeremoniesIT(
     private fun post(
         path: String,
         key: String?,
-        body: String = "{}",
+        body: String = "",
     ): HttpResponse<String> {
         val cookies = listOfNotNull("XSRF-TOKEN=csrf", key?.let { "telex_session=$it" }).joinToString("; ")
         val r =
@@ -81,7 +81,15 @@ class PasskeyCeremoniesIT(
                 .header("X-XSRF-TOKEN", "csrf")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build()
-        return http.send(r, HttpResponse.BodyHandlers.ofString())
+        val response = http.send(r, HttpResponse.BodyHandlers.ofString())
+        ContractValidator.assertConforms(
+            "POST",
+            path,
+            body,
+            mapOf("Content-Type" to "application/json", "X-XSRF-TOKEN" to "csrf", "Cookie" to cookies),
+            response,
+        )
+        return response
     }
 
     private fun signedIn(): Pair<OwnerId, String> {
@@ -198,16 +206,25 @@ class PasskeyCeremoniesIT(
                 .substringBefore(";")
         val challenge = Regex("\"challenge\":\"([^\"]+)\"").find(options.body())!!.groupValues[1]
         val body = who.device.assertion(challenge, who.userHandle)
+        val cookies = "XSRF-TOKEN=csrf; telex_session=${who.heldKey}; $httpSession"
         val r =
             HttpRequest
                 .newBuilder(URI.create("http://localhost:$port/login/webauthn"))
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Firefox/130.0")
-                .header("Cookie", "XSRF-TOKEN=csrf; telex_session=${who.heldKey}; $httpSession")
+                .header("Cookie", cookies)
                 .header("X-XSRF-TOKEN", "csrf")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build()
-        return http.send(r, HttpResponse.BodyHandlers.ofString())
+        val response = http.send(r, HttpResponse.BodyHandlers.ofString())
+        ContractValidator.assertConforms(
+            "POST",
+            "/login/webauthn",
+            body,
+            mapOf("Content-Type" to "application/json", "X-XSRF-TOKEN" to "csrf", "Cookie" to cookies),
+            response,
+        )
+        return response
     }
 
     private fun liveSessions() =

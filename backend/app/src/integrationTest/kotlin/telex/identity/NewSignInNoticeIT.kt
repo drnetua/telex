@@ -118,6 +118,7 @@ class NewSignInNoticeIT {
     @Test
     fun `AC-98 a failed send leaves the publication incomplete`() {
         signInByLink("anton@mail.com", null, null)
+        awaitListenersDone()
         signIn.request("anton@mail.com")
         val token = tokenFromLastMail()
         mailer.failing = true
@@ -130,7 +131,7 @@ class NewSignInNoticeIT {
                     "AND event_type LIKE '%SignInSessionStarted'",
                 Int::class.java,
             )
-        assertThat(incomplete).isGreaterThanOrEqualTo(1)
+        assertThat(incomplete).isEqualTo(1)
         assertThat(notices()).isEmpty()
     }
 }
