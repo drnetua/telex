@@ -56,6 +56,7 @@ Precompiled script plugins can't use the generated `libs` accessors; use `libs.v
 - **Migrations:** `backend/app/src/main/resources/db/migration/V<yyyyMMddHHmm>__<name>.sql`, each with a rollback `db/rollback/U<same-version>__<name>.sql`; `MigrationRollbackIT` applies up → down → up for all of them. Feature migrations are staged by `/sdd:data-model` in `docs/features/<slug>/migrations/` and promoted by `implement`.
 - **Tests:** `src/test/kotlin` = unit (no Docker); `src/integrationTest/kotlin` = Spring context on Testcontainers (`TestcontainersConfiguration`, `pgvector/pgvector:pg17`). Frontend Vitest next to the component.
 - **CI:** `.github/workflows/ci.yml` runs `./gradlew build integrationTest` on JDK 25 + pnpm.
+- **Knowledge graph:** `graphify-out/` (graphify) is committed and updated only on master — `.github/workflows/graph.yml` runs `scripts/graph-update.sh` after each merge (Gemini via OpenRouter, secret `GRAPHIFY_OPENROUTER_API_KEY`) and commits the result. Never run `--update` on a feature branch: `graph.json` conflicts can't be merged by hand.
 
 ## Target architecture
 

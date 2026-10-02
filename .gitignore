@@ -11,3 +11,10 @@ e2e/playwright-report/
 
 # Coolify deploy settings (COOLIFY_TOKEN) for scripts/deploy-coolify.sh
 .deploy.env
+
+# graphify: graph is committed; machine-local files are not
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/cache/stat-index.json
+graphify-out/cost.json
+graphify-out/20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
