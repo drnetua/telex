@@ -1,27 +1,19 @@
-import { IconBrandTelegram } from "@tabler/icons-react";
-import { messages } from "./messages";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { BrowserRouter } from "react-router";
+import { AppRoutes } from "./app/AppRoutes";
+import { FailureBoundary } from "./app/FailureBoundary";
+import { createAppQueryClient } from "./app/queryClient";
 
 export function App() {
+  const [queryClient] = useState(createAppQueryClient);
   return (
-    <div className="page">
-      <header className="navbar navbar-expand-md d-print-none">
-        <div className="container-xl">
-          <span className="navbar-brand d-flex align-items-center gap-2">
-            <IconBrandTelegram aria-hidden="true" size={24} stroke={1.5} />
-            {messages.appName}
-          </span>
-        </div>
-      </header>
-      <div className="page-wrapper">
-        <main className="page-body">
-          <div className="container-xl">
-            <div className="empty">
-              <h1 className="empty-title">{messages.home.title}</h1>
-              <p className="empty-subtitle text-secondary">{messages.home.body}</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <FailureBoundary>
+          <AppRoutes />
+        </FailureBoundary>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
