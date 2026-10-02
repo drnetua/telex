@@ -149,4 +149,13 @@ describe("SCR-07 Check your email", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe("/api/v1/sign-in/grants/g2/code");
   });
+
+  it("400 code-format shows the format message, not a tries-left count", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(400, { code: "code-format" })));
+    setup();
+    await typeCode("482019");
+    await userEvent.click(signIn());
+    expect(await screen.findByText("Enter the 6-digit code from the email.")).toBeInTheDocument();
+    expect(screen.queryByText(/tries left|try left/)).not.toBeInTheDocument();
+  });
 });

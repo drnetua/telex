@@ -44,12 +44,19 @@ describe("SCR-10 Inbox", () => {
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 
-  it("Connect Telegram shows the info toast, again on a second choice", async () => {
+  it("Connect Telegram shows the info toast, and shows it afresh on a second choice", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(200, me)));
     setup();
     const connect = await screen.findByRole("button", { name: "Connect Telegram" });
     await userEvent.click(connect);
-    expect(await screen.findByText("Telegram linking is coming next.")).toBeInTheDocument();
+    const first = await screen.findByText("Telegram linking is coming next.");
+    await userEvent.click(connect);
+    // The toast is dropped and shown again, so the second choice gets a full display time.
+    await waitFor(() => {
+      const second = screen.getByText("Telegram linking is coming next.");
+      expect(second).not.toBe(first);
+      expect(first.isConnected).toBe(false);
+    });
   });
 
   it("AC-95: Sign out posts, clears cached Owner data and lands on sign-in", async () => {

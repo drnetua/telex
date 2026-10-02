@@ -116,6 +116,7 @@ export function PasskeysCard() {
           confirmLabel={m.removeConfirm}
           cancelLabel={m.removeCancel}
           busy={remove.isPending}
+          busyLabel={m.removing}
           onCancel={() => setTarget(null)}
           onConfirm={() => remove.mutate(target.id, { onSettled: () => setTarget(null) })}
         >

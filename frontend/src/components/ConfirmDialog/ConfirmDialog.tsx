@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   busy?: boolean;
+  /** Confirm label while busy (defaults to `confirmLabel`). */
+  busyLabel?: string;
   /** Confirm button styling: `danger` for destructive actions. */
   tone?: "default" | "danger";
 }
@@ -22,6 +24,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   busy = false,
+  busyLabel,
   tone = "danger",
 }: ConfirmDialogProps) {
   const titleId = useId();
@@ -57,7 +60,7 @@ export function ConfirmDialog({
                 busy={busy}
                 onClick={onConfirm}
               >
-                {confirmLabel}
+                {busy && busyLabel ? busyLabel : confirmLabel}
               </Button>
             </div>
           </div>
