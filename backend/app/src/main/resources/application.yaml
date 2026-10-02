@@ -17,6 +17,7 @@ spring:
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
+      mail.smtp.starttls.enable: ${TELEX_MAIL_STARTTLS:false} # true for real relays on 587 (Brevo, Gmail)
   modulith:
     events:
       republish-outstanding-events-on-restart: true

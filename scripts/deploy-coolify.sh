@@ -8,6 +8,7 @@
 # (Coolify → Keys & Tokens → API tokens, with write + deploy permission).
 #   DEPLOY_SSH=lhost  LHOST_IP=10.10.10.3  COOLIFY_URL=http://$LHOST_IP:8000
 #   APP_PORT=8090  MAIL_UI_PORT=8091  TELEX_PUBLIC_URL=http://$LHOST_IP:$APP_PORT
+#   TELEX_MAIL_HOST/_PORT/_STARTTLS/_USERNAME/_PASSWORD/_FROM (unset host → the bundled Mailpit)
 #   COOLIFY_PROJECT=teleX  COOLIFY_SERVICE=telex  DEPLOY_TIMEOUT=600 (s)
 # Later, behind the Cloudflare tunnel: TELEX_PUBLIC_URL=https://tele-x.online (passkeys are bound to its host).
 set -euo pipefail
@@ -56,7 +57,7 @@ fi
 
 # 2. Coolify service ---------------------------------------------------------------------------------------------
 COMPOSE_B64=$(sed -e "s|__IMAGE__|$IMAGE|" -e "s|__APP_PORT__|$APP_PORT|" -e "s|__MAIL_UI_PORT__|$MAIL_UI_PORT|" \
-  -e "s|__PUBLIC_URL__|$TELEX_PUBLIC_URL|" deploy/coolify/compose.yaml | base64 | tr -d '\n')
+  deploy/coolify/compose.yaml | base64 | tr -d '\n')
 
 SERVICE_UUID=$(api GET /services | jq -r --arg n "$COOLIFY_SERVICE" 'map(select(.name == $n)) | .[0].uuid // empty')
 if [ -z "$SERVICE_UUID" ]; then
@@ -76,6 +77,16 @@ else
   api PATCH "/services/$SERVICE_UUID" "$(jq -nc --arg c "$COMPOSE_B64" '{docker_compose_raw: $c}')" >/dev/null
 fi
 [ -n "$SERVICE_UUID" ] || fail "no service uuid"
+
+# Service variables: the public URL always, mail settings only when set (unset TELEX_MAIL_HOST → Mailpit).
+# Literal, so a password or "teleX <...>" is never interpolated by Coolify.
+export TELEX_PUBLIC_URL
+ENVS=$(for k in TELEX_PUBLIC_URL TELEX_MAIL_HOST TELEX_MAIL_PORT TELEX_MAIL_STARTTLS TELEX_MAIL_USERNAME \
+    TELEX_MAIL_PASSWORD TELEX_MAIL_FROM; do
+  [ -n "${!k:-}" ] && jq -nc --arg k "$k" --arg v "${!k}" '{key: $k, value: $v, is_literal: true}'
+done | jq -sc '{data: .}')
+step "setting service variables: $(jq -r '[.data[].key] | join(" ")' <<<"$ENVS")"
+api PATCH "/services/$SERVICE_UUID/envs/bulk" "$ENVS" >/dev/null
 
 # 3. Deploy and wait ---------------------------------------------------------------------------------------------
 step "deploying $IMAGE"

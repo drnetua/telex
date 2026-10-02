@@ -1,5 +1,6 @@
 # The teleX installation as a Coolify service on lhost. Rendered and pushed by scripts/deploy-coolify.sh:
-# __IMAGE__, __APP_PORT__, __MAIL_UI_PORT__ and __PUBLIC_URL__ are replaced before upload.
+# __IMAGE__, __APP_PORT__ and __MAIL_UI_PORT__ are replaced before upload; TELEX_PUBLIC_URL and TELEX_MAIL_* are
+# Coolify service variables set by the script from .deploy.env (without TELEX_MAIL_HOST, mail goes to Mailpit).
 # SERVICE_PASSWORD_POSTGRES is a Coolify magic variable: generated once, kept across deploys.
 services:
   app:
@@ -10,9 +11,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/telex
       SPRING_DATASOURCE_USERNAME: telex
       SPRING_DATASOURCE_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
-      TELEX_MAIL_HOST: mailpit
-      TELEX_MAIL_PORT: "1025"
-      TELEX_PUBLIC_URL: __PUBLIC_URL__
+      TELEX_PUBLIC_URL: ${TELEX_PUBLIC_URL}
+      TELEX_MAIL_HOST: ${TELEX_MAIL_HOST:-mailpit}
+      TELEX_MAIL_PORT: ${TELEX_MAIL_PORT:-1025}
+      TELEX_MAIL_STARTTLS: ${TELEX_MAIL_STARTTLS:-false}
+      TELEX_MAIL_USERNAME: ${TELEX_MAIL_USERNAME:-}
+      TELEX_MAIL_PASSWORD: ${TELEX_MAIL_PASSWORD:-}
+      TELEX_MAIL_FROM: ${TELEX_MAIL_FROM:-teleX <no-reply@localhost>}
     # The JRE image has no curl, so the probe is a plain HTTP request over bash (as in the root compose.yaml).
     healthcheck:
       test:
