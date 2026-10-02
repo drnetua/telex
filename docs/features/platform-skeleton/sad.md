@@ -362,17 +362,16 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 
 ## 9. Architecture decisions
 
-<!-- 🎯 Why: the REVERSE INDEX onto the adr/ folder. `ls adr/` gives the files; §9 gives the
-     semantics — why they exist, which SAD section they attach to, what status.
-     📋 Write: a 4-column table, one row per ADR. Mixed status is fine.
-     📌 e.g. «0001 | Store content as a table of typed blocks | Accepted | §4». -->
-
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use a sliding-window counter for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate the worker in the API process"> | Accepted | §<N> |
+| [0001](adr/0001-keep-sign-in-sessions-in-an-identity-owned-table-behind-an-opaque-cookie.md) | Keep Sign-in Sessions in an identity-owned table behind an opaque, hashed cookie | Accepted | §4 |
+| [0002](adr/0002-use-spring-security-webauthn-for-passkeys.md) | Use Spring Security's built-in WebAuthn support for Passkeys | Accepted | §4 |
+| [0003](adr/0003-redeem-sign-in-link-and-code-as-one-hashed-single-use-grant.md) | Redeem the Sign-in Link and Sign-in Code as one hashed, single-use grant owned by identity | Accepted | §4 |
+| [0004](adr/0004-send-email-through-a-new-mail-integration-module.md) | Send email through a new `mail` integration module; sign-in emails synchronously, notices by event | Accepted | §4 |
+| [0005](adr/0005-count-session-activity-only-from-requests-the-spa-marks-as-user-initiated.md) | Count session activity only from requests the SPA does not mark as background | Accepted | §8 |
+| [0006](adr/0006-derive-links-cookie-security-and-passkey-rp-id-from-one-public-url.md) | Derive email links, cookie security and the passkey RP ID from one configured public URL | Accepted | §7 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/platform-skeleton/adr/NNNN-<title>.md`. Foundation decisions this feature builds on: [`docs/adr/0001`](../../adr/0001-kotlin-spring-modulith-postgres-react-stack.md) (stack, SPA served by the app), [`0002`](../../adr/0002-single-app-with-isolated-tdlib-subproject.md) (one app, module packages), [`0003`](../../adr/0003-postgres-jdbc-flyway-uuidv7-persistence.md) (JDBC, Flyway + rollback, UUIDv7).
 
 ## 10. Quality requirements
 
