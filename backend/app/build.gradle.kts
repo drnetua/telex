@@ -37,6 +37,7 @@ dependencies {
     integrationTestImplementation(libs.spring.boot.testcontainers)
     integrationTestImplementation(libs.testcontainers.junit.jupiter)
     integrationTestImplementation(libs.testcontainers.postgresql)
+    integrationTestImplementation(libs.swagger.request.validator.core)
 }
 
 // The React SPA is served by Spring Web from classpath:/static/.

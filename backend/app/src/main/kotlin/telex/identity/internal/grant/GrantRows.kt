@@ -27,6 +27,12 @@ class GrantRows(
         canonicalEmail: String,
         now: Instant,
     ) {
+        // Serialise issuing per address until commit, so at most one grant stays live (AC-103).
+        jdbc
+            .sql("SELECT pg_advisory_xact_lock(hashtext(?))")
+            .params(canonicalEmail)
+            .query()
+            .singleRow()
         jdbc
             .sql(
                 "UPDATE sign_in_grant SET superseded_at = ? " +

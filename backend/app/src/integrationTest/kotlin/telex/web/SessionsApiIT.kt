@@ -20,6 +20,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
 
@@ -69,7 +70,11 @@ class SessionsApiIT(
         b.header("Cookie", cookies).header("X-XSRF-TOKEN", "csrf")
         if (background) b.header("X-Telex-Background", "1")
         b.method(method, HttpRequest.BodyPublishers.noBody())
-        return http.send(b.build(), HttpResponse.BodyHandlers.ofString())
+        val response = http.send(b.build(), HttpResponse.BodyHandlers.ofString())
+        val headers =
+            mapOf("X-XSRF-TOKEN" to "csrf") + if (background) mapOf("X-Telex-Background" to "1") else emptyMap()
+        ContractValidator.assertConforms(method, path, null, headers, response)
+        return response
     }
 
     private fun ids(r: HttpResponse<String>) =
@@ -96,6 +101,56 @@ class SessionsApiIT(
             .contains("\"startedAt\"", "\"lastActivityAt\"")
         assertThat(Regex("\"current\":true").findAll(r.body()).count()).isEqualTo(1)
         assertThat(r.body().substringAfter(laptop.sessionId.value.toString())).contains("\"current\":true")
+    }
+
+    private fun lastActivity(id: StartedSession): Instant =
+        jdbc
+            .queryForObject(
+                "SELECT last_activity_at FROM sign_in_session WHERE id = ?",
+                Timestamp::class.java,
+                id.sessionId.value,
+            )!!
+            .toInstant()
+
+    @Test
+    fun `AC-96 a background request leaves last activity alone while an unmarked one moves it`() {
+        val s = start(owner("anton@mail.com"))
+        val started = lastActivity(s)
+        clock.advance(Duration.ofMinutes(10))
+
+        assertThat(call("GET", "/api/v1/me", s.key, background = true).statusCode()).isEqualTo(200)
+        assertThat(lastActivity(s)).isEqualTo(started)
+
+        assertThat(call("GET", "/api/v1/me", s.key).statusCode()).isEqualTo(200)
+        assertThat(lastActivity(s)).isEqualTo(started.plus(Duration.ofMinutes(10)))
+    }
+
+    @Test
+    fun `AC-96 a cookie idle for 30 days is 401 session-ended`() {
+        val s = start(owner("anton@mail.com"))
+        clock.advance(Duration.ofDays(29))
+        assertThat(call("GET", "/api/v1/me", s.key, background = true).statusCode()).isEqualTo(200)
+        clock.advance(Duration.ofDays(1).plusMinutes(1))
+
+        val r = call("GET", "/api/v1/me", s.key)
+
+        assertThat(r.statusCode()).isEqualTo(401)
+        assertThat(r.body()).contains("\"code\":\"session-ended\"")
+    }
+
+    @Test
+    fun `AC-96 a cookie older than 90 days is 401 session-ended even when used daily`() {
+        val s = start(owner("anton@mail.com"))
+        repeat(89) {
+            clock.advance(Duration.ofDays(1))
+            assertThat(call("GET", "/api/v1/me", s.key).statusCode()).isEqualTo(200)
+        }
+        clock.advance(Duration.ofDays(1).plusMinutes(1))
+
+        val r = call("GET", "/api/v1/me", s.key)
+
+        assertThat(r.statusCode()).isEqualTo(401)
+        assertThat(r.body()).contains("\"code\":\"session-ended\"")
     }
 
     @Test

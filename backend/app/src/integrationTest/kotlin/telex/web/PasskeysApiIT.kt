@@ -111,7 +111,10 @@ class PasskeysApiIT(
                 .header("X-Telex-Background", "1")
                 .method(method, HttpRequest.BodyPublishers.noBody())
                 .build()
-        return http.send(r, HttpResponse.BodyHandlers.ofString())
+        val response = http.send(r, HttpResponse.BodyHandlers.ofString())
+        val headers = mapOf("X-XSRF-TOKEN" to "csrf", "X-Telex-Background" to "1")
+        ContractValidator.assertConforms(method, path, null, headers, response)
+        return response
     }
 
     private fun ids(r: HttpResponse<String>) =

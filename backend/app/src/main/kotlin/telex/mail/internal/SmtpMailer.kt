@@ -1,6 +1,7 @@
 package telex.mail.internal
 
 import io.micrometer.core.instrument.MeterRegistry
+import jakarta.mail.MessagingException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
@@ -27,10 +28,19 @@ internal class SmtpMailer(
             }
             sender.send(message)
         } catch (e: MailException) {
-            count(email, "failed")
-            throw MailUnavailable(e)
+            throw failed(email, e)
+        } catch (e: MessagingException) {
+            throw failed(email, e)
         }
         count(email, "sent")
+    }
+
+    private fun failed(
+        email: OutgoingEmail,
+        cause: Exception,
+    ): MailUnavailable {
+        count(email, "failed")
+        return MailUnavailable(cause)
     }
 
     private fun count(

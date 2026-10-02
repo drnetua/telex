@@ -27,7 +27,9 @@ class EmailAddressTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["me@localhost", "@example.com", "me@", "a@b@c.com", "me @x.com", "", "me"])
+    @ValueSource(
+        strings = ["me@localhost", "@example.com", "me@", "a@b@c.com", "me @x.com", "", "me", "a,b@c.de", "x(y@z.co"],
+    )
     fun `incomplete addresses are refused`(raw: String) {
         assertThat(EmailAddress.parse(raw)).isNull()
     }

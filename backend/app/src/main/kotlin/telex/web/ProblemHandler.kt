@@ -17,7 +17,7 @@ import java.net.URI
 
 /**
  * Renders every error as RFC 9457 `application/problem+json` with the teleX `code` / `errors[]` extensions.
- * Domain errors extend [telex.shared.DomainProblem]; framework errors get a code derived from their status.
+ * Domain errors extend [telex.shared.DomainProblem]; framework errors get the contract code for their status class.
  */
 @RestControllerAdvice
 class ProblemHandler : ResponseEntityExceptionHandler() {
@@ -47,13 +47,7 @@ class ProblemHandler : ResponseEntityExceptionHandler() {
         val response = super.handleExceptionInternal(ex, body, headers, statusCode, request)
         val problem = response?.body
         if (problem is ProblemDetail && problem.properties?.containsKey("code") != true) {
-            val code =
-                HttpStatus
-                    .resolve(statusCode.value())
-                    ?.name
-                    ?.lowercase()
-                    ?.replace('_', '-')
-                    ?: "http-${statusCode.value()}"
+            val code = contractCode(statusCode)
             problem.type = URI.create("urn:telex:error:$code")
             problem.setProperty("code", code)
         }
@@ -65,6 +59,15 @@ class ProblemHandler : ResponseEntityExceptionHandler() {
         log.error("Unhandled error", ex)
         return problemDetail(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_ERROR, "Something went wrong on our side.")
     }
+
+    /** Only codes in the contract's `ErrorCode` enum may be emitted. */
+    private fun contractCode(status: HttpStatusCode): String =
+        when (status.value()) {
+            HttpStatus.UNAUTHORIZED.value() -> "unauthenticated"
+            HttpStatus.FORBIDDEN.value() -> "forbidden"
+            HttpStatus.NOT_FOUND.value() -> "not-found"
+            else -> if (status.is4xxClientError) VALIDATION_FAILED else INTERNAL_ERROR
+        }
 
     private fun fieldCode(
         constraint: String?,

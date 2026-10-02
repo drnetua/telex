@@ -46,7 +46,7 @@ class SignIn(
     private val clock: Clock,
     private val meters: MeterRegistry,
 ) {
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     fun request(rawEmail: String): GrantIssued {
         val address =
             EmailAddress.parse(rawEmail)

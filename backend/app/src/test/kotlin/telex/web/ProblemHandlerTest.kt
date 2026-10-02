@@ -50,12 +50,35 @@ class ProblemHandlerTest(
     }
 
     @Test
-    fun `framework errors get a code derived from the status`() {
+    fun `framework errors use a code from the contract, never one derived from the status name`() {
         mockMvc.post("/probe/domain").andExpect {
             status { isMethodNotAllowed() }
             content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
-            jsonPath("$.type") { value("urn:telex:error:method-not-allowed") }
-            jsonPath("$.code") { value("method-not-allowed") }
+            jsonPath("$.type") { value("urn:telex:error:validation-failed") }
+            jsonPath("$.code") { value("validation-failed") }
+        }
+        mockMvc
+            .post("/probe/validated") {
+                contentType = MediaType.TEXT_PLAIN
+                content = "name"
+            }.andExpect {
+                status { isUnsupportedMediaType() }
+                jsonPath("$.code") { value("validation-failed") }
+            }
+    }
+
+    @Test
+    fun `malformed or empty JSON is 400 validation-failed`() {
+        listOf("{not json", "").forEach { raw ->
+            mockMvc
+                .post("/probe/validated") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = raw
+                }.andExpect {
+                    status { isBadRequest() }
+                    content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
+                    jsonPath("$.code") { value(ProblemHandler.VALIDATION_FAILED) }
+                }
         }
     }
 

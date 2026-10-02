@@ -29,11 +29,16 @@ data class RequestSignInEmail(
 
 data class LinkTokenBody(
     @field:NotBlank @field:Size(min = 1, max = 128) val linkToken: String?,
-)
+) {
+    /** Spring MVC logs request bodies at DEBUG; the secret must not appear there. */
+    override fun toString() = "LinkTokenBody(linkToken=***)"
+}
 
 data class CodeBody(
     @field:NotBlank @field:Pattern(regexp = "^[0-9]{6}$") val code: String?,
-)
+) {
+    override fun toString() = "CodeBody(code=***)"
+}
 
 data class GrantCreated(
     val grantId: UUID,

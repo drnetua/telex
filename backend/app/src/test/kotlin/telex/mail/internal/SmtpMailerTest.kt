@@ -1,12 +1,14 @@
 package telex.mail.internal
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import jakarta.mail.MessagingException
 import jakarta.mail.Session
 import jakarta.mail.internet.MimeMessage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
@@ -51,5 +53,15 @@ class SmtpMailerTest {
 
         assertEquals(1.0, counter("failed"))
         assertEquals(false, failure.message.orEmpty().contains("owner@example.com"))
+    }
+
+    @Test
+    fun `send maps a checked MessagingException to MailUnavailable and counts it as failed`() {
+        `when`(sender.createMimeMessage()).thenReturn(MimeMessage(Session.getInstance(Properties())))
+        doAnswer { throw MessagingException("bad address") }.`when`(sender).send(any(MimeMessage::class.java))
+
+        assertThrows<MailUnavailable> { mailer.send(email) }
+
+        assertEquals(1.0, counter("failed"))
     }
 }
