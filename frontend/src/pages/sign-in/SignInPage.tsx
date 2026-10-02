@@ -44,6 +44,10 @@ export function SignInPage() {
       return;
     }
     setInvalid(false);
+    await send(address);
+  }
+
+  async function send(address: string) {
     setSubmitting(true);
     try {
       const grant = await requestSignInEmail(address);
@@ -53,7 +57,7 @@ export function SignInPage() {
     } catch (error) {
       setSubmitting(false);
       if (error instanceof ApiFailure && error.status === 400) setInvalid(true);
-      else if (!routeFailure(error, () => requestSignInEmail(address))) throw error;
+      else if (!routeFailure(error, () => send(address))) throw error;
     }
   }
 

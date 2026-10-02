@@ -34,6 +34,7 @@ export function ConfirmLinkPage() {
   const navigate = useNavigate();
   const token = useLocation().hash.replace(/^#/, "");
   const [refused, setRefused] = useState<Refused | null>(null);
+  const [dead, setDead] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
   const m = messages.confirmLink;
@@ -59,7 +60,7 @@ export function ConfirmLinkPage() {
       const found = refusedFrom(error);
       if (found) setRefused(found);
       else if (error instanceof ApiFailure && (error.status === 410 || error.status === 400))
-        setRefused(null);
+        setDead(true);
       else if (!routeFailure(error, confirm)) throw error;
     }
   }
@@ -103,12 +104,13 @@ export function ConfirmLinkPage() {
     );
   }
 
-  if (token === "") return unusable;
+  if (token === "" || dead) return unusable;
   if (preview.isError) {
     const error = preview.error;
     if (error instanceof ApiFailure && (error.status === 410 || error.status === 400))
       return unusable;
-    if (!routeFailure(error, () => preview.refetch())) throw error;
+    // Routable failures (403, 5xx, network) are reported once by the query cache; SCR-93 owns Retry.
+    if (!(error instanceof ApiFailure && error.route)) throw error;
     return <LoadState state="loading" rows={2} />;
   }
   if (preview.isPending) return <LoadState state="loading" rows={2} />;

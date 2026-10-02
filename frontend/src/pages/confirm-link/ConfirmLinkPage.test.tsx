@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { failureBus } from "../../app/queryClient";
 import { rememberDestination } from "../../api/destination";
 import { ConfirmLinkPage } from "./ConfirmLinkPage";
 
@@ -158,6 +159,34 @@ describe("SCR-08 Confirm sign-in link", () => {
       screen.getByText("Open the newest email from teleX, or sign in again."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Back to sign in" })).toBeInTheDocument();
+  });
+
+  it.each([
+    [410, { code: "sign-in-link-unknown" }],
+    [400, { code: "validation-failed" }],
+  ])("A3: confirm-time %s without a refusal shows link-unusable", async (status, body) => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(200, { email: "me@example.com" }))
+        .mockResolvedValueOnce(json(status, body)),
+    );
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: /Continue as/ }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This link can't be used" }),
+    ).toBeInTheDocument();
+  });
+
+  it("C8: the page itself never routes a preview 503 (the query cache does)", async () => {
+    const handler = vi.spyOn(failureBus, "handler").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(503, { code: "unavailable" })));
+    setup();
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(handler).not.toHaveBeenCalled();
+    handler.mockRestore();
   });
 
   it("no fragment is link-unusable and calls nothing", async () => {
