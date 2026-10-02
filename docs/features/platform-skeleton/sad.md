@@ -34,6 +34,8 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 
 <!-- Decision overrides (¶4) — populated by the critic resolution loop, empty otherwise. -->
 
+- Decision override: ADR-0004 keeps "SMTP adapter inside `identity`" as a considered option even though the ACL convention points the other way — rationale: the decision weighed was whether to extend the integration-ACL convention to email at all; the alternative the critic proposed (email inside the `bot` ACL, which wraps the Telegram Bot API) would be the actual strawman.
+
 ## 2. Constraints
 
 **Technical.**
@@ -52,7 +54,7 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 - `CLAUDE.md` (layout, IDs, errors, migrations, tests, quality gates) and `docs/architecture-map.md` §Conventions.
 - IDs: app-generated UUIDv7 via `telex.shared.Uuid7.next()`, typed `@JvmInline value class XId(override val value: UUID) : TypedId`. One exception: a Passkey is keyed by its WebAuthn credential id (ADR-0002).
 - Errors: RFC 9457 `application/problem+json`, `type = urn:telex:error:<code>`, rendered by `telex.web.ProblemHandler`; domain errors extend `telex.shared.DomainProblem`.
-- Every Owner-owned row carries `owner_id`, and every query filters on it.
+- Every Owner-owned row carries `owner_id`, and every query filters on it. One exception: the Spring-owned passkey tables (`user_entities`, `user_credentials`) have no `owner_id` column. A Passkey belongs to an Owner through its WebAuthn user entity, whose `name` is the `OwnerId`, and every passkey query filters on that user entity (ADR-0002).
 - UI: `docs/docs/design-system/README.md`. Tokens only, status never by color alone, sentence-case English copy from `frontend/src/messages.ts`, no emoji.
 
 **Regulatory / external.**
@@ -188,9 +190,11 @@ C4Container
 
     System_Boundary(telex, "teleX") {
         Container(spa, "Web SPA", "React, TypeScript, Vite, Tabler, React Router, TanStack Query", "SCR-01 to SCR-93, served as static files by the app")
+        Container_Boundary(app, "teleX app, one Spring Boot process (backend-service)") {
         Container(web, "web module", "Kotlin, Spring MVC, Spring Security 7", "Sign-in, session and passkey endpoints, WebAuthn ceremonies, session cookie, SPA hosting, RFC 9457 errors")
         Container(identity, "identity module", "Kotlin, Spring Data JDBC, Spring Modulith", "Owner, Sign-in Grant, Sign-in Session, Passkey rules, email templates, SignInSessionStarted")
         Container(mail, "mail module", "Kotlin, Spring Mail", "Mailer port and SMTP adapter")
+        }
         ContainerDb(db, "PostgreSQL", "Postgres 17 + pgvector", "owner, sign_in_grant, sign_in_session, user_entities, user_credentials, event_publication")
     }
 
@@ -234,11 +238,19 @@ sequenceDiagram
     Owner->>SPA: opens the link, SCR-08 shows Continue as address
     SPA->>Web: read grant state by link token
     Web->>Identity: read only, nothing redeemed
+    alt expired, superseded, already used or voided when opened
+        Identity-->>Web: refusal reason
+        Web-->>SPA: problem with the refusal code
+        SPA-->>Owner: refusal page with Send a new link
+    else still usable
+        Identity-->>Web: address to confirm
+        Web-->>SPA: show Continue as address
+    end
     Owner->>SPA: confirms Continue as address
     SPA->>Web: redeem link token, with browser time zone and current session cookie if any
     Web->>Identity: redeem by link
     Identity->>DB: atomic conditional update marks grant used
-    alt expired, superseded, already used or voided by 5 wrong codes
+    alt expired, superseded, already used or voided by 5 wrong codes, checked again at confirm
         Identity-->>Web: refusal reason
         Web-->>SPA: problem with the refusal code
         SPA-->>Owner: refusal page with Send a new link
@@ -321,8 +333,8 @@ sequenceDiagram
   - `mailpit`, the local mailbox: SMTP on 1025 for the app, a web page on `http://localhost:8025` for the Operator.
 
   The app waits for Postgres's health check, and Flyway migrates on start. The README names both addresses. The first image build is outside the 5-minute budget (spec §6).
-- **Production (out of E01 scope beyond configuration).** The same image runs behind Cloudflare, which terminates HTTPS and proxies to the app over HTTP. The Operator sets `TELEX_PUBLIC_URL=https://<domain>` (ADR-0006), real SMTP settings (`TELEX_MAIL_*` → `spring.mail.*`) and the datasource. The README lists exactly these settings and warns against public exposure before E26 (spec §3, §8 OQ-2).
-- **Developer loop (unchanged).** `docker compose up -d postgres mailpit` plus `bootRun --spring.profiles.active=local`, and `pnpm dev` with the Vite proxy extended to `/webauthn/**` and `/login/webauthn`.
+- **Production (out of E01 scope beyond configuration).** The same image runs behind Cloudflare, which terminates HTTPS and proxies to the app over HTTP. The Operator sets `TELEX_PUBLIC_URL=https://<domain>` (ADR-0006), real SMTP settings (`TELEX_MAIL_*` → `spring.mail.*`) and the datasource. The app trusts `X-Forwarded-*` from the proxy (`server.forward-headers-strategy=framework`), so redirects and `request.isSecure` see the original HTTPS request. The README lists exactly these settings and warns against public exposure before E26 (spec §3, §8 OQ-2).
+- **Developer loop (unchanged).** `docker compose up -d postgres mailpit` plus `bootRun --spring.profiles.active=local`, and `pnpm dev` with the Vite proxy extended to `/webauthn/**` and `/login/webauthn`. The `local` profile alone adds the Vite origin `http://localhost:5173` to the allowed WebAuthn origins (ADR-0006).
 
 **Monitoring:**
 - Metrics: Spring Boot Actuator + Micrometer counters `telex.signin.grants.issued`, `telex.signin.redeemed{method=link|code|passkey}`, `telex.signin.refused{reason=expired|used|void|wrong_code}`, `telex.sessions.started{created_account}`, `telex.mail.sent{template,outcome}`. No email addresses or secrets in tags.
@@ -343,7 +355,7 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 |---|---|---|
 | Logging | Spring Boot default logging with module loggers. **Never logged:** email addresses, link tokens, codes, session keys, WebAuthn payloads. An Owner is identified by `OwnerId` only (spec §6.1) | here |
 | Authentication | One Spring Security filter chain in `web`. `SessionCookieSecurityContextRepository` resolves the `telex_session` cookie through `identity`'s `SignInSessions` (ADR-0001). Public routes: sign-in API (request, read grant, redeem by link or code), WebAuthn authentication options and login, `/actuator/health`, static SPA assets and client routes. Everything else needs a live session | ADR-0001, ADR-0002 |
-| Authorization | Owner-scoped by construction: every `identity` query for sessions, passkeys or profile takes the `OwnerId` from the security context and filters on it. Another Owner's record is indistinguishable from a missing one, with the same `not-found` problem (AC-97). No roles in E01 (the Operator role is E26) | `architecture-map.md` §Persistence + here |
+| Authorization | Owner-scoped by construction: every `identity` query for sessions, passkeys or profile takes the `OwnerId` from the security context and filters on it. Passkeys are filtered by the Owner's WebAuthn user entity, because Spring's tables have no `owner_id` (ADR-0002). Another Owner's record is indistinguishable from a missing one, with the same `not-found` problem (AC-97). No roles in E01 (the Operator role is E26) | `architecture-map.md` §Persistence + here |
 | Session cookie | `telex_session`: 256-bit random, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` when `TELEX_PUBLIC_URL` is https. Lifetime is enforced server-side: the cookie has a 90-day `Max-Age` as a hint only | ADR-0001, ADR-0006 |
 | CSRF | Spring Security `CookieCsrfTokenRepository` (readable `XSRF-TOKEN` cookie, `X-XSRF-TOKEN` header from the fetch client) on every state-changing request, including the sign-in endpoints and the WebAuthn ceremonies | here |
 | Session activity | Unmarked requests bump `last_activity_at` at most once a minute; `X-Telex-Background: 1` requests don't (AC-96) | ADR-0005 |
@@ -351,12 +363,13 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 | SPA failure handling | One fetch client: `unauthenticated` → SCR-01 with the current path remembered; `session-ended` → SCR-92; no answer within 10 s or a 5xx → SCR-93 whose "Retry" repeats the failed request; unknown client route → SCR-91 (AC-101, AC-102). Sign-out clears the TanStack cache so Back shows no data (AC-95) | here |
 | Remembered destination | Stored in `localStorage` of the browser that asked to sign in; accepted only if it is a relative path starting with a single `/`, otherwise Inbox. A link confirmed in another browser finds nothing and lands on SCR-10 (AC-101, `ux-flows.md` design input). The account-creating sign-in always goes SCR-09 → SCR-10 | here |
 | ID strategy | UUIDv7 typed ids: `OwnerId`, `SignInGrantId`, `SignInSessionId`. Exception: a Passkey is keyed by its WebAuthn credential id (ADR-0002) | foundation ADR-0003 |
-| Email identity | `email_canonical` = lowercase, with the `+tag` removed from the local part, and unique per Owner (AC-34). `email_as_created` is kept for the new-sign-in email. A sign-in email goes to the address as typed that time. Validation: a name, an `@`, and a domain containing a dot (AC-83) | here |
+| Email identity | `email_canonical` = lowercase, with the `+tag` removed from the local part, and unique across the installation, so one canonical address is one Owner (AC-34). `email_as_created` is kept for the new-sign-in email. A sign-in email goes to the address as typed that time. Validation: a name, an `@`, and a domain containing a dot (AC-83) | here |
 | Secrets | `SecureRandom` everywhere. Link token and session key: 256 bits, stored as SHA-256. Code: 6 digits, stored as SHA-256(grant id + code). Never returned by any API after issue | ADR-0001, ADR-0003 |
 | Time | One injectable `java.time.Clock` bean (fixed in tests). `timestamptz` in UTC. The new-sign-in email shows the signing-in browser's IANA zone (sent by the SPA at sign-in, stored on the session) with its name, and UTC (AC-98) | here |
 | Device naming | In-house User-Agent mapper → "<Browser> on <Device>" and a device type (phone / tablet / computer), with a neutral fallback for unknown agents. Used for the session list, the passkey label and the email | here |
 | Internationalisation | English only (D-14). UI copy in `frontend/src/messages.ts`, email copy in `identity` templates, sentence case, no emoji | design-system README |
 | Events | `SignInSessionStarted` (identity → identity listener) through the Modulith JDBC registry. Event payloads never carry secrets | ADR-0004 |
+| Proxy | Production runs behind Cloudflare (TLS terminated at the edge, origin HTTP). The app trusts `X-Forwarded-*` (`server.forward-headers-strategy=framework`). Email links, the cookie `Secure` flag and the WebAuthn RP ID/origins come from `TELEX_PUBLIC_URL`, never from request headers | ADR-0006 |
 | Caching | API responses carry `Cache-Control: no-store` (Spring Security default), so Cloudflare and the browser never cache Owner data. Hashed static assets can be cached | ADR-0006 |
 | Observability | Actuator health + Micrometer counters listed in §7. Tracing deferred | §7 |
 
@@ -368,7 +381,7 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 | [0002](adr/0002-use-spring-security-webauthn-for-passkeys.md) | Use Spring Security's built-in WebAuthn support for Passkeys | Accepted | §4 |
 | [0003](adr/0003-redeem-sign-in-link-and-code-as-one-hashed-single-use-grant.md) | Redeem the Sign-in Link and Sign-in Code as one hashed, single-use grant owned by identity | Accepted | §4 |
 | [0004](adr/0004-send-email-through-a-new-mail-integration-module.md) | Send email through a new `mail` integration module; sign-in emails synchronously, notices by event | Accepted | §4 |
-| [0005](adr/0005-count-session-activity-only-from-requests-the-spa-marks-as-user-initiated.md) | Count session activity only from requests the SPA does not mark as background | Accepted | §8 |
+| [0005](adr/0005-count-session-activity-only-from-requests-the-spa-does-not-mark-as-background.md) | Count session activity only from requests the SPA does not mark as background | Accepted | §8 |
 | [0006](adr/0006-derive-links-cookie-security-and-passkey-rp-id-from-one-public-url.md) | Derive email links, cookie security and the passkey RP ID from one configured public URL | Accepted | §7 |
 
 ADR files live under `docs/features/platform-skeleton/adr/NNNN-<title>.md`. Foundation decisions this feature builds on: [`docs/adr/0001`](../../adr/0001-kotlin-spring-modulith-postgres-react-stack.md) (stack, SPA served by the app), [`0002`](../../adr/0002-single-app-with-isolated-tdlib-subproject.md) (one app, module packages), [`0003`](../../adr/0003-postgres-jdbc-flyway-uuidv7-persistence.md) (JDBC, Flyway + rollback, UUIDv7).
@@ -381,8 +394,8 @@ Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim f
 
 *QG-1a: Sign-in Link lifetime.*
 - **When:** a Sign-in Link is confirmed, or its Sign-in Code typed, after its window, or a second time.
-- **Then:** sign-in is refused. Spec §6: Sign-in Link lifetime "15 min, single use". The check happens at the confirm or the typed code, not when the link is opened.
-- **How verify:** `identity` integration test with a fixed `Clock`. It redeems at 14:59 and at 15:01, redeems twice, and fires two concurrent redeems where exactly one succeeds (ADR-0003).
+- **Then:** sign-in is refused. Spec §6: Sign-in Link lifetime "15 min, single use". The check happens when the link is opened (SCR-08 shows the refusal at once) and again at the confirm or the typed code, not only at opening (AC-35, AC-84).
+- **How verify:** `identity` integration test with a fixed `Clock`. For an email sent at 14:00, it opens the link at 14:05 and confirms at 15:01 (refused), redeems at 14:59, opens a used link (refused on open), and fires two concurrent redeems where exactly one succeeds (ADR-0003).
 
 *QG-1b: Sign-in Code guessing.*
 - **When:** wrong codes are typed against one sign-in email.

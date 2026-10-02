@@ -66,4 +66,4 @@ The key is stored only as a hash. Option 2 bumps the last-access time on every r
 
 - Spec: [[../spec.md]] AC-93, AC-94, AC-96, AC-97, AC-104, §6, §6.1
 - SAD: [[../sad.md]] §4
-- Related ADR: [[0003-redeem-sign-in-link-and-code-as-one-hashed-single-use-grant]], [[0005-count-session-activity-only-from-requests-the-spa-marks-as-user-initiated]], [[0006-derive-links-cookie-security-and-passkey-rp-id-from-one-public-url]]
+- Related ADR: [[0003-redeem-sign-in-link-and-code-as-one-hashed-single-use-grant]], [[0005-count-session-activity-only-from-requests-the-spa-does-not-mark-as-background]], [[0006-derive-links-cookie-security-and-passkey-rp-id-from-one-public-url]]
