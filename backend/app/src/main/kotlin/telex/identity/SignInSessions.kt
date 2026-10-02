@@ -21,7 +21,10 @@ data class StartedSession(
 data class SignedInOwner(
     val ownerId: OwnerId,
     val sessionId: SignInSessionId,
-)
+) : java.security.Principal {
+    /** The OwnerId, so the framework's WebAuthn ceremonies name the user entity after the Owner. */
+    override fun getName(): String = ownerId.value.toString()
+}
 
 data class MySession(
     val id: SignInSessionId,

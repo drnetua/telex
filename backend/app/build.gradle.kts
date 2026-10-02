@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.mail)
     implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.security.webauthn)
+    implementation(libs.webauthn4j.core)
     implementation(libs.spring.modulith.starter.core)
     implementation(libs.spring.modulith.starter.jdbc)
     implementation(libs.jackson.module.kotlin)

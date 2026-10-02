@@ -4,3 +4,8 @@ spring:
     url: jdbc:postgresql://localhost:${TELEX_DB_PORT:5432}/telex
     username: telex
     password: telex
+
+telex:
+  webauthn:
+    # The Vite dev server origin (ADR-0006): passkeys work through `pnpm dev` only in the local profile.
+    extra-origins: http://localhost:5173

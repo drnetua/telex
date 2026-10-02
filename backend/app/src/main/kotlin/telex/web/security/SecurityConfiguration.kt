@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
@@ -14,13 +13,14 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
+import org.springframework.security.web.access.ExceptionTranslationFilter
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.security.web.csrf.CsrfFilter
 import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.security.web.savedrequest.NullRequestCache
+import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenticationFilter
 import org.springframework.web.filter.OncePerRequestFilter
-import telex.shared.problemDetail
 import tools.jackson.databind.json.JsonMapper
 
 /** The one filter chain: a live Sign-in Session or nothing, CSRF cookie on every response, problem+json refusals. */
@@ -31,6 +31,7 @@ class SecurityConfiguration {
         http: HttpSecurity,
         repository: SessionCookieSecurityContextRepository,
         json: JsonMapper,
+        passkeyHandlers: PasskeySignInHandlers,
     ): SecurityFilterChain {
         http {
             securityContext { securityContextRepository = repository }
@@ -69,6 +70,7 @@ class SecurityConfiguration {
                         write(json, response, HttpStatus.FORBIDDEN, "forbidden", "This request was refused.")
                     }
             }
+            webAuthn { disableDefaultRegistrationPage = true }
             formLogin { disable() }
             httpBasic { disable() }
             logout { disable() }
@@ -76,7 +78,13 @@ class SecurityConfiguration {
             headers { cacheControl { } }
         }
         http.addFilterAfter(CsrfCookieFilter(), CsrfFilter::class.java)
-        return http.build()
+        http.addFilterAfter(PasskeyRegistrationFilter(json), ExceptionTranslationFilter::class.java)
+        val chain = http.build()
+        chain.filters.filterIsInstance<WebAuthnAuthenticationFilter>().forEach {
+            it.setAuthenticationSuccessHandler(passkeyHandlers.success)
+            it.setAuthenticationFailureHandler(passkeyHandlers.failure)
+        }
+        return chain
     }
 
     private fun write(
@@ -86,9 +94,7 @@ class SecurityConfiguration {
         code: String,
         detail: String,
     ) {
-        response.status = status.value()
-        response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE
-        response.outputStream.write(json.writeValueAsBytes(problemDetail(status, code, detail)))
+        writeProblem(json, response, status, code, detail)
     }
 
     /** Forces the deferred CSRF token to load so the readable `XSRF-TOKEN` cookie is set on every response. */
