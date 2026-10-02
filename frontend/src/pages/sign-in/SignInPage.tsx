@@ -2,6 +2,8 @@ import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { requestSignInEmail } from "../../api/signIn";
+import { PasskeyCancelled, signInWithPasskey } from "../../api/webauthn";
+import { landAfterSignIn } from "../../app/landing";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
@@ -14,6 +16,22 @@ export function SignInPage() {
   const [email, setEmail] = useState("");
   const [invalid, setInvalid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyFailed, setPasskeyFailed] = useState(false);
+
+  async function passkey() {
+    setPasskeyFailed(false);
+    setPasskeyBusy(true);
+    try {
+      const result = await signInWithPasskey();
+      void navigate(landAfterSignIn(result.createdAccount), { replace: true });
+    } catch (error) {
+      setPasskeyBusy(false);
+      if (error instanceof PasskeyCancelled) return;
+      if (error instanceof ApiFailure && error.code === "passkey-rejected") setPasskeyFailed(true);
+      else if (!routeFailure(error, passkey)) throw error;
+    }
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -40,6 +58,12 @@ export function SignInPage() {
     <form noValidate onSubmit={(e) => void submit(e)}>
       <h1 className="h2 text-center">{messages.signIn.title}</h1>
       <p className="text-secondary text-center">{messages.signIn.tagline}</p>
+      {passkeyFailed ? (
+        <div className="alert alert-danger d-flex align-items-center gap-2" role="alert">
+          <Icon name="alert-circle" size={18} />
+          {messages.signIn.passkeyFailed}
+        </div>
+      ) : null}
       <div className="mb-3">
         <label className="form-label" htmlFor="sign-in-email">
           {messages.signIn.emailLabel}
@@ -64,6 +88,15 @@ export function SignInPage() {
         {submitting ? messages.signIn.submitting : messages.signIn.submit}
       </Button>
       <div className="hr-text">{messages.signIn.divider}</div>
+      <Button
+        icon="lock"
+        className="btn-secondary w-100 mb-3"
+        busy={passkeyBusy}
+        disabled={submitting}
+        onClick={() => void passkey()}
+      >
+        {passkeyBusy ? messages.signIn.passkeyWaiting : messages.signIn.passkey}
+      </Button>
       <small className="text-secondary d-block text-center">{messages.signIn.note}</small>
     </form>
   );

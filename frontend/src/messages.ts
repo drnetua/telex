@@ -31,6 +31,9 @@ export const messages = {
     divider: "or",
     note: "No passwords. The link works once and expires in 15 minutes.",
     emailInvalid: "Enter a complete email address, like me@example.com.",
+    passkey: "Sign in with a passkey",
+    passkeyWaiting: "Waiting for your device",
+    passkeyFailed: "That passkey didn't work. Sign in with your email instead.",
   },
   checkEmail: {
     title: "Check your email",
@@ -62,5 +65,18 @@ export const messages = {
     unusableTitle: "This link can't be used",
     unusableBody: "Open the newest email from teleX, or sign in again.",
     back: "Back to sign in",
+  },
+  createPasskey: {
+    title: "Sign in faster next time",
+    body: "Create a passkey to sign in with your fingerprint, face or screen lock instead of an email.",
+    create: "Create a passkey",
+    waiting: "Waiting for your device",
+    retry: "Try again",
+    notNow: "Not now",
+    failed: "No passkey was created. Try again, or choose Not now.",
+    unsupportedTitle: "Passkeys aren't available here",
+    unsupportedBody:
+      "This browser doesn't support passkeys. You can add one later from another device in Profile and security.",
+    continue: "Continue",
   },
 } as const;

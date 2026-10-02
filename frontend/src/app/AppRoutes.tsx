@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router";
 import { messages } from "../messages";
 import { CheckEmailPage } from "../pages/check-email/CheckEmailPage";
+import { CreatePasskeyPage } from "../pages/create-passkey/CreatePasskeyPage";
 import { ConfirmLinkPage } from "../pages/confirm-link/ConfirmLinkPage";
 import { SignInPage } from "../pages/sign-in/SignInPage";
 import { NotFoundPage } from "../pages/system/NotFoundPage";
@@ -23,7 +24,7 @@ export function AppRoutes() {
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-in/check-email" element={<CheckEmailPage />} />
         <Route path="/sign-in/link" element={<ConfirmLinkPage />} />
-        <Route path="/welcome/passkey" element={<Placeholder title="Add a passkey" />} />
+        <Route path="/welcome/passkey" element={<CreatePasskeyPage />} />
       </Route>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
