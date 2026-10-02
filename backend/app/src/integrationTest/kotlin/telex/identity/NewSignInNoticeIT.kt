@@ -1,6 +1,7 @@
 package telex.identity
 
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,6 +12,7 @@ import telex.TestcontainersConfiguration
 import telex.mail.OutgoingEmail
 import telex.mail.RecordingMailer
 import telex.mail.RecordingMailerConfiguration
+import java.time.Duration
 import java.time.Instant
 
 /** AC-98: the "New sign-in to teleX" email goes out after commit, except for the sign-in that creates the account. */
@@ -53,16 +55,25 @@ class NewSignInNoticeIT {
     private fun notices(): List<OutgoingEmail> = mailer.sent.filter { it.template == "new-sign-in" }
 
     private fun awaitNotice(): OutgoingEmail {
-        val deadline = System.currentTimeMillis() + 5_000
-        while (notices().isEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(50)
+        await().atMost(Duration.ofSeconds(5)).until { notices().isNotEmpty() }
         assertThat(notices()).describedAs("New sign-in emails").hasSize(1)
         return notices().single()
+    }
+
+    /** Every published session event has been handled (completed), so "no email" can be asserted without sleeping. */
+    private fun awaitListenersDone() {
+        await().atMost(Duration.ofSeconds(5)).until {
+            jdbc.queryForObject(
+                "SELECT count(*) FROM event_publication WHERE completion_date IS NULL",
+                Int::class.java,
+            ) == 0
+        }
     }
 
     @Test
     fun `AC-98 a later sign-in emails the address the account was created with`() {
         assertThat(signInByLink("anton@mail.com", null, null).createdAccount).isTrue()
-        Thread.sleep(500)
+        awaitListenersDone()
         assertThat(notices()).describedAs("no email for the sign-in that creates the account").isEmpty()
 
         assertThat(signInByLink("Anton+work@Mail.com", safariIPhone, "Europe/Kyiv").createdAccount).isFalse()
@@ -81,6 +92,22 @@ class NewSignInNoticeIT {
     }
 
     @Test
+    fun `AC-98 AC-104 a later sign-in by code emails the notice too`() {
+        signInByLink("anton@mail.com", null, null)
+        awaitListenersDone()
+        val issued = signIn.request("anton@mail.com")
+        val code = Regex("\\b(\\d{6})\\b").find(mailer.sent.last().text)!!.groupValues[1]
+
+        assertThat(
+            signIn.redeemByCode(issued.grantId, code, null, safariIPhone, "Europe/Kyiv").createdAccount,
+        ).isFalse()
+
+        val mail = awaitNotice()
+        assertThat(mail.to).isEqualTo("anton@mail.com")
+        assertThat(mail.text).contains("Safari on iPhone")
+    }
+
+    @Test
     fun `AC-98 a session without a time zone shows the local time as UTC`() {
         signInByLink("anton@mail.com", null, null)
         signInByLink("anton@mail.com", safariIPhone, "UTC")
@@ -94,8 +121,9 @@ class NewSignInNoticeIT {
         signIn.request("anton@mail.com")
         val token = tokenFromLastMail()
         mailer.failing = true
+        val attemptsBefore = mailer.attempts.get()
         assertThat(signIn.redeemByLink(token, null, safariIPhone, "Europe/Kyiv").createdAccount).isFalse()
-        Thread.sleep(1_000)
+        await().atMost(Duration.ofSeconds(5)).until { mailer.attempts.get() > attemptsBefore }
         val incomplete =
             jdbc.queryForObject(
                 "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +

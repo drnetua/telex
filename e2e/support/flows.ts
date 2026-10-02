@@ -5,18 +5,29 @@ import { codeOf, linkOf, uniqueAddress, waitForMail } from "./mailpit";
 export const SIGN_IN_SUBJECT = "Sign in to teleX";
 export const NEW_SIGN_IN_SUBJECT = "New sign-in to teleX";
 
-/** WCAG 2.2 AA scan of the screen state currently shown; any violation fails. */
+/**
+ * WCAG 2.2 AA scan of the screen state currently shown; any violation fails. The scan is retried for a few seconds so
+ * a colour measured mid-transition (a fading alert, a hovered button) is not reported as a contrast failure; a
+ * violation that persists still fails.
+ */
 export async function expectNoA11yViolations(
   page: Page,
   state: string,
 ): Promise<void> {
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
-  const summary = results.violations.map(
-    (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`,
-  );
-  expect(summary, `axe violations on ${state}`).toEqual([]);
+  await expect
+    .poll(
+      async () => {
+        const results = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+          .analyze();
+        return results.violations.map(
+          (v) =>
+            `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`,
+        );
+      },
+      { message: `axe violations on ${state}`, timeout: 5_000 },
+    )
+    .toEqual([]);
 }
 
 export async function requestEmail(page: Page, address: string): Promise<void> {

@@ -11,14 +11,17 @@ importers:
   e2e:
     devDependencies:
       '@axe-core/playwright':
-        specifier: latest
+        specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
       '@playwright/test':
-        specifier: latest
+        specifier: ^1.63.0
         version: 1.63.0
       '@types/node':
         specifier: ^26.6.3
         version: 26.6.3
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
   frontend:
     dependencies:
