@@ -2,6 +2,7 @@ package telex
 
 import org.assertj.core.api.Assertions.assertThat
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.MigrationVersion
 import org.junit.jupiter.api.Test
 import org.springframework.core.io.ClassPathResource
 import org.testcontainers.junit.jupiter.Container
@@ -18,18 +19,26 @@ import java.sql.DriverManager
 class MigrationRollbackIT {
     @Test
     fun `every migration applies, rolls back and re-applies`() {
-        val flyway =
+        fun flyway(target: MigrationVersion = MigrationVersion.LATEST) =
             Flyway
                 .configure()
                 .dataSource(postgres.jdbcUrl, postgres.username, postgres.password)
                 .locations("classpath:db/migration")
+                .target(target)
                 .load()
-        val empty = schemaSnapshot()
 
-        assertThat(flyway.migrate().migrationsExecuted).isPositive()
-        val migrated = schemaSnapshot()
+        // The schema after each migration, oldest first, so every rollback is checked against the step before it:
+        // a final up -> down comparison cannot see a rollback whose effect a later (older) rollback erases.
+        val snapshots = mutableListOf(schemaSnapshot())
+        val versions = flyway().info().pending().map { it.version }
+        assertThat(versions).isNotEmpty()
+        versions.forEach { version ->
+            flyway(version).migrate()
+            snapshots += schemaSnapshot()
+        }
+        val migrated = snapshots.last()
 
-        flyway.info().applied().reversed().forEach { migration ->
+        flyway().info().applied().reversed().forEachIndexed { step, migration ->
             val rollback = ClassPathResource("db/rollback/${migration.script.replaceFirst("V", "U")}")
             assertThat(rollback.exists()).describedAs("rollback for ${migration.script}").isTrue()
             connect().use { connection ->
@@ -39,17 +48,19 @@ class MigrationRollbackIT {
                     it.executeUpdate()
                 }
             }
+            assertThat(schemaSnapshot())
+                .describedAs("schema after rolling back ${migration.script}")
+                .isEqualTo(snapshots[snapshots.size - 2 - step])
         }
-        assertThat(schemaSnapshot()).isEqualTo(empty)
 
-        flyway.migrate()
+        flyway().migrate()
         assertThat(schemaSnapshot()).isEqualTo(migrated)
     }
 
     private fun connect(): Connection =
         DriverManager.getConnection(postgres.jdbcUrl, postgres.username, postgres.password)
 
-    /** Extensions, tables, columns and indexes of the `public` schema, without Flyway's own history table. */
+    /** Extensions, tables, columns (with length) and indexes of the `public` schema, without Flyway's history table. */
     private fun schemaSnapshot(): Set<String> =
         connect().use { connection ->
             SNAPSHOT_QUERIES.flatMapTo(sortedSetOf()) { query ->
@@ -71,6 +82,7 @@ class MigrationRollbackIT {
                 "SELECT 'extension ' || extname FROM pg_extension",
                 """
                 SELECT 'column ' || table_name || '.' || column_name || ' ' || data_type || ' ' || is_nullable
+                    || ' ' || coalesce(character_maximum_length::text, '-')
                 FROM information_schema.columns
                 WHERE table_schema = 'public' AND table_name <> 'flyway_schema_history'
                 """,

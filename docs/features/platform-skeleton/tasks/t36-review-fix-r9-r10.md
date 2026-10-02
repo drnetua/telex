@@ -8,7 +8,7 @@ files_hint: ["backend/app/src/integrationTest/kotlin/telex/MigrationRollbackIT.k
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-02 re-review (R9, R10)"
-status: "todo"
+status: "done"
 ---
 
 # T36 — Make the rollback check see column length and the failed-notice assertion exact
