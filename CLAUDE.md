@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-teleX (Gradle root project `tele-x`) is a multi-user web Telegram client where each Owner runs their own AI agents inside their Telegram account. The skeleton exists (materialized by `/sdd:scaffold` from `docs/architecture-map.md`): a Spring Boot app with the 13 empty Modulith modules, the TDLib facade subproject, a React SPA, Flyway baseline, test harness and CI. Features build into it; E01 `platform-skeleton` still owns sign-up / sign-in and the one-command README.
+teleX (Gradle root project `tele-x`) is a multi-user web Telegram client where each Owner runs their own AI agents inside their Telegram account. The skeleton exists (materialized by `/sdd:scaffold` from `docs/architecture-map.md`): a Spring Boot app with the 14 Modulith modules (the 13 planned in the architecture map plus `mail`, added by E01), the TDLib facade subproject, a React SPA, Flyway baseline, test harness and CI. Features build into it; E01 `platform-skeleton` still owns sign-up / sign-in and the one-command README.
 
 The project is a learning exercise in Spec-Driven Development using the `sdd` Claude Code plugin (enabled in `.claude/settings.json`). Every feature goes through the pipeline `/sdd:classify-size → specify → clarify → ux-flows → design → sequences → data-model → api → screens → tasks → plan-tests → implement → review → ship`; artifacts land in `docs/features/{slug}/`. Specs are the source of truth — don't implement ahead of them, and record deviations. `docs/architecture-map.md` + `docs/adr/` hold the foundation decisions and conventions.
 
@@ -48,7 +48,7 @@ Precompiled script plugins can't use the generated `libs` accessors; use `libs.v
 
 ## Layout and code conventions
 
-- `backend/app` — the one Spring Boot app. Each Modulith module is a direct sub-package of `telex` (`web`, `identity`, `messaging`, `triage`, `agents`, `tools`, `tasks`, `scheduling`, `audit`, `telegram`, `llm`, `decision`, `bot`) with a `package-info.java` declaring `@ApplicationModule(allowedDependencies)`: `web` → core modules; core → core + integration; integration → `shared` only. Public API + events at the module root, everything else in `internal`. `telex.shared` is an OPEN kernel (typed ids, problems) with no Spring beans. `ModularityTest` runs `verify()` and writes module docs to `backend/app/build/spring-modulith-docs`.
+- `backend/app` — the one Spring Boot app. Each Modulith module is a direct sub-package of `telex` (`web`, `identity`, `messaging`, `triage`, `agents`, `tools`, `tasks`, `scheduling`, `audit`, `telegram`, `llm`, `decision`, `bot`, `mail`) with a `package-info.java` declaring `@ApplicationModule(allowedDependencies)`: `web` → core modules; core → core + integration; integration → `shared` only. Public API + events at the module root, everything else in `internal`. `telex.shared` is an OPEN kernel (typed ids, problems) with no Spring beans. `ModularityTest` runs `verify()` and writes module docs to `backend/app/build/spring-modulith-docs`.
 - `backend/telegram-tdlib` — Kotlin facade (`telex.telegram.tdlib`) over TDLib; the TDLib binding is its `implementation` dependency, so `org.drinkless.tdlib.*` can't reach `backend/app` (ADR-0002). Empty until the E02 spike.
 - `frontend/` — React + TypeScript + Vite + Tabler SPA; `pnpm run build` output is copied into the app's `static/` and served by `telex.web.SpaHosting` (client routes fall back to `index.html`; `/api/**` and missing assets stay 404). UI copy lives in `frontend/src/messages.ts`.
 - **IDs:** app-generated UUIDv7 via `telex.shared.Uuid7.next()`, typed per aggregate as `@JvmInline value class XId(override val value: UUID) : TypedId` (ADR-0003).
@@ -60,11 +60,11 @@ Precompiled script plugins can't use the generated `libs` accessors; use `libs.v
 
 ## Target architecture
 
-Spring Boot 4 + Kotlin modular monolith on **Spring Modulith**, 13 modules communicating via Modulith application events (`@ApplicationModuleListener`, event publication registry). Boundaries are enforced by `ApplicationModules.verify()` in tests.
+Spring Boot 4 + Kotlin modular monolith on **Spring Modulith**, 14 modules communicating via Modulith application events (`@ApplicationModuleListener`, event publication registry). Boundaries are enforced by `ApplicationModules.verify()` in tests.
 
 - **Interface:** `web` — REST controllers, SSE stream, React + TypeScript SPA (Vite, TanStack Query, Tabler) built by Gradle and served as static content from Spring Web.
 - **Core:** `identity`, `messaging` (Channels, history, pgvector), `triage` (System 1 prefilter + Jev decision), `agents` (Agent, Run, templates, ChatClient), `tools` (tool registry + Scope checks), `tasks` (User Task, Approval, TTL, undo), `scheduling` (per-user cron, Quartz JDBC — ADR-0004), `audit` (append-only log).
-- **Integrations (ACL, reached only via ports):** `telegram` (TDLib as user), `llm` (OpenRouter, Model Profiles, Budget), `decision` (TypeSafe Jev via `spring-ai-starter-typesafe`), `bot` (shared Owner Bot via Bot API webhook).
+- **Integrations (ACL, reached only via ports):** `telegram` (TDLib as user), `llm` (OpenRouter, Model Profiles, Budget), `decision` (TypeSafe Jev via `spring-ai-starter-typesafe`), `bot` (shared Owner Bot via Bot API webhook), `mail` (outgoing email over SMTP).
 
 Core principle — **System 1 / System 2: Jev decides, the LLM generates.** Every incoming message goes through a cheap local prefilter and a Jev triage (`Noul`/`Choice`/`Score`); only a confident yes wakes an LLM agent, and low confidence routes to the human review queue rather than refusal.
 
