@@ -324,6 +324,514 @@ sequenceDiagram
     Note over SPA: no answer in 10 s or a server failure shows SCR-93 with Retry
 ```
 
+### Runtime flows by user story
+
+The flows below were added by `/sdd:sequences`, one per critical user story or distinct runtime path, in §4 order. They use generic participants that map onto §5: `<user>` is the Owner or the Operator, `<ui>` is the Web SPA, `<service>` is the teleX app (the `web`, `identity` and `mail` modules together), `<data-store>` is the database, `<external-system>` is the mail server with the Owner's mailbox or the passkey authenticator (named per flow), and `<message-bus>` is the event publication registry. Every `persists` note marks a write that `/sdd:data-model` must index for. The three critical flows above stay as design drew them and count toward coverage.
+
+### Flow US-41: start teleX with one command
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant C as <client>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over U,C: Precondition: a clean machine with Docker and a copy of the repository (AC-33)
+    U->>C: runs the one command from the README
+    C->>D: start the data store and wait until it is healthy
+    C->>X: start the local mailbox
+    C->>S: start the app once the data store is healthy
+    S->>D: apply pending migrations
+    Note over S,D: persists the schema and the migration history
+    alt the data store never becomes healthy or a migration fails
+        S-->>C: the app does not start
+        C-->>U: the command reports the failed service, the sign-in page is not reachable
+    else started
+        U->>UI: opens the address named in the README
+        UI-->>U: SCR-01 Sign in
+        Note over U,UI: the 5-minute budget ends here, the first build of the app is not counted
+        U->>UI: enters their email address
+        UI->>S: request a sign-in email (Flow US-01 request a sign-in email)
+        S->>X: deliver the sign-in email to the local mailbox
+        UI-->>U: SCR-07 Check your email
+        U->>X: opens the local mailbox page named in the README
+        X-->>U: the sign-in email with its link and code
+        Note over U,S: the first sign-in continues by link (Critical flow 1) or by code (Flow US-01 sign in by code)
+    end
+    Note over U,S: Postcondition: an installation that needed no manual setup, where the first Owner can sign in
+```
+
+### Flow US-01: request a sign-in email
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over U,UI: Precondition: SCR-01 Sign in, or a refusal page or SCR-07 offering Send a new link for the same address
+    U->>UI: submits an email address
+    alt not a complete address (no name, no @, or a domain without a dot)
+        UI-->>U: SCR-01 field error, enter a complete email address
+        Note over UI,S: the service applies the same rule and refuses with a field error, no email is sent (AC-83)
+    else complete address
+        UI->>S: request a sign-in email for the address as typed
+        S->>S: canonicalise the address (lowercase, drop any +tag)
+        S->>D: mark every live grant for the canonical address superseded
+        S->>D: insert a new grant with hashes of the link token and the code, expiring in 15 minutes
+        Note over S,D: persists Sign-in Grant (live grants looked up by canonical address, AC-103)
+        S->>X: send the sign-in email with link and code to the address as typed, inside the request
+        alt mail server unavailable or too slow
+            X--xS: send fails
+            S->>D: roll back, no grant is kept and no earlier grant is superseded
+            S-->>UI: server failure
+            UI-->>U: SCR-93 teleX is unavailable with Retry
+        else accepted by the mail server
+            S-->>UI: grant id for the code page, never the link or the code
+            UI-->>U: SCR-07 Check your email, naming the address
+        end
+    end
+    Note over U,S: Postcondition: at most one live grant per canonical address, the newest one (AC-103)
+```
+
+### Flow US-01: sign in by Sign-in Code
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,UI: Precondition: SCR-07 in the browser that asked, holding the grant id it was given (AC-82)
+    U->>UI: types the 6-digit code from the email
+    UI->>S: redeem by code for this grant id, with the browser time zone and the current session cookie if any
+    S->>D: find the grant by id
+    Note over S,D: the checks below are repeated inside one conditional update, so concurrent redeems have one winner
+    alt expired (over 15 minutes) or superseded by a newer email
+        S-->>UI: refusal, link expired
+        UI-->>U: the link has expired, with Send a new link (AC-35, AC-103)
+    else already used by its link or its code
+        S-->>UI: refusal, already used
+        UI-->>U: This link was already used, with Send a new link (AC-84)
+    else voided by 5 wrong codes
+        S-->>UI: refusal, grant void
+        UI-->>U: the code is no longer valid, request a new email (AC-85)
+    else wrong code
+        S->>D: conditional update adds one wrong attempt and voids the grant at the 5th
+        Note over S,D: persists Sign-in Grant wrong-attempt count
+        alt this was the 5th wrong code
+            S-->>UI: refusal, grant void
+            UI-->>U: the code is no longer valid, request a new email (AC-85)
+        else fewer than 5 wrong codes
+            S-->>UI: refusal, wrong code with the attempts left
+            UI-->>U: SCR-07 wrong code, try again
+        end
+    else correct and usable
+        S->>D: conditional update marks the grant used, which also kills its link (AC-82)
+        Note over S,D: persists Sign-in Grant used mark
+        S->>D: create the Owner if the canonical address is new
+        Note over S,D: persists Owner (unique canonical address, AC-34)
+        S->>D: end the session this browser held, as this Owner or another one
+        S->>D: insert the new session with its key hash, browser, device type and time zone
+        Note over S,D: persists Sign-in Session (looked up by key hash, AC-104)
+        S->>D: record the session-started event for the New sign-in email (Flow US-47)
+        S-->>UI: set the session cookie, with the created-account flag
+        UI-->>U: continues as in Flow US-01 landing after sign-in
+    end
+    Note over U,S: Postcondition: the grant was redeemed at most once, the browser holds at most one session
+```
+
+### Flow US-01: landing after sign-in
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,UI: Precondition: a session just started by link, code or passkey. A destination was remembered in this browser if an unauthenticated request sent it to SCR-01 (Critical flow 3)
+    alt this sign-in created the account
+        UI-->>U: SCR-09 Create a passkey (Flow US-45 passkey step), then SCR-10, never a remembered page (AC-34)
+    else existing account
+        UI->>UI: read and clear the remembered destination of this browser
+        alt a relative teleX path starting with a single slash
+            UI-->>U: the page they originally opened (AC-101)
+        else nothing remembered, for example a link confirmed in another browser, or any other destination
+            UI-->>U: SCR-10 Inbox (AC-101)
+        end
+    end
+    U->>UI: opens SCR-10 Inbox
+    UI->>S: who am I
+    S->>D: read the Owner by owner id
+    Note over S,D: no Linked Account store exists before E02, so the Linked Account count is zero
+    S-->>UI: address and a Linked Account count of zero
+    UI-->>U: empty Inbox with the single step Connect Telegram (AC-100)
+    U->>UI: chooses Connect Telegram
+    UI-->>U: note that Telegram linking is coming next (spec section 8 default)
+    Note over U,S: Postcondition: the step stays until the Owner has at least one Linked Account, from E02 on
+```
+
+### Flow US-45: passkey step after the first sign-in
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over U,UI: Precondition: the redeem that created the account just answered with the created-account flag (AC-91)
+    UI->>UI: check whether this browser can create passkeys
+    alt browser cannot create passkeys
+        UI-->>U: SCR-09 explains there is no passkey support here, add one later from another device (AC-90)
+        U->>UI: chooses Continue
+        UI-->>U: SCR-10 Inbox, email sign-in keeps working
+    else capable browser
+        UI-->>U: SCR-09 offers Create a passkey or Not now
+        alt chooses Not now
+            UI-->>U: SCR-10 Inbox (AC-91)
+        else chooses Create a passkey
+            UI->>S: ask for registration options for the signed-in Owner
+            S->>D: find or create the passkey user entity of this Owner
+            Note over S,D: persists passkey user entity (looked up by owner id)
+            S->>S: keep the one-time challenge until the credential comes back
+            S-->>UI: registration options with the challenge
+            UI->>X: create a credential on the authenticator
+            X->>U: asks for biometrics or a PIN
+            alt cancelled, or the device check fails
+                X-->>UI: no credential
+                UI-->>U: SCR-09 says no passkey was created, Try again or Not now (AC-105)
+            else confirmed
+                X-->>UI: new public credential
+                UI->>S: register the credential
+                S->>S: verify the challenge and the origin, label it after the browser and device
+                alt verification fails
+                    S-->>UI: refusal
+                    UI-->>U: SCR-09 says no passkey was created, Try again or Not now (AC-105)
+                else verified
+                    S->>D: insert the credential with its label, creation date and no last-used date
+                    Note over S,D: persists Passkey (listed by the Owner's user entity)
+                    S-->>UI: passkey created
+                    UI-->>U: SCR-10 Inbox, the passkey shows as Never used on SCR-64 (AC-89)
+                end
+            end
+        end
+    end
+    Note over U,S: Postcondition: SCR-09 only follows a created-account redeem, so it is never offered again on any device (AC-91)
+```
+
+### Flow US-45: sign in with a passkey
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over U,UI: Precondition: SCR-01 Sign in, on a device that may hold a passkey for this installation
+    U->>UI: chooses Sign in with a passkey, without typing an email
+    UI->>S: ask for authentication options
+    S->>S: keep the one-time challenge until the assertion comes back
+    S-->>UI: options with the challenge
+    UI->>X: get an assertion for this site from the authenticator
+    X->>U: asks for biometrics or a PIN
+    alt cancelled, or no passkey for this site on the device
+        X-->>UI: no assertion
+        UI-->>U: SCR-01 Sign in, email sign-in still offered
+    else confirmed
+        X-->>UI: signed assertion with the credential id
+        UI->>S: sign in with the assertion, the browser time zone and the current session cookie if any
+        S->>D: find the credential by credential id and its user entity
+        alt unknown or removed credential, or the signature does not verify
+            S-->>UI: refusal
+            UI-->>U: SCR-01 says the passkey did not work, email sign-in still offered (AC-92)
+        else verified
+            S->>S: resolve the Owner from the credential's user entity
+            S->>D: update the credential's last-used date and signature counter
+            Note over S,D: persists Passkey last-used date
+            S->>D: end the session this browser held, insert the new session
+            Note over S,D: persists Sign-in Session (looked up by key hash, AC-104)
+            S->>D: record the session-started event for the New sign-in email (Flow US-47, AC-98)
+            S-->>UI: set the session cookie
+            UI-->>U: continues as in Flow US-01 landing after sign-in (AC-89)
+        end
+    end
+    Note over U,S: Postcondition: a passkey signs in only while it is still listed for its Owner
+```
+
+### Flow US-46: manage passkeys on Profile and security
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over U,UI: Precondition: a live session, resolved as in Critical flow 3
+    U->>UI: opens SCR-64 Profile and security
+    UI->>S: list my passkeys
+    S->>D: read the credentials of this Owner's user entity only (AC-97)
+    alt none
+        S-->>UI: empty list
+        UI-->>U: No passkeys yet, with Add a passkey (AC-91)
+    else some
+        S-->>UI: passkeys with name, creation date and last-used date
+        UI-->>U: each passkey, Never used until its first use (AC-89)
+    end
+    opt chooses Add a passkey
+        UI->>S: ask for registration options, same ceremony as Flow US-45 passkey step
+        S-->>UI: registration options with a one-time challenge
+        UI->>X: create a credential, the device asks for biometrics or a PIN
+        alt cancelled or failed
+            X-->>UI: no credential
+            UI-->>U: SCR-64 unchanged, no passkey added
+        else confirmed and verified
+            X-->>UI: new public credential
+            UI->>S: register the credential
+            S->>D: insert the credential with its label and creation date
+            Note over S,D: persists Passkey
+            S-->>UI: passkey created
+            UI-->>U: the new passkey is listed
+        end
+    end
+    opt chooses Remove on a passkey
+        UI-->>U: confirm in place, with a reminder to end a lost device's session in the sessions list
+        alt cancels
+            UI-->>U: nothing changes
+        else confirms
+            UI->>S: remove this passkey
+            S->>D: delete the credential only if it belongs to this Owner's user entity
+            Note over S,D: persists Passkey removal
+            alt not among this Owner's passkeys
+                S-->>UI: not found, exactly as for a passkey that never existed (AC-97)
+                UI-->>U: the list refreshes, nothing else changes
+            else removed, even the last one
+                S-->>UI: removed
+                UI-->>U: the passkey is gone, open sessions stay, email sign-in keeps working (AC-92)
+            end
+        end
+    end
+    Note over U,S: Postcondition: an Owner only ever sees and changes their own passkeys
+```
+
+### Flow US-46: manage Sign-in Sessions
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,UI: Precondition: the Owner is signed in on a laptop and a phone, using the laptop
+    U->>UI: opens SCR-64 Profile and security
+    UI->>S: list my sessions
+    S->>D: read the live sessions filtered by owner id
+    Note over S,D: sessions are looked up by owner id and liveness
+    S-->>UI: each session's browser, device type and last activity, with the current one flagged
+    UI-->>U: sessions list, the current one marked This device (AC-93)
+    alt ends the phone's session
+        U->>UI: chooses End session on the phone's row
+        UI->>S: end this session
+        S->>D: mark it ended only if it belongs to this Owner
+        Note over S,D: persists Sign-in Session ended mark
+        alt not among this Owner's sessions
+            S-->>UI: not found, exactly as for a session that never existed (AC-97)
+            UI-->>U: the list refreshes, nothing else changes
+        else ended
+            S-->>UI: ended
+            UI-->>U: the phone's row is gone
+            Note over UI,S: the phone's next action gets session-ended and lands on SCR-92 (Critical flow 3)
+        end
+    else signs out of all other sessions
+        U->>UI: chooses Sign out of all other sessions
+        UI->>S: end all my sessions except this one
+        S->>D: mark ended every live session of this Owner except the current one
+        Note over S,D: persists Sign-in Session ended marks
+        S-->>UI: done
+        UI-->>U: only This device remains (AC-94)
+    end
+    Note over U,S: Postcondition: ended sessions never resolve again, the current session is untouched
+```
+
+### Flow US-46: sign out
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,UI: Precondition: a signed-in Owner on any signed-in page
+    U->>UI: chooses Sign out in the page frame
+    UI->>S: sign out
+    alt no answer within 10 seconds, or a server failure
+        S--xUI: failure
+        UI-->>U: SCR-93 teleX is unavailable with Retry, the session is still live
+    else signed out
+        S->>D: mark the current session ended
+        Note over S,D: persists Sign-in Session ended mark
+        S-->>UI: clear the session cookie
+        UI->>UI: drop every cached piece of Owner data
+        UI-->>U: SCR-01 Sign in
+        U->>UI: presses Back in the browser
+        Note over UI,S: Owner responses are never stored by the browser cache
+        UI->>S: ask for the earlier page's data, without a session cookie
+        S-->>UI: unauthenticated
+        UI-->>U: SCR-01 Sign in, no Owner data shown (AC-95)
+    end
+    Note over U,S: Postcondition: this browser holds no session and shows no Owner data
+```
+
+### Flow US-47: New sign-in to teleX email
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant B as <message-bus>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over S,B: Trigger: a session-started event recorded with a new session, by link, code or passkey
+    S->>B: publish session-started with owner id, session id and created-account flag, no secrets
+    Note over B,D: persists the event publication in the same transaction as the session
+    B->>S: deliver after commit
+    S->>D: check the publication is still incomplete (idempotency key: the publication id)
+    alt already complete
+        Note over S,D: skip, the email was already handled
+    else the sign-in created the account
+        S->>B: mark the publication complete, no email (AC-98)
+    else existing account
+        S->>D: read the address the account was created with, and the session's browser, device type and time zone
+        S->>X: send New sign-in to teleX with browser, device type, local time with the zone name, UTC and the sessions link
+        Note over S,X: retried by resubmitting incomplete publications on every app restart, no backoff timer in E01
+        alt send fails
+            X--xS: failure
+            S->>B: leave the publication incomplete
+            Note over S,B: dead-letter: an incomplete publication stays visible in the registry until a restart resends it
+        else delivered
+            S->>B: mark the publication complete
+            Note over B,D: persists the publication completion
+        end
+    end
+    U->>UI: opens the sessions link from the email
+    alt signed in in this browser
+        UI-->>U: SCR-64 sessions list (Flow US-46 manage Sign-in Sessions)
+    else not signed in
+        UI-->>U: SCR-01 Sign in, then back to SCR-64 (AC-101)
+    end
+    Note over U,S: Postcondition: every non-creating sign-in produces at least one email, a crash after sending may produce a duplicate
+```
+
+### Flow US-49: system pages
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+
+    Note over U,UI: Precondition: a teleX tab that has already loaded, with a signed-in Owner
+    alt opens an address that does not exist in teleX
+        U->>UI: opens an unknown teleX address
+        UI-->>U: SCR-91 Page not found, with Go to Inbox (AC-102)
+        U->>UI: chooses Go to Inbox
+        UI-->>U: SCR-10 Inbox
+    else takes an action
+        U->>UI: takes an action
+        UI->>S: send the request
+        alt no answer within 10 seconds, or a server failure
+            S--xUI: failure
+            UI-->>U: SCR-93 teleX is unavailable, with Retry (AC-102)
+            U->>UI: chooses Retry
+            UI->>S: repeat the same request
+            alt answered
+                S-->>UI: result
+                UI-->>U: back on the page with the result
+            else fails again
+                UI-->>U: stays on SCR-93
+            end
+        else answered
+            S-->>UI: result
+            UI-->>U: the updated page
+        end
+    end
+    Note over U,UI: opening teleX from scratch while it is down shows the browser's own error, no teleX page is involved (AC-102)
+```
+
+### Coverage
+
+| User story | Flows |
+|---|---|
+| US-41 | Flow US-41 |
+| US-01 | Critical flow 1 (link), Flow US-01 request a sign-in email, Flow US-01 sign in by Sign-in Code, Flow US-01 landing after sign-in |
+| US-45 | Flow US-45 passkey step, Flow US-45 sign in with a passkey |
+| US-46 | Flow US-46 manage passkeys, Flow US-46 manage Sign-in Sessions, Flow US-46 sign out, Critical flow 3 |
+| US-47 | Critical flow 2, Flow US-47 |
+| US-49 | Flow US-49 system pages, Flow US-01 landing after sign-in, Critical flow 3 |
+
+| AC | Shown by |
+|---|---|
+| AC-33 | Flow US-41, the `started` branch (the 5-minute timing is measured by hand per spec §6) |
+| AC-34 | Critical flow 1, `redeemed`; Flow US-01 sign in by code, Owner creation; Flow US-01 landing, `created the account` |
+| AC-82 | Flow US-01 sign in by code, `correct and usable` |
+| AC-35 | Critical flow 1, both refusal branches; Flow US-01 sign in by code, `expired` |
+| AC-83 | Flow US-01 request a sign-in email, `not a complete address` |
+| AC-84 | Critical flow 1, refusal branches; Flow US-01 sign in by code, `already used` |
+| AC-85 | Critical flow 1, refusal branches; Flow US-01 sign in by code, `voided` and `5th wrong code` |
+| AC-86 | Critical flow 1, the read-only open before the confirm |
+| AC-103 | Flow US-01 request a sign-in email, supersede step; Flow US-01 sign in by code, `superseded`; Critical flow 1 |
+| AC-104 | Critical flow 1, `redeemed`; Flow US-01 sign in by code and Flow US-45 sign in with a passkey, the end-the-held-session step |
+| AC-89 | Flow US-45 passkey step, `verified`; Flow US-45 sign in with a passkey, `verified`; Flow US-46 manage passkeys, list |
+| AC-90 | Flow US-45 passkey step, `browser cannot create passkeys` |
+| AC-105 | Flow US-45 passkey step, `cancelled` and `verification fails` |
+| AC-91 | Flow US-45 passkey step, `Not now` and postcondition; Flow US-46 manage passkeys, `none` |
+| AC-92 | Flow US-46 manage passkeys, `Remove`; Flow US-45 sign in with a passkey, `unknown or removed credential` |
+| AC-93 | Flow US-46 manage Sign-in Sessions, list and `ends the phone's session`; Critical flow 3, `ended` |
+| AC-94 | Flow US-46 manage Sign-in Sessions, `signs out of all other sessions` |
+| AC-95 | Flow US-46 sign out |
+| AC-96 | Critical flow 3, `ended, idle 30 days or started 90 days ago` |
+| AC-97 | Flow US-46 manage passkeys and manage Sign-in Sessions, `not among this Owner's`; Critical flow 3, owner-filtered query |
+| AC-98 | Critical flow 2; Flow US-47 |
+| AC-100 | Flow US-01 landing after sign-in, Inbox part |
+| AC-101 | Flow US-01 landing after sign-in, `existing account`; Critical flow 3, `no cookie`; Flow US-47, `not signed in` |
+| AC-102 | Flow US-49 system pages; Critical flow 3, closing note |
+
+### Flagged by sequences
+
+- **WebAuthn challenge storage (for design / data-model).** Flows US-45 keep a one-time challenge between the options request and the credential or assertion request. Spring Security keeps it in the `HttpSession` by default, while ADR-0001 replaces container sessions with the `telex_session` cookie. Decide whether a short-lived `HttpSession` is allowed for the ceremony alone, or a custom options repository stores the challenge (in memory or a table).
+- **Passkey step is derived, not stored (for data-model).** §5 lists "has-passkey-step-pending" on `Owners`. The flows derive SCR-09 from the created-account flag of the redeem answer, so no column is needed, and reloading SCR-09 simply skips the step. Data-model confirms the column is not added.
+- **Retry shape of the notice (accepted deviation).** The async-flow rule expects N retries with backoff and a dead-letter queue. ADR-0004 resubmits incomplete publications on restart only, and an incomplete publication in the registry is the dead letter (§11 risk "Notice email retried only on restart"). Delivery is at least once, so a crash after sending may duplicate the email.
+- **Participants not declared in §5.** Flow US-41 uses `<client>` for the command that starts the containers (compose, §7, not a §5 building block). `<message-bus>` is the Modulith event publication registry, which lives in the database container of §5.
+- **Index hints for data-model.** Live grants by canonical address (supersede), grant by id, Owner unique by canonical address, session unique by key hash, live sessions by owner id, credentials by WebAuthn user entity, incomplete event publications.
+- The three critical flows above keep design's concrete participant names. They are left as drawn, because this stage only adds.
+
 ## 7. Deployment view
 
 **Topology.** One app instance plus one Postgres, as fixed by foundation ADR-0001. The spec sets no availability SLO for E01 (spec §6 Availability: N/A).
