@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  focusManager,
+  onlineManager,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { ApiFailure, apiFetch } from "./client";
 
@@ -10,18 +16,24 @@ export interface Me {
 
 export const meKey = ["me"] as const;
 
-/** Refetches (not first loads) carry the background marker. */
-function useBackgroundFlag(key: readonly string[]) {
-  const client = useQueryClient();
-  return () => (client.getQueryState(key)?.dataUpdateCount ?? 0) > 0;
+let backgroundTrigger = false;
+
+/** Window-focus and reconnect refetches start synchronously inside the event; the flag lives for that tick. */
+function markBackgroundTick() {
+  backgroundTrigger = true;
+  setTimeout(() => (backgroundTrigger = false), 0);
 }
+focusManager.subscribe((focused) => focused && markBackgroundTick());
+onlineManager.subscribe((online) => online && markBackgroundTick());
+
+/** Only focus and reconnect refetches carry the background marker; page opens, mutations and first loads count as activity. */
+const isBackground = () => backgroundTrigger;
 
 /** The SPA's session state. */
 export function useMe() {
-  const background = useBackgroundFlag(meKey);
   return useQuery({
     queryKey: meKey,
-    queryFn: () => apiFetch<Me>("/api/v1/me", { background: background() }),
+    queryFn: () => apiFetch<Me>("/api/v1/me", { background: isBackground() }),
   });
 }
 
@@ -59,23 +71,21 @@ export const passkeysKey = ["passkeys"] as const;
 export const sessionsKey = ["sessions"] as const;
 
 export function usePasskeys() {
-  const background = useBackgroundFlag(passkeysKey);
   return useQuery({
     queryKey: passkeysKey,
     queryFn: () =>
-      apiFetch<{ items: Passkey[] }>("/api/v1/passkeys", { background: background() }).then(
+      apiFetch<{ items: Passkey[] }>("/api/v1/passkeys", { background: isBackground() }).then(
         (r) => r.items,
       ),
   });
 }
 
 export function useSessions() {
-  const background = useBackgroundFlag(sessionsKey);
   return useQuery({
     queryKey: sessionsKey,
     queryFn: () =>
       apiFetch<{ items: SignInSession[] }>("/api/v1/sessions", {
-        background: background(),
+        background: isBackground(),
       }).then((r) => r.items),
   });
 }

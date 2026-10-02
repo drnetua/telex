@@ -8,7 +8,7 @@ files_hint: ["frontend/src/components/ConfirmDialog/", "frontend/src/pages/profi
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-02 re-review (R6, R7)"
-status: "todo"
+status: "done"
 ---
 
 # T32 — Keep focus inside ConfirmDialog while busy and land it on a stable element after removal; ship a right-sized logo

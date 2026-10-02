@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Outlet } from "react-router";
-import logo from "../assets/telex-logo.png";
+import logo from "../assets/telex-logo-192.png";
 import { PageFrame } from "../components/PageFrame/PageFrame";
 import { messages } from "../messages";
 

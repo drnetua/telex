@@ -133,6 +133,7 @@ describe("SCR-64 Profile and security", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Remove passkey" }));
     await waitFor(() => expect(calls).toContainEqual(["DELETE", "/api/v1/passkeys/p1"]));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("heading", { level: 2, name: "Passkeys" })).toHaveFocus();
   });
 
   it("AC-92: keeping the passkey sends no request", async () => {

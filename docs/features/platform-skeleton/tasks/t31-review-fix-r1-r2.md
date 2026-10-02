@@ -8,7 +8,7 @@ files_hint: ["frontend/src/app/FailureBoundary.tsx", "frontend/src/app/FailureBo
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-02 re-review (R1, R2)"
-status: "todo"
+status: "done"
 ---
 
 # T31 — Keep the saved Retry across background failures and count page opens as activity

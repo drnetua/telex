@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiFailure } from "../../api/client";
 import { passkeysKey, usePasskeys, useRemovePasskey, type Passkey } from "../../api/account";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
@@ -23,6 +23,8 @@ export function PasskeysCard() {
   const [adding, setAdding] = useState(false);
   const [failed, setFailed] = useState(false);
   const [target, setTarget] = useState<Passkey | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const removed = useRef(false);
 
   useEffect(() => {
     let live = true;
@@ -33,6 +35,11 @@ export function PasskeysCard() {
       live = false;
     };
   }, []);
+
+  function askRemove(p: Passkey) {
+    removed.current = false;
+    setTarget(p);
+  }
 
   async function add() {
     setAdding(true);
@@ -67,7 +74,7 @@ export function PasskeysCard() {
   return (
     <section className="card mb-4" aria-labelledby="passkeys-title">
       <div className="card-header d-flex justify-content-between align-items-center gap-2">
-        <h2 id="passkeys-title" className="card-title">
+        <h2 id="passkeys-title" className="card-title" tabIndex={-1} ref={heading}>
           {m.passkeysTitle}
         </h2>
         {items && items.length > 0 ? addButton : null}
@@ -103,7 +110,7 @@ export function PasskeysCard() {
                     : `${m.created(formatDate(p.createdAt))} · ${m.neverUsed}`}
                 </small>
               </div>
-              <Button className="btn-ghost-secondary" icon="trash" onClick={() => setTarget(p)}>
+              <Button className="btn-ghost-secondary" icon="trash" onClick={() => askRemove(p)}>
                 {m.remove}
               </Button>
             </li>
@@ -117,8 +124,14 @@ export function PasskeysCard() {
           cancelLabel={m.removeCancel}
           busy={remove.isPending}
           busyLabel={m.removing}
+          returnFocusTo={() => (removed.current ? heading.current : null)}
           onCancel={() => setTarget(null)}
-          onConfirm={() => remove.mutate(target.id, { onSettled: () => setTarget(null) })}
+          onConfirm={() =>
+            remove.mutate(target.id, {
+              onSuccess: () => (removed.current = true),
+              onSettled: () => setTarget(null),
+            })
+          }
         >
           {m.removeBody(target.label)}
         </ConfirmDialog>
