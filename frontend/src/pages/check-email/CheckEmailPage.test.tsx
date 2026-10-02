@@ -149,4 +149,41 @@ describe("SCR-07 Check your email", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe("/api/v1/sign-in/grants/g2/code");
   });
+
+  it("400 code-format shows the format message, not a tries-left count", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(400, { code: "code-format" })));
+    setup();
+    await typeCode("482019");
+    await userEvent.click(signIn());
+    expect(await screen.findByText("Enter the 6-digit code from the email.")).toBeInTheDocument();
+    expect(screen.queryByText(/tries left|try left/)).not.toBeInTheDocument();
+  });
+
+  it("C4: the code input has a visible 'Sign-in code' label", () => {
+    setup();
+    expect(screen.getByText("Sign-in code")).toBeVisible();
+    expect(screen.getByRole("group", { name: "Sign-in code" })).toBeInTheDocument();
+  });
+
+  it("C7: a code error is announced and linked to the digit inputs", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    setup();
+    await userEvent.click(signIn());
+    const error = screen.getByRole("alert");
+    expect(error).toHaveTextContent("Enter the 6-digit code from the email.");
+    const first = screen.getAllByRole("textbox")[0] as HTMLElement;
+    expect(first).toHaveAttribute("aria-invalid", "true");
+    expect(first).toHaveAttribute("aria-describedby", error.id);
+  });
+
+  it("C3: the resent alert carries the info-circle icon", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(json(201, { grantId: "g2", email: "me@example.com" })),
+    );
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: "Send a new link" }));
+    const alert = await screen.findByText(/We sent a new email/);
+    expect(alert.closest(".alert")?.querySelector("svg.tabler-icon-info-circle")).not.toBeNull();
+  });
 });

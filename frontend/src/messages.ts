@@ -85,7 +85,6 @@ export const messages = {
   },
   inbox: {
     title: "Inbox",
-    emptyTitle: "No Telegram account yet",
     empty: "Connect your Telegram account to start.",
     connect: "Connect Telegram",
     note: "Telegram linking is coming next.",

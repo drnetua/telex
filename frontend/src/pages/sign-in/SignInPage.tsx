@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { requestSignInEmail } from "../../api/signIn";
@@ -15,6 +15,7 @@ export function SignInPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [invalid, setInvalid] = useState(false);
+  const errorId = useId();
   const [submitting, setSubmitting] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyFailed, setPasskeyFailed] = useState(false);
@@ -44,6 +45,10 @@ export function SignInPage() {
       return;
     }
     setInvalid(false);
+    await send(address);
+  }
+
+  async function send(address: string) {
     setSubmitting(true);
     try {
       const grant = await requestSignInEmail(address);
@@ -53,7 +58,7 @@ export function SignInPage() {
     } catch (error) {
       setSubmitting(false);
       if (error instanceof ApiFailure && error.status === 400) setInvalid(true);
-      else if (!routeFailure(error, () => requestSignInEmail(address))) throw error;
+      else if (!routeFailure(error, () => send(address))) throw error;
     }
   }
 
@@ -78,10 +83,16 @@ export function SignInPage() {
           className={`form-control${invalid ? " is-invalid" : ""}`}
           value={email}
           readOnly={submitting}
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
           onChange={(e) => setEmail(e.target.value)}
         />
         {invalid ? (
-          <div className="invalid-feedback d-flex align-items-center gap-1">
+          <div
+            id={errorId}
+            role="alert"
+            className="invalid-feedback d-flex align-items-center gap-1"
+          >
             <Icon name="alert-circle" size={16} />
             {messages.signIn.emailInvalid}
           </div>

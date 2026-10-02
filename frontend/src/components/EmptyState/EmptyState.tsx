@@ -4,7 +4,8 @@ import { Icon, type IconName } from "../Icon/Icon";
 interface EmptyStateProps {
   kind: "none" | "blocked" | "first";
   icon: IconName;
-  title: string;
+  /** Omit when the sentence below is the whole message (SCR-10). */
+  title?: string;
   children: ReactNode;
   action?: ReactNode;
   headingLevel?: 1 | 2;
@@ -24,7 +25,7 @@ export function EmptyState({
       <div className="empty-icon">
         <Icon name={icon} size={40} />
       </div>
-      <Heading className="empty-title">{title}</Heading>
+      {title ? <Heading className="empty-title">{title}</Heading> : null}
       <p className="empty-subtitle text-secondary">{children}</p>
       {action ? <div className="empty-action">{action}</div> : null}
     </div>

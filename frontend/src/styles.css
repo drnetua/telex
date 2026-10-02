@@ -1,0 +1,10 @@
+/* Phone: icon-only header buttons meet the 44 px target size (screens.md, PageFrame). */
+@media (max-width: 767.98px) {
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

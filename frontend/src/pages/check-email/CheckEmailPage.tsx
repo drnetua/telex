@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { redeemSignInCode, requestSignInEmail } from "../../api/signIn";
@@ -42,6 +42,7 @@ export function CheckEmailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const messageId = useId();
 
   if (!grant) return <Navigate to="/sign-in" replace />;
   const m = messages.checkEmail;
@@ -105,7 +106,8 @@ export function CheckEmailPage() {
     <div>
       <h1 className="h2 text-center">{m.title}</h1>
       {resent ? (
-        <div className="alert alert-info" role="status">
+        <div className="alert alert-info d-flex align-items-center gap-2" role="status">
+          <Icon name="info-circle" size={18} />
           {m.resent(grant.email)}
         </div>
       ) : null}
@@ -116,9 +118,14 @@ export function CheckEmailPage() {
           onChange={setCode}
           state={wrong || message === m.codeInvalid ? "invalid" : "input"}
           focusSignal={focusSignal}
+          describedBy={messageId}
         />
         {message ? (
-          <div className="invalid-feedback d-block d-flex align-items-center gap-1 justify-content-center">
+          <div
+            id={messageId}
+            role="alert"
+            className="invalid-feedback d-block d-flex align-items-center gap-1 justify-content-center"
+          >
             <Icon name="alert-circle" size={16} />
             {message}
           </div>

@@ -3,6 +3,8 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ApiFailure } from "../../api/client";
+import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
 import { createAppQueryClient } from "../../app/queryClient";
 import { PageFrame } from "../../components/PageFrame/PageFrame";
 import { ProfileSecurityPage } from "./ProfileSecurityPage";
@@ -47,7 +49,7 @@ const sessions = {
 function stubApi(opts: {
   passkeys?: unknown[];
   sessionList?: unknown;
-  onCall?: (method: string, url: string) => Response | undefined;
+  onCall?: (method: string, url: string) => Response | Promise<Response> | undefined;
 }) {
   const calls: Array<[string, string]> = [];
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
@@ -66,10 +68,10 @@ function stubApi(opts: {
   return calls;
 }
 
-function setup() {
+function setup(entry = "/profile") {
   render(
     <QueryClientProvider client={createAppQueryClient()}>
-      <MemoryRouter initialEntries={["/profile"]}>
+      <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route
             path="/profile"
@@ -85,7 +87,13 @@ function setup() {
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.mocked(canCreatePasskey).mockResolvedValue(true);
+  vi.mocked(createPasskey).mockResolvedValue(undefined);
+});
+
+const pending = () => new Promise<Response>(() => undefined);
 
 describe("SCR-64 Profile and security", () => {
   it("shows heading and signed-in email", async () => {
@@ -173,5 +181,100 @@ describe("SCR-64 Profile and security", () => {
     expect(
       screen.queryByRole("button", { name: "Sign out of all other sessions" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("SCR-64 passkey states (AC-89, AC-91, AC-97)", () => {
+  it("passkeys-unsupported replaces Add with the note, keeping the empty sentence", async () => {
+    vi.mocked(canCreatePasskey).mockResolvedValue(false);
+    stubApi({ passkeys: [] });
+    setup();
+    expect(await screen.findByText("No passkeys yet.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "This browser doesn't support passkeys. Add one from another device.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add a passkey" })).not.toBeInTheDocument();
+  });
+
+  it("adding shows a busy 'Waiting for your device' button", async () => {
+    let finish!: () => void;
+    vi.mocked(createPasskey).mockReturnValue(new Promise<void>((r) => (finish = r)));
+    stubApi({ passkeys: [] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Add a passkey" }));
+    expect(screen.getByRole("button", { name: "Waiting for your device" })).toBeDisabled();
+    finish();
+  });
+
+  it("add-cancelled returns to the previous state with no message", async () => {
+    vi.mocked(createPasskey).mockRejectedValue(new PasskeyCancelled());
+    stubApi({ passkeys: [] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Add a passkey" }));
+    expect(await screen.findByRole("button", { name: "Add a passkey" })).toBeEnabled();
+    expect(screen.queryByText("No passkey was created. Try again.")).not.toBeInTheDocument();
+  });
+
+  it("add-failed shows the error toast", async () => {
+    vi.mocked(createPasskey).mockRejectedValue(new ApiFailure(400, "passkey-registration-failed"));
+    stubApi({ passkeys: [] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Add a passkey" }));
+    expect(await screen.findByText("No passkey was created. Try again.")).toBeInTheDocument();
+  });
+
+  it("added refetches the list and the new row shows Never used", async () => {
+    const list: unknown[] = [];
+    vi.mocked(createPasskey).mockImplementation(async () => {
+      list.push(passkey);
+    });
+    stubApi({ passkeys: list });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Add a passkey" }));
+    expect(
+      await screen.findByRole("heading", { name: "Safari on iPhone", level: 4 }),
+    ).toBeVisible();
+    expect(screen.getByText(/Never used/)).toBeInTheDocument();
+  });
+
+  it("removing shows a busy 'Removing' confirm button", async () => {
+    stubApi({
+      onCall: (m, u) => (m === "DELETE" && u === "/api/v1/passkeys/p1" ? pending() : undefined),
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Remove passkey" }));
+    expect(await within(dialog).findByRole("button", { name: "Removing" })).toBeDisabled();
+  });
+
+  it("removed-on-404 closes the dialog and refetches the list", async () => {
+    const calls = stubApi({
+      onCall: (m, u) =>
+        m === "DELETE" && u === "/api/v1/passkeys/p1"
+          ? json(404, { code: "not-found" })
+          : undefined,
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    await userEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Remove passkey" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(calls.filter(([m, u]) => m === "GET" && u === "/api/v1/passkeys")).toHaveLength(2),
+    );
+  });
+
+  it("AC-98: the #sessions anchor scrolls the sessions card into view", async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    stubApi({});
+    setup("/profile#sessions");
+    await screen.findByText("This device");
+    await waitFor(() => expect(scroll).toHaveBeenCalled());
+    expect(document.getElementById("sessions")).not.toBeNull();
   });
 });

@@ -10,9 +10,19 @@ export interface Me {
 
 export const meKey = ["me"] as const;
 
+/** Refetches (not first loads) carry the background marker. */
+function useBackgroundFlag(key: readonly string[]) {
+  const client = useQueryClient();
+  return () => (client.getQueryState(key)?.dataUpdateCount ?? 0) > 0;
+}
+
 /** The SPA's session state. */
 export function useMe() {
-  return useQuery({ queryKey: meKey, queryFn: () => apiFetch<Me>("/api/v1/me") });
+  const background = useBackgroundFlag(meKey);
+  return useQuery({
+    queryKey: meKey,
+    queryFn: () => apiFetch<Me>("/api/v1/me", { background: background() }),
+  });
 }
 
 export function useSignOut() {
@@ -47,12 +57,6 @@ export interface SignInSession {
 
 export const passkeysKey = ["passkeys"] as const;
 export const sessionsKey = ["sessions"] as const;
-
-/** Refetches (not first loads) carry the background marker. */
-function useBackgroundFlag(key: readonly string[]) {
-  const client = useQueryClient();
-  return () => (client.getQueryState(key)?.dataUpdateCount ?? 0) > 0;
-}
 
 export function usePasskeys() {
   const background = useBackgroundFlag(passkeysKey);
