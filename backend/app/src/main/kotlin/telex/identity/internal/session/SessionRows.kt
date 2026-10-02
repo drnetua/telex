@@ -19,6 +19,14 @@ data class SessionRow(
     val endedAt: Instant?,
 )
 
+data class ListedRow(
+    val id: SignInSessionId,
+    val userAgentLabel: String,
+    val deviceType: String,
+    val startedAt: Instant,
+    val lastActivityAt: Instant,
+)
+
 @Repository
 class SessionRows(
     private val jdbc: JdbcClient,
@@ -85,6 +93,49 @@ class SessionRows(
         jdbc
             .sql("UPDATE sign_in_session SET last_activity_at = ? WHERE id = ? AND last_activity_at <= ?")
             .params(ts(now), id.value, ts(now.minus(minGap)))
+            .update()
+    }
+
+    fun listLive(
+        ownerId: OwnerId,
+        idleCutoff: Instant,
+        ageCutoff: Instant,
+    ): List<ListedRow> =
+        jdbc
+            .sql(
+                "SELECT id, user_agent_label, device_type, started_at, last_activity_at FROM sign_in_session " +
+                    "WHERE owner_id = ? AND ended_at IS NULL AND last_activity_at > ? AND started_at > ? " +
+                    "ORDER BY started_at DESC, id DESC",
+            ).params(ownerId.value, ts(idleCutoff), ts(ageCutoff))
+            .query { rs, _ ->
+                ListedRow(
+                    SignInSessionId(rs.getObject("id", UUID::class.java)),
+                    rs.getString("user_agent_label"),
+                    rs.getString("device_type"),
+                    rs.getObject("started_at", OffsetDateTime::class.java).toInstant(),
+                    rs.getObject("last_activity_at", OffsetDateTime::class.java).toInstant(),
+                )
+            }.list()
+
+    /** Ends one live session of this Owner; false when it is not theirs, not live or absent. */
+    fun endOwned(
+        ownerId: OwnerId,
+        id: SignInSessionId,
+        now: Instant,
+    ): Boolean =
+        jdbc
+            .sql("UPDATE sign_in_session SET ended_at = ? WHERE id = ? AND owner_id = ? AND ended_at IS NULL")
+            .params(ts(now), id.value, ownerId.value)
+            .update() == 1
+
+    fun endOthers(
+        ownerId: OwnerId,
+        keep: SignInSessionId,
+        now: Instant,
+    ) {
+        jdbc
+            .sql("UPDATE sign_in_session SET ended_at = ? WHERE owner_id = ? AND id <> ? AND ended_at IS NULL")
+            .params(ts(now), ownerId.value, keep.value)
             .update()
     }
 

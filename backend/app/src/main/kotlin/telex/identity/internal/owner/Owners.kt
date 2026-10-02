@@ -34,4 +34,12 @@ class Owners(
                 .single()
         return OwnerId(id) to (inserted == 1)
     }
+
+    fun emailOf(id: OwnerId): String? =
+        jdbc
+            .sql("SELECT email FROM owner WHERE id = ?")
+            .param(id.value)
+            .query(String::class.java)
+            .optional()
+            .orElse(null)
 }

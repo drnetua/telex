@@ -11,6 +11,7 @@ import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.stereotype.Component
 import telex.identity.SessionResolution
 import telex.identity.SignInSessions
+import telex.identity.SignedInOwner
 
 /** Stateless: the Sign-in Session behind the `telex_session` cookie is the security context (ADR-0001). */
 @Component
@@ -46,7 +47,11 @@ class SessionCookieSecurityContextRepository(
         when (val resolution = sessions.resolve(key, background)) {
             is SessionResolution.Live -> {
                 context.authentication =
-                    UsernamePasswordAuthenticationToken.authenticated(resolution.ownerId, null, emptyList())
+                    UsernamePasswordAuthenticationToken.authenticated(
+                        SignedInOwner(resolution.ownerId, resolution.sessionId),
+                        null,
+                        emptyList(),
+                    )
             }
 
             SessionResolution.Ended -> {

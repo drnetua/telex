@@ -9,11 +9,27 @@ import telex.identity.internal.session.SessionRows
 import telex.shared.Uuid7
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.time.ZoneId
 
 data class StartedSession(
     val sessionId: SignInSessionId,
     val key: String,
+)
+
+/** The authenticated principal: the Owner and the Sign-in Session they are using. */
+data class SignedInOwner(
+    val ownerId: OwnerId,
+    val sessionId: SignInSessionId,
+)
+
+data class MySession(
+    val id: SignInSessionId,
+    val userAgentLabel: String,
+    val deviceType: String,
+    val startedAt: Instant,
+    val lastActivityAt: Instant,
+    val current: Boolean,
 )
 
 sealed interface SessionResolution {
@@ -79,6 +95,30 @@ class SignInSessions(
     fun endByKey(key: String?) {
         if (key != null) rows.endByKeyHash(Secrets.sha256(key), clock.instant())
     }
+
+    @Transactional(readOnly = true)
+    fun listMine(
+        ownerId: OwnerId,
+        currentId: SignInSessionId,
+    ): List<MySession> {
+        val now = clock.instant()
+        return rows.listLive(ownerId, now.minus(IDLE_LIMIT), now.minus(MAX_AGE)).map {
+            MySession(it.id, it.userAgentLabel, it.deviceType, it.startedAt, it.lastActivityAt, it.id == currentId)
+        }
+    }
+
+    /** False when the session is not this Owner's live session (indistinguishable from missing). */
+    @Transactional
+    fun endMine(
+        ownerId: OwnerId,
+        sessionId: SignInSessionId,
+    ): Boolean = rows.endOwned(ownerId, sessionId, clock.instant())
+
+    @Transactional
+    fun endMyOthers(
+        ownerId: OwnerId,
+        currentId: SignInSessionId,
+    ) = rows.endOthers(ownerId, currentId, clock.instant())
 
     private fun zoneOrUtc(timeZone: String?): String =
         if (timeZone != null && timeZone in ZoneId.getAvailableZoneIds()) timeZone else "UTC"
