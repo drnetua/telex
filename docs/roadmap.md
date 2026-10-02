@@ -1,6 +1,6 @@
 ---
 status: living
-updated_at: "2026-09-30"
+updated_at: "2026-10-01"
 ---
 
 # Roadmap — teleX
@@ -22,7 +22,7 @@ Step ids 1–29 are the epic numbers of `docs/docs/02-epics.md` (E01–E29); 0 i
 | # | Step | Source | Size | Status |
 |---|---|---|:---:|---|
 | 0 | Skeleton — 13 empty Modulith modules + `verify()`, CI, Compose with Postgres + pgvector, Flyway baseline with rollback, React build served by Spring ([`_scaffold`](features/_scaffold/)) | `docs/architecture-map.md` §Constraints & known tech-debt | S | spec'd |
-| 1 | Platform skeleton — Owner signs up and signs in with magic link + passkey, one-command README | `docs/docs/02-epics.md` §E01 · platform-skeleton | S | idea |
+| 1 | Platform skeleton — Owner signs up and signs in with magic link + passkey, one-command README ([`platform-skeleton`](features/platform-skeleton/)) | `docs/docs/02-epics.md` §E01 · platform-skeleton | M | spec'd |
 | 2 | Telegram link — Owner links (and fully unlinks) Telegram accounts; sessions survive restart | `docs/docs/02-epics.md` §E02 · telegram-link | M | idea |
 | 3 | AI consent — Owner grants, sees and revokes consent before any text reaches AI | `docs/docs/02-epics.md` §E03 · ai-consent | S | idea |
 | 4 | Chat reading — chat list with folders, history with media, live updates in the web | `docs/docs/02-epics.md` §E04 · chat-reading | M | idea |
