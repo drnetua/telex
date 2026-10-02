@@ -314,25 +314,26 @@ sequenceDiagram
 
 ## 7. Deployment view
 
-<!-- 🎯 Why: the TOPOLOGY DevOps must know without reading the deploy charts — how many replicas,
-     where the background worker lives, AT WHAT NUMBERS we scale.
-     📋 Write: 2–3 sentences on topology + monitoring + concrete threshold numbers.
-     📌 e.g. «500 authors → partition by quarter» (not «we'll think about scale later»).
-     🎯 N/A allowed for XS/S that reuses an existing deployment unit with no change.
-     Deployment-diagram scaffold → templates/deployment.md. -->
+**Topology.** One app instance plus one Postgres, as fixed by foundation ADR-0001. The spec sets no availability SLO for E01 (spec §6 Availability: N/A).
+- **Local (AC-33).** `docker compose up` starts three services:
+  - `app`, built by a new multi-stage `Dockerfile`: a build stage on JDK 25 + Node/pnpm runs the Gradle `bootJar`, including the SPA; a runtime stage on JRE 25 runs it. The app is reachable at `http://localhost:8080`.
+  - `postgres` (`pgvector/pgvector:pg17`, host port `TELEX_DB_PORT`, default 5432).
+  - `mailpit`, the local mailbox: SMTP on 1025 for the app, a web page on `http://localhost:8025` for the Operator.
 
-<Topology in 2–3 sentences. Where it runs, replicas, scaling thresholds.>
+  The app waits for Postgres's health check, and Flyway migrates on start. The README names both addresses. The first image build is outside the 5-minute budget (spec §6).
+- **Production (out of E01 scope beyond configuration).** The same image runs behind Cloudflare, which terminates HTTPS and proxies to the app over HTTP. The Operator sets `TELEX_PUBLIC_URL=https://<domain>` (ADR-0006), real SMTP settings (`TELEX_MAIL_*` → `spring.mail.*`) and the datasource. The README lists exactly these settings and warns against public exposure before E26 (spec §3, §8 OQ-2).
+- **Developer loop (unchanged).** `docker compose up -d postgres mailpit` plus `bootRun --spring.profiles.active=local`, and `pnpm dev` with the Vite proxy extended to `/webauthn/**` and `/login/webauthn`.
 
 **Monitoring:**
-- <Metrics — e.g. `<metric_name>`>
-- <Alerts — e.g. «worker lag > 10 min → page on-call»>
-- <Tracing — e.g. spans on the request boundary>
+- Metrics: Spring Boot Actuator + Micrometer counters `telex.signin.grants.issued`, `telex.signin.redeemed{method=link|code|passkey}`, `telex.signin.refused{reason=expired|used|void|wrong_code}`, `telex.sessions.started{created_account}`, `telex.mail.sent{template,outcome}`. No email addresses or secrets in tags.
+- Health: `/actuator/health` (public, used by the compose health check); incomplete event publications are visible in `event_publication`.
+- Alerts: none in E01 (no SLO). Tracing: none in E01; the tech spec's OpenTelemetry arrives with the agent epics.
+- KPIs (spec §7) are read with SQL over `owner`, `sign_in_grant`, `sign_in_session` and `user_credentials`. There is no analytics pipeline.
 
 **Scaling thresholds:**
-- <e.g. comfortable in one table up to N rows/year>
-- <e.g. partition by quarter above N rows/year>
-
-<!-- For XS/S with no deployment change: <!-- N/A: reuses existing deployment unit, no infra change --> -->
+- A single instance is enough for a course installation. Sessions resolve by a unique index on `key_hash`, one indexed read per request, plus at most one activity write per session per minute (ADR-0005).
+- Expired grants and ended sessions are kept, with no cleanup job (§11 accepted debt). Add a purge job once `sign_in_grant` passes about 100 000 rows, or when E26 brings Operator maintenance tasks, whichever comes first.
+- A second app instance needs no change to sessions: the state is in Postgres, not in memory.
 
 ## 8. Crosscutting concepts
 
