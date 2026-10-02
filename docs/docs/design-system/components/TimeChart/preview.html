@@ -1,0 +1,12 @@
+<!-- @dsCard group="Metrics" height=760 subtitle="C-39" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TimeChart</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack'},h(T.TimeChart,null),h(T.TimeChart,{title:'Spend per day',subtitle:'All assistants · last 7 days',unit:'$',budget:1.5,series:[{name:'Reply helper',data:[0.6,0.7,0.5,0.3,0.2,0.8,0.9]},{name:'Weekly digest',data:[0.1,0.1,0.1,0,0,0.1,0.1]},{name:'Deadline catcher',data:[0.2,0.3,0.2,0.1,0.05,0.3,0.4]}]})));
+</script>
+</body>
+</html>

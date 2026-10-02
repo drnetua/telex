@@ -1,0 +1,60 @@
+# `docker compose up` runs the whole installation (app + Postgres + Mailpit).
+# Developer loop: `docker compose up -d postgres mailpit` + bootRun --spring.profiles.active=local.
+# Set TELEX_DB_PORT if 5432 is taken.
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/telex
+      SPRING_DATASOURCE_USERNAME: telex
+      SPRING_DATASOURCE_PASSWORD: telex
+      TELEX_MAIL_HOST: mailpit
+      TELEX_MAIL_PORT: "1025"
+      TELEX_PUBLIC_URL: ${TELEX_PUBLIC_URL:-http://localhost:8080}
+    # `docker compose up --wait` (CI e2e, smoke script) returns only once the app answers. The JRE image has no curl
+    # and its sh has no /dev/tcp, so the probe is a plain HTTP request over bash.
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 &&
+          head -n 1 <&3 | grep -q ' 200 '
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: telex
+      POSTGRES_USER: telex
+      POSTGRES_PASSWORD: telex
+    ports:
+      - "${TELEX_DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telex -d telex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

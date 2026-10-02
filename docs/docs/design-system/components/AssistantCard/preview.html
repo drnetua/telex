@@ -1,0 +1,12 @@
+<!-- @dsCard group="Assistants" height=540 subtitle="C-16" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AssistantCard</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack',style:{maxWidth:560}},h(T.AssistantCard,{name:'Reply helper'}),h(T.AssistantCard,{name:'Weekly digest',summary:'Summarises 5 topics every Monday',state:'budget',runs:4,trained:0,doubts:0,spent:5}),h(T.AssistantCard,{name:'Deadline catcher',state:'paused',selectable:true,selected:true})));
+</script>
+</body>
+</html>

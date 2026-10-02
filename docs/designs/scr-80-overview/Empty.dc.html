@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>teleX Overview, first day</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/telex/tokens.css">
+<link rel="stylesheet" href="ds/telex/components/bundle.css">
+<script src="ds/telex/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;padding:0;background:var(--bg-body)}
+</style>
+</helmet>
+<div data-theme="light" style="min-height: 100vh; background: var(--bg-body); color: var(--text-body); font-family: var(--font-sans); font-size: 14px; line-height: 20px;">
+<x-import component-from-global-scope="TeleX.AppShell" active="overview" inbox-count="{{inboxCount}}" style="display: block; min-height: 100vh;">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+<h1 class="h1" style="margin: 0; color: var(--text-heading);">Overview</h1>
+<x-import component-from-global-scope="TeleX.PeriodPicker" value="24h"></x-import>
+</div>
+<section aria-labelledby="needs-you-empty" style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 24px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+<h2 id="needs-you-empty" class="h3" style="margin: 0; color: var(--text-heading);">Needs you</h2>
+<span style="flex-grow: 1; color: var(--text-body);">Your first draft is waiting for approval.</span>
+<a href="#inbox" style="display: inline-flex; align-items: center; min-height: 38px; padding: 8px 16px; border-radius: var(--radius-md); background: var(--primary); color: var(--on-primary); font-weight: 500; text-decoration: none;">Open Inbox</a>
+</section>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+<x-import component-from-global-scope="TeleX.KpiTile" label="Runs" empty="{{yes}}"></x-import>
+<x-import component-from-global-scope="TeleX.KpiTile" label="Spend" empty="{{yes}}"></x-import>
+<x-import component-from-global-scope="TeleX.KpiTile" label="Errors and safety blocks" empty="{{yes}}"></x-import>
+<x-import component-from-global-scope="TeleX.KpiTile" label="Time to draft, median" empty="{{yes}}"></x-import>
+</div>
+<div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+<x-import component-from-global-scope="TeleX.EmptyState" kind="first" text="Charts appear after your assistants' first runs. Telegram was linked 3 hours ago." action="Open Assistants"></x-import>
+</div>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return { inboxCount: 1, yes: true }; }
+}
+</script>
+</body>
+</html>

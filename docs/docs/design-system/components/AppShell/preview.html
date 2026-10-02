@@ -1,0 +1,12 @@
+<!-- @dsCard group="Frame" height=440 subtitle="C-01" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AppShell</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack'},h(T.AppShell,{active:'inbox',inboxCount:4,accounts:h(T.AccountSwitcher,{accounts:[{id:'w',name:'Work'},{id:'p',name:'Personal'}]})},h(T.InboxCard,{original:'Can you review the Q3 deck today?',proposal:'Sure, I’ll send comments by 5 pm.'}))));
+</script>
+</body>
+</html>

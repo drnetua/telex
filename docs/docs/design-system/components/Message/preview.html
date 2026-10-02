@@ -1,0 +1,12 @@
+<!-- @dsCard group="Chats" height=460 subtitle="C-07" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Message</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{style:{display:'grid',gap:8,maxWidth:560}},h(T.Message,{author:'Olena',text:'Can you review the Q3 deck today?',time:'12:03',trace:2}),h(T.Message,{out:true,text:'Sure, I’ll send comments by 5 pm.',time:'12:04',byAssistant:'Reply helper'}),h(T.Message,{author:'Anna',replyTo:'Olena: the deck is in the shared folder',text:'Found it, thanks',time:'12:06',edited:true}),h(T.Message,{forwarded:'Clients',media:'file',text:'Signed contract attached',time:'12:10'}),h(T.Message,{out:true,kind:'blocked',text:'Here is the private link: …',time:'12:12'}),h(T.Message,{kind:'deleted'})));
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<!-- @dsCard group="Decisions" height=760 subtitle="C-11" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>InboxCard</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack',style:{maxWidth:640}},h(T.InboxCard,{focused:true,original:'Can you review the Q3 deck today?',proposal:'Sure, I’ll send comments by 5 pm.'}),h(T.InboxCard,{kind:'doubt',assistant:'Triage',chat:'Design team',original:'Thoughts on this?',reason:'Not sure this is a review request.'}),h(T.InboxCard,{kind:'blocked',chat:'Clients',proposal:'Here is the private link: …',reason:'Blocked: the reply shares a private link.'}),h(T.InboxCard,{kind:'task',assistant:'Tasks',chat:'Olena Kovalenko',original:'Send Q3 comments by 5 pm'})));
+</script>
+</body>
+</html>

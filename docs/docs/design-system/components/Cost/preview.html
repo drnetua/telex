@@ -1,0 +1,12 @@
+<!-- @dsCard group="Runs and data" height=56 subtitle="C-27" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Cost</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row'},h(T.Cost,{value:0.84}),h(T.Cost,{value:0.004}),h(T.Cost,{value:1.2,estimate:true})));
+</script>
+</body>
+</html>

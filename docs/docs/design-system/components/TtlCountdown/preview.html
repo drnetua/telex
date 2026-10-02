@@ -1,0 +1,12 @@
+<!-- @dsCard group="Decisions" height=56 subtitle="C-13" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>TtlCountdown</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row tx-wrap'},h(T.TtlCountdown,{minutes:95}),h(T.TtlCountdown,{minutes:8}),h(T.TtlCountdown,{minutes:30,stale:true}),h(T.TtlCountdown,{minutes:-1})));
+</script>
+</body>
+</html>

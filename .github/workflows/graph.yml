@@ -1,0 +1,50 @@
+name: Knowledge graph
+
+# Refreshes graphify-out/ after every merge into master and commits it back. Pushes made with
+# GITHUB_TOKEN do not trigger workflows, so the graph commit does not re-run CI or this job.
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "graphify-out/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: graph-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update graphify graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install graphify
+        run: uv tool install "graphifyy[gemini,sql]==0.9.74"
+
+      - name: Update the graph
+        env:
+          GEMINI_API_KEY: ${{ secrets.GRAPHIFY_OPENROUTER_API_KEY }}
+          GEMINI_BASE_URL: https://openrouter.ai/api/v1
+          GRAPHIFY_GEMINI_MODEL: google/gemini-3-flash-preview
+        run: scripts/graph-update.sh
+
+      - name: Commit the graph
+        run: |
+          git add graphify-out
+          if git diff --cached --quiet; then
+            echo "Graph unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "graph: update after ${GITHUB_SHA::8}"
+          git push

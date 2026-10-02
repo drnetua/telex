@@ -1,0 +1,12 @@
+<!-- @dsCard group="Chats" height=320 subtitle="C-09" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Composer</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack',style:{maxWidth:560}},h(T.Composer,null),h(T.Composer,{replyTo:'Olena',value:'Sure, by 5 pm'}),h(T.Composer,{state:'error',value:'See you at 3'}),h(T.Composer,{state:'readonly'})));
+</script>
+</body>
+</html>

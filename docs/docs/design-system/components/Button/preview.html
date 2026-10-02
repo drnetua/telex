@@ -1,0 +1,12 @@
+<!-- @dsCard group="Primitives" height=96 subtitle="Tabler primitive" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Button</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row tx-wrap'},h(T.Button,{variant:'primary',icon:'send'},'Approve and send'),h(T.Button,{icon:'pencil'},'Edit'),h(T.Button,{variant:'ghost'},'Dismiss'),h(T.Button,{variant:'danger'},'Delete assistant'),h(T.Button,{variant:'danger-outline',size:'sm',icon:'hand-stop'},'Stop all'),h(T.Button,{disabled:true},'Disabled')));
+</script>
+</body>
+</html>

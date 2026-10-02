@@ -1,0 +1,34 @@
+server:
+  forward-headers-strategy: framework
+spring:
+  application:
+    name: telex
+  threads:
+    virtual:
+      enabled: true
+  flyway:
+    locations: classpath:db/migration
+  mail:
+    host: ${TELEX_MAIL_HOST:localhost}
+    port: ${TELEX_MAIL_PORT:1025}
+    username: ${TELEX_MAIL_USERNAME:}
+    password: ${TELEX_MAIL_PASSWORD:}
+    properties:
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+      mail.smtp.starttls.enable: ${TELEX_MAIL_STARTTLS:false} # true for real relays on 587 (Brevo, Gmail)
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
+      jdbc:
+        schema-initialization:
+          enabled: false # event_publication comes from the Flyway baseline
+management:
+  health:
+    mail:
+      enabled: false # a down SMTP relay must not mark the app unhealthy
+telex:
+  public-url: ${TELEX_PUBLIC_URL:http://localhost:8080}
+  mail:
+    from: ${TELEX_MAIL_FROM:teleX <no-reply@localhost>}

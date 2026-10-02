@@ -1,0 +1,12 @@
+<!-- @dsCard group="Decisions" height=180 subtitle="C-14" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>UndoBar</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-stack'},h(T.UndoBar,{seconds:7}),h(T.UndoBar,{state:'cancelled'}),h(T.UndoBar,{state:'sent'})));
+</script>
+</body>
+</html>

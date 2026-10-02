@@ -1,0 +1,12 @@
+<!-- @dsCard group="Runs and data" height=64 subtitle="C-24" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>RunStatus</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row tx-wrap'},['queued','thinking','waiting','done','blocked','failed','cancelled','dry'].map(function(s){return h(T.RunStatus,{key:s,status:s})})));
+</script>
+</body>
+</html>

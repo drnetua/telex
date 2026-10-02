@@ -1,0 +1,1 @@
+The teleX logo: a chat character with an orbit and a spark, full colour on a transparent background (PNG, 1254 × 1254). Use on sign-in, onboarding and the collapsed sidebar, at least 32px tall, with `space-4` clear space. Don't recolor, crop or add effects. Its colours are the logo's own and are not UI tokens.

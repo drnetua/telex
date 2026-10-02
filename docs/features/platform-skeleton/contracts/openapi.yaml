@@ -1,0 +1,929 @@
+# Derived contract for platform-skeleton (/sdd:api, 2026-10-02).
+#   fields + constraints  ← data-model.md (owner, sign_in_grant, sign_in_session, user_entities, user_credentials)
+#   error responses       ← sad.md §6 alt-branches (Critical flows 1–3 + Flows US-01…US-49)
+#   endpoint list + shape ← spec.md §4 / §5
+# Deviations from the sdd defaults (each recorded in api-sync-report.md §C):
+#   - auth: opaque session cookie `telex_session` + CSRF header, not BearerAuth (ADR-0001, sad §8 CSRF);
+#   - errors: RFC 9457 problem+json with teleX `code` / `errors[]` extensions, not {code, message, details?}
+#     (foundation convention, architecture-map §Conventions); `code` is a lowercase kebab-case DNS-1123 label
+#     (user decision 2026-10-02);
+#   - WebAuthn ceremonies live on Spring Security's paths, outside /api/v1 (ADR-0002);
+#   - sessions / passkeys lists are returned whole, without cursor pagination (user decision 2026-10-02);
+#   - no Idempotency-Key (user decision 2026-10-02).
+openapi: 3.1.0
+
+info:
+  title: teleX sign-in and account security API
+  version: 0.1.0
+  contact:
+    name: teleX backend (identity / web modules)
+    url: https://github.com/drnetua/telex
+  description: |
+    The front door of teleX. An Owner signs up and signs in with nothing but an email address — an emailed
+    Sign-in Link (confirmed on the page it opens) or its 6-digit Sign-in Code — and may add a Passkey for a
+    one-touch return. Every sign-in method ends in one Sign-in Session held in an HttpOnly cookie. The Owner
+    sees and ends their own Sessions and Passkeys, and is emailed about every later sign-in. Every later
+    epic builds on the signed-in Owner this API creates.
+
+    Conventions for every operation:
+    - JSON property names are camelCase (Jackson default; Spring's WebAuthn JSON uses the same style).
+    - Every state-changing request (POST, DELETE) — public ones included — carries the `X-XSRF-TOKEN` header
+      echoing the readable `XSRF-TOKEN` cookie (Spring `CookieCsrfTokenRepository`). The app issues that
+      cookie on every response, the SPA's `index.html` included, so a browser that opens a Sign-in Link first
+      can still post. A missing or wrong token answers `403 forbidden`.
+    - A request the SPA sends on its own (a background refetch) carries `X-Telex-Background: 1` and does not
+      count as session activity; every other request with a live session does, at most once a minute
+      (ADR-0005, AC-96).
+    - Every response carries `Cache-Control: no-store` (sad §8 Caching, AC-95).
+    - Errors are RFC 9457 `application/problem+json`: `type = urn:telex:error:<code>`, the `code` extension
+      and, for field errors, `errors[]`. `code` keys the SPA message catalog.
+    - Secrets — the link token, the code, the session key — are never returned after issue and never appear
+      in a URL the server sees: the Sign-in Link points to an SPA route with the token in the URL fragment,
+      and the SPA posts it in a body.
+
+servers:
+  - url: http://localhost:8080
+    description: Local (one-command install; TELEX_PUBLIC_URL default)
+  - url: https://telex.example.test
+    description: Production behind Cloudflare (TELEX_PUBLIC_URL)
+
+# Global default — every operation needs a live Sign-in Session unless it overrides with `security: []`.
+security:
+  - SessionCookie: []
+
+tags:
+  - name: sign-in
+    description: Email sign-in — request a sign-in email, read a link, redeem by link or code, sign out (US-01, US-46)
+  - name: passkeys
+    description: Passkey ceremonies (Spring Security WebAuthn, ADR-0002) and passkey management (US-45, US-46)
+  - name: account
+    description: The signed-in Owner and their Sign-in Sessions (US-01, US-46)
+
+paths:
+  /api/v1/sign-in/grants:
+    post:
+      tags: [sign-in]
+      summary: Request a sign-in email
+      description: |
+        Validates the address, supersedes every live Sign-in Grant for its canonical form (lowercase, `+tag`
+        removed), issues a new grant valid for 15 minutes and sends the email with the link and the code to
+        the address as typed, inside the request. If the mail server refuses or is too slow, nothing is kept
+        and no earlier grant is superseded. Repeating the request is safe: the newest email is the one that
+        works (AC-103). Answers the grant id the "Check your email" page redeems the code against — never the
+        link or the code.
+      operationId: requestSignInEmail
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInEmailRequest" }
+            example:
+              email: "test.user+work@example.test"
+      responses:
+        "201":
+          description: Sign-in email sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignInGrantIssued" }
+              example:
+                grantId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e5f"
+                email: "test.user+work@example.test"
+        "400":
+          description: Not a complete email address — no email sent (AC-83)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:validation-failed"
+                title: "Bad Request"
+                status: 400
+                detail: "Some fields are invalid."
+                code: "validation-failed"
+                errors:
+                  - field: "email"
+                    code: "email-incomplete"
+                    message: "Enter a complete email address, like me@example.com."
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503":
+          description: The mail server refused or did not answer — nothing kept (Flow US-01 request, `mail server unavailable`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:mail-unavailable"
+                title: "Service Unavailable"
+                status: 503
+                detail: "The sign-in email could not be sent."
+                code: "mail-unavailable"
+
+  /api/v1/sign-in/link/preview:
+    post:
+      tags: [sign-in]
+      summary: Read a Sign-in Link without redeeming it
+      description: |
+        Used by the confirm page (SCR-08) to show "Continue as <address>". Read-only: a mail scanner or link
+        preview that triggers it changes nothing (AC-86). A token that never existed, or a grant superseded by
+        a newer email, answers `sign-in-link-expired` (AC-103; unknown tokens per api-sync-report §B).
+      operationId: previewSignInLink
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInLinkRequest" }
+            example:
+              linkToken: "<link-token-from-the-url-fragment>"
+      responses:
+        "200":
+          description: The link is still usable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignInLinkPreview" }
+              example:
+                email: "test.user+work@example.test"
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "410": { $ref: "#/components/responses/SignInGrantRefused" }
+
+  /api/v1/sign-in/link/redeem:
+    post:
+      tags: [sign-in]
+      summary: Confirm a Sign-in Link and start a Sign-in Session
+      description: |
+        The explicit "Continue as <address>" confirm. Re-checks expiry, use, supersession and the 5-wrong-codes
+        void at this moment (AC-35) inside one conditional update, so concurrent redeems have one winner.
+        On success: creates the Owner if the canonical address is new (AC-34), ends the session this browser
+        held if any (AC-104), starts a new session and sets the `telex_session` cookie. `createdAccount: true`
+        sends the SPA to the passkey step (SCR-09).
+      operationId: redeemSignInLink
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+        - $ref: "#/components/parameters/TimeZone"
+        - $ref: "#/components/parameters/HeldSessionCookie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInLinkRequest" }
+            example:
+              linkToken: "<link-token-from-the-url-fragment>"
+      responses:
+        "200": { $ref: "#/components/responses/SignedIn" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "410": { $ref: "#/components/responses/SignInGrantRefused" }
+
+  /api/v1/sign-in/grants/{grantId}/code:
+    post:
+      tags: [sign-in]
+      summary: Redeem a Sign-in Code and start a Sign-in Session
+      description: |
+        Typed on "Check your email" (SCR-07) in the browser that asked; the code counts only against the grant
+        that page was given (AC-82, AC-103). A wrong code adds one attempt; the 5th wrong code voids the grant
+        for code and link alike (AC-85). A correct code marks the grant used, which also kills its link (AC-82),
+        and then behaves exactly like `redeemSignInLink`. An unknown grant id answers `sign-in-link-expired`.
+      operationId: redeemSignInCode
+      security: []
+      parameters:
+        - in: path
+          name: grantId
+          required: true
+          schema: { $ref: "#/components/schemas/SignInGrantId" }
+        - $ref: "#/components/parameters/XsrfToken"
+        - $ref: "#/components/parameters/TimeZone"
+        - $ref: "#/components/parameters/HeldSessionCookie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInCodeRequest" }
+            example:
+              code: "000000"
+      responses:
+        "200": { $ref: "#/components/responses/SignedIn" }
+        "400":
+          description: Not six digits — not counted as a wrong attempt
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:validation-failed"
+                title: "Bad Request"
+                status: 400
+                detail: "Some fields are invalid."
+                code: "validation-failed"
+                errors:
+                  - field: "code"
+                    code: "code-format"
+                    message: "Enter the 6-digit code from the email."
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "410": { $ref: "#/components/responses/SignInGrantRefused" }
+        "422":
+          description: Wrong code, fewer than 5 wrong attempts so far (Flow US-01 code, `fewer than 5 wrong codes`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:sign-in-code-wrong"
+                title: "Unprocessable Content"
+                status: 422
+                detail: "That code is not right."
+                code: "sign-in-code-wrong"
+                attemptsLeft: 3
+
+  /api/v1/sign-out:
+    post:
+      tags: [sign-in]
+      summary: Sign out of this browser
+      description: |
+        Ends the session this browser holds and clears the `telex_session` cookie (AC-95). Idempotent: with no
+        cookie, or a session that already ended, it still answers 204 and clears the cookie.
+      operationId: signOut
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+        - $ref: "#/components/parameters/HeldSessionCookie"
+      responses:
+        "204":
+          description: Signed out
+          headers:
+            Set-Cookie:
+              description: "`telex_session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax` (+ `Secure` on https)"
+              schema: { type: string }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/v1/me:
+    get:
+      tags: [account]
+      summary: Who am I
+      description: |
+        The signed-in Owner. The SPA's session state is this query: `unauthenticated` sends it to SCR-01
+        with the page remembered (AC-101), `session-ended` to SCR-92 (AC-96). `linkedAccountCount` drives the
+        "Connect Telegram" step on the empty Inbox (AC-100); it is always 0 until E02.
+      operationId: getMe
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: The signed-in Owner
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+              example:
+                ownerId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60"
+                email: "test.user+work@example.test"
+                linkedAccountCount: 0
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/sessions:
+    get:
+      tags: [account]
+      summary: List my live Sign-in Sessions
+      description: |
+        Every live session of the signed-in Owner — never another Owner's (AC-97) — newest first, with the one
+        this request came from marked `current` (AC-93). Returned whole, without pagination.
+      operationId: listMySessions
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: My live sessions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignInSessionList" }
+              example:
+                items:
+                  - id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e61"
+                    userAgentLabel: "Test Browser on Test Device"
+                    deviceType: "computer"
+                    startedAt: "2026-10-02T09:00:00Z"
+                    lastActivityAt: "2026-10-02T09:30:00Z"
+                    current: true
+                  - id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e62"
+                    userAgentLabel: "Safari on iPhone"
+                    deviceType: "phone"
+                    startedAt: "2026-10-01T18:00:00Z"
+                    lastActivityAt: "2026-10-01T18:05:00Z"
+                    current: false
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/sessions/{sessionId}:
+    delete:
+      tags: [account]
+      summary: End one of my Sign-in Sessions
+      description: |
+        Ends the session only if it belongs to the signed-in Owner. Another Owner's session, an ended one, or one
+        that never existed all answer the same `not-found` (AC-97). The ended browser's next request gets
+        `session-ended` (AC-93). Ending the current session is allowed and acts like signing out, except that
+        the cookie is not cleared.
+      operationId: endMySession
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { $ref: "#/components/schemas/SignInSessionId" }
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "204": { description: Session ended }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/v1/sessions/end-others:
+    post:
+      tags: [account]
+      summary: Sign out of all other sessions
+      description: Ends every live session of the signed-in Owner except the current one (AC-94).
+      operationId: endMyOtherSessions
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "204": { description: Every other session ended }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/v1/passkeys:
+    get:
+      tags: [passkeys]
+      summary: List my Passkeys
+      description: |
+        The signed-in Owner's passkeys — filtered by their WebAuthn user entity, never another Owner's (AC-97) —
+        newest first. `lastUsedAt` is null until the first passkey sign-in ("Never used", AC-89). An empty
+        list renders "No passkeys yet" (AC-91). Returned whole, without pagination.
+      operationId: listMyPasskeys
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: My passkeys
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PasskeyList" }
+              example:
+                items:
+                  - id: "dGVzdC1jcmVkZW50aWFsLWlk"
+                    label: "Safari on iPhone"
+                    createdAt: "2026-10-02T09:01:00Z"
+                    lastUsedAt: null
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/passkeys/{passkeyId}:
+    delete:
+      tags: [passkeys]
+      summary: Remove one of my Passkeys
+      description: |
+        Removes the passkey only if it belongs to the signed-in Owner — the last one included (AC-92). Open
+        sessions stay open. Another Owner's passkey or one that never existed answers the same `not-found` (AC-97).
+      operationId: removeMyPasskey
+      parameters:
+        - in: path
+          name: passkeyId
+          required: true
+          schema: { $ref: "#/components/schemas/PasskeyId" }
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "204": { description: Passkey removed }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---- Spring Security WebAuthn endpoints (ADR-0002). Paths and success bodies are the framework's;
+  # ---- teleX adds the session start, the server-side label and the RFC 9457 error mapping.
+  /webauthn/register/options:
+    post:
+      tags: [passkeys]
+      summary: Passkey registration options
+      description: |
+        Finds or creates the signed-in Owner's WebAuthn user entity and answers creation options with a one-time
+        challenge. The challenge lives in a short-lived HttpSession for this ceremony only (data-model "Not stored").
+      operationId: passkeyRegistrationOptions
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "200":
+          description: PublicKeyCredentialCreationOptions (WebAuthn Level 3 JSON, Spring Security shape)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicKeyCredentialCreationOptions" }
+              example:
+                rp: { id: "localhost", name: "teleX" }
+                user: { id: "<user-handle>", name: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60", displayName: "test.user@example.test" }
+                challenge: "<challenge>"
+                pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }]
+                timeout: 300000
+                authenticatorSelection: { residentKey: "required", userVerification: "preferred" }
+                attestation: "none"
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: Finding or creating the user entity failed on our side (a database failure, say)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:internal-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Something went wrong on our side."
+                code: "internal-error"
+
+  /webauthn/register:
+    post:
+      tags: [passkeys]
+      summary: Register a passkey
+      description: |
+        Verifies the challenge and origin (allowed origin from TELEX_PUBLIC_URL, ADR-0006) and stores the
+        credential with its creation date and no last-used date (AC-89). The `label` in the request is ignored:
+        the server names the passkey from the User-Agent ("Safari on iPhone").
+      operationId: registerPasskey
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PasskeyRegistrationRequest" }
+            example:
+              publicKey:
+                credential: { id: "<credential-id>", rawId: "<credential-id>", type: "public-key", response: { attestationObject: "<…>", clientDataJSON: "<…>", transports: ["internal"] } }
+                label: "ignored"
+      responses:
+        "200":
+          description: Passkey created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PasskeyRegistered" }
+              example: { success: true }
+        "400":
+          description: Challenge, origin or attestation did not verify — no passkey added (AC-105)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:passkey-registration-failed"
+                title: "Bad Request"
+                status: 400
+                detail: "No passkey was created."
+                code: "passkey-registration-failed"
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: The registration failed for a reason on our side (a database failure, say) — no passkey added
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:internal-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Something went wrong on our side."
+                code: "internal-error"
+
+  /webauthn/authenticate/options:
+    post:
+      tags: [passkeys]
+      summary: Passkey sign-in options
+      description: Answers request options with a one-time challenge and no allowed credentials, so the device offers its discoverable passkeys without an email (AC-89).
+      operationId: passkeyAuthenticationOptions
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "200":
+          description: PublicKeyCredentialRequestOptions (WebAuthn Level 3 JSON, Spring Security shape)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicKeyCredentialRequestOptions" }
+              example:
+                challenge: "<challenge>"
+                timeout: 300000
+                rpId: "localhost"
+                allowCredentials: []
+                userVerification: "preferred"
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /login/webauthn:
+    post:
+      tags: [passkeys]
+      summary: Sign in with a passkey
+      description: |
+        Verifies the assertion, resolves the Owner from the credential's user entity, updates the credential's
+        last-used date and signature count, ends the session this browser held if any (AC-104) and starts a new
+        Sign-in Session (AC-89). A passkey sign-in never creates an account, so `createdAccount` is always false.
+      operationId: signInWithPasskey
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+        - $ref: "#/components/parameters/TimeZone"
+        - $ref: "#/components/parameters/HeldSessionCookie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PublicKeyCredentialAssertion" }
+            example:
+              id: "<credential-id>"
+              rawId: "<credential-id>"
+              type: "public-key"
+              response: { authenticatorData: "<…>", clientDataJSON: "<…>", signature: "<…>", userHandle: "<user-handle>" }
+      responses:
+        "200": { $ref: "#/components/responses/SignedIn" }
+        "401":
+          description: Unknown or removed credential, or the signature did not verify (AC-92)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:passkey-rejected"
+                title: "Unauthorized"
+                status: 401
+                detail: "That passkey did not work."
+                code: "passkey-rejected"
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: telex_session
+      description: |
+        Opaque 256-bit random key (Base64URL), `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` when
+        TELEX_PUBLIC_URL is https, `Max-Age` 90 days as a hint only. Only its SHA-256 is stored; liveness
+        (not ended, ≤ 30 days idle, ≤ 90 days since start) is enforced server-side (ADR-0001, AC-96).
+
+  parameters:
+    XsrfToken:
+      in: header
+      name: X-XSRF-TOKEN
+      required: true
+      description: Echo of the `XSRF-TOKEN` cookie; required on every state-changing request (sad §8 CSRF).
+      schema: { type: string }
+    Background:
+      in: header
+      name: X-Telex-Background
+      required: false
+      description: "`1` on requests the SPA sends on its own (refetches); such requests don't count as session activity (ADR-0005)."
+      schema: { type: string, enum: ["1"] }
+    TimeZone:
+      in: header
+      name: X-Telex-Time-Zone
+      required: false
+      description: |
+        The signing-in browser's IANA time zone, stored on the new session for the "New sign-in to teleX" email
+        (AC-98). Missing or not a known zone → `UTC`; never an error.
+      schema: { type: string, maxLength: 64, examples: ["Europe/Kyiv"] }
+    HeldSessionCookie:
+      in: cookie
+      name: telex_session
+      required: false
+      description: The session this browser already holds, if any; it is ended when a new one starts here (AC-104).
+      schema: { type: string }
+
+  responses:
+    SignedIn:
+      description: Sign-in Session started
+      headers:
+        Set-Cookie:
+          description: "`telex_session=<key>; Max-Age=7776000; Path=/; HttpOnly; SameSite=Lax` (+ `Secure` on https)"
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/SignInResult" }
+          example:
+            createdAccount: true
+    SignInGrantRefused:
+      description: |
+        The grant can't sign in. `sign-in-link-expired`: over 15 minutes at this moment, superseded by a newer
+        email, or unknown (AC-35, AC-103). `sign-in-link-used`: already redeemed by its link or code (AC-84).
+        `sign-in-grant-void`: 5 wrong codes (AC-85). `email` is present whenever the grant exists, so the
+        refusal page's "Send a new link" can resend to the same address; it is absent for an unknown token.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            expired:
+              value:
+                type: "urn:telex:error:sign-in-link-expired"
+                title: "Gone"
+                status: 410
+                detail: "This link has expired."
+                code: "sign-in-link-expired"
+                email: "test.user+work@example.test"
+            used:
+              value:
+                type: "urn:telex:error:sign-in-link-used"
+                title: "Gone"
+                status: 410
+                detail: "This link was already used."
+                code: "sign-in-link-used"
+                email: "test.user+work@example.test"
+            void:
+              value:
+                type: "urn:telex:error:sign-in-grant-void"
+                title: "Gone"
+                status: 410
+                detail: "This code is no longer valid."
+                code: "sign-in-grant-void"
+                email: "test.user+work@example.test"
+    NotSignedIn:
+      description: |
+        No live Sign-in Session. `unauthenticated`: no cookie or an unknown key — the SPA shows SCR-01 and
+        remembers the page (AC-101). `session-ended`: ended elsewhere, idle 30 days or started 90 days ago —
+        the SPA shows SCR-92 (AC-93, AC-96).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            unauthenticated:
+              value:
+                type: "urn:telex:error:unauthenticated"
+                title: "Unauthorized"
+                status: 401
+                detail: "Sign in to continue."
+                code: "unauthenticated"
+            sessionEnded:
+              value:
+                type: "urn:telex:error:session-ended"
+                title: "Unauthorized"
+                status: 401
+                detail: "Your session has ended."
+                code: "session-ended"
+    NotFound:
+      description: Not among the signed-in Owner's records — identical for another Owner's record and a missing one (AC-97)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:not-found"
+            title: "Not Found"
+            status: 404
+            detail: "Not found."
+            code: "not-found"
+    ValidationFailed:
+      description: The request body is missing a required field or breaks a declared bound
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:validation-failed"
+            title: "Bad Request"
+            status: 400
+            detail: "Some fields are invalid."
+            code: "validation-failed"
+            errors:
+              - field: "linkToken"
+                code: "required"
+                message: "This field is required."
+    Forbidden:
+      description: Missing or wrong CSRF token
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:forbidden"
+            title: "Forbidden"
+            status: 403
+            detail: "The request was refused."
+            code: "forbidden"
+
+  schemas:
+    # ---- Errors (RFC 9457 + teleX extensions; telex.shared.problemDetail)
+    ErrorCode:
+      description: |
+        Stable machine code; keys `frontend/src/messages.ts`. Lowercase kebab-case, a valid DNS-1123 label
+        (≤ 63 chars, `[a-z0-9-]`, starts and ends alphanumeric).
+      type: string
+      maxLength: 63
+      pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      enum:
+        - validation-failed
+        - unauthenticated
+        - session-ended
+        - sign-in-link-expired
+        - sign-in-link-used
+        - sign-in-grant-void
+        - sign-in-code-wrong
+        - passkey-registration-failed
+        - passkey-rejected
+        - not-found
+        - forbidden
+        - mail-unavailable
+        - internal-error
+    FieldProblem:
+      type: object
+      required: [field, code, message]
+      additionalProperties: false
+      properties:
+        field: { type: string, description: "Request property name, e.g. `email`" }
+        code:
+          type: string
+          maxLength: 63
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          description: "Field-level code, same label rule, e.g. `email-incomplete`, `code-format`, `required`"
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+          pattern: "^urn:telex:error:[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string, description: "Human-readable; the SPA shows its own copy keyed by `code`" }
+        instance: { type: string, format: uri-reference }
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldProblem" }
+        attemptsLeft:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: "`sign-in-code-wrong` only: 5 − sign_in_grant.wrong_attempts"
+        email:
+          type: string
+          maxLength: 254
+          description: "Grant refusals only: sign_in_grant.email, for \"Send a new link\""
+
+    # ---- Ids
+    SignInGrantId: { type: string, format: uuid, description: "UUIDv7 (sign_in_grant.id)" }
+    SignInSessionId: { type: string, format: uuid, description: "UUIDv7 (sign_in_session.id)" }
+    OwnerId: { type: string, format: uuid, description: "UUIDv7 (owner.id)" }
+    PasskeyId:
+      type: string
+      maxLength: 1000
+      pattern: "^[A-Za-z0-9_-]+$"
+      description: WebAuthn credential id, Base64URL (user_credentials.credential_id)
+    EmailAddress:
+      type: string
+      maxLength: 254
+      description: |
+        A complete, plain RFC 5322 mailbox: a non-empty name, one `@`, and a domain containing a dot
+        (`me@localhost` is refused, AC-83). Display-name and group forms such as `Name<a@b.com>` are refused.
+        The service validates it; the SPA's check is a looser subset hint, so the service may refuse an address
+        the SPA let through (for example `a..b@x.com`).
+      pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+
+    # ---- Sign-in
+    SignInEmailRequest:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email: { $ref: "#/components/schemas/EmailAddress" }
+    SignInGrantIssued:
+      type: object
+      required: [grantId, email]
+      additionalProperties: false
+      properties:
+        grantId: { $ref: "#/components/schemas/SignInGrantId" }
+        email: { $ref: "#/components/schemas/EmailAddress" }
+    SignInLinkRequest:
+      type: object
+      required: [linkToken]
+      additionalProperties: false
+      properties:
+        linkToken:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: The token from the Sign-in Link's URL fragment (256 bits, Base64URL). Any value that matches no grant answers `sign-in-link-expired`.
+    SignInLinkPreview:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email:
+          $ref: "#/components/schemas/EmailAddress"
+          description: The address this email was sent to, as typed (sign_in_grant.email) — "Continue as <address>"
+    SignInCodeRequest:
+      type: object
+      required: [code]
+      additionalProperties: false
+      properties:
+        code: { type: string, pattern: "^[0-9]{6}$" }
+    SignInResult:
+      type: object
+      required: [createdAccount]
+      additionalProperties: false
+      properties:
+        createdAccount:
+          type: boolean
+          description: True only for the sign-in that created the Owner; the SPA then shows the passkey step (AC-34, AC-91)
+
+    # ---- Account
+    Me:
+      type: object
+      required: [ownerId, email, linkedAccountCount]
+      additionalProperties: false
+      properties:
+        ownerId: { $ref: "#/components/schemas/OwnerId" }
+        email:
+          $ref: "#/components/schemas/EmailAddress"
+          description: The address the account was created with (owner.email)
+        linkedAccountCount:
+          type: integer
+          minimum: 0
+          description: Number of Linked Accounts; always 0 before E02 (AC-100)
+    SignInSession:
+      type: object
+      required: [id, userAgentLabel, deviceType, startedAt, lastActivityAt, current]
+      additionalProperties: false
+      properties:
+        id: { $ref: "#/components/schemas/SignInSessionId" }
+        userAgentLabel: { type: string, maxLength: 100, description: "e.g. \"Safari on iPhone\"" }
+        deviceType: { type: string, enum: [phone, tablet, computer, unknown] }
+        startedAt: { type: string, format: date-time }
+        lastActivityAt: { type: string, format: date-time }
+        current: { type: boolean, description: "This request's own session — \"This device\"" }
+    SignInSessionList:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SignInSession" }
+
+    # ---- Passkeys
+    Passkey:
+      type: object
+      required: [id, label, createdAt, lastUsedAt]
+      additionalProperties: false
+      properties:
+        id: { $ref: "#/components/schemas/PasskeyId" }
+        label: { type: string, maxLength: 1000, description: "Auto name, e.g. \"Safari on iPhone\"" }
+        createdAt: { type: [string, "null"], format: date-time, description: "user_credentials.created; always set by teleX, nullable in Spring's DDL" }
+        lastUsedAt: { type: [string, "null"], format: date-time, description: "null = \"Never used\"" }
+    PasskeyList:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Passkey" }
+
+    # ---- WebAuthn (framework-owned shapes: W3C WebAuthn Level 3 JSON as serialised by Spring Security 7)
+    PublicKeyCredentialCreationOptions:
+      type: object
+      description: Spring Security `PublicKeyCredentialCreationOptions` JSON; pass to `navigator.credentials.create`.
+      required: [rp, user, challenge, pubKeyCredParams]
+      properties:
+        rp: { type: object }
+        user: { type: object }
+        challenge: { type: string }
+        pubKeyCredParams: { type: array, items: { type: object } }
+        timeout: { type: integer }
+        excludeCredentials: { type: array, items: { type: object } }
+        authenticatorSelection: { type: object }
+        attestation: { type: string }
+        extensions: { type: object }
+    PublicKeyCredentialRequestOptions:
+      type: object
+      description: Spring Security `PublicKeyCredentialRequestOptions` JSON; pass to `navigator.credentials.get`.
+      required: [challenge]
+      properties:
+        challenge: { type: string }
+        timeout: { type: integer }
+        rpId: { type: string }
+        allowCredentials: { type: array, items: { type: object } }
+        userVerification: { type: string }
+        extensions: { type: object }
+    PasskeyRegistrationRequest:
+      type: object
+      required: [publicKey]
+      properties:
+        publicKey:
+          type: object
+          required: [credential]
+          properties:
+            credential: { type: object, description: "PublicKeyCredential with an attestation response" }
+            label: { type: string, description: "Ignored — the server sets the label from the User-Agent" }
+    PasskeyRegistered:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+    PublicKeyCredentialAssertion:
+      type: object
+      description: PublicKeyCredential with an assertion response, as Spring's `/login/webauthn` expects.
+      required: [id, rawId, type, response]
+      properties:
+        id: { type: string }
+        rawId: { type: string }
+        type: { type: string, const: public-key }
+        response: { type: object }
+        authenticatorAttachment: { type: [string, "null"] }
+        clientExtensionResults: { type: object }

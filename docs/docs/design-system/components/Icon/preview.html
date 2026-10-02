@@ -1,0 +1,12 @@
+<!-- @dsCard group="Primitives" height=72 subtitle="Tabler primitive" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Icon</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{className:'tx-row tx-wrap'},['inbox','messages','sparkles','activity','checklist','settings','lock','hand-stop','help-circle','arrow-back-up','ban','brand-telegram'].map(function(n){return h(T.Icon,{key:n,name:n})})));
+</script>
+</body>
+</html>

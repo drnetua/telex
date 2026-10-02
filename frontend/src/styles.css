@@ -1,0 +1,27 @@
+/* Design-system tokens (docs/docs/design-system/tokens.json) that Tabler's defaults don't match. */
+:root {
+  --telex-danger-text: #b8322f;
+  --telex-danger-subtle: #fbebeb;
+}
+
+[data-bs-theme="dark"] {
+  --telex-danger-text: #f58080;
+  --telex-danger-subtle: #3a1f1f;
+}
+
+/* Error banners: danger-text on danger-subtle (5.9:1); Tabler's red on its tint is 4.2:1. */
+.alert-danger {
+  --tblr-alert-color: var(--telex-danger-text);
+  --tblr-alert-bg: var(--telex-danger-subtle);
+}
+
+/* Phone: icon-only header buttons meet the 44 px target size (screens.md, PageFrame). */
+@media (max-width: 767.98px) {
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

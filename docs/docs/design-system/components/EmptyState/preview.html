@@ -1,0 +1,12 @@
+<!-- @dsCard group="Forms and feedback" height=220 subtitle="C-34" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>EmptyState</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:8}},h(T.EmptyState,{kind:'done'}),h(T.EmptyState,{kind:'first'})));
+</script>
+</body>
+</html>

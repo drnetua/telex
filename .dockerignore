@@ -1,0 +1,10 @@
+.git
+.gradle
+.idea
+.kotlin
+.worktrees
+.claude
+**/build/
+**/node_modules/
+frontend/dist/
+docs

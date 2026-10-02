@@ -1,0 +1,12 @@
+<!-- @dsCard group="Frame" height=300 subtitle="C-05" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SidePanel</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var T = window.TeleX, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(T.SidePanel,{title:'Why this draft?'},h(T.Verdict,{value:'likely',confidence:0.82}),h('p',{className:'small tx-muted',style:{margin:0}},'Olena asked for a review and named a document. Reply helper matched “review request”.'),h(T.Button,{icon:'eye'},'Open run details')));
+</script>
+</body>
+</html>
