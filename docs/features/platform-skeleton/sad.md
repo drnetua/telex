@@ -63,37 +63,45 @@ target_surfaces: []  # filled in §4 — subset of: backend-service | web-fronte
 
 ## 3. Context and scope
 
-<!-- 🎯 Why: draws the SYSTEM BOUNDARY — who talks to it from outside, where the trust zone ends.
-     Without §3, §5 and §8 (authorization) blur — unclear what's «inside» vs «outside».
-     📋 Write: 2–3 sentences of business context + an external-systems table + a C4Context block.
-     📌 «External: none (deliberate, no third-party in v1)» is itself a decision worth stating.
-     Trust boundary — the line past which you don't trust data without checking it.
-     Never N/A — greenfield still draws the planned actors + external systems. -->
+teleX is a self-hosted web Telegram client. This feature draws its outer boundary for people: who can get in, how, and how they are told about it. The trust boundary is the browser. Everything a browser sends is unauthenticated until it carries a live Sign-in Session. An email is trusted only as proof that its reader controls the mailbox, and only for 15 minutes, once.
 
-<Business context in 2–3 sentences. What the system does for whom.>
-
-<!-- brownfield: <one-line scan summary> (or «N/A — greenfield repo» if no source existed) -->
+<!-- brownfield: scaffold present at 16b5183 — 13 empty Modulith modules with verified allowedDependencies, telex.shared (Uuid7, DomainProblem), telex.web SpaHosting + ProblemHandler, Flyway baseline + MigrationRollbackIT, compose.yaml with Postgres only, single-page App.tsx with no router or query client, no Dockerfile, one-line README. docs/architecture-map.md reflects the pre-scaffold commit ce5eabf (stale — re-run /sdd:survey). -->
 
 **External systems (in / out):**
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| <author role> | Person | <what they do> |
-| <external service> | System (internal/external) | <interaction> |
-| <identity provider> | System (external) | <provides auth tokens> |
+| Operator | Person | Runs the one README command, opens the sign-in page and the local mailbox, completes the first sign-in |
+| Owner | Person | Signs up and signs in by Sign-in Link, Sign-in Code or Passkey; manages Sign-in Sessions and Passkeys |
+| Mail server | System (external) | Receives every email teleX sends over SMTP. Locally this is Mailpit, bundled in compose, whose web page is the "local mailbox"; in production it is the Operator's SMTP provider |
+| Owner's mailbox | System (external) | Where the Owner reads the Sign-in Link, the Sign-in Code and the "New sign-in to teleX" email. Mail scanners and link previews may open links here, and they never confirm (AC-86) |
+| Passkey authenticator | System (external) | The device or password manager behind the browser's WebAuthn API; it creates and signs with the Owner's Passkey after biometrics or a PIN |
+| Cloudflare | System (external, production only) | Terminates HTTPS and proxies to the app over HTTP; not present locally |
 
-**C4 Context (L1):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. -->
+**C4 Context (L1):**
 
 ```mermaid
 C4Context
-    title <feature> — System Context
+    title platform-skeleton — System Context
 
-    Person(actor, "<Actor role>", "<intent>")
-    System(app, "<Our system>", "<one-sentence description>")
-    System_Ext(ext, "<External system>", "<one-sentence description>")
+    Person(operator, "Operator", "Starts teleX with one command")
+    Person(owner, "Owner", "Signs up, signs in, controls own sessions")
 
-    Rel(actor, app, "<interaction>", "<protocol>")
-    Rel(app, ext, "<interaction>", "<protocol>")
+    System_Ext(cloudflare, "Cloudflare", "Production only: HTTPS edge and proxy")
+    System(telex, "teleX", "Web Telegram client; this feature adds sign-up, sign-in and session control")
+    System_Ext(mailserver, "Mail server", "Mailpit locally, SMTP provider in production")
+    System_Ext(mailbox, "Owner's mailbox", "Email client where links and codes are read")
+    System_Ext(authenticator, "Passkey authenticator", "Device or password manager behind WebAuthn")
+
+    Rel(operator, telex, "Starts and opens the sign-in page", "docker compose, HTTP localhost")
+    Rel(operator, mailserver, "Reads first sign-in email in the local mailbox", "HTTP")
+    Rel(owner, cloudflare, "Uses teleX in production", "HTTPS")
+    Rel(cloudflare, telex, "Proxies requests", "HTTP")
+    Rel(owner, telex, "Uses teleX locally", "HTTP localhost")
+    Rel(telex, mailserver, "Sends sign-in and new-sign-in emails", "SMTP")
+    Rel(mailserver, mailbox, "Delivers email", "SMTP")
+    Rel(owner, mailbox, "Reads Sign-in Link and Code")
+    Rel(owner, authenticator, "Confirms with biometrics or PIN", "WebAuthn")
 ```
 
 ## 4. Solution strategy
