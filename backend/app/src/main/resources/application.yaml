@@ -17,6 +17,7 @@ spring:
       mail.smtp.writetimeout: 5000
   modulith:
     events:
+      republish-outstanding-events-on-restart: true
       jdbc:
         schema-initialization:
           enabled: false # event_publication comes from the Flyway baseline
