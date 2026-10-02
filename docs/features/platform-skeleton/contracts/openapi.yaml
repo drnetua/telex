@@ -423,6 +423,17 @@ paths:
                 attestation: "none"
         "401": { $ref: "#/components/responses/NotSignedIn" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: Finding or creating the user entity failed on our side (a database failure, say)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:internal-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Something went wrong on our side."
+                code: "internal-error"
 
   /webauthn/register:
     post:

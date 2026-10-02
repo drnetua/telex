@@ -10,6 +10,7 @@ import java.net.http.HttpResponse
 /** Checks real HTTP exchanges against `contracts/openapi.yaml`, so contract drift fails a test (test-plan.md). */
 object ContractValidator {
     private const val SPEC = "docs/features/platform-skeleton/contracts/openapi.yaml"
+    private val REFUSED_REQUEST = setOf(400, 403)
 
     private val validator: OpenApiInteractionValidator by lazy {
         var dir: File? = File("").absoluteFile
@@ -40,10 +41,11 @@ object ContractValidator {
                 if (response.body().isNotEmpty()) withBody(response.body())
             }
         val report = validator.validate(request.build(), reply.build())
-        // A 400 answers a deliberately malformed request, so only its response has to match the contract.
+        // A 400 or 403 answers a deliberately malformed request (bad body, missing CSRF header), so only its
+        // response has to match the contract.
         val relevant =
             report.messages.filter {
-                response.statusCode() != 400 ||
+                response.statusCode() !in REFUSED_REQUEST ||
                     !it.key.startsWith("validation.request.")
             }
         assertThat(relevant.map { "${it.key}: ${it.message}" })

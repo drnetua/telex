@@ -47,8 +47,9 @@ class SecurityChainIT(
             send(
                 request("/api/v1/sign-in/email")
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString("""{"email":"me@example.com"}"""))
+                    .POST(HttpRequest.BodyPublishers.ofString(EMAIL_BODY))
                     .build(),
+                EMAIL_BODY,
             )
 
         assertThat(response.statusCode()).isEqualTo(403)
@@ -81,6 +82,21 @@ class SecurityChainIT(
 
     private fun request(path: String) = HttpRequest.newBuilder(URI.create("http://localhost:$port$path"))
 
-    private fun send(request: HttpRequest): HttpResponse<String> =
-        http.send(request, HttpResponse.BodyHandlers.ofString())
+    /** Sends the request; API exchanges are also checked against openapi.yaml. */
+    private fun send(
+        request: HttpRequest,
+        body: String? = null,
+    ): HttpResponse<String> {
+        val response = http.send(request, HttpResponse.BodyHandlers.ofString())
+        val path = request.uri().rawPath + (request.uri().rawQuery?.let { "?$it" } ?: "")
+        if (path.startsWith("/api/")) {
+            val headers = request.headers().map().mapValues { it.value.first() }
+            ContractValidator.assertConforms(request.method(), path, body, headers, response)
+        }
+        return response
+    }
+
+    private companion object {
+        const val EMAIL_BODY = """{"email":"me@example.com"}"""
+    }
 }
