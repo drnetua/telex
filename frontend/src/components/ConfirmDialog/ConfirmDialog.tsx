@@ -19,6 +19,8 @@ interface ConfirmDialogProps {
   busyLabel?: string;
   /** Confirm button styling: `danger` for destructive actions. */
   tone?: "default" | "danger";
+  /** Where focus goes on close instead of the opener, e.g. when the opener is about to disappear. */
+  returnFocusTo?: () => HTMLElement | null;
 }
 
 /** Modal confirmation that names the consequence. */
@@ -32,16 +34,33 @@ export function ConfirmDialog({
   busy = false,
   busyLabel,
   tone = "danger",
+  returnFocusTo,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef(returnFocusTo);
+  useEffect(() => {
+    returnFocusRef.current = returnFocusTo;
+  });
 
   // Move focus into the dialog on open and give it back to the opener on close.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     dialogRef.current?.querySelector<HTMLElement>("button:not(:disabled)")?.focus();
-    return () => opener?.focus?.();
+    return () => {
+      const target = returnFocusRef.current?.() ?? (opener?.isConnected ? opener : null);
+      target?.focus?.();
+    };
   }, []);
+
+  // Disabled buttons drop focus to <body>; park it on the dialog while busy and hand it back afterwards.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (busy) dialog?.focus();
+    else if (document.activeElement === dialog) {
+      dialog?.querySelector<HTMLElement>("button:not(:disabled)")?.focus();
+    }
+  }, [busy]);
 
   function trapTab(e: ReactKeyboardEvent) {
     if (e.key !== "Tab") return;
@@ -50,7 +69,10 @@ export function ConfirmDialog({
     );
     const first = buttons[0];
     const last = buttons[buttons.length - 1];
-    if (!first || !last) return;
+    if (!first || !last) {
+      e.preventDefault();
+      return;
+    }
     const active = document.activeElement;
     if (e.shiftKey && active === first) {
       e.preventDefault();
@@ -75,6 +97,7 @@ export function ConfirmDialog({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-labelledby={titleId}
         onKeyDown={trapTab}
       >
