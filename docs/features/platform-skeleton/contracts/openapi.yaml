@@ -464,6 +464,17 @@ paths:
                 code: "passkey-registration-failed"
         "401": { $ref: "#/components/responses/NotSignedIn" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "500":
+          description: The registration failed for a reason on our side (a database failure, say) — no passkey added
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:internal-error"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Something went wrong on our side."
+                code: "internal-error"
 
   /webauthn/authenticate/options:
     post:
