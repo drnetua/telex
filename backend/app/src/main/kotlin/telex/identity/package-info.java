@@ -15,6 +15,7 @@
         "llm",
         "decision",
         "bot",
+        "mail",
         "shared"
     }
 )

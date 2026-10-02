@@ -6,6 +6,15 @@ spring:
       enabled: true
   flyway:
     locations: classpath:db/migration
+  mail:
+    host: ${TELEX_MAIL_HOST:localhost}
+    port: ${TELEX_MAIL_PORT:1025}
+    username: ${TELEX_MAIL_USERNAME:}
+    password: ${TELEX_MAIL_PASSWORD:}
+    properties:
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   modulith:
     events:
       jdbc:
@@ -13,3 +22,5 @@ spring:
           enabled: false # event_publication comes from the Flyway baseline
 telex:
   public-url: ${TELEX_PUBLIC_URL:http://localhost:8080}
+  mail:
+    from: ${TELEX_MAIL_FROM:teleX <no-reply@localhost>}

@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jdbc)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.mail)
     implementation(libs.spring.modulith.starter.core)
     implementation(libs.spring.modulith.starter.jdbc)
     implementation(libs.jackson.module.kotlin)
