@@ -3,19 +3,11 @@ import { CheckEmailPage } from "../pages/check-email/CheckEmailPage";
 import { CreatePasskeyPage } from "../pages/create-passkey/CreatePasskeyPage";
 import { ConfirmLinkPage } from "../pages/confirm-link/ConfirmLinkPage";
 import { InboxPage } from "../pages/inbox/InboxPage";
+import { ProfileSecurityPage } from "../pages/profile-security/ProfileSecurityPage";
 import { SignInPage } from "../pages/sign-in/SignInPage";
 import { NotFoundPage } from "../pages/system/NotFoundPage";
 import { SessionEndedPage } from "../pages/system/SessionEndedPage";
 import { AppLayout, AuthLayout, BareSystemLayout } from "./layouts";
-
-function Placeholder({ title, body }: { title: string; body?: string }) {
-  return (
-    <div className="empty">
-      <h1 className="empty-title">{title}</h1>
-      {body ? <p className="empty-subtitle text-secondary">{body}</p> : null}
-    </div>
-  );
-}
 
 export function AppRoutes() {
   return (
@@ -29,7 +21,7 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
         <Route path="/inbox" element={<InboxPage />} />
-        <Route path="/profile" element={<Placeholder title="Profile and security" />} />
+        <Route path="/profile" element={<ProfileSecurityPage />} />
       </Route>
       <Route element={<BareSystemLayout />}>
         <Route path="/session-ended" element={<SessionEndedPage />} />

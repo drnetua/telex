@@ -2,12 +2,15 @@ import {
   IconAlertCircle,
   IconBan,
   IconBrandTelegram,
+  IconCheck,
   IconClock,
   IconInfoCircle,
   IconLock,
   IconLogout,
+  IconPlus,
   IconRefresh,
   IconSearch,
+  IconTrash,
   IconUser,
   IconWifiOff,
   type TablerIcon,
@@ -25,6 +28,9 @@ const icons = {
   logout: IconLogout,
   "wifi-off": IconWifiOff,
   refresh: IconRefresh,
+  plus: IconPlus,
+  trash: IconTrash,
+  check: IconCheck,
 } satisfies Record<string, TablerIcon>;
 
 export type IconName = keyof typeof icons;
