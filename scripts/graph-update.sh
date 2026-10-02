@@ -26,5 +26,18 @@ if [ "$branch" != master ] && [ "${GRAPH_ANY_BRANCH:-0}" != 1 ]; then
   fail "on '$branch' — update the graph on master only (GRAPH_ANY_BRANCH=1 to override)"
 fi
 
-graphify extract .   # incremental: manifest.json decides what is new/changed/deleted
+# Incremental: manifest.json decides what is new/changed/deleted. graphify refuses to write a smaller
+# graph when a re-extracted doc yields fewer nodes than before ("unverified semantic shrink") — which
+# is normal for an edited doc, and for any doc first extracted by Claude agents and now by Gemini.
+# Accept that shrink only when nothing actually failed; a failed AST pass or LLM chunk still fails.
+log="$(mktemp)"
+trap 'rm -f "$log"' EXIT
+if ! graphify extract . 2>&1 | tee "$log"; then
+  grep -q 'unverified semantic shrink' "$log" || fail "graphify extract failed (see above)"
+  if grep -Eq 'chunk [0-9]+/[0-9]+ failed|semantic chunk\(s\) failed|AST extraction failed' "$log"; then
+    fail "graphify extract failed: an extraction pass failed, not just a doc shrink (see above)"
+  fi
+  echo "graph-update: accepting a smaller re-extraction of changed docs (no extraction pass failed)" >&2
+  graphify extract . --allow-partial   # re-extracted chunks come from the semantic cache: no new LLM cost
+fi
 graphify label .     # re-cluster, name communities with Gemini, rewrite GRAPH_REPORT.md + graph.html
