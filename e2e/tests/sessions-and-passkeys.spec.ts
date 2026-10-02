@@ -114,4 +114,5 @@ test("AC-92: a removed passkey is refused at sign-in; the email sign-in is still
   await expect(
     page.getByRole("button", { name: "Email me a sign-in link" }),
   ).toBeVisible();
+  await expectNoA11yViolations(page, "SCR-01 passkey refused");
 });
