@@ -51,3 +51,43 @@ jobs:
           path: |
             **/build/reports/
             **/build/test-results/
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up pnpm (version from package.json packageManager)
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js (with pnpm store cache)
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Start the stack (app, Postgres, Mailpit)
+        run: docker compose up -d --build --wait
+
+      - name: Install dependencies and Chromium
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @telex/e2e exec playwright install --with-deps chromium
+
+      - name: Run Playwright at 360 px and 1280 px
+        run: pnpm --filter @telex/e2e test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v

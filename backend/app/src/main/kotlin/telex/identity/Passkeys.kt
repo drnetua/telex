@@ -44,6 +44,10 @@ class Passkeys(
     /** The Owner a WebAuthn user entity name belongs to, or null if it is not an OwnerId. */
     fun ownerOf(userEntityName: String): OwnerId? = runCatching { OwnerId(UUID.fromString(userEntityName)) }.getOrNull()
 
+    /** The Owner a passkey assertion names, if that Owner still exists. */
+    fun existingOwnerOf(userEntityName: String): OwnerId? =
+        ownerOf(userEntityName)?.takeIf { owners.emailOf(it) != null }
+
     /** The automatic Passkey name, "<Browser> on <Device>", from the request's User-Agent. */
     fun labelFor(userAgent: String?): String = DeviceLabel.from(userAgent).label
 

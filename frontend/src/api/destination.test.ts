@@ -18,6 +18,24 @@ describe("remembered destination (AC-101)", () => {
     },
   );
 
+  it("keeps the first destination and ignores later ones, such as sign-in from parallel 401s", () => {
+    rememberDestination("/profile#sessions");
+    rememberDestination("/sign-in");
+    rememberDestination("/inbox");
+    expect(takeRememberedDestination()).toBe("/profile#sessions");
+  });
+
+  it.each([
+    "/sign-in",
+    "/sign-in/check-email",
+    "/sign-in/link?t=1",
+    "/welcome/passkey",
+    "/session-ended",
+  ])("never remembers the auth page %s", (page) => {
+    rememberDestination(page);
+    expect(takeRememberedDestination()).toBe("/inbox");
+  });
+
   it("defaults to the Inbox when nothing was remembered", () => {
     expect(takeRememberedDestination()).toBe("/inbox");
   });

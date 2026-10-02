@@ -24,7 +24,10 @@ export function SignInPage() {
     setPasskeyBusy(true);
     try {
       const result = await signInWithPasskey();
-      void navigate(landAfterSignIn(result.createdAccount), { replace: true });
+      void navigate(landAfterSignIn(result.createdAccount), {
+        replace: true,
+        state: { createdAccount: result.createdAccount },
+      });
     } catch (error) {
       setPasskeyBusy(false);
       if (error instanceof PasskeyCancelled) return;

@@ -58,7 +58,10 @@ export function CheckEmailPage() {
     setSubmitting(true);
     try {
       const result = await redeemSignInCode(grant.grantId, code);
-      void navigate(landAfterSignIn(result.createdAccount), { replace: true });
+      void navigate(landAfterSignIn(result.createdAccount), {
+        replace: true,
+        state: { createdAccount: result.createdAccount },
+      });
     } catch (error) {
       setSubmitting(false);
       if (error instanceof ApiFailure && error.status === 422) {

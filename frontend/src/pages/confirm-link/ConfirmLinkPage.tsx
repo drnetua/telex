@@ -50,7 +50,10 @@ export function ConfirmLinkPage() {
     setSubmitting(true);
     try {
       const result = await redeemSignInLink(token);
-      void navigate(landAfterSignIn(result.createdAccount), { replace: true });
+      void navigate(landAfterSignIn(result.createdAccount), {
+        replace: true,
+        state: { createdAccount: result.createdAccount },
+      });
     } catch (error) {
       setSubmitting(false);
       const found = refusedFrom(error);

@@ -16,7 +16,12 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken
 import org.springframework.security.authentication.InsufficientAuthenticationException
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.webauthn.api.AuthenticatorSelectionCriteria
@@ -83,6 +88,22 @@ class TelexRelyingPartyOperations(
 
 @Configuration(proxyBeanMethods = false)
 class PasskeyConfiguration {
+    /**
+     * The framework resolves the user entity's name to a user before it trusts an assertion; the name is the OwnerId
+     * (ADR-0002), so this is the Owner lookup and carries no credentials of its own.
+     */
+    @Bean
+    fun passkeyUserDetails(passkeys: Passkeys): UserDetailsService =
+        UserDetailsService { name ->
+            val owner = passkeys.existingOwnerOf(name) ?: throw UsernameNotFoundException("No Owner $name")
+            User
+                .withUsername(
+                    owner.value.toString(),
+                ).password("{noop}unused")
+                .authorities(emptyList<GrantedAuthority>())
+                .build()
+        }
+
     @Bean
     fun relyingPartyOperations(
         userEntities: PublicKeyCredentialUserEntityRepository,
@@ -157,7 +178,11 @@ class PasskeySignInHandlers(
     val failure = AuthenticationFailureHandler { _, response, _ -> rejected(response) }
 
     private fun ownerOf(authentication: Authentication): OwnerId? =
-        (authentication.principal as? PublicKeyCredentialUserEntity)?.name?.let { passkeys.ownerOf(it) }
+        when (val principal = authentication.principal) {
+            is UserDetails -> passkeys.ownerOf(principal.username)
+            is PublicKeyCredentialUserEntity -> passkeys.ownerOf(principal.name)
+            else -> null
+        }
 
     private fun rejected(response: HttpServletResponse) =
         writeProblem(json, response, HttpStatus.UNAUTHORIZED, "passkey-rejected", "That passkey did not work.")
