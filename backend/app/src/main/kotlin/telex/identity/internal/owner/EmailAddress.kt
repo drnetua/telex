@@ -13,11 +13,15 @@ class EmailAddress private constructor(
         private const val MAX_LENGTH = 254
         private val PATTERN = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
 
-        /** The mail library must accept it too, or sending would fail after the grant is stored. */
+        /**
+         * The mail library must accept it too, or sending would fail after the grant is stored, and it must read it
+         * back as exactly this one plain mailbox: `Name<a@b.com>` would be keyed by the text but mailed to `a@b.com`.
+         */
         private fun mailable(raw: String): Boolean =
             try {
-                InternetAddress(raw, true).validate()
-                true
+                val parsed = InternetAddress(raw, true)
+                parsed.validate()
+                parsed.address == raw && parsed.personal == null && !parsed.isGroup
             } catch (_: AddressException) {
                 false
             }
