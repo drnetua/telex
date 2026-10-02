@@ -11,3 +11,5 @@ spring:
       jdbc:
         schema-initialization:
           enabled: false # event_publication comes from the Flyway baseline
+telex:
+  public-url: ${TELEX_PUBLIC_URL:http://localhost:8080}
