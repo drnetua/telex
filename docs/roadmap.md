@@ -1,6 +1,6 @@
 ---
 status: living
-updated_at: "2026-10-01"
+updated_at: "2026-10-02"
 ---
 
 # Roadmap — teleX
@@ -21,8 +21,8 @@ Step ids 1–29 are the epic numbers of `docs/docs/02-epics.md` (E01–E29); 0 i
 
 | # | Step | Source | Size | Status |
 |---|---|---|:---:|---|
-| 0 | Skeleton — 13 empty Modulith modules + `verify()`, CI, Compose with Postgres + pgvector, Flyway baseline with rollback, React build served by Spring ([`_scaffold`](features/_scaffold/)) | `docs/architecture-map.md` §Constraints & known tech-debt | S | spec'd |
-| 1 | Platform skeleton — Owner signs up and signs in with magic link + passkey, one-command README ([`platform-skeleton`](features/platform-skeleton/)) | `docs/docs/02-epics.md` §E01 · platform-skeleton | M | spec'd |
+| 0 | Skeleton — 13 empty Modulith modules + `verify()`, CI, Compose with Postgres + pgvector, Flyway baseline with rollback, React build served by Spring ([`_scaffold`](features/_scaffold/)) | `docs/architecture-map.md` §Constraints & known tech-debt | S | shipped |
+| 1 | Platform skeleton — Owner signs up and signs in with magic link + passkey, one-command README ([`platform-skeleton`](features/platform-skeleton/)) | `docs/docs/02-epics.md` §E01 · platform-skeleton | M | shipped |
 | 2 | Telegram link — Owner links (and fully unlinks) Telegram accounts; sessions survive restart | `docs/docs/02-epics.md` §E02 · telegram-link | M | idea |
 | 3 | AI consent — Owner grants, sees and revokes consent before any text reaches AI | `docs/docs/02-epics.md` §E03 · ai-consent | S | idea |
 | 4 | Chat reading — chat list with folders, history with media, live updates in the web | `docs/docs/02-epics.md` §E04 · chat-reading | M | idea |
@@ -168,3 +168,5 @@ Zones: `telex/<m>` = `backend/app/src/main/kotlin/telex/<m>/`, `pages/<x>` = `fr
 
 | Step | Shipped | Link |
 |---|---|---|
+| 0 | 2026-10-02 | PR `scaffold/skeleton` → `master` (shipped together with step 1; no separate changelog) |
+| 1 | 2026-10-02 | [changelog](features/platform-skeleton/_ship/changelog.md) · PR `scaffold/skeleton` → `master` |
