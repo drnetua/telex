@@ -8,3 +8,6 @@ frontend/dist/
 
 e2e/test-results/
 e2e/playwright-report/
+
+# Coolify deploy settings (COOLIFY_TOKEN) for scripts/deploy-coolify.sh
+.deploy.env
