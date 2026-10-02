@@ -27,8 +27,8 @@ class ProblemHandlerTest(
         mockMvc.get("/probe/domain").andExpect {
             status { isConflict() }
             content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
-            jsonPath("$.type") { value("urn:telex:error:probe_conflict") }
-            jsonPath("$.code") { value("probe_conflict") }
+            jsonPath("$.type") { value("urn:telex:error:probe-conflict") }
+            jsonPath("$.code") { value("probe-conflict") }
             jsonPath("$.status") { value(409) }
             jsonPath("$.detail") { value("Probe is in conflict.") }
         }
@@ -45,7 +45,7 @@ class ProblemHandlerTest(
                 content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
                 jsonPath("$.code") { value(ProblemHandler.VALIDATION_FAILED) }
                 jsonPath("$.errors[0].field") { value("name") }
-                jsonPath("$.errors[0].code") { value("NotBlank") }
+                jsonPath("$.errors[0].code") { value("required") }
             }
     }
 
@@ -54,13 +54,13 @@ class ProblemHandlerTest(
         mockMvc.post("/probe/domain").andExpect {
             status { isMethodNotAllowed() }
             content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
-            jsonPath("$.type") { value("urn:telex:error:method_not_allowed") }
-            jsonPath("$.code") { value("method_not_allowed") }
+            jsonPath("$.type") { value("urn:telex:error:method-not-allowed") }
+            jsonPath("$.code") { value("method-not-allowed") }
         }
     }
 
     @Test
-    fun `unexpected errors render as internal_error without leaking details`() {
+    fun `unexpected errors render as internal-error without leaking details`() {
         mockMvc.get("/probe/crash").andExpect {
             status { isInternalServerError() }
             content { contentType(MediaType.APPLICATION_PROBLEM_JSON) }
@@ -72,7 +72,7 @@ class ProblemHandlerTest(
     @RestController
     class ProbeController {
         @GetMapping("/probe/domain")
-        fun domain(): Nothing = throw DomainProblem(HttpStatus.CONFLICT, "probe_conflict", "Probe is in conflict.")
+        fun domain(): Nothing = throw DomainProblem(HttpStatus.CONFLICT, "probe-conflict", "Probe is in conflict.")
 
         @PostMapping("/probe/validated")
         fun validated(

@@ -27,7 +27,10 @@ class SpaHosting : WebMvcConfigurer {
         ): Resource? {
             val requested = super.getResource(resourcePath, location)
             if (requested != null) return requested
-            val isClientRoute = !resourcePath.startsWith("api/") && '.' !in resourcePath.substringAfterLast('/')
+            val reserved =
+                resourcePath.startsWith("api/") || resourcePath.startsWith("webauthn/") ||
+                    resourcePath == "login/webauthn"
+            val isClientRoute = !reserved && '.' !in resourcePath.substringAfterLast('/')
             return if (isClientRoute) super.getResource("index.html", location) else null
         }
     }

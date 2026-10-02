@@ -31,7 +31,7 @@ class ProblemHandler : ResponseEntityExceptionHandler() {
     ): ResponseEntity<Any>? {
         val errors =
             ex.bindingResult.fieldErrors.map {
-                FieldProblem(it.field, it.code ?: "invalid", it.defaultMessage.orEmpty())
+                FieldProblem(it.field, fieldCode(it.code, it.field), it.defaultMessage.orEmpty())
             }
         val body = problemDetail(status, VALIDATION_FAILED, "Some fields are invalid.", errors)
         return handleExceptionInternal(ex, body, headers, status, request)
@@ -47,7 +47,13 @@ class ProblemHandler : ResponseEntityExceptionHandler() {
         val response = super.handleExceptionInternal(ex, body, headers, statusCode, request)
         val problem = response?.body
         if (problem is ProblemDetail && problem.properties?.containsKey("code") != true) {
-            val code = HttpStatus.resolve(statusCode.value())?.name?.lowercase() ?: "http_${statusCode.value()}"
+            val code =
+                HttpStatus
+                    .resolve(statusCode.value())
+                    ?.name
+                    ?.lowercase()
+                    ?.replace('_', '-')
+                    ?: "http-${statusCode.value()}"
             problem.type = URI.create("urn:telex:error:$code")
             problem.setProperty("code", code)
         }
@@ -60,8 +66,18 @@ class ProblemHandler : ResponseEntityExceptionHandler() {
         return problemDetail(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_ERROR, "Something went wrong on our side.")
     }
 
+    private fun fieldCode(
+        constraint: String?,
+        field: String,
+    ): String =
+        when (constraint) {
+            "NotBlank", "NotNull", "NotEmpty" -> "required"
+            "Pattern", "Email" -> if (field.contains("code", ignoreCase = true)) "code-format" else "email-incomplete"
+            else -> constraint?.replace(Regex("([a-z])([A-Z])"), "$1-$2")?.lowercase() ?: "invalid"
+        }
+
     companion object {
-        const val VALIDATION_FAILED = "validation_failed"
-        const val INTERNAL_ERROR = "internal_error"
+        const val VALIDATION_FAILED = "validation-failed"
+        const val INTERNAL_ERROR = "internal-error"
     }
 }

@@ -40,14 +40,21 @@ class SpaHostingIT(
     }
 
     @Test
-    fun `missing assets and API paths stay 404 problems`() {
-        listOf("/assets/missing.js", "/api/missing").forEach { path ->
-            val response = get(path)
+    fun `missing assets stay 404 problems`() {
+        val response = get("/assets/missing.js")
 
-            assertThat(response.statusCode()).describedAs(path).isEqualTo(404)
-            assertThat(response.headers().firstValue("Content-Type")).hasValue("application/problem+json")
-            assertThat(response.body()).contains("\"code\":\"not_found\"")
-        }
+        assertThat(response.statusCode()).isEqualTo(404)
+        assertThat(response.headers().firstValue("Content-Type")).hasValue("application/problem+json")
+        assertThat(response.body()).contains("\"code\":\"not-found\"")
+    }
+
+    @Test
+    fun `API paths are never the SPA index, a signed-out caller gets a 401 problem`() {
+        val response = get("/api/missing")
+
+        assertThat(response.statusCode()).isEqualTo(401)
+        assertThat(response.headers().firstValue("Content-Type")).hasValue("application/problem+json")
+        assertThat(response.body()).doesNotContain(SPA_ROOT)
     }
 
     private fun get(path: String): HttpResponse<String> =
