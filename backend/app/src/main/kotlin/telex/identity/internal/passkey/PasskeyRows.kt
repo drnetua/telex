@@ -49,4 +49,20 @@ class PasskeyRows(
             ).param("id", credentialId)
             .param("name", ownerName)
             .update() > 0
+
+    /** Creates the user entity unless the Owner already has one, so concurrent first registrations both succeed. */
+    fun insertUserEntityIfAbsent(
+        id: String,
+        ownerName: String,
+        displayName: String,
+    ) {
+        jdbc
+            .sql(
+                "INSERT INTO user_entities (id, name, display_name) VALUES (:id, :name, :displayName) " +
+                    "ON CONFLICT (name) DO NOTHING",
+            ).param("id", id)
+            .param("name", ownerName)
+            .param("displayName", displayName)
+            .update()
+    }
 }

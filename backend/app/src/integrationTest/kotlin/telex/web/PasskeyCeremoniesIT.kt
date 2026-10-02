@@ -18,6 +18,7 @@ import telex.identity.FixedClockConfiguration
 import telex.identity.MutableClock
 import telex.identity.OwnerId
 import telex.identity.SignInSessions
+import telex.identity.TestCredentialRecords
 import telex.identity.internal.owner.Owners
 import java.net.URI
 import java.net.http.HttpClient
@@ -89,6 +90,18 @@ class PasskeyCeremoniesIT(
     }
 
     @Test
+    fun `AC-89 a 254-character email still gets registration options`() {
+        val email = "x".repeat(MAX_EMAIL - "@mail.com".length) + "@mail.com"
+        val owner = owners.findOrCreate(email, email, clock.instant()).first
+        val key = sessions.start(owner, null, "Safari iPhone", "Europe/Kyiv", false).key
+
+        val r = post("/webauthn/register/options", key)
+
+        assertThat(r.statusCode()).isEqualTo(200)
+        assertThat(r.body()).contains("\"displayName\":\"$email\"")
+    }
+
+    @Test
     fun `registration options while signed out are 401 unauthenticated`() {
         val r = post("/webauthn/register/options", null)
 
@@ -139,7 +152,7 @@ class PasskeyCeremoniesIT(
         val created = Instant.parse("2026-10-02T14:00:00Z")
 
         credentials.save(
-            org.springframework.security.web.webauthn.api.TestCredentialRecords
+            TestCredentialRecords
                 .userCredential()
                 .userEntityUserId(entity.id)
                 .created(created)
@@ -150,5 +163,9 @@ class PasskeyCeremoniesIT(
         val reloaded = credentials.findByUserId(entity.id).single()
         assertThat(reloaded.created).isEqualTo(created)
         assertThat(reloaded.lastUsed).isNull()
+    }
+
+    private companion object {
+        const val MAX_EMAIL = 254
     }
 }

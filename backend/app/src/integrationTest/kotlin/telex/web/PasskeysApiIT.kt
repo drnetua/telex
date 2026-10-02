@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.web.webauthn.api.Bytes
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity
-import org.springframework.security.web.webauthn.api.TestCredentialRecords
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository
 import telex.TestcontainersConfiguration
@@ -19,6 +18,7 @@ import telex.identity.FixedClockConfiguration
 import telex.identity.MutableClock
 import telex.identity.OwnerId
 import telex.identity.SignInSessions
+import telex.identity.TestCredentialRecords
 import telex.identity.internal.owner.Owners
 import java.net.URI
 import java.net.http.HttpClient

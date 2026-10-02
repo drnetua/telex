@@ -2,7 +2,6 @@ package telex.identity
 
 import org.springframework.security.web.webauthn.api.Bytes
 import org.springframework.security.web.webauthn.api.CredentialRecord
-import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository
 import org.springframework.security.web.webauthn.management.UserCredentialRepository
 import org.springframework.stereotype.Service
@@ -28,18 +27,16 @@ class Passkeys(
         val name = ownerId.value.toString()
         if (userEntities.findByUsername(name) != null) return
         val email = owners.emailOf(ownerId) ?: error("No Owner $name")
-        userEntities.save(
-            ImmutablePublicKeyCredentialUserEntity
-                .builder()
-                .id(Bytes.random())
-                .name(name)
-                .displayName(email)
-                .build(),
-        )
+        rows.insertUserEntityIfAbsent(Bytes.random().toBase64UrlString(), name, email)
     }
 
-    /** A just-registered Passkey keeps no last-used date until its first sign-in ("Never used", AC-89). */
-    fun registered(record: CredentialRecord): CredentialRecord = neverUsed(record).also(credentials::save)
+    /**
+     * Runs the framework's registration ([create] saves the credential stamped with now) and resets the saved record
+     * to "Never used" (no last-used date until its first sign-in, AC-89) in the same transaction, so a failure
+     * leaves no half-registered Passkey.
+     */
+    @Transactional
+    fun register(create: () -> CredentialRecord): CredentialRecord = neverUsed(create()).also(credentials::save)
 
     /** The Owner a WebAuthn user entity name belongs to, or null if it is not an OwnerId. */
     fun ownerOf(userEntityName: String): OwnerId? = runCatching { OwnerId(UUID.fromString(userEntityName)) }.getOrNull()

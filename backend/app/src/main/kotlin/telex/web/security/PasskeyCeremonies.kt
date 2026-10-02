@@ -1,5 +1,6 @@
 package telex.web.security
 
+import com.webauthn4j.util.exception.WebAuthnException
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -69,14 +70,14 @@ class TelexRelyingPartyOperations(
     }
 
     override fun registerCredential(request: RelyingPartyRegistrationRequest): CredentialRecord =
-        passkeys.registered(
+        passkeys.register {
             delegate.registerCredential(
                 ImmutableRelyingPartyRegistrationRequest(
                     request.creationOptions,
                     RelyingPartyPublicKey(request.publicKey.credential, passkeys.labelFor(userAgent())),
                 ),
-            ),
-        )
+            )
+        }
 
     override fun createCredentialRequestOptions(
         request: PublicKeyCredentialRequestOptionsRequest,
@@ -190,7 +191,8 @@ class PasskeySignInHandlers(
 
 /**
  * Registration ceremonies need a live Sign-in Session (401 otherwise), and a registration that does not verify is a
- * 400 `passkey-registration-failed`, never a 500 or an empty body.
+ * 400 `passkey-registration-failed`; anything else (a database failure, say) is a 503 `unavailable`. Never an empty
+ * body.
  */
 class PasskeyRegistrationFilter(
     private val json: JsonMapper,
@@ -213,8 +215,14 @@ class PasskeyRegistrationFilter(
             @Suppress("TooGenericExceptionCaught") e: Exception,
         ) {
             if (e is AuthenticationException || e is AccessDeniedException) throw e
-            logger.debug("Passkey registration refused", e)
-            refuse(response)
+            if (e is WebAuthnException || e is IllegalArgumentException) {
+                logger.debug("Passkey registration refused", e)
+                refuse(response)
+            } else {
+                logger.error("Passkey registration failed", e)
+                response.reset()
+                writeProblem(json, response, HttpStatus.SERVICE_UNAVAILABLE, "unavailable", "Try again in a moment.")
+            }
             return
         }
         if (isRegistration && response.status == HttpStatus.BAD_REQUEST.value() &&
