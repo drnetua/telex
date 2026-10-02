@@ -753,6 +753,151 @@
         "B8",
         "B1"
       ]
+    },
+    {
+      "id": "T31",
+      "title": "Keep the saved Retry across background failures and count page opens as activity",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-102",
+        "AC-96"
+      ],
+      "dod": "Vitest: a mutation 503 shows SCR-93, then a focus refetch of /me fails, then Retry still sends the original mutation and clears SCR-93; a background failure during a successful Retry does not show 'Still no answer.'; a refetch on remount/page open sends no X-Telex-Background header while a window-focus or reconnect refetch sends it.",
+      "files_hint": [
+        "frontend/src/app/FailureBoundary.tsx",
+        "frontend/src/app/FailureBoundary.test.tsx",
+        "frontend/src/app/queryClient.ts",
+        "frontend/src/api/account.ts",
+        "frontend/src/api/account.test.tsx",
+        "frontend/src/api/client.ts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t31-review-fix-r1-r2.md",
+      "source": "review-2026-10-02 (re-review)",
+      "findings": [
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "id": "T32",
+      "title": "Keep focus inside ConfirmDialog while busy and land it on a stable element after removal; ship a right-sized logo",
+      "layer": "ui",
+      "deps": [
+        "T31"
+      ],
+      "acs": [
+        "AC-92"
+      ],
+      "dod": "Vitest: while the confirm button is busy, focus is on the dialog (not body) and Tab stays inside; after a successful passkey removal focus lands on a stable element of the Passkeys card (not body); the auth layout uses a derived ~192 px logo (uncropped, same colours per the Logos README) well under 50 KB, the canonical file stays untouched.",
+      "files_hint": [
+        "frontend/src/components/ConfirmDialog/",
+        "frontend/src/pages/profile-security/PasskeysCard.tsx",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.test.tsx",
+        "frontend/src/assets/",
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/app/layouts.test.tsx"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t32-review-fix-r6-r7.md",
+      "source": "review-2026-10-02 (re-review)",
+      "findings": [
+        "R6",
+        "R7"
+      ]
+    },
+    {
+      "id": "T33",
+      "title": "Prove the 44 px PageFrame touch targets at phone width in the browser",
+      "layer": "tests",
+      "deps": [
+        "T32"
+      ],
+      "acs": [
+        "AC-33"
+      ],
+      "dod": "A Playwright test in the phone project asserts boundingBox width and height >= 44 for the PageFrame 'Profile and security' and 'Sign out' buttons; e2e `tsc --noEmit` is clean.",
+      "files_hint": [
+        "e2e/tests/",
+        "e2e/support/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t33-review-fix-r8.md",
+      "source": "review-2026-10-02 (re-review)",
+      "findings": [
+        "R8"
+      ]
+    },
+    {
+      "id": "T34",
+      "title": "Use contract error codes for passkey registration failures and validate the WebAuthn calls against openapi.yaml",
+      "layer": "wiring",
+      "deps": [],
+      "acs": [
+        "AC-89",
+        "AC-92",
+        "AC-102",
+        "AC-104",
+        "AC-105"
+      ],
+      "dod": "A non-verification registration failure answers 500 `internal-error` (same as ProblemHandler), the unit test asserts it; PasskeyCeremoniesIT (and SecurityChainIT where it calls API endpoints) run ContractValidator.assertConforms on /webauthn/register/options, /webauthn/register, /webauthn/authenticate/options and /login/webauthn requests and responses; any contract gap this exposes is fixed in openapi.yaml or code.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/security/PasskeyCeremonies.kt",
+        "backend/app/src/test/kotlin/telex/web/PasskeyRegistrationFilterTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PasskeyCeremoniesIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/SecurityChainIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/ContractValidator.kt",
+        "docs/features/platform-skeleton/contracts/openapi.yaml"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t34-review-fix-r3-r4.md",
+      "source": "review-2026-10-02 (re-review)",
+      "findings": [
+        "R3",
+        "R4"
+      ]
+    },
+    {
+      "id": "T35",
+      "title": "Accept only a plain mailbox as an email address",
+      "layer": "app",
+      "deps": [
+        "T34"
+      ],
+      "acs": [
+        "AC-83",
+        "AC-34"
+      ],
+      "dod": "EmailAddressTest: `Name<a@b.com>` and other display-name / group forms are rejected; the parsed InternetAddress must equal the input with no personal part; openapi.yaml EmailAddress description no longer claims the exact SPA rule (states plain RFC 5322 mailbox, SPA check is a subset hint).",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/internal/owner/EmailAddress.kt",
+        "backend/app/src/test/kotlin/telex/identity/internal/owner/EmailAddressTest.kt",
+        "docs/features/platform-skeleton/contracts/openapi.yaml"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t35-review-fix-r5.md",
+      "source": "review-2026-10-02 (re-review)",
+      "findings": [
+        "R5"
+      ]
+    },
+    {
+      "id": "T36",
+      "title": "Make the rollback check see column length and the failed-notice assertion exact",
+      "layer": "tests",
+      "deps": [
+        "T35"
+      ],
+      "acs": [
+        "AC-98"
+      ],
+      "dod": "MigrationRollbackIT's column snapshot includes character_maximum_length (proved by temporarily breaking U202610021600 locally, not committed); NewSignInNoticeIT awaits listeners after the first sign-in and asserts exactly 1 incomplete publication.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/MigrationRollbackIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/NewSignInNoticeIT.kt"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t36-review-fix-r9-r10.md",
+      "source": "review-2026-10-02 (re-review)",
+      "findings": [
+        "R9",
+        "R10"
+      ]
     }
   ]
 }

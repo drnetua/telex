@@ -35,5 +35,11 @@
 | T28 | Mark /me refetches as background and cover the untested SCR-64 and SCR-07 states | ui | Anton Husiev | S | T27 | done |
 | T29 | Bring the auth and signed-in pages in line with screens.md and the accessibility rules | ui | Anton Husiev | S | T28 | done |
 | T30 | Make the e2e run reliable: app healthcheck, pinned and type-checked e2e, strict AC-82 assertion, removed-passkey e2e | tests | Anton Husiev | S | T25 | done |
+| T31 | Keep the saved Retry across background failures and count page opens as activity | ui | Anton Husiev | S | — | todo |
+| T32 | Keep focus inside ConfirmDialog while busy and land it on a stable element after removal; ship a right-sized logo | ui | Anton Husiev | S | T31 | todo |
+| T33 | Prove the 44 px PageFrame touch targets at phone width in the browser | tests | Anton Husiev | S | T32 | todo |
+| T34 | Use contract error codes for passkey registration failures and validate the WebAuthn calls against openapi.yaml | wiring | Anton Husiev | S | — | todo |
+| T35 | Accept only a plain mailbox as an email address | app | Anton Husiev | S | T34 | todo |
+| T36 | Make the rollback check see column length and the failed-notice assertion exact | tests | Anton Husiev | S | T35 | todo |
 
-**Total:** 30 tasks (T21–T30 are review follow-ups from `_review/review-2026-10-02.md`), ~22 person-days (S = ½ day, M = 1 day).
+**Total:** 36 tasks (T21–T36 are review follow-ups from `_review/review-2026-10-02.md`), ~25 person-days (S = ½ day, M = 1 day).
