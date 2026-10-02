@@ -80,3 +80,38 @@ test("AC-89: create a passkey, see it in Profile, sign in with it without typing
   await expect(passkeys.getByText(/Last used /)).toBeVisible();
   await expect(passkeys.getByText("Never used")).toHaveCount(0);
 });
+
+test("AC-92: a removed passkey is refused at sign-in; the email sign-in is still offered", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== "chromium",
+    "CDP virtual authenticator is Chromium only",
+  );
+  await addVirtualAuthenticator(page);
+  const address = uniqueAddress("removed");
+
+  await signInByLink(page, address);
+  await page.getByRole("button", { name: "Create a passkey" }).click();
+  await expect(page).toHaveURL(/\/inbox$/);
+
+  await page.getByRole("button", { name: "Profile and security" }).click();
+  const passkeys = page.getByRole("region", { name: "Passkeys" });
+  await expect(passkeys.getByText("Never used")).toBeVisible();
+  await passkeys.getByRole("button", { name: "Remove" }).click();
+  await page.getByRole("button", { name: "Remove passkey" }).click();
+  await expect(passkeys.getByText("No passkeys yet.")).toBeVisible();
+
+  // the device still holds the credential, but the server no longer knows it
+  await signOut(page);
+  await page.getByRole("button", { name: "Sign in with a passkey" }).click();
+  await expect(
+    page.getByText("That passkey didn't work. Sign in with your email instead."),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Email me a sign-in link" }),
+  ).toBeVisible();
+});

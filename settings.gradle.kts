@@ -16,3 +16,6 @@ include("backend:telegram-tdlib")
 
 // pnpm workspace packages, driven from Gradle (see pnpm.conventions).
 include("frontend")
+
+// The Playwright e2e package: only its type-check runs in the Gradle build (the tests need the whole stack, see CI).
+include("e2e")

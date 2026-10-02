@@ -4,13 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build": "echo \"e2e is tests only: nothing to build\"",
+    "check": "tsc --noEmit",
     "test": "playwright test",
     "test:phone": "playwright test --project=phone",
     "test:desktop": "playwright test --project=desktop"
   },
   "devDependencies": {
-    "@axe-core/playwright": "latest",
-    "@playwright/test": "latest",
-    "@types/node": "^26.6.3"
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.3",
+    "typescript": "^6.0.3"
   }
 }

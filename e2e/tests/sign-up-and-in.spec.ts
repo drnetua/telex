@@ -88,9 +88,7 @@ test("AC-82: the code typed on the laptop signs it in; the link from the same em
   const other = await phone.newPage();
   await other.goto(linkOf(mail));
   await expect(
-    other.getByRole("heading", {
-      name: /already used|can't be used|no longer valid/,
-    }),
+    other.getByRole("heading", { name: "This link was already used" }),
   ).toBeVisible();
   await expect(
     other.getByRole("button", { name: /^Continue as / }),
