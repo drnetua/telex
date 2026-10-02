@@ -375,29 +375,51 @@ ADR files live under `docs/features/platform-skeleton/adr/NNNN-<title>.md`. Foun
 
 ## 10. Quality requirements
 
-<!-- 🎯 Why: the QUALITY TREE — take a goal from §1 and break it into concrete leaves: tests,
-     metrics, configs, drills. ⭐ Without §10, §1 is a manifesto. With §10 each declaration maps
-     to something PROVABLE.
-     📋 Write: per §1 goal — When / Then / How-verify. Numbers from spec §6 NFR VERBATIM (don't
-     round ≤250ms to ≤300ms — that's a critic F6 hit).
-     📌 e.g. «p95 ≤ 500 ms on a block update, verified by a 100 req/s load test». -->
+Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim from spec §6.
 
-Each top-3 goal from §1 expanded into a full scenario:
+**QG-1. No silent takeover (security of sign-in)**
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behaviour with numbers from spec §6 NFR>
-- **How verify:** <test / chaos drill / load test / metric>
+*QG-1a: Sign-in Link lifetime.*
+- **When:** a Sign-in Link is confirmed, or its Sign-in Code typed, after its window, or a second time.
+- **Then:** sign-in is refused. Spec §6: Sign-in Link lifetime "15 min, single use". The check happens at the confirm or the typed code, not when the link is opened.
+- **How verify:** `identity` integration test with a fixed `Clock`. It redeems at 14:59 and at 15:01, redeems twice, and fires two concurrent redeems where exactly one succeeds (ADR-0003).
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+*QG-1b: Sign-in Code guessing.*
+- **When:** wrong codes are typed against one sign-in email.
+- **Then:** spec §6: Sign-in Code guessing "6 digits, ≤ 5 wrong attempts per email, then void". The link of a voided email is refused too (AC-85).
+- **How verify:** integration test that types 5 wrong codes, then the right code and then the link, and asserts the `sign-in-grant-void` refusals.
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+*QG-1c: Sign-in Session lifetime.*
+- **When:** a session has been idle, ignoring requests marked as background, or has been alive for a long time.
+- **Then:** spec §6: Sign-in Session lifetime "ends after 30 days idle or 90 days from start". The next request gets `session-ended` and the SPA shows SCR-92.
+- **How verify:** integration test with a fixed `Clock`. It runs background-only requests for 31 days (session ends), a user request on day 29 (session lives), and daily user requests up to day 90 (session ends at 90). A Playwright check covers SCR-92.
+
+*QG-1d: Secrets at rest.*
+- **When:** any Sign-in Link, Sign-in Code or session key has been issued.
+- **Then:** it is never stored, shown back or logged in readable form (spec §6.1).
+- **How verify:** integration test that captures the email from the fake `Mailer`, then searches every column of `sign_in_grant`, `sign_in_session` and `event_publication`, and the captured log output, for the raw token, code and cookie value. Zero hits.
+
+**QG-2. One-command install**
+- **When:** the Operator runs the README command on a clean machine.
+- **Then:** spec §6: "≤ 5 min from the command to the sign-in page on a clean machine with Docker and ≥ 50 Mbit/s, not counting the first build of the teleX application image". The first sign-in then completes from the Mailpit page named in the README (AC-33).
+- **How verify:** spec §6 measurement, a manual timed run on a clean machine recorded in the E01 pull request. Plus a CI-free smoke script (`docker compose up` → poll the sign-in page → request an email → read it through Mailpit's API) that anyone can rerun.
+
+**QG-3. Works everywhere it's opened**
+
+*QG-3a: Responsive and accessible.*
+- **When:** any screen of this feature (SCR-01, 07, 08, 09, 10, 64, 91, 92, 93) is rendered in any of its states.
+- **Then:** spec §6: "every screen in this spec works at 360 px and 1280 px and meets WCAG 2.2 AA".
+- **How verify:** spec §6 measurement. Playwright runs each screen at both widths, plus an automated accessibility scan (axe) with 0 violations.
+
+*QG-3b: Passkey browser coverage.*
+- **When:** an Owner signs up, creates a Passkey and signs in with it.
+- **Then:** spec §6: "sign-up, passkey creation and passkey sign-in work in current Chrome, Safari (macOS) and Safari (iOS)".
+- **How verify:** spec §6 measurement. Playwright with a CDP virtual authenticator (Chromium) in CI, plus a manual check on Safari macOS and iOS against `localhost`, or HTTPS through Cloudflare, recorded per the E01 DoD.
+
+**QG-4. Quality gate holds (E01 DoD)**
+- **When:** a pull request introduces a deliberate detekt or ktlint violation.
+- **Then:** spec §6: "a pull request with a deliberate detekt or ktlint violation fails CI and can't be merged". `ModularityTest` also stays green with the new `mail` module and `identity`'s widened `allowedDependencies`.
+- **How verify:** a one-off check recorded in the E01 pull request (spec §6 measurement). `./gradlew test` runs `ApplicationModules.verify()` on every build.
 
 ## 11. Risks and technical debt
 
