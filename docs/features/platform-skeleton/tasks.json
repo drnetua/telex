@@ -1,0 +1,484 @@
+{
+  "slug": "platform-skeleton",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Promote the four staged identity migrations into the live Flyway tree",
+      "layer": "migration",
+      "deps": [],
+      "acs": [
+        "AC-34",
+        "AC-85",
+        "AC-103"
+      ],
+      "dod": "The four staged pairs are promoted to db/migration V…__*.sql + db/rollback U…__*.sql, and MigrationRollbackIT applies up → down → up for all of them on Testcontainers pgvector.",
+      "files_hint": [
+        "docs/features/platform-skeleton/migrations/01_create_owner.up.sql",
+        "docs/features/platform-skeleton/migrations/01_create_owner.down.sql",
+        "docs/features/platform-skeleton/migrations/02_create_sign_in_grant.up.sql",
+        "docs/features/platform-skeleton/migrations/02_create_sign_in_grant.down.sql",
+        "docs/features/platform-skeleton/migrations/03_create_sign_in_session.up.sql",
+        "docs/features/platform-skeleton/migrations/03_create_sign_in_session.down.sql",
+        "docs/features/platform-skeleton/migrations/04_create_passkey_tables.up.sql",
+        "docs/features/platform-skeleton/migrations/04_create_passkey_tables.down.sql"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t01-promote-identity-migrations.md"
+    },
+    {
+      "id": "T2",
+      "title": "Add identity domain primitives: typed ids, Clock, email canonicalisation, secrets, device naming and the public URL",
+      "layer": "domain",
+      "deps": [],
+      "acs": [
+        "AC-34",
+        "AC-83"
+      ],
+      "dod": "Unit tests pass for email validation + canonicalisation (AC-34, AC-83 examples), token/code generation and SHA-256 hashing, the User-Agent → label + device type mapper, and PublicUrl's origin/host/secure derivation.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/Ids.kt",
+        "backend/app/src/main/kotlin/telex/identity/PublicUrl.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/owner/EmailAddress.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/secret/",
+        "backend/app/src/main/kotlin/telex/identity/internal/device/",
+        "backend/app/src/main/kotlin/telex/ClockConfiguration.kt",
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/test/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t02-identity-domain-primitives.md"
+    },
+    {
+      "id": "T3",
+      "title": "Create the mail integration module with the Mailer port and the SMTP adapter",
+      "layer": "wiring",
+      "deps": [],
+      "acs": [
+        "AC-33"
+      ],
+      "dod": "telex.mail exists as an integration module depending on shared only, identity's allowedDependencies include mail, SmtpMailer sends via spring-boot-starter-mail (unit-tested against a mocked JavaMailSender), a RecordingMailer test double is available to integration tests, and ModularityTest is green.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/mail/",
+        "backend/app/src/main/kotlin/telex/identity/package-info.java",
+        "backend/app/build.gradle.kts",
+        "gradle/libs.versions.toml",
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/main/resources/application-local.yaml",
+        "backend/app/src/test/kotlin/telex/mail/",
+        "backend/app/src/integrationTest/kotlin/telex/mail/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t03-mail-integration-module.md"
+    },
+    {
+      "id": "T4",
+      "title": "Build the Owner and Sign-in Session core: start, resolve with the 30/90-day rules, end by key, and the SignInSessionStarted event",
+      "layer": "infra",
+      "deps": [
+        "T1",
+        "T2"
+      ],
+      "acs": [
+        "AC-96",
+        "AC-104"
+      ],
+      "dod": "Integration tests with a fixed Clock prove: start ends the browser's held session (AC-104), stores only the key hash and publishes SignInSessionStarted; resolve returns ended after 30 idle days (background requests ignored) or 90 days from start (AC-96), bumps activity at most once a minute; endByKey is idempotent; Owner find-or-create resolves concurrent inserts.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/SignInSessions.kt",
+        "backend/app/src/main/kotlin/telex/identity/SignInSessionStarted.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/owner/",
+        "backend/app/src/main/kotlin/telex/identity/internal/session/",
+        "backend/app/src/integrationTest/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t04-owner-and-session-core.md"
+    },
+    {
+      "id": "T5",
+      "title": "Issue a Sign-in Grant with its email and read a Sign-in Link without redeeming it",
+      "layer": "app",
+      "deps": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "acs": [
+        "AC-83",
+        "AC-86",
+        "AC-103",
+        "AC-35"
+      ],
+      "dod": "Integration tests prove: an incomplete address sends nothing; a request supersedes every live grant for the canonical address, stores only hashes and sends one email (to the address as typed) holding the link and code; a mail failure rolls everything back; preview is read-only and refuses expired, superseded, used and void grants with the right reason.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/SignIn.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/grant/",
+        "backend/app/src/main/kotlin/telex/identity/internal/email/",
+        "backend/app/src/integrationTest/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t05-issue-and-preview-sign-in-grant.md"
+    },
+    {
+      "id": "T6",
+      "title": "Redeem a Sign-in Link or Sign-in Code atomically and start the Sign-in Session",
+      "layer": "app",
+      "deps": [
+        "T4",
+        "T5"
+      ],
+      "acs": [
+        "AC-34",
+        "AC-82",
+        "AC-35",
+        "AC-84",
+        "AC-85",
+        "AC-103",
+        "AC-104"
+      ],
+      "dod": "Integration tests with a fixed Clock prove: one conditional UPDATE redeems a grant at most once (two concurrent redeems, one winner); refusals classify as expired / used / void; wrong codes count atomically and the 5th voids code and link; a correct code kills the link; a new canonical address creates exactly one Owner; the browser's held session is replaced.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/SignIn.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/grant/",
+        "backend/app/src/integrationTest/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t06-redeem-sign-in-link-and-code.md"
+    },
+    {
+      "id": "T7",
+      "title": "Send the \"New sign-in to teleX\" email from the SignInSessionStarted event after commit",
+      "layer": "app",
+      "deps": [
+        "T3",
+        "T4"
+      ],
+      "acs": [
+        "AC-98"
+      ],
+      "dod": "An @ApplicationModuleTest scenario proves: a non-creating SignInSessionStarted sends one \"New sign-in to teleX\" email to owner.email with browser, device type, local time with zone name, UTC and the sessions link; a creating one completes without email; a Mailer failure leaves the publication incomplete.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/internal/email/",
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/integrationTest/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t07-new-sign-in-notice-email.md"
+    },
+    {
+      "id": "T8",
+      "title": "Add the Spring Security filter chain with the session cookie, CSRF and no-store, and switch problem codes to kebab-case",
+      "layer": "wiring",
+      "deps": [
+        "T4"
+      ],
+      "acs": [
+        "AC-96",
+        "AC-101",
+        "AC-95",
+        "AC-83"
+      ],
+      "dod": "Integration tests prove: a protected request with no or unknown cookie answers 401 unauthenticated, an ended/expired session 401 session-ended; a live one reaches the handler with the Owner in the security context and bumps activity unless X-Telex-Background: 1; public routes stay open; POST without X-XSRF-TOKEN answers 403 forbidden; every response carries Cache-Control: no-store; problem codes are kebab-case.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/security/",
+        "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt",
+        "backend/app/src/main/kotlin/telex/web/SpaHosting.kt",
+        "backend/app/src/test/kotlin/telex/web/ProblemHandlerTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/",
+        "backend/app/build.gradle.kts",
+        "gradle/libs.versions.toml",
+        "backend/app/src/main/resources/application.yaml",
+        "CLAUDE.md",
+        "docs/architecture-map.md"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t08-web-security-and-problem-codes.md"
+    },
+    {
+      "id": "T9",
+      "title": "Expose the sign-in REST endpoints: request email, preview and redeem link, redeem code, sign out",
+      "layer": "ports",
+      "deps": [
+        "T5",
+        "T6",
+        "T8"
+      ],
+      "acs": [
+        "AC-34",
+        "AC-82",
+        "AC-84",
+        "AC-85",
+        "AC-86",
+        "AC-103",
+        "AC-95"
+      ],
+      "dod": "MockMvc integration tests (with CSRF) prove each of the five operations returns the contract's status, body and problem codes: 201 grant id, 200 preview, 200 SignedIn with the telex_session cookie, 410 refusals with email, 422 attemptsLeft, 400 email-incomplete / code-format, 503 mail-unavailable, and an idempotent 204 sign-out that clears the cookie.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/SignInController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/",
+        "backend/app/src/integrationTest/kotlin/telex/web/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t09-sign-in-rest-endpoints.md"
+    },
+    {
+      "id": "T10",
+      "title": "List and end my Sign-in Sessions and answer \"who am I\", Owner-scoped end to end",
+      "layer": "ports",
+      "deps": [
+        "T4",
+        "T8"
+      ],
+      "acs": [
+        "AC-93",
+        "AC-94",
+        "AC-97",
+        "AC-100"
+      ],
+      "dod": "Integration tests prove: GET /api/v1/me returns ownerId, email as created and linkedAccountCount 0; GET /api/v1/sessions lists only the caller's live sessions with the current one flagged; DELETE ends only the caller's session (404 not-found for another Owner's, an ended or a missing one) and that browser's next request gets 401 session-ended; POST end-others leaves only the current session.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/SignInSessions.kt",
+        "backend/app/src/main/kotlin/telex/identity/Owners.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/session/",
+        "backend/app/src/main/kotlin/telex/web/api/SessionsController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/MeController.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t10-sessions-and-me-endpoints.md"
+    },
+    {
+      "id": "T11",
+      "title": "Wire Spring Security WebAuthn for passkey registration and passkey sign-in into the one session mechanism",
+      "layer": "wiring",
+      "deps": [
+        "T8"
+      ],
+      "acs": [
+        "AC-89",
+        "AC-105",
+        "AC-92",
+        "AC-104"
+      ],
+      "dod": "Integration tests with a WebAuthn test authenticator (webauthn4j test utilities or recorded ceremony data) prove: registration stores a credential under the Owner's user entity (name = OwnerId) with a server-side User-Agent label, created set and last_used null, and survives a save/reload on timestamptz; a verified assertion starts a Sign-in Session through SignInSessions.start (createdAccount false), sets telex_session and updates last_used; an unknown or removed credential answers 401 passkey-rejected; a bad attestation answers 400 passkey-registration-failed.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/security/",
+        "backend/app/src/main/kotlin/telex/identity/internal/passkey/",
+        "backend/app/build.gradle.kts",
+        "gradle/libs.versions.toml",
+        "backend/app/src/main/resources/application-local.yaml",
+        "backend/app/src/integrationTest/kotlin/telex/web/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t11-passkey-ceremonies.md"
+    },
+    {
+      "id": "T12",
+      "title": "List and remove my Passkeys, filtered by my WebAuthn user entity",
+      "layer": "ports",
+      "deps": [
+        "T11"
+      ],
+      "acs": [
+        "AC-89",
+        "AC-91",
+        "AC-92",
+        "AC-97"
+      ],
+      "dod": "Integration tests prove: GET /api/v1/passkeys lists only the caller's passkeys newest first with label, createdAt and lastUsedAt (null until first use) and an empty list when none; DELETE removes the caller's passkey including the last one and leaves open sessions alone; another Owner's or a missing id answers 404 not-found and changes nothing.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/Passkeys.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/passkey/",
+        "backend/app/src/main/kotlin/telex/web/api/PasskeysController.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t12-passkey-management-endpoints.md"
+    },
+    {
+      "id": "T13",
+      "title": "Set up the SPA router, query client and fetch client with failure routing, and build the system pages SCR-91, SCR-92 and SCR-93",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-101",
+        "AC-102",
+        "AC-96",
+        "AC-93"
+      ],
+      "dod": "Vitest tests prove: the fetch client aborts after 10 s and routes 5xx/403/timeout to SCR-93 whose Retry repeats the request, 401 unauthenticated to SCR-01 remembering a single-slash path, 401 session-ended to SCR-92 with the query cache cleared, background refetches carry X-Telex-Background: 1 and every POST/DELETE carries X-XSRF-TOKEN; an unknown route renders SCR-91; SCR-91/92/93 render every state from screens.md; tsc, ESLint, Prettier clean.",
+      "files_hint": [
+        "frontend/package.json",
+        "frontend/vite.config.ts",
+        "frontend/src/main.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/app/",
+        "frontend/src/api/",
+        "frontend/src/pages/system/",
+        "frontend/src/components/Button/",
+        "frontend/src/components/EmptyState/",
+        "frontend/src/components/Icon/",
+        "frontend/src/messages.ts",
+        "pnpm-lock.yaml"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t13-spa-foundations-and-system-pages.md"
+    },
+    {
+      "id": "T14",
+      "title": "Build Sign in (SCR-01, email part) and Check your email (SCR-07) with the Sign-in Code",
+      "layer": "ui",
+      "deps": [
+        "T13"
+      ],
+      "acs": [
+        "AC-83",
+        "AC-82",
+        "AC-35",
+        "AC-84",
+        "AC-85",
+        "AC-103"
+      ],
+      "dod": "Vitest tests (mocked fetch) prove SCR-01 default/validation/submitting states and SCR-07 default/validation/submitting/wrong-code/refused-expired/refused-used/refused-void/resending/resent/no-grant states from screens.md, including that an incomplete address sends no request and a 400 code-format doesn't show tries left.",
+      "files_hint": [
+        "frontend/src/pages/sign-in/",
+        "frontend/src/pages/check-email/",
+        "frontend/src/pages/auth/",
+        "frontend/src/components/CodeInput/",
+        "frontend/src/api/signIn.ts",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t14-sign-in-and-check-email-pages.md"
+    },
+    {
+      "id": "T15",
+      "title": "Build Confirm sign-in link (SCR-08) and the landing-after-sign-in rule",
+      "layer": "ui",
+      "deps": [
+        "T14"
+      ],
+      "acs": [
+        "AC-86",
+        "AC-35",
+        "AC-34",
+        "AC-101"
+      ],
+      "dod": "Vitest tests prove SCR-08 loading/default/submitting/refused-*/link-unusable/resending states, that nothing is redeemed until \"Continue as\" is clicked, and that landing sends createdAccount to SCR-09 (never a remembered page), and otherwise to a remembered single-slash path or SCR-10.",
+      "files_hint": [
+        "frontend/src/pages/confirm-link/",
+        "frontend/src/app/landing.ts",
+        "frontend/src/api/signIn.ts",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t15-confirm-link-page-and-landing.md"
+    },
+    {
+      "id": "T16",
+      "title": "Build Create a passkey (SCR-09) and \"Sign in with a passkey\" on SCR-01",
+      "layer": "ui",
+      "deps": [
+        "T15"
+      ],
+      "acs": [
+        "AC-89",
+        "AC-90",
+        "AC-91",
+        "AC-105"
+      ],
+      "dod": "Vitest tests (mocked navigator.credentials and fetch) prove SCR-09 default/unsupported/waiting/failed/no-flag/success states and SCR-01 passkey-waiting/passkey-failed plus the silent return on a cancelled check; a shared webauthn helper converts Spring's JSON options to and from the browser API.",
+      "files_hint": [
+        "frontend/src/pages/create-passkey/",
+        "frontend/src/pages/sign-in/",
+        "frontend/src/api/webauthn.ts",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t16-passkey-step-and-passkey-sign-in.md"
+    },
+    {
+      "id": "T17",
+      "title": "Build the signed-in PageFrame with Sign out and the empty Inbox (SCR-10)",
+      "layer": "ui",
+      "deps": [
+        "T13"
+      ],
+      "acs": [
+        "AC-100",
+        "AC-95"
+      ],
+      "dod": "Vitest tests prove SCR-10 loading/default/note/error states with \"Connect Telegram\" while linkedAccountCount is 0, and that Sign out posts /api/v1/sign-out, clears the TanStack cache and lands on SCR-01, while a failed sign-out lands on SCR-93 with the session kept.",
+      "files_hint": [
+        "frontend/src/components/PageFrame/",
+        "frontend/src/components/Toast/",
+        "frontend/src/pages/inbox/",
+        "frontend/src/api/account.ts",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t17-page-frame-inbox-and-sign-out.md"
+    },
+    {
+      "id": "T18",
+      "title": "Build Profile and security (SCR-64): passkeys card and sign-in sessions card",
+      "layer": "ui",
+      "deps": [
+        "T16",
+        "T17"
+      ],
+      "acs": [
+        "AC-89",
+        "AC-91",
+        "AC-92",
+        "AC-93",
+        "AC-94",
+        "AC-97"
+      ],
+      "dod": "Vitest tests prove every SCR-64 state from screens.md: passkeys loading/list/empty/unsupported/adding/add-cancelled/add-failed/added/remove-confirm/removing/removed (incl. 404) and sessions loading/list/only-this/ending/ended (incl. 404)/ending-others, with the two cards loading and failing independently and the #sessions anchor scrolled into view.",
+      "files_hint": [
+        "frontend/src/pages/profile-security/",
+        "frontend/src/components/ConfirmDialog/",
+        "frontend/src/components/Badge/",
+        "frontend/src/api/account.ts",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t18-profile-and-security-page.md"
+    },
+    {
+      "id": "T19",
+      "title": "Make teleX start with one command: Dockerfile, compose with app and Mailpit, README and a smoke script",
+      "layer": "docs",
+      "deps": [
+        "T9",
+        "T14"
+      ],
+      "acs": [
+        "AC-33"
+      ],
+      "dod": "On a machine with only Docker, `docker compose up` builds and starts app + postgres + mailpit, the app waits for Postgres health and migrates, http://localhost:8080 shows SCR-01 and http://localhost:8025 shows the local mailbox; scripts/smoke.sh polls the sign-in page, requests a sign-in email and finds it through Mailpit's API; the README names both addresses, the one command, the production settings and the public-exposure warning.",
+      "files_hint": [
+        "Dockerfile",
+        ".dockerignore",
+        "compose.yaml",
+        "README.md",
+        "scripts/smoke.sh"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t19-one-command-install.md"
+    },
+    {
+      "id": "T20",
+      "title": "Add Playwright end-to-end tests at 360 px and 1280 px with an accessibility scan and a virtual authenticator",
+      "layer": "tests",
+      "deps": [
+        "T7",
+        "T10",
+        "T12",
+        "T15",
+        "T16",
+        "T18",
+        "T19"
+      ],
+      "acs": [
+        "AC-34",
+        "AC-82",
+        "AC-89",
+        "AC-93",
+        "AC-95",
+        "AC-98",
+        "AC-101",
+        "AC-102"
+      ],
+      "dod": "A Playwright suite runs against the compose stack at 360 px and 1280 px and passes: sign-up by link and by code (reading emails via Mailpit), passkey creation and passkey sign-in with a Chromium virtual authenticator, ending another session, sign out + Back, a remembered destination, SCR-91 and SCR-93 (by an intercepted 503); an axe scan of every screen of this feature reports 0 violations; CI runs it.",
+      "files_hint": [
+        "e2e/",
+        "package.json",
+        "pnpm-workspace.yaml",
+        ".github/workflows/ci.yml"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t20-end-to-end-browser-tests.md"
+    }
+  ]
+}
