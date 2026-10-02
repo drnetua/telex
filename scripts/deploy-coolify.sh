@@ -79,7 +79,7 @@ fi
 
 # 3. Deploy and wait ---------------------------------------------------------------------------------------------
 step "deploying $IMAGE"
-api GET "/deploy?uuid=$SERVICE_UUID&force=false" >/dev/null
+api POST "/deploy?uuid=$SERVICE_UUID&force=false" >/dev/null
 
 deadline=$(( $(date +%s) + DEPLOY_TIMEOUT ))
 until ssh "$DEPLOY_SSH" "docker ps --filter name=app-$SERVICE_UUID --format '{{.Image}} {{.Status}}'" 2>/dev/null \
