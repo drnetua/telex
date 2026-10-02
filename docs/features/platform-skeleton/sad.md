@@ -208,31 +208,109 @@ C4Container
 
 ## 6. Runtime view
 
-<!-- 🎯 Why: the RUNTIME FLOW of 1–2 critical scenarios — who talks to whom, when, in what order.
-     Without §6, §5 is just boxes with no life.
-     📋 Write: a Mermaid sequenceDiagram. Participants are names from §5 (don't invent new ones).
-     Messages are semantic («saves a draft»), NO HTTP verbs / paths / status codes — endpoint-level
-     sequences arrive at the `api` stage.
-     📌 e.g. «author → web: composes draft → web → content API: save». Seed the primary flow(s) here;
-     the `sequences` stage then covers every §5 AC (no cap). Never N/A for M+; XS/S keeps ≥1 happy-path flow. -->
+These are seed flows. `/sdd:sequences` adds one flow per critical user story and covers every §5 AC with a flow or a branch. Messages are semantic; endpoints and status codes arrive at `/sdd:api`.
 
-**Critical flow 1: <flow name>**
+**Critical flow 1: sign up by Sign-in Link (AC-34, AC-35, AC-84, AC-85, AC-86, AC-103, AC-104)**
 
 ```mermaid
 sequenceDiagram
-    actor Actor
-    participant Web
-    participant Service
-    participant Store
-    Actor->>Web: <action>
-    Web->>Service: <call>
-    Service->>Store: <write>
-    Store-->>Service: ok
-    Service-->>Web: result
-    Web-->>Actor: confirmation
+    actor Owner
+    participant SPA as Web SPA
+    participant Web as web module
+    participant Identity as identity module
+    participant Mail as mail module
+    participant DB as PostgreSQL
+    participant MS as Mail server
+
+    Owner->>SPA: enters email address on SCR-01
+    SPA->>Web: request a sign-in email
+    Web->>Identity: issue grant for the address
+    Identity->>DB: supersede live grants for the canonical address, insert grant with hashes
+    Identity->>Mail: send sign-in email with link and code (synchronous)
+    Mail->>MS: deliver over SMTP
+    Identity-->>Web: grant id
+    Web-->>SPA: grant id for the code page
+    SPA-->>Owner: SCR-07 Check your email
+    Owner->>SPA: opens the link, SCR-08 shows Continue as address
+    SPA->>Web: read grant state by link token
+    Web->>Identity: read only, nothing redeemed
+    Owner->>SPA: confirms Continue as address
+    SPA->>Web: redeem link token, with browser time zone and current session cookie if any
+    Web->>Identity: redeem by link
+    Identity->>DB: atomic conditional update marks grant used
+    alt expired, superseded, already used or voided by 5 wrong codes
+        Identity-->>Web: refusal reason
+        Web-->>SPA: problem with the refusal code
+        SPA-->>Owner: refusal page with Send a new link
+    else redeemed
+        Identity->>DB: create Owner if the canonical address is new
+        Identity->>DB: end the session this browser held, insert new session with key hash
+        Identity->>DB: record SignInSessionStarted in the event registry
+        Identity-->>Web: session key, created-account flag
+        Web-->>SPA: set HttpOnly session cookie
+        SPA-->>Owner: SCR-09 Create a passkey (new account) or remembered page or SCR-10 Inbox
+    end
 ```
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+**Critical flow 2: "New sign-in to teleX" notice after commit (AC-98, event propagation)**
+
+```mermaid
+sequenceDiagram
+    participant Identity as identity module
+    participant DB as PostgreSQL
+    participant Listener as identity notice listener
+    participant Mail as mail module
+    participant MS as Mail server
+
+    Identity->>DB: commit session and SignInSessionStarted publication
+    DB-->>Listener: event delivered after commit (asynchronous)
+    alt the sign-in created the account
+        Listener->>DB: mark publication complete, no email
+    else existing account
+        Listener->>DB: load Owner address as created, session browser, device, time zone
+        Listener->>Mail: send New sign-in to teleX with local time, zone name, UTC and sessions link
+        alt mail server unavailable
+            Mail--xListener: send fails
+            Note over Listener,DB: publication stays incomplete and is resubmitted on restart
+        else delivered
+            Mail->>MS: deliver over SMTP
+            Listener->>DB: mark publication complete
+        end
+    end
+```
+
+**Critical flow 3: an authenticated request, ended or idle session (AC-93, AC-96, AC-97, AC-102)**
+
+```mermaid
+sequenceDiagram
+    actor Owner
+    participant SPA as Web SPA
+    participant Web as web module
+    participant Identity as identity module
+    participant DB as PostgreSQL
+
+    Owner->>SPA: opens a page or takes an action
+    SPA->>Web: request with session cookie, background marker only on refetches
+    Web->>Identity: resolve session by key hash
+    Identity->>DB: find session
+    alt no cookie or unknown key
+        Web-->>SPA: problem unauthenticated
+        SPA-->>Owner: SCR-01 Sign in, page remembered for return
+    else ended, idle 30 days or started 90 days ago
+        Identity->>DB: mark ended if it just expired
+        Web-->>SPA: problem session-ended
+        SPA-->>Owner: SCR-92 Session ended with Sign in again
+    else live
+        opt user-initiated and last bump over a minute ago
+            Identity->>DB: update last activity
+        end
+        Web->>Identity: perform the action scoped to this Owner
+        Identity->>DB: query filtered by owner id
+        Web-->>SPA: result, or not-found for another Owner's record
+        SPA-->>Owner: updated page
+    end
+    Note over SPA: no answer in 10 s or a server failure shows SCR-93 with Retry
+```
 
 ## 7. Deployment view
 
