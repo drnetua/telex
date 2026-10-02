@@ -25,5 +25,15 @@
 | T18 | Build Profile and security (SCR-64): passkeys card and sign-in sessions card | ui | Anton Husiev | M | T16, T17 | done |
 | T19 | Make teleX start with one command: Dockerfile, compose with app and Mailpit, README and a smoke script | docs | Anton Husiev | M | T9, T14 | done |
 | T20 | Add Playwright end-to-end tests at 360 px and 1280 px with an accessibility scan and a virtual authenticator | tests | Anton Husiev | M | T7, T10, T12, T15, T16, T18, T19 | done |
+| T21 | Reject addresses the mail library can't parse and roll back the grant on any send failure | app | Anton Husiev | S | — | todo |
+| T22 | Serialise Sign-in Grant issue per canonical address so at most one grant is live | app | Anton Husiev | S | T21 | todo |
+| T23 | Harden passkey registration: long emails, concurrent user-entity insert, honest 5xx, one transaction | wiring | Anton Husiev | S | — | todo |
+| T24 | Make framework errors use contract problem codes and validate API bodies against openapi.yaml | ports | Anton Husiev | S | T22 | todo |
+| T25 | Prove passkey sign-in end to end: removed passkey refused, success ends the held session and sends the notice | tests | Anton Husiev | S | T23 | todo |
+| T26 | Prove session lifetime over HTTP and that raw secrets never reach logs or the event registry | tests | Anton Husiev | S | T24 | todo |
+| T27 | Keep page actions correct across the Unavailable page: Retry carries its result, SCR-08 shows unusable, bare layout | ui | Anton Husiev | S | — | todo |
+| T28 | Mark /me refetches as background and cover the untested SCR-64 and SCR-07 states | ui | Anton Husiev | S | T27 | todo |
+| T29 | Bring the auth and signed-in pages in line with screens.md and the accessibility rules | ui | Anton Husiev | S | T28 | todo |
+| T30 | Make the e2e run reliable: app healthcheck, pinned and type-checked e2e, strict AC-82 assertion, removed-passkey e2e | tests | Anton Husiev | S | T25 | todo |
 
-**Total:** 20 tasks, ~17 person-days (S = ½ day, M = 1 day).
+**Total:** 30 tasks (T21–T30 are review follow-ups from `_review/review-2026-10-02.md`), ~22 person-days (S = ½ day, M = 1 day).

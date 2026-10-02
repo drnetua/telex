@@ -479,6 +479,280 @@
         ".github/workflows/ci.yml"
       ],
       "file": "docs/features/platform-skeleton/tasks/t20-end-to-end-browser-tests.md"
+    },
+    {
+      "id": "T21",
+      "title": "Reject addresses the mail library can't parse and roll back the grant on any send failure",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-83",
+        "AC-103"
+      ],
+      "dod": "Unit test: EmailAddress.parse refuses `a,b@c.de` and `x(y@z.co` (400 email-incomplete/validation-failed). SmtpMailer maps jakarta.mail.MessagingException to MailUnavailable. Integration test: a send that throws a checked MessagingException stores no grant and does not supersede the earlier live grant; the API answers 503 per openapi, never 500.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/internal/owner/EmailAddress.kt",
+        "backend/app/src/main/kotlin/telex/mail/internal/SmtpMailer.kt",
+        "backend/app/src/main/kotlin/telex/identity/SignIn.kt",
+        "backend/app/src/test/kotlin/telex/identity/internal/owner/EmailAddressTest.kt",
+        "backend/app/src/test/kotlin/telex/mail/internal/SmtpMailerTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/SignInIssueIT.kt"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t21-review-fix-a1.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "A1"
+      ]
+    },
+    {
+      "id": "T22",
+      "title": "Serialise Sign-in Grant issue per canonical address so at most one grant is live",
+      "layer": "app",
+      "deps": [
+        "T21"
+      ],
+      "acs": [
+        "AC-103"
+      ],
+      "dod": "Integration test: N parallel requests for one address leave exactly one live grant (the others superseded); implemented with pg_advisory_xact_lock(hashtext(canonical)) before supersedeLive.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/SignIn.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/grant/GrantRows.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/SignInIssueIT.kt"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t22-review-fix-a4.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "A4"
+      ]
+    },
+    {
+      "id": "T23",
+      "title": "Harden passkey registration: long emails, concurrent user-entity insert, honest 5xx, one transaction",
+      "layer": "wiring",
+      "deps": [],
+      "acs": [
+        "AC-89",
+        "AC-102"
+      ],
+      "dod": "Tests prove: an Owner with a 254-char email gets registration options (display_name fits — widen the unreleased migration column to 254 and update data-model.md, or truncate); two concurrent ensureUserEntity calls both succeed; a non-verification failure (e.g. DB down) surfaces as 5xx `unavailable`, only verification failures map to 400 passkey-registration-failed; a registered passkey is stored once with last_used NULL in one transaction. TestCredentialRecords moves out of org.springframework.* into a telex test package and stops using reflection.",
+      "files_hint": [
+        "backend/app/src/main/resources/db/migration/V202610021203__create_passkey_tables.sql",
+        "docs/features/platform-skeleton/data-model.md",
+        "backend/app/src/main/kotlin/telex/identity/Passkeys.kt",
+        "backend/app/src/main/kotlin/telex/web/security/PasskeyCeremonies.kt",
+        "backend/app/src/integrationTest/kotlin/org/springframework/security/web/webauthn/api/TestCredentialRecords.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PasskeyCeremoniesIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PasskeysApiIT.kt"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t23-review-fix-a6-a7-d3.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "A6",
+        "A7",
+        "D3"
+      ]
+    },
+    {
+      "id": "T24",
+      "title": "Make framework errors use contract problem codes and validate API bodies against openapi.yaml",
+      "layer": "ports",
+      "deps": [
+        "T22"
+      ],
+      "acs": [
+        "AC-34",
+        "AC-82",
+        "AC-83",
+        "AC-84",
+        "AC-85",
+        "AC-93",
+        "AC-97",
+        "AC-101"
+      ],
+      "dod": "Malformed/empty JSON on the sign-in POSTs answers 400 validation-failed; every emitted `code` is in the openapi ErrorCode enum. The shared *ApiIT request helpers validate success and problem bodies against contracts/openapi.yaml (e.g. swagger-request-validator / openapi4j), so drift fails a test.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt",
+        "backend/app/src/test/kotlin/telex/web/ProblemHandlerTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/",
+        "gradle/libs.versions.toml",
+        "backend/app/build.gradle.kts"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t24-review-fix-a8-b5.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "A8",
+        "B5"
+      ]
+    },
+    {
+      "id": "T25",
+      "title": "Prove passkey sign-in end to end: removed passkey refused, success ends the held session and sends the notice",
+      "layer": "tests",
+      "deps": [
+        "T23"
+      ],
+      "acs": [
+        "AC-92",
+        "AC-104",
+        "AC-98",
+        "AC-89"
+      ],
+      "dod": "Integration tests: after removing a real passkey its assertion is refused and no session starts; a successful passkey sign-in ends the session the browser held, starts a session of the same kind and records a 'New sign-in to teleX' notice; NewSignInNoticeIT also covers the code path; the failed-send test waits on a recorded attempt (latch/counter) instead of sleep.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/web/PasskeyCeremoniesIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/NewSignInNoticeIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/mail/RecordingMailer.kt"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t25-review-fix-b1-b2-b7.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "B1",
+        "B2",
+        "B7"
+      ]
+    },
+    {
+      "id": "T26",
+      "title": "Prove session lifetime over HTTP and that raw secrets never reach logs or the event registry",
+      "layer": "tests",
+      "deps": [
+        "T24"
+      ],
+      "acs": [
+        "AC-96"
+      ],
+      "dod": "HTTP integration tests: an X-Telex-Background: 1 request leaves last_activity_at unchanged while an unmarked one moves it; a cookie idle 30+ days or older than 90 days gets 401 session-ended. One test runs request → redeem → sign-out with output capture and asserts the raw token, code and cookie appear in neither logs nor event_publication.serialized_event.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/web/SessionsApiIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t26-review-fix-b3-b4.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "B3",
+        "B4"
+      ]
+    },
+    {
+      "id": "T27",
+      "title": "Keep page actions correct across the Unavailable page: Retry carries its result, SCR-08 shows unusable, bare layout",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-102",
+        "AC-103"
+      ],
+      "dod": "Vitest: 503 on Send → Retry lands on SCR-07 with the new grant; 503 on 'Send a new link' → Retry → a code redeems against the new grant; a repeat failure shows 'Still no answer.' and keeps SCR-93; confirm-time 410 without email or 400 shows SCR-08 link-unusable; SCR-93 renders inside the bare system layout; ConfirmLinkPage no longer routes failures during render.",
+      "files_hint": [
+        "frontend/src/app/",
+        "frontend/src/pages/sign-in/",
+        "frontend/src/pages/check-email/",
+        "frontend/src/pages/confirm-link/",
+        "frontend/src/pages/create-passkey/",
+        "frontend/src/pages/profile-security/PasskeysCard.tsx",
+        "frontend/src/pages/system/"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t27-review-fix-a2-a3-c1-c8.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "A2",
+        "A3",
+        "C1",
+        "C8"
+      ]
+    },
+    {
+      "id": "T28",
+      "title": "Mark /me refetches as background and cover the untested SCR-64 and SCR-07 states",
+      "layer": "ui",
+      "deps": [
+        "T27"
+      ],
+      "acs": [
+        "AC-96",
+        "AC-89",
+        "AC-91",
+        "AC-97",
+        "AC-100"
+      ],
+      "dod": "Vitest: useMe refetches carry X-Telex-Background: 1; SCR-64 passkeys-unsupported, adding, add-cancelled, add-failed toast, added ('Never used'), removing, removed-on-404 and the #sessions anchor are asserted; SCR-07 400 code-format shows no tries left; the Inbox test really chooses twice.",
+      "files_hint": [
+        "frontend/src/api/account.ts",
+        "frontend/src/api/client.test.ts",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.test.tsx",
+        "frontend/src/pages/check-email/CheckEmailPage.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t28-review-fix-a5-b6-b8.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "A5",
+        "B6",
+        "B8"
+      ]
+    },
+    {
+      "id": "T29",
+      "title": "Bring the auth and signed-in pages in line with screens.md and the accessibility rules",
+      "layer": "ui",
+      "deps": [
+        "T28"
+      ],
+      "acs": [
+        "AC-83",
+        "AC-92",
+        "AC-100"
+      ],
+      "dod": "Vitest: auth layout shows the logo asset; the resent alert has the info-circle icon; SCR-07 has a visible 'Sign-in code' label; SCR-10 matches screens.md (no extra heading, or screens.md updated); invalid inputs get aria-invalid + aria-describedby and errors sit in a live region; ConfirmDialog focuses its first button, traps focus and returns it on close. PageFrame icon buttons are ≥44 px on phone (CSS, checked in e2e).",
+      "files_hint": [
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/pages/",
+        "frontend/src/components/",
+        "frontend/src/messages.ts",
+        "frontend/src/styles"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t29-review-fix-c2-c3-c4-c5-c6-c7.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7"
+      ]
+    },
+    {
+      "id": "T30",
+      "title": "Make the e2e run reliable: app healthcheck, pinned and type-checked e2e, strict AC-82 assertion, removed-passkey e2e",
+      "layer": "tests",
+      "deps": [
+        "T25"
+      ],
+      "acs": [
+        "AC-33",
+        "AC-82",
+        "AC-92"
+      ],
+      "dod": "compose `app` has a healthcheck so `docker compose up --wait` waits for it; e2e deps pinned to caret ranges and `tsc --noEmit` over e2e runs in the build/CI; the AC-82 e2e asserts exactly 'This link was already used'; an e2e removes a passkey, signs out and sees passkey sign-in refused with email sign-in still offered.",
+      "files_hint": [
+        "compose.yaml",
+        ".github/workflows/ci.yml",
+        "e2e/",
+        "build.gradle.kts",
+        "settings.gradle.kts",
+        "pnpm-workspace.yaml",
+        "pnpm-lock.yaml"
+      ],
+      "file": "docs/features/platform-skeleton/tasks/t30-review-fix-d1-d2-b8-b1.md",
+      "source": "review-2026-10-02",
+      "findings": [
+        "D1",
+        "D2",
+        "B8",
+        "B1"
+      ]
     }
   ]
 }
