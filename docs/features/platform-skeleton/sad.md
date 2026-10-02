@@ -126,49 +126,84 @@ Tactical choices in §5–§8 trace to these four. Two more blast-radius decisio
 
 ## 5. Building block view
 
-<!-- 🎯 Why: INTERNAL DECOMPOSITION — modules, containers, datastores. The static topology: who
-     may talk to whom. Without §5, §6 (the flows) has no vocabulary of participants.
-     📋 Write: 1 ¶ on the style (layered / hexagonal / clean / event-driven) + a folder tree + a
-     C4Container block.
-     📌 Draw ONE Container per declared `target_surface` (frontmatter): a fullstack
-     [backend-service, web-frontend] = a backend-API container + a web/SPA container; a
-     [backend-service, mobile-app] = the API + the mobile app. The Container(web, …) line below is
-     just one surface's container — swap/add per what was declared in §4. → _shared/surfaces.md
-     📌 e.g. «web app, content API, media worker, datastore, object store, CDN». -->
+The repo's Spring Modulith modular monolith is followed as-is. Each module is a direct sub-package of `telex`, with its public API and events at the module root and everything else in `internal`. `ApplicationModules.verify()` enforces the boundaries. The feature touches three modules:
+- **`identity`** (core) is the first real module and owns every domain rule of this feature.
+- **`web`** (interface) owns HTTP, the Spring Security filter chain and SPA hosting, and calls only `identity`'s public API.
+- **`mail`** (new, integration) owns SMTP and depends on `shared` only (ADR-0004).
 
-<One paragraph: layered / hexagonal / clean / event-driven, and why.>
+`identity`'s `allowedDependencies` gains `mail`. `web`'s stay as they are: `web` never reaches `mail`. The SPA is a second container that consumes the `web` contract.
 
 **Internal decomposition:**
 
 ```
-<e.g. modules/<feature>/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + integration impl>
-├── ports/        <handlers, DTOs, error mapping>
-└── wiring        <self-wiring entry point>
+backend/app/src/main/kotlin/telex/
+├── identity/                      core — public API at the root
+│   ├── OwnerId, SignInGrantId, SignInSessionId (typed UUIDv7 ids)
+│   ├── SignIn                     request a sign-in email, read a grant's state, redeem by link or code
+│   ├── SignInSessions             start, resolve by cookie key, list own, end one / all others, sign out
+│   ├── Passkeys                   list own, remove, label for a new credential
+│   ├── Owners                     "who am I" (address, has-passkey-step-pending)
+│   ├── SignInSessionStarted       event (owner id, session id, created-account flag — no secrets)
+│   └── internal/
+│       ├── owner/                 Owner aggregate, email canonicalisation, repository
+│       ├── grant/                 SignInGrant aggregate, hashing, atomic redeem, repository
+│       ├── session/               SignInSession aggregate, 30/90-day rules, activity bump, repository
+│       ├── passkey/               Spring WebAuthn JDBC repositories (beans), Owner ↔ user-entity mapping
+│       ├── device/                User-Agent → "Safari on iPhone" + device type mapper
+│       └── email/                 sign-in + new-sign-in templates, SignInSessionStarted listener
+├── mail/                          integration ACL (new module, depends on shared only)
+│   ├── Mailer, OutgoingEmail      port
+│   └── internal/SmtpMailer        spring-boot-starter-mail adapter
+├── web/                           interface
+│   ├── security/                  SecurityFilterChain, SessionCookieSecurityContextRepository (→ SignInSessions),
+│   │                              WebAuthn wiring + success handler, CSRF, forwarded headers, PublicUrl
+│   ├── api/                       SignInController, SessionsController, PasskeysController, MeController
+│   ├── SpaHosting.kt              existing; must not swallow /webauthn/** and /login/webauthn
+│   └── ProblemHandler.kt          existing; new problem codes (sad §8)
+└── shared/                        existing kernel (Uuid7, DomainProblem)
+
+frontend/src/
+├── app/                           router (SCR routes), QueryClient, page frame (Profile and security, Sign out)
+├── api/                           fetch client: 10 s timeout, X-Telex-Background, CSRF header, problem → system page
+├── pages/                         sign-in (SCR-01), check-email (SCR-07), confirm-link (SCR-08), create-passkey (SCR-09),
+│                                  inbox (SCR-10), profile-security (SCR-64), system/ (SCR-91, SCR-92, SCR-93)
+├── components/                    ported from docs/docs/design-system/components as first used
+└── messages.ts                    all UI copy
+
+compose.yaml + Dockerfile          app (multi-stage build) + postgres + mailpit — §7
 ```
 
-**C4 Container (L2):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. ONE Container per declared target_surface (frontmatter); the web container below is one example surface. -->
+**C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <feature> — Containers
+    title platform-skeleton — Containers
 
-    Person(actor, "<Actor>")
+    Person(owner, "Owner", "Signs in, manages own sessions and passkeys")
+    Person(operator, "Operator", "Starts teleX, reads the local mailbox")
 
-    Container_Boundary(app, "<Our system>") {
-        Container(web, "<Web/UI>", "<technology>", "<purpose>")
-        Container(api, "<API/handler>", "<technology>", "<purpose>")
-        ContainerDb(db, "<Datastore>", "<technology>", "<purpose>")
+    System_Ext(cloudflare, "Cloudflare", "Production only: HTTPS edge")
+    System_Ext(authenticator, "Passkey authenticator", "Device or password manager")
+    System_Ext(mailserver, "Mail server", "Mailpit locally, SMTP provider in production")
+
+    System_Boundary(telex, "teleX") {
+        Container(spa, "Web SPA", "React, TypeScript, Vite, Tabler, React Router, TanStack Query", "SCR-01 to SCR-93, served as static files by the app")
+        Container(web, "web module", "Kotlin, Spring MVC, Spring Security 7", "Sign-in, session and passkey endpoints, WebAuthn ceremonies, session cookie, SPA hosting, RFC 9457 errors")
+        Container(identity, "identity module", "Kotlin, Spring Data JDBC, Spring Modulith", "Owner, Sign-in Grant, Sign-in Session, Passkey rules, email templates, SignInSessionStarted")
+        Container(mail, "mail module", "Kotlin, Spring Mail", "Mailer port and SMTP adapter")
+        ContainerDb(db, "PostgreSQL", "Postgres 17 + pgvector", "owner, sign_in_grant, sign_in_session, user_entities, user_credentials, event_publication")
     }
 
-    System_Ext(ext, "<External>", "<purpose>")
-
-    Rel(actor, web, "<interaction>", "<protocol>")
-    Rel(web, api, "<calls>")
-    Rel(api, db, "<reads/writes>", "<driver>")
-    Rel(api, ext, "<emits>", "<protocol>")
+    Rel(owner, spa, "Uses locally", "HTTP localhost")
+    Rel(owner, cloudflare, "Uses in production", "HTTPS")
+    Rel(cloudflare, web, "Proxies", "HTTP")
+    Rel(spa, web, "Sign-in, session and passkey calls", "JSON, session cookie")
+    Rel(spa, authenticator, "Creates and uses passkeys", "WebAuthn browser API")
+    Rel(web, identity, "Calls public API")
+    Rel(identity, db, "Reads and writes", "JDBC")
+    Rel(identity, mail, "Sign-in email now, new-sign-in email after commit")
+    Rel(mail, mailserver, "Sends", "SMTP")
+    Rel(operator, mailserver, "Opens local mailbox", "HTTP")
 ```
 
 ## 6. Runtime view
