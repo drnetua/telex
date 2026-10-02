@@ -8,6 +8,8 @@ export default defineConfig({
     // The Spring Boot app (`./gradlew :backend:app:bootRun`) serves the API during `pnpm dev`.
     proxy: {
       "/api": "http://localhost:8080",
+      "/webauthn": "http://localhost:8080",
+      "/login/webauthn": "http://localhost:8080",
     },
   },
   test: {

@@ -4,12 +4,11 @@ import { App } from "./App";
 import { messages } from "./messages";
 
 describe("App", () => {
-  it("renders the app shell with the placeholder page", () => {
+  it("renders the app shell with the signed-in frame and Inbox loading", () => {
     render(<App />);
 
     expect(screen.getByText(messages.appName)).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 1, name: messages.home.title }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: messages.frame.signOut })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 });
