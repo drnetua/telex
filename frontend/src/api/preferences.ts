@@ -13,6 +13,39 @@ export function changePreferences(change: { theme: ThemeChoice }): Promise<{ the
   });
 }
 
+export interface SavedPreferences {
+  theme: ThemeChoice;
+  timeZone: string | null;
+  timeZoneIsFallback: boolean;
+}
+
+/**
+ * `saveDetectedTimeZone`: fire-and-forget background write; on 200 the returned preferences replace the cached
+ * `me` fields. A failed save is left to the connectivity banner, and the next open tries again.
+ */
+export function useSaveDetectedTimeZoneRequest() {
+  const client = useQueryClient();
+  return useCallback(
+    (timeZone: string | null) => {
+      apiFetch<SavedPreferences>("/api/v1/me/preferences/detected-time-zone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeZone }),
+        background: true,
+      }).then(
+        (saved) =>
+          client.setQueryData<Me>(meKey, (old) =>
+            old
+              ? { ...old, timeZone: saved.timeZone, timeZoneIsFallback: saved.timeZoneIsFallback }
+              : old,
+          ),
+        () => undefined,
+      );
+    },
+    [client],
+  );
+}
+
 /**
  * Theme choice with apply-at-once, remember-on-this-device and revert-on-failure. Failures are handled here
  * (an error Toast with Try again) instead of the shared failure routing, so a refusal never leaves the screen.

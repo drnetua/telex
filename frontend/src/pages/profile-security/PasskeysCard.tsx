@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiFailure } from "../../api/client";
-import { passkeysKey, usePasskeys, useRemovePasskey, type Passkey } from "../../api/account";
+import { passkeysKey, useMe, usePasskeys, useRemovePasskey, type Passkey } from "../../api/account";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/Button/Button";
@@ -18,6 +18,7 @@ const m = messages.profileSecurity;
 export function PasskeysCard() {
   const client = useQueryClient();
   const passkeys = usePasskeys();
+  const timeZone = useMe().data?.timeZone ?? null;
   const remove = useRemovePasskey();
   const [supported, setSupported] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -106,8 +107,8 @@ export function PasskeysCard() {
                 <h4 className="mb-1">{p.label}</h4>
                 <small className="text-secondary">
                   {p.lastUsedAt
-                    ? `${m.created(formatDate(p.createdAt))} · ${m.lastUsed(formatWhen(p.lastUsedAt))}`
-                    : `${m.created(formatDate(p.createdAt))} · ${m.neverUsed}`}
+                    ? `${m.created(formatDate(p.createdAt, timeZone))} · ${m.lastUsed(formatWhen(p.lastUsedAt, timeZone))}`
+                    : `${m.created(formatDate(p.createdAt, timeZone))} · ${m.neverUsed}`}
                 </small>
               </div>
               <Button className="btn-ghost-secondary" icon="trash" onClick={() => askRemove(p)}>

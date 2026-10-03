@@ -103,6 +103,19 @@ afterEach(() => {
 const pending = () => new Promise<Response>(() => undefined);
 
 describe("SCR-64 Profile and security", () => {
+  it("shows Passkey and Session dates in the Owner's time zone", async () => {
+    const calls = stubApi({
+      passkeys: [{ ...passkey, createdAt: "2026-10-02T03:00:00Z" }],
+      onCall: (method, url) =>
+        url === "/api/v1/me" && method === "GET"
+          ? json(200, { ...me, timeZone: "America/Los_Angeles" })
+          : undefined,
+    });
+    setup();
+    expect(await screen.findByText(/Created 1 Oct 2026/)).toBeInTheDocument();
+    expect(calls.some(([, url]) => url.includes("detected-time-zone"))).toBe(false);
+  });
+
   it("shows heading and signed-in email", async () => {
     stubApi({});
     setup();
