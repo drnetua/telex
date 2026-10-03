@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { isBackground } from "./account";
 import { apiFetch } from "./client";
 
@@ -139,16 +140,28 @@ const fetchDraft = (from?: string) =>
     { background: isBackground() },
   );
 
+/** A draft fetched this recently counts as asked-on-open: Create/Duplicate fetch it just before the modal mounts. */
+const DRAFT_FRESH_MS = 5000;
+
 export function useModelProfileDraft(from?: string, enabled = true) {
-  // Always ask on mount (the suggested name goes stale), never in the background while the form is open.
-  return useQuery({
+  // Ask on mount unless the card just did (the suggested name goes stale); never in the background while the form is open.
+  const query = useQuery({
     queryKey: draftKey(from),
     queryFn: () => fetchDraft(from),
     enabled,
-    staleTime: Infinity,
+    staleTime: DRAFT_FRESH_MS,
     refetchOnWindowFocus: false,
-    refetchOnMount: "always",
+    refetchOnMount: true,
   });
+  const [freshAtMount] = useState(query.data !== undefined && !query.isStale);
+  // Data counts only when it was fresh on open or arrived after the open (a failed refetch leaves old data behind).
+  const usableNow =
+    query.data !== undefined &&
+    (freshAtMount || (query.isFetchedAfterMount && query.dataUpdatedAt > query.errorUpdatedAt));
+  // Once the form has its data, a later failing background refetch must not take it away.
+  const [latched, setLatched] = useState(false);
+  if (usableNow && !latched) setLatched(true);
+  return { ...query, usable: latched || usableNow };
 }
 
 /** On-demand draft fetch for "Create profile" / "Duplicate": always asks the server, caches under the hook's key. */

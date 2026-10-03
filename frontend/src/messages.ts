@@ -337,6 +337,7 @@ export const messages = {
       noImageOutput: "Can't create images",
       noText: "Doesn't take and produce text",
       alreadyIn: "Already in this slot",
+      perMillion: "per 1M",
     },
     justNow: "just now",
     minutesAgo: (n: number) => `${n} ${n === 1 ? "minute" : "minutes"} ago`,

@@ -75,7 +75,10 @@ const profilesBody = {
   items: [],
 };
 
-function stubApi(catalogResponse: () => Response | Promise<Response>) {
+function stubApi(
+  catalogResponse: () => Response | Promise<Response>,
+  profiles: Record<string, unknown> = profilesBody,
+) {
   const calls: string[] = [];
   vi.stubGlobal(
     "fetch",
@@ -83,8 +86,7 @@ function stubApi(catalogResponse: () => Response | Promise<Response>) {
       calls.push(url);
       if (url === "/api/v1/me") return Promise.resolve(json(200, me));
       if (url === "/api/v1/models/catalog") return Promise.resolve(catalogResponse());
-      if (url.startsWith("/api/v1/models/profiles"))
-        return Promise.resolve(json(200, profilesBody));
+      if (url.startsWith("/api/v1/models/profiles")) return Promise.resolve(json(200, profiles));
       return Promise.resolve(new Response(null, { status: 204 }));
     }),
   );
@@ -343,5 +345,50 @@ describe("SCR-66 Model catalog tab", () => {
     expect([...cells].map((c) => c.getAttribute("data-label"))).toEqual(
       expect.arrayContaining(["Takes", "Produces", "Price", "Context"]),
     );
+  });
+
+  const ALERT = "AI models aren't set up on this installation yet. Ask the person who runs teleX.";
+  const above = (a: HTMLElement) =>
+    a.compareDocumentPosition(screen.getByRole("tablist")) & Node.DOCUMENT_POSITION_FOLLOWING;
+
+  it("F4: not-configured on the catalog tab shows one alert above the tabs", async () => {
+    stubApi(() =>
+      json(200, catalog({ state: "not-configured", lastRefreshedAt: null, models: [] })),
+    );
+    setup();
+    await screen.findByText("No models without AI set up.");
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toHaveTextContent(ALERT);
+    expect(above(alerts[0] as HTMLElement)).toBeTruthy();
+  });
+
+  it("F4: the alert above the tabs also shows on the catalog tab when only the profiles say AI is off", async () => {
+    stubApi(() => json(200, catalog()), { ...profilesBody, aiConfigured: false });
+    setup();
+    await screen.findByText("Test text model A");
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts).toHaveLength(1);
+    expect(above(alerts[0] as HTMLElement)).toBeTruthy();
+  });
+
+  it("F7: tabs follow the ARIA tabs pattern: panel, labels, roving tabindex and arrow keys", async () => {
+    stubApi(() => json(200, catalog()));
+    setup("/settings/models");
+    const profilesTab = await screen.findByRole("tab", { name: "Profiles" });
+    const catalogTab = screen.getByRole("tab", { name: "Model catalog" });
+    const panel = screen.getByRole("tabpanel");
+    expect(profilesTab.getAttribute("aria-controls")).toBe(panel.id);
+    expect(panel.getAttribute("aria-labelledby")).toBe(profilesTab.id);
+    expect(profilesTab).toHaveAttribute("tabindex", "0");
+    expect(catalogTab).toHaveAttribute("tabindex", "-1");
+    profilesTab.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Model catalog", selected: true })).toHaveFocus();
+    expect(screen.getByTestId("where").textContent).toMatch(/tab=catalog/);
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Profiles", selected: true })).toHaveFocus();
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(screen.getByRole("tab", { name: "Model catalog", selected: true })).toHaveFocus();
   });
 });

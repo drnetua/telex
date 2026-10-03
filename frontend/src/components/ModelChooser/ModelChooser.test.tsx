@@ -90,4 +90,25 @@ describe("ModelChooser", () => {
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  it("F6: each row shows the price with catalog precision (W-34b)", () => {
+    render(
+      <ModelChooser
+        slot="text"
+        models={[
+          {
+            ...model("t/p", "Priced", ["text"]),
+            inputPricePerMillionTokens: "2.5",
+            outputPricePerMillionTokens: "10",
+          },
+          model("t/u", "Unknown", ["text"]),
+        ]}
+        taken={[]}
+        onChoose={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(row("Priced")).toHaveTextContent("$2.50 / $10.00 per 1M");
+    expect(row("Unknown")).toHaveTextContent("Price unknown");
+  });
 });

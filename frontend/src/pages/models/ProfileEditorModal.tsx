@@ -25,16 +25,15 @@ import { Button } from "../../components/Button/Button";
 import { ChainEditor, type ChainItem } from "../../components/ChainEditor/ChainEditor";
 import { ModelChooser } from "../../components/ModelChooser/ModelChooser";
 import { LoadState } from "../../components/LoadState/LoadState";
-import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
 import { UnavailablePage } from "../system/UnavailablePage";
+import { useNotice } from "./notice";
 
 const m = messages.models;
 const e = m.editor.errors;
 const SLOTS: SlotKind[] = ["text", "vision", "image"];
 const MODELS_PATH = "/settings/models";
 
-export type EditorNotice = { tone: "info" | "error"; message: string };
 type Chains = Record<SlotKind, ChainItem[]>;
 type SlotErrors = Partial<Record<SlotKind, { slot?: string; rows: Record<number, string> }>>;
 
@@ -67,9 +66,7 @@ export function ProfileEditorModal({ profileId, from, onGone }: Props) {
   const profile = useModelProfile(profileId);
   const source = profileId ? profile : draft;
   // A failed background refetch must not close or reset an editor that already has its data.
-  const loaded = profileId
-    ? profile.data !== undefined
-    : draft.data !== undefined && draft.isFetchedAfterMount;
+  const loaded = profileId ? profile.data !== undefined : draft.usable;
   const failure = !loaded && source.error instanceof ApiFailure ? source.error : null;
   const code = failure?.code;
   const gone = code === "not-found";
@@ -90,7 +87,7 @@ export function ProfileEditorModal({ profileId, from, onGone }: Props) {
         slots: profile.data.slots,
         pricePer100Runs: profile.data.pricePer100Runs,
       }
-    : draft.isFetchedAfterMount
+    : draft.usable
       ? draft.data
       : undefined;
   if (!data) return <EditorShell profileId={profileId} />;
@@ -153,7 +150,7 @@ function EditorForm({
   const [nameError, setNameError] = useState<string | null>(null);
   const [slotErrors, setSlotErrors] = useState<SlotErrors>({});
   const [choosing, setChoosing] = useState<SlotKind | null>(null);
-  const [notice, setNotice] = useState<EditorNotice | null>(null);
+  const { notify, clear } = useNotice();
   const [focusRequest, setFocusRequest] = useState<{
     target: "name" | SlotKind;
     row?: number;
@@ -251,9 +248,9 @@ function EditorForm({
     if (!(failure instanceof ApiFailure)) return;
     if (failure.code === "not-found") return onGone();
     if (failure.code === "profile-limit-reached")
-      return setNotice({ tone: "error", message: m.limitReached });
+      return notify({ tone: "error", message: m.limitReached });
     if (failure.code === "ai-not-configured")
-      return setNotice({ tone: "error", message: m.notConfiguredAlert });
+      return notify({ tone: "error", message: m.notConfiguredAlert });
     if (failure.status !== 400) return;
     let nameMessage: string | null = null;
     const slotsOut: SlotErrors = {};
@@ -279,7 +276,7 @@ function EditorForm({
         target: firstSlot,
         row: !slotsOut[firstSlot]?.slot && firstRow !== undefined ? Number(firstRow) : undefined,
       });
-    else setNotice({ tone: "error", message: e.saveFailed });
+    else notify({ tone: "error", message: e.saveFailed });
   }
 
   function save() {
@@ -288,7 +285,7 @@ function EditorForm({
     setSlotErrors(problems.text ? { text: { slot: problems.text, rows: {} } } : {});
     if (problems.name) return setFocusRequest({ target: "name" });
     if (problems.text) return setFocusRequest({ target: "text" });
-    setNotice(null);
+    clear();
     const slots = toInput(chains);
     const done = {
       onSuccess: () =>
@@ -403,14 +400,6 @@ function EditorForm({
         </div>
       </div>
       <div className="modal-backdrop show" />
-      {notice ? (
-        <Toast
-          tone={notice.tone}
-          message={notice.message}
-          dismissLabel={m.dismiss}
-          onDismiss={() => setNotice(null)}
-        />
-      ) : null}
     </>
   );
 }

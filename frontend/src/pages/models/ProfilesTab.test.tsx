@@ -561,4 +561,45 @@ describe("SCR-66 Profiles tab", () => {
     setup();
     expect(await screen.findByText(/teleX is unavailable/)).toBeInTheDocument();
   });
+
+  it("F2: a routed failure (500) on choosing a default shows no cantBeDefault toast", async () => {
+    const calls = stubApi({
+      list: list(),
+      put: () => json(500, { code: "internal-error" }),
+    });
+    setup();
+    await picker();
+    await userEvent.click(radio("Careful"));
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.url === "/api/v1/models/default-profile")).toBe(true),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(/can't be your default right now/)).not.toBeInTheDocument();
+  });
+
+  it("F6: the Default profile and System profiles headings are visible", async () => {
+    stubApi({ list: list() });
+    setup();
+    await picker();
+    const d = screen.getByRole("heading", { name: "Default profile" });
+    const s = screen.getByRole("heading", { name: "System profiles" });
+    expect(s).not.toHaveClass("visually-hidden");
+    expect(d).not.toHaveClass("visually-hidden");
+  });
+
+  it("F7: a notice belongs to its URL entry: opening the editor drops it", async () => {
+    stubApi({
+      list: list(),
+      put: () =>
+        json(409, { type: "urn:telex:error:no-text-model", code: "no-text-model", errors: [] }),
+    });
+    setup();
+    await picker();
+    await userEvent.click(radio("Careful"));
+    await screen.findByText("Careful can't be your default right now. Choose another profile.");
+    expect(document.querySelectorAll(".toast-container")).toHaveLength(1);
+    await userEvent.click(within(card("Cheap vision")).getByRole("button", { name: "Edit" }));
+    expect(screen.getByTestId("where").textContent).toBe("/settings/models/profiles/c1");
+    expect(screen.queryByText(/can't be your default right now/)).not.toBeInTheDocument();
+  });
 });

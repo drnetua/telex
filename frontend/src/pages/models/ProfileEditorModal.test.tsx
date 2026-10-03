@@ -1,4 +1,4 @@
-import { focusManager, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router";
@@ -143,15 +143,18 @@ function Where() {
     </>
   );
 }
-function open(path: string) {
+function open(path: string, seed?: (client: QueryClient) => void) {
+  const client = createAppQueryClient();
+  seed?.(client);
   render(
-    <QueryClientProvider client={createAppQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <AppRoutes />
         <Where />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return client;
 }
 const where = () => screen.getByTestId("where").textContent;
 const shell = (title = "Create profile") => screen.findByRole("dialog", { name: title });
@@ -259,6 +262,20 @@ describe("SCR-34 not found and opening refusals (AC-222)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(where()).toBe("/settings/models/profiles/someone-elses");
   });
+
+  it.each(["/settings/models/profiles/someone-elses", "/settings/models/profiles/new?from=ghost"])(
+    "SCR-91 for %s renders in the bare system layout, without the app navigation",
+    async (path) => {
+      stubApi({
+        get: () => problem(404, "not-found"),
+        draft: () => problem(404, "not-found"),
+      });
+      open(path);
+      expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+      expect(screen.queryByRole("navigation")).toBeNull();
+      expect(screen.queryByRole("banner")).toBeNull();
+    },
+  );
 
   it("404 on the draft's from: SCR-91 at that URL", async () => {
     stubApi({ draft: () => problem(404, "not-found") });
@@ -721,11 +738,6 @@ describe("SCR-34 closing", () => {
 });
 
 describe("SCR-34 loading, background refetches and result notices (review-2026-10-03 C1, F1, F3)", () => {
-  const refocus = () => {
-    focusManager.setFocused(false);
-    focusManager.setFocused(true);
-  };
-
   it("C1 loading: the modal shell with a 3-row LoadState shows while the draft is pending", async () => {
     stubApi({ draft: () => new Response(null) });
     let release: (r: Response) => void = () => undefined;
@@ -765,11 +777,11 @@ describe("SCR-34 loading, background refetches and result notices (review-2026-1
         ++draftCalls === 1 ? json(200, draft()) : problem(409, "profile-limit-reached"),
     });
     const user = userEvent.setup();
-    open("/settings/models/profiles/new");
+    const client = open("/settings/models/profiles/new");
     const d = await dialog();
     await user.type(within(d).getByLabelText("Name"), "Typed name");
-    refocus();
-    await new Promise((r) => setTimeout(r, 50));
+    await client.refetchQueries({ queryKey: ["models", "profile-draft"] });
+    expect(draftCalls).toBe(2);
     expect(where()).toBe("/settings/models/profiles/new");
     expect(within(await dialog()).getByLabelText("Name")).toHaveValue("Typed name");
   });
@@ -780,14 +792,48 @@ describe("SCR-34 loading, background refetches and result notices (review-2026-1
       get: () => (++gets === 1 ? json(200, profile("c1", "Cheap vision")) : json(500, {})),
     });
     const user = userEvent.setup();
-    open("/settings/models/profiles/c1");
+    const client = open("/settings/models/profiles/c1");
     const d = await dialog("Edit profile");
     await user.type(within(d).getByLabelText("Name"), " v2");
-    refocus();
-    await new Promise((r) => setTimeout(r, 50));
+    await client.refetchQueries({ queryKey: ["models", "profiles", "c1"] });
+    expect(gets).toBe(2);
     expect(within(await dialog("Edit profile")).getByLabelText("Name")).toHaveValue(
       "Cheap vision v2",
     );
+  });
+
+  it("T25: a cached old draft and an opening refetch that fails with 409 go back to the list with the limit notice", async () => {
+    stubApi({ draft: () => problem(409, "profile-limit-reached") });
+    open("/settings/models/profiles/new", (client) =>
+      client.setQueryData(["models", "profile-draft", null], draft({ name: "Stale name" }), {
+        updatedAt: Date.now() - 60_000,
+      }),
+    );
+    expect(
+      await screen.findByText("You can have up to 20 custom profiles. Delete one to make room."),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Name")).toBeNull();
+    expect(where()).toBe("/settings/models");
+  });
+
+  it("T25: Create profile from the list makes one draft request, not two", async () => {
+    const calls = stubApi();
+    const user = userEvent.setup();
+    open("/settings/models");
+    await user.click(await screen.findByRole("button", { name: "Create profile" }));
+    await dialog();
+    expect(calls.filter((c) => c.url.startsWith("/api/v1/models/profile-draft"))).toHaveLength(1);
+  });
+
+  it("T25: a notice is dropped when the Owner navigates on inside the Models page", async () => {
+    stubApi({ draft: () => problem(409, "profile-limit-reached") });
+    const user = userEvent.setup();
+    open("/settings/models/profiles/new");
+    await screen.findByText("You can have up to 20 custom profiles. Delete one to make room.");
+    await user.click(await screen.findByRole("tab", { name: "Model catalog" }));
+    expect(
+      screen.queryByText("You can have up to 20 custom profiles. Delete one to make room."),
+    ).not.toBeInTheDocument();
   });
 
   it("F3: the saved notice shows once and is cleared from the history entry", async () => {

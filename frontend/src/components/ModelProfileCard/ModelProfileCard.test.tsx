@@ -181,4 +181,17 @@ describe("ModelProfileCard", () => {
     expect(screen.getByText("<script>alert(1)</script>")).toBeInTheDocument();
     expect(container.querySelector("script")).toBeNull();
   });
+
+  it("F6: the No model available row carries the circle-off icon next to the words", () => {
+    render(
+      <ModelProfileCard
+        profile={custom({ text: none() })}
+        aiConfigured
+        isDefault={false}
+        {...noop}
+      />,
+    );
+    const words = screen.getByText("No model available");
+    expect(words.querySelector("svg.tabler-icon-circle-off")).not.toBeNull();
+  });
 });

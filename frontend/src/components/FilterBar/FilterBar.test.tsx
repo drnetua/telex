@@ -35,4 +35,17 @@ describe("FilterBar (C-28)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Reset all" }));
     expect(props.onReset).toHaveBeenCalled();
   });
+
+  it("F7: two bars on one page get distinct select ids, each label bound to its own select", () => {
+    render(
+      <>
+        <FilterBar {...props} filterLabel="Slot A" />
+        <FilterBar {...props} filterLabel="Slot B" />
+      </>,
+    );
+    const a = screen.getByLabelText("Slot A");
+    const b = screen.getByLabelText("Slot B");
+    expect(a).not.toBe(b);
+    expect(a.id).not.toBe(b.id);
+  });
 });

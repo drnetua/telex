@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { CatalogModel, SlotKind } from "../../api/models";
 import { messages } from "../../messages";
+import { Cost } from "../Cost/Cost";
 import { Icon } from "../Icon/Icon";
 
 const m = messages.models;
@@ -25,6 +26,24 @@ function disabledReason(model: CatalogModel, slot: SlotKind, taken: string[]) {
   if (!model.slots.includes(slot)) return incapable[slot];
   if (taken.includes(model.modelId)) return m.chooser.alreadyIn;
   return null;
+}
+
+/** W-34b: "$2.50 / $10.00 per 1M", "$0.04 per image", "Free" or "Price unknown", in catalog precision. */
+function ChooserPrice({ model }: { model: CatalogModel }) {
+  const { inputPricePerMillionTokens: input, outputPricePerMillionTokens: output } = model;
+  if (model.pricePerImage !== null)
+    return (
+      <>
+        <Cost amount={model.pricePerImage} precision /> {m.perImage}
+      </>
+    );
+  if (input === null || output === null) return <>{m.priceUnknown}</>;
+  if (Number(input) === 0 && Number(output) === 0) return <>{m.free}</>;
+  return (
+    <>
+      <Cost amount={input} precision /> / <Cost amount={output} precision /> {m.chooser.perMillion}
+    </>
+  );
 }
 
 /** Search plus the whole catalog under a slot; rows that can't do the slot's job say why they are off. */
@@ -84,6 +103,9 @@ export function ModelChooser({ slot, models, taken, onChoose, onClose }: ModelCh
                 >
                   <span className={`d-block${reason ? " text-secondary" : ""}`}>{model.name}</span>
                   <span className="d-block small text-secondary">{model.provider}</span>
+                  <span className="d-block small text-secondary">
+                    <ChooserPrice model={model} />
+                  </span>
                   {reason ? (
                     <span className="d-flex align-items-center gap-1 small text-secondary">
                       <Icon name="ban" size={14} />

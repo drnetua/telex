@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Icon } from "../Icon/Icon";
 
 export interface FilterOption {
@@ -21,6 +22,7 @@ interface FilterBarProps {
 
 /** C-28: search plus one filter; the state lives with the caller (the URL). The native select opens as a sheet on phones. */
 export function FilterBar(props: FilterBarProps) {
+  const selectId = useId();
   return (
     <div className="row g-2 align-items-end mb-3">
       <div className="col-12 col-md-5">
@@ -39,11 +41,11 @@ export function FilterBar(props: FilterBarProps) {
         </div>
       </div>
       <div className="col-6 col-md-3">
-        <label className="form-label mb-1" htmlFor="filter-bar-select">
+        <label className="form-label mb-1" htmlFor={selectId}>
           {props.filterLabel}
         </label>
         <select
-          id="filter-bar-select"
+          id={selectId}
           className="form-select"
           value={props.filterValue}
           onChange={(e) => props.onFilter(e.target.value)}

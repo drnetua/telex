@@ -16,13 +16,12 @@ import { Icon } from "../../components/Icon/Icon";
 import { LoadState } from "../../components/LoadState/LoadState";
 import { ModelProfileCard } from "../../components/ModelProfileCard/ModelProfileCard";
 import { ModelProfilePicker } from "../../components/ModelProfilePicker/ModelProfilePicker";
-import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
 import { UnavailablePage } from "../system/UnavailablePage";
+import { useNotice } from "./notice";
 
 const m = messages.models;
 const sameRef = (a: ProfileRef, b: ProfileRef) => profileKey(a) === profileKey(b);
-type Notice = { tone: "info" | "error"; message: string };
 
 /** SCR-66, Profiles tab: the picker, the system and custom profile cards, create, duplicate and delete. */
 export function ProfilesTab() {
@@ -32,7 +31,7 @@ export function ProfilesTab() {
   const loadDraft = useLoadModelProfileDraft();
   const navigate = useNavigate();
   const pickerRef = useRef<HTMLDivElement>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { notify } = useNotice();
   const [opening, setOpening] = useState<string | null>(null);
   const [target, setTarget] = useState<ModelProfile | null>(null);
 
@@ -43,19 +42,19 @@ export function ProfilesTab() {
   const system = items.filter((p) => p.ref.kind === "system");
   const custom = items.filter((p) => p.ref.kind === "custom");
   const current = items.find((p) => sameRef(p.ref, defaultProfile));
-  const error = (message: string) => setNotice({ tone: "error", message });
-  const info = (message: string) => setNotice({ tone: "info", message });
+  const error = (message: string) => notify({ tone: "error", message });
+  const info = (message: string) => notify({ tone: "info", message });
 
   function choose(ref: ProfileRef) {
     const chosen = items.find((p) => sameRef(p.ref, ref));
     setDefault.mutate(ref, {
       onSuccess: () => info(m.nowDefault(chosen?.name ?? "")),
-      onError: (e) =>
-        error(
-          e instanceof ApiFailure && e.code === "not-found"
-            ? m.profileGone
-            : m.cantBeDefault(chosen?.name ?? ""),
-        ),
+      onError: (e) => {
+        // Failures routed to SCR-93 / sign-in already have their screen; only the two refusals get a toast.
+        if (!(e instanceof ApiFailure) || e.route) return;
+        if (e.code === "not-found") error(m.profileGone);
+        else if (e.code === "no-text-model") error(m.cantBeDefault(chosen?.name ?? ""));
+      },
     });
   }
 
@@ -138,6 +137,7 @@ export function ProfilesTab() {
           {m.defaultNoTextAlert}
         </div>
       ) : null}
+      <h2 className="h3 mb-2">{m.pickerLabel}</h2>
       <div ref={pickerRef} className="mb-4">
         <ModelProfilePicker
           profiles={items}
@@ -146,7 +146,7 @@ export function ProfilesTab() {
           onChange={choose}
         />
       </div>
-      <h2 className="visually-hidden">{m.systemProfiles}</h2>
+      <h2 className="h3 mb-3">{m.systemProfiles}</h2>
       <div className="row g-3 mb-4">{system.map(card)}</div>
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h2 className="h3 mb-0">{m.yourProfiles}</h2>
@@ -174,14 +174,6 @@ export function ProfilesTab() {
             <span className="d-block">{m.deleteDefaultNote}</span>
           ) : null}
         </ConfirmDialog>
-      ) : null}
-      {notice ? (
-        <Toast
-          tone={notice.tone}
-          message={notice.message}
-          dismissLabel={m.dismiss}
-          onDismiss={() => setNotice(null)}
-        />
       ) : null}
     </>
   );

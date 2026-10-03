@@ -107,20 +107,14 @@ export function CatalogTab({ onGoToProfiles }: { onGoToProfiles: () => void }) {
 
   if (state === "not-configured") {
     return (
-      <>
-        <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
-          <Icon name="alert-triangle" size={20} />
-          {m.notConfiguredAlert}
-        </div>
-        <EmptyState
-          kind="blocked"
-          icon="ban"
-          headingLevel={2}
-          action={<Button onClick={onGoToProfiles}>{m.goToProfiles}</Button>}
-        >
-          {m.notConfigured}
-        </EmptyState>
-      </>
+      <EmptyState
+        kind="blocked"
+        icon="ban"
+        headingLevel={2}
+        action={<Button onClick={onGoToProfiles}>{m.goToProfiles}</Button>}
+      >
+        {m.notConfigured}
+      </EmptyState>
     );
   }
   if (state === "not-loaded") {

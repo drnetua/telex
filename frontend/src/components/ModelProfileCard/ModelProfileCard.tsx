@@ -2,6 +2,7 @@ import type { ModelProfile, SlotKind } from "../../api/models";
 import { messages } from "../../messages";
 import { Badge } from "../Badge/Badge";
 import { Button } from "../Button/Button";
+import { Icon } from "../Icon/Icon";
 import { PriceLine, Warning } from "../ModelProfilePicker/profileDisplay";
 import { fallbackWarning } from "../ModelProfilePicker/slotText";
 
@@ -45,7 +46,12 @@ function SlotRow({
       </span>
       <div className="d-flex flex-column gap-1">
         {slot.state === "not-used" ? <span className="text-secondary">{m.notUsed}</span> : null}
-        {slot.state === "no-model-available" ? <span>{m.noModel}</span> : null}
+        {slot.state === "no-model-available" ? (
+          <span className="d-flex align-items-center gap-1">
+            <Icon name="circle-off" size={14} />
+            {m.noModel}
+          </span>
+        ) : null}
         {slot.chain.map((model) => (
           <span key={model.modelId} className="d-flex flex-wrap align-items-center gap-2">
             <span>{model.name ?? model.modelId}</span>
