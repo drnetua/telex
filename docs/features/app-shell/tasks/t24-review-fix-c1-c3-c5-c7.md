@@ -8,7 +8,7 @@ files_hint: ["frontend/src/shell/AppShell/AppShell.tsx", "frontend/src/shell/App
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03 (C1, C3, C5, C7)"
-status: "todo"
+status: "done"
 ---
 
 # T24 — Fix More sheet focus (no re-steal, trapped Tab), announce the first Status Banner, and keep sticky toasts off the phone bar

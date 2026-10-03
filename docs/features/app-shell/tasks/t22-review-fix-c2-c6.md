@@ -8,7 +8,7 @@ files_hint: ["frontend/src/components/ThemeSwitch/ThemeSwitch.tsx", "frontend/sr
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03 (C2, C6)"
-status: "todo"
+status: "done"
 ---
 
 # T22 — Make the theme switches keyboard-correct: one radio group per switch and a real menu keyboard pattern

@@ -8,7 +8,7 @@ files_hint: ["frontend/src/pages/profile-security/TimeZoneCard.tsx", "frontend/s
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03 (A5, C4, B6)"
-status: "todo"
+status: "done"
 ---
 
 # T25 — Build the Time zone card's tz-not-yet state, return focus after a pick, and replace the tautological me test

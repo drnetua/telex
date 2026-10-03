@@ -8,7 +8,7 @@ files_hint: ["docs/features/app-shell/ux-flows.md", "docs/features/app-shell/scr
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03 (E1, E2, E3, D3)"
-status: "todo"
+status: "done"
 ---
 
 # T27 — Bring the docs in line: ux-flows platform decision, Coming soon copy and settled open questions, inventory line refs, raw-UUID deviation

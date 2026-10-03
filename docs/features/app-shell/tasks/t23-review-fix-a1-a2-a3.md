@@ -8,7 +8,7 @@ files_hint: ["frontend/src/app/FailureBoundary.tsx", "frontend/src/app/FailureBo
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03 (A1, A2, A3)"
-status: "todo"
+status: "done"
 ---
 
 # T23 — Remember the section on Session ended, clear the previous Owner's cache on sign-in, and keep a pulse 5xx on the banner

@@ -8,7 +8,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/web/api/MeController.kt", "backe
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03 (A7, D1, D2, D4)"
-status: "todo"
+status: "done"
 ---
 
 # T20 — Make the preferences and pulse endpoints honour the contract: nullable timeZone, refused unknown keys, applied condition pattern, one-query /me

@@ -8,7 +8,7 @@ files_hint: ["frontend/src/api/preferences.ts", "frontend/src/shell/theme.ts", "
 owner: "Anton Husiev"
 estimate: "M"
 source: "review-2026-10-03 (A4, A6, C8)"
-status: "todo"
+status: "done"
 ---
 
 # T21 — Keep one shared theme state: applied choice, save sequence, pending, revert and the failed-save toast, and route 401/5xx preference-save failures

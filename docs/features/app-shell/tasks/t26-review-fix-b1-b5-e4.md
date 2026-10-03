@@ -8,7 +8,7 @@ files_hint: ["e2e/tests/", "e2e/support/"]
 owner: "Anton Husiev"
 estimate: "M"
 source: "review-2026-10-03 (B1, B2, B3, B4, B5, E4)"
-status: "todo"
+status: "done"
 ---
 
 # T26 — e2e: tighten the shell and preference proofs: stable narrowed AC-102, fresh data after recovery, another browser, A/B in one browser, any-section counter, theme/zone reload checks, in-page load timing
