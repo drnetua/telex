@@ -37,7 +37,7 @@ AC-176 asks for a Status Banner within 5 s when the device has no network ("You'
 
 **Positive**
 - Detection and recovery need no traffic beyond the pulse. While the banner shows, the pulse keeps running every 3 s, so the banner clears within about 3 s of recovery.
-- One connectivity state (`online`, `offline`, `not-responding`) drives the Status Banner and TanStack Query's `onlineManager`. Paused queries resume and refetch on recovery, so the screen shows fresh data (AC-176) without per-page code.
+- One connectivity state (`online`, `offline`, `not-responding`) drives the Status Banner and TanStack Query's `onlineManager`. Paused queries resume and refetch on recovery, so the screen shows fresh data (AC-176) without per-page code. The pulse itself is exempt (`networkMode: 'always'`): it keeps polling every 3 s while other queries are paused, so it is what detects recovery.
 - AC-102 narrows in one place, the fetch client's failure mapping. Answered failures still go to SCR-93.
 
 **Negative**

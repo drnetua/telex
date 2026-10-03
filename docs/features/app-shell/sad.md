@@ -29,7 +29,7 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 |---|---|---|
 | Owner | Reaches every section on any width, sees the Inbox counter, learns when teleX can't serve them, picks theme and timezone (US-43, US-70…US-74) | No |
 | Tech Lead | SAD approval. The live channel, the Inbox count contract and the shell extension points that every later UI epic builds on | Yes |
-| Security Lead | Confirms the spec §6.1 "no new authorization boundary" verdict holds for the live stream and the preference endpoints, through the regular `/sdd:review` | No |
+| Security Lead | Confirms the spec §6.1 "no new authorization boundary" verdict holds for the pulse and the preference endpoints, through the regular `/sdd:review` | No |
 | Later UI epics (E02, E04, E09, E11, E14, E19, E22, E29) | Plug into the section, Inbox and Status Banner extension points without changing the shell | No |
 
 <!-- Decision overrides (¶4) — populated by the critic resolution loop, empty otherwise. -->
@@ -38,11 +38,11 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 
 **Technical.**
 - Kotlin 2.4.10 on JDK 25, virtual threads on. Foundation [ADR-0001](../../adr/0001-kotlin-spring-modulith-postgres-react-stack.md).
-- Spring Boot 4.1.1 (Web MVC, Security 7, Data JDBC via `JdbcClient`, Flyway) and Spring Modulith 2.1.1 with the JDBC event publication registry. Web MVC already supports server-sent events (`SseEmitter`), so the live stream adds no dependency. Versions only in `gradle/libs.versions.toml`.
+- Spring Boot 4.1.1 (Web MVC, Security 7, Data JDBC via `JdbcClient`, Flyway) and Spring Modulith 2.1.1 with the JDBC event publication registry. Versions only in `gradle/libs.versions.toml`.
 - PostgreSQL 17 + pgvector through Flyway, with a paired rollback script per migration. Foundation [ADR-0003](../../adr/0003-postgres-jdbc-flyway-uuidv7-persistence.md).
 - Frontend: React 19, TypeScript 6, Vite 8, React Router, TanStack Query, `@tabler/core` 1.6.1 + `@tabler/icons-react`, pnpm. Playwright runs at 360 px and 1280 px (`e2e/playwright.config.ts`). **Added by this feature:** an axe accessibility scan in e2e (spec §6). No other new dependency is planned.
 - Architecture convention: a Spring Modulith modular monolith, 14 modules, each a direct sub-package of `telex` with its public API at the root and the rest in `internal`. `ApplicationModules.verify()` runs in `ModularityTest`. `web` may depend on the core modules and `shared`, but not on integration modules.
-- One app process serves everything (foundation ADR-0002). No second replica exists, so in-process state such as open live streams is acceptable (§7).
+- One app process serves everything (foundation ADR-0002). No second replica exists. The pulse is stateless request and response, so nothing has to be shared between processes (§7).
 
 **Organisational.**
 - One developer (Anton Husiev) on the course's 8-week timeline (foundation ADR-0001). Neither the spec nor the roadmap sets a per-epic deadline.
@@ -58,7 +58,7 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 
 **Regulatory / external.**
 - Data is classified internal (spec §6.1). New personal data: theme (no sensitivity) and timezone (low sensitivity, hints at where the Owner lives). Both are shown to the Owner only, never to the Operator.
-- No new authorization boundary. Every section, page, counter, stream and preference call needs a live Sign-in Session and touches only the current Owner's data (spec §6.1). Security review: N/A per spec.
+- No new authorization boundary. Every section, page, counter, pulse and preference call needs a live Sign-in Session and touches only the current Owner's data (spec §6.1). Security review: N/A per spec.
 - Browsers: the latest two versions of Chrome and Safari, including Safari on iOS (spec §6).
 
 ## 3. Context and scope
@@ -100,7 +100,7 @@ C4Context
 **UI architecture (web-frontend): the existing client-side SPA, unchanged in kind.** Foundation ADR-0001 fixed it, and E01 added React Router, TanStack Query and the one fetch client. This feature adds:
 - **AppShell (C-01)** as the layout of every signed-in route, replacing `PageFrame`. Above 768 px it shows a side menu, and below 768 px a bottom bar of five items plus a "More" sheet. Both are generated from the section registry (ADR-0006).
 - **Sections as routes** (`/overview`, `/inbox`, `/chats`, `/assistants`, `/runs`, `/tasks`, `/settings`, and the existing `/profile`), each lazy-loaded so the first signed-in screen stays within 2.5 s p75 on fast 4G. Unbuilt sections render SCR-94 at their own address. "More" is a sheet inside the shell, not an address.
-- **No global state library.** Server state stays in TanStack Query: `me` (now with `theme` and `timeZone`) and `pulse`. The connectivity state is one small module the fetch client, the pulse and the banner share, and it drives TanStack's `onlineManager`.
+- **No global state library.** Server state stays in TanStack Query: `me` (now with `theme` and `timeZone`) and `pulse`. The connectivity state is one small module the fetch client, the pulse and the banner share, and it drives TanStack's `onlineManager`. The pulse itself runs with `networkMode: 'always'`, so it keeps polling every 3 s while every other query is paused, and its first success brings the state back to online (ADR-0004).
 - **Theme on first paint:** an inline script in `index.html` applies the theme last used on this device before React mounts (§8).
 
 **Top strategic choices (the seeds for ADRs):**
@@ -116,7 +116,7 @@ Tactical choices in §5–§8 trace to these five.
 ## 5. Building block view
 
 The repo's Spring Modulith modular monolith is followed as-is. The feature touches three backend modules and adds one:
-- **`identity`** (core) gains the two preference columns, the preference rules (known timezone list, never empty, first save only while unset) and a typed read for other modules.
+- **`identity`** (core) gains three preference columns (theme, timezone, and whether the timezone is the UTC fallback), the preference rules (known timezone list, never empty, first save only while unset) and a typed read for other modules.
 - **`inbox`** (new core module, 15th) holds only the `InboxSource` contract and the sum. It depends on `shared` only, and producer modules depend on it (ADR-0003).
 - **`shared`** (kernel) gains the `StatusConditionSource` interface, a type with no beans (ADR-0006).
 - **`web`** (interface) adds the pulse, preferences and timezone-list endpoints. Its `allowedDependencies` gain `inbox`.
@@ -155,7 +155,8 @@ frontend/
     │   ├── sections.ts            section registry: id, path, label, icon, phone placement (bar | more), page | Coming soon
     │   ├── conditions.ts          condition catalog: code → text, action, importance (offline and not-responding first)
     │   ├── connectivity.ts        state online | offline | not-responding; browser events; drives onlineManager
-    │   ├── pulse.ts               usePulse: background query every 3 s while visible, 2 s timeout
+    │   ├── pulse.ts               usePulse: background query every 3 s while visible, 2 s timeout, networkMode always
+    │   │                          (never paused by onlineManager — it is what detects recovery)
     │   ├── theme.ts               apply, follow the device for System, remember on this device, sync other tabs
     │   └── time.ts                device time zone, formatInstant(instant, timeZone)
     ├── pages/coming-soon/         SCR-94 (one page, named per section)
@@ -186,7 +187,7 @@ C4Container
             Container(inbox, "inbox module", "Kotlin, Spring Modulith", "InboxSource contract and the waiting count")
             Container(producers, "Later producer modules", "Kotlin", "E02+ InboxSource and StatusConditionSource implementations, none in E06")
         }
-        ContainerDb(db, "PostgreSQL", "Postgres 17 + pgvector", "owner gains theme and time_zone")
+        ContainerDb(db, "PostgreSQL", "Postgres 17 + pgvector", "owner gains theme, time_zone, time_zone_is_fallback")
     }
 
     Rel(owner, spa, "Navigates, reads counter and banners, picks theme and timezone")
@@ -320,10 +321,11 @@ Repo conventions are inherited unchanged unless the row says otherwise.
 | Authorization | Only the current Owner: preferences are read and written for the session's Owner, and every Inbox and condition source is called with that Owner's id and filters on `owner_id` (AC-175) | `CLAUDE.md`; spec §6.1 |
 | Error handling | RFC 9457 problems. New codes: `unknown-time-zone` (a timezone not on the list) and `time-zone-required` (an empty timezone, AC-186), both field errors on `timeZone`. A theme outside light, dark or system is a `validation-failed` field error | `telex.web.ProblemHandler`; `/sdd:api` |
 | Failure routing in the SPA | Narrowed from E01: no answer within 10 s, a network error, or a 502/503/504 from the proxy feed the connectivity state and the Status Banner, and the screen stays. `unauthenticated` → SCR-01, `session-ended` → SCR-92, other answered failures → SCR-93 with Retry. A pulse failure routes the same way | `frontend/src/api/client.ts`; ADR-0004 |
-| Connectivity | One client state, `online`, `offline` or `not-responding`, fed by browser `online`/`offline` events, the pulse and every call. It drives TanStack Query's `onlineManager`, so paused queries refetch on recovery | `frontend/src/shell/connectivity.ts`; ADR-0004 |
+| Return after sign-in | Kept from E01: a refused page is remembered in localStorage `telex.destination` of the browser that is refused, first refusal wins, never an auth page, single-slash paths only. **Changed:** for a brand-new account the sign-in no longer takes the destination; SCR-09 takes it after the passkey is created or skipped, so the Owner lands on the linked section (AC-173, ux-flows ledger item 2). A Sign-in Link opened in another browser finds no destination and lands on the Inbox | `frontend/src/app/landing.ts`, `frontend/src/api/destination.ts`, SCR-09 |
+| Connectivity | One client state, `online`, `offline` or `not-responding`, fed by browser `online`/`offline` events, the pulse and every call. It drives TanStack Query's `onlineManager`, so paused queries refetch on recovery. The pulse is exempt (`networkMode: 'always'`): it keeps running every 3 s while down, and it is what detects recovery | `frontend/src/shell/connectivity.ts`; ADR-0004 |
 | Status Banner | Conditions come from the client (offline, not-responding) and from `StatusConditionSource` codes in the pulse. The SPA's condition catalog holds each code's text, single action and importance. The most important condition shows, the rest are listed under "N more", and none can be closed | `frontend/src/shell/conditions.ts`; ADR-0006 |
 | Theme | `data-bs-theme` on `<html>` (Tabler's attribute, tokens from `styles.css` for both themes). An inline script applies the theme last used on this device (localStorage `telex.theme`, System resolved through `matchMedia`) before first paint. After `me` arrives the shell switches once if the account differs. System follows `prefers-color-scheme` changes live, and other tabs in the same browser follow through the `storage` event. A change applies before it saves and reverts if the save fails | `frontend/index.html`, `frontend/src/shell/theme.ts`; AC-179…AC-182 |
-| Time and timezone | The server sends instants in UTC (ISO 8601). Every date shown goes through `formatInstant(instant, timeZone)` (`Intl.DateTimeFormat` with the Owner's saved zone). The device zone comes from `Intl.DateTimeFormat().resolvedOptions().timeZone`, and is saved only while none is saved, through a server-side "only if unset" write. A zone off the list, or one that can't be read, saves UTC. The "pick your own" hint on SCR-64 shows whenever the saved zone is UTC | `frontend/src/shell/time.ts`, `identity.OwnerPreferences`; ADR-0005 |
+| Time and timezone | The server sends instants in UTC (ISO 8601). Every date shown goes through `formatInstant(instant, timeZone)` (`Intl.DateTimeFormat` with the Owner's saved zone). The device zone comes from `Intl.DateTimeFormat().resolvedOptions().timeZone`, and is saved only while none is saved, through a server-side "only if unset" write. A zone off the list, or one that can't be read, saves UTC with `time_zone_is_fallback = true`. The "pick your own" hint on SCR-64 shows only while that flag is set, on any device, and picking a zone clears it (AC-183) | `frontend/src/shell/time.ts`, `identity.OwnerPreferences`; ADR-0005 |
 | Known timezone list | `ZoneId.getAvailableZoneIds()` limited to `Area/City` names plus `UTC`, served by `GET /api/v1/time-zones`. The SPA searches it by city or region, and the server rejects anything else | `identity.TimeZones` |
 | ID strategy | No new aggregate, so no new id | `telex.shared.Ids` |
 | Responsive layout | One breakpoint, 768 px (`docs/design-system.md` `bp-tablet`): side menu at 768 px and wider, bottom bar of five items plus "More" below it. Bottom-bar targets are at least 44 × 44 px. Every shell screen fits 360 px with no sideways scroll | `docs/design-system.md`; AC-43, AC-07b |
@@ -376,6 +378,7 @@ Each top-3 goal from §1 expanded into scenarios. Numbers are quoted from spec �
 | Every pulse runs every Inbox and condition source. As E11–E24 add sources, a slow source slows every tab's pulse and can trip the 2 s timeout, which shows a false "teleX isn't responding" | Medium | Each source must be one indexed count by `owner_id`, checked at each producer epic's `/sdd:review`. Watch pulse p95 (§7). A ~1 s per-Owner cache is the fallback | Anton Husiev |
 | E01's AC-102 behavior changes: an action with no answer in 10 s no longer opens SCR-93. E01 e2e tests asserting the old behavior will fail | Low | Update `e2e/tests/system-pages.spec.ts` and `client.test.ts` in the same task that changes the fetch client (the spec §1 deviation already records the change) | Anton Husiev |
 | Ending the tab on a failed pulse (SCR-01 or SCR-92 straight away) is stricter than AC-173's "next action". An Owner reading a page whose session just expired loses the page sooner | Low | Intentional: no shell content after the session stops (spec §6.1 abuse case). `/sdd:sequences` and `/sdd:plan-tests` treat it as the expected behavior | Anton Husiev |
+| The return-after-sign-in change touches E01 code: `landAfterSignIn` stops taking the destination for a new account, and SCR-09 takes it instead. E01 tests that expect a new account to land on the Inbox will fail | Low | Change `landing.ts`, the passkey page and `landing.test.ts` in one task. Add an e2e for "open a Runs link signed out → sign up → passkey offer → Runs" | Anton Husiev |
 | `docs/architecture-map.md` is stale (reflects `ce5eabf`, before scaffold and E01) and still lists 13 modules. This feature adds a 15th (`inbox`) | Low | Run `/sdd:survey` after E06 merges to flip the map to `mode: current` | Anton Husiev |
 | `shared` gains its first interface meant to be implemented across modules (`StatusConditionSource`), stretching its "typed ids and problems" role | Low | Interface only, no Spring annotations, so `ModularityTest` keeps `shared` bean-free (ADR-0006) | Anton Husiev |
 | Spec §8 open questions still affect this design: the phone bar's four sections and the Status Banner importance order (both due before `/sdd:screens app-shell`), and E11 counting its Notes | Low | The defaults are encoded as data in `sections.ts` and `conditions.ts`, so changing them is an entry change, not a design change | Anton Husiev |

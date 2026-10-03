@@ -25,7 +25,7 @@ The Owner's theme (light, dark or system) and timezone are saved on their accoun
 
 ## Considered options
 
-1. **Two typed columns on `owner`.** `theme VARCHAR(6) NOT NULL DEFAULT 'system'` with a check on light, dark or system, and `time_zone VARCHAR(64) NULL`, where null means not saved yet.
+1. **Typed columns on `owner`.** `theme VARCHAR(6) NOT NULL DEFAULT 'system'` with a check on light, dark or system, `time_zone VARCHAR(64) NULL`, where null means not saved yet, and `time_zone_is_fallback BOOLEAN NOT NULL DEFAULT false`, set when the first save had to fall back to UTC (AC-183's hint) and cleared when the Owner picks a zone.
 2. **A key-value `owner_preference(owner_id, key, value)` table,** with theme and timezone as two rows.
 
 ## Decision outcome
@@ -35,7 +35,7 @@ The Owner's theme (light, dark or system) and timezone are saved on their accoun
 ## Consequences
 
 **Positive**
-- `GET /api/v1/me` returns `theme` and `timeZone` with no extra query. `PATCH /api/v1/me/preferences` changes either field.
+- `GET /api/v1/me` returns `theme`, `timeZone` and `timeZoneIsFallback` with no extra query. The "pick your own" hint shows exactly when AC-183 asks, on every device. `PATCH /api/v1/me/preferences` changes either field.
 - `identity` publishes a typed read, `OwnerPreferences.timeZoneOf(ownerId)`, for E19 and E20.
 - The timezone is checked against the server's list (`GET /api/v1/time-zones`, built from `java.time.ZoneId` and limited to `Area/City` names plus `UTC`). Setting it empty is refused.
 
