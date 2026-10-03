@@ -100,5 +100,9 @@ interface TelegramSessions {
 
     fun close(id: TelegramSessionId)
 
+    /** Deletes the session's directory; a failed deletion is retried every minute. */
     fun destroy(id: TelegramSessionId)
+
+    /** Deletes every session directory whose id is not in [referenced] (the caller's live sessions). */
+    fun sweepOrphans(referenced: Set<TelegramSessionId>)
 }

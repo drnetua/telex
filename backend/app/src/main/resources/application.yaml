@@ -33,6 +33,8 @@ management:
     mail:
       enabled: false # a down SMTP relay must not mark the app unhealthy
 telex:
+  telegram:
+    sessions-dir: ${TELEX_TELEGRAM_SESSIONS_DIR:/var/lib/telex/tdlib}
   public-url: ${TELEX_PUBLIC_URL:http://localhost:8080}
   mail:
     from: ${TELEX_MAIL_FROM:teleX <no-reply@localhost>}

@@ -5,11 +5,17 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 import telex.telegram.internal.fake.FakeTelegram
+import telex.telegram.internal.files.SessionDirectories
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Clock
 import java.time.Duration
 
 class FakeTelegramTest {
     private val events = mutableListOf<Any>()
-    private val fake = FakeTelegram(ApplicationEventPublisher { events += it }, configured = true)
+    private val root: Path = Files.createTempDirectory("telegram-fake")
+    private val directories = SessionDirectories(root, Clock.systemUTC())
+    private val fake = FakeTelegram(ApplicationEventPublisher { events += it }, configured = true, directories)
     private val id = fake.open(ByteArray(32))
 
     private fun states() = events.filterIsInstance<TelegramSessionStateChanged>()
@@ -25,9 +31,28 @@ class FakeTelegramTest {
     }
 
     @Test
+    fun `open creates the session directory and destroy removes it`() {
+        assertThat(root.resolve(id.value.toString())).isDirectory()
+
+        fake.destroy(id)
+
+        assertThat(root.resolve(id.value.toString())).doesNotExist()
+    }
+
+    @Test
+    fun `sweepOrphans keeps referenced sessions and removes the rest`() {
+        val other = fake.open(ByteArray(32))
+
+        fake.sweepOrphans(setOf(id))
+
+        assertThat(root.resolve(id.value.toString())).exists()
+        assertThat(root.resolve(other.value.toString())).doesNotExist()
+    }
+
+    @Test
     fun `configured reflects the api credentials`() {
         assertThat(fake.configured()).isTrue()
-        assertThat(FakeTelegram(ApplicationEventPublisher { }, configured = false).configured()).isFalse()
+        assertThat(FakeTelegram(ApplicationEventPublisher { }, configured = false, directories).configured()).isFalse()
     }
 
     @Test

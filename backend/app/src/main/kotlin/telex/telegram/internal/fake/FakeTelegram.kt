@@ -12,6 +12,8 @@ import telex.telegram.TelegramSessionStateChanged
 import telex.telegram.TelegramSessions
 import telex.telegram.TelegramUnavailable
 import telex.telegram.TelegramUser
+import telex.telegram.internal.files.SessionDirectories
+import java.nio.file.Files
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -25,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong
 class FakeTelegram(
     private val events: ApplicationEventPublisher,
     private val configured: Boolean,
+    private val directories: SessionDirectories,
 ) : TelegramSessions {
     private class Session {
         val sequence = AtomicLong()
@@ -40,6 +43,7 @@ class FakeTelegram(
     override fun open(dbKey: ByteArray): TelegramSessionId {
         val id = TelegramSessionId(Uuid7.next())
         sessions[id] = Session()
+        Files.createFile(directories.create(id).resolve(MARKER_FILE))
         return id
     }
 
@@ -48,6 +52,7 @@ class FakeTelegram(
         dbKey: ByteArray,
     ) {
         sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
+        directories.create(id)
     }
 
     override fun sendPhone(
@@ -128,7 +133,10 @@ class FakeTelegram(
 
     override fun destroy(id: TelegramSessionId) {
         sessions.remove(id)
+        directories.delete(id)
     }
+
+    override fun sweepOrphans(referenced: Set<TelegramSessionId>) = directories.sweepOrphans(referenced)
 
     /** Test hook: Telegram becomes unreachable. Emits Connecting, never Closed (AC-122). */
     fun dropConnectivity(id: TelegramSessionId) {
@@ -221,6 +229,7 @@ class FakeTelegram(
         const val PASSWORD = "secret"
         const val PASSWORD_HINT = "first pet"
         const val FLOOD_WAIT_SECONDS = 30
+        const val MARKER_FILE = "fake-session"
 
         private const val PHONE_PREFIX = "99966"
         private const val PHONE_LENGTH = 10
