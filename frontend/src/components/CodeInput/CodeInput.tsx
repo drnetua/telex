@@ -15,6 +15,8 @@ interface CodeInputProps {
   length?: number;
   /** Group label; defaults to the E01 "Sign-in code". */
   label?: string;
+  /** Digits stay visible but can't be changed (a submit is in flight). */
+  readOnly?: boolean;
 }
 
 export function CodeInput({
@@ -25,6 +27,7 @@ export function CodeInput({
   describedBy,
   length = DEFAULT_LENGTH,
   label = messages.checkEmail.codeLabel,
+  readOnly = false,
 }: CodeInputProps) {
   const labelId = useId();
   const refs = useRef<(HTMLInputElement | null)[]>([]);
@@ -75,6 +78,7 @@ export function CodeInput({
             className={`form-control text-center${state === "invalid" ? " is-invalid" : ""}`}
             style={{ width: "3rem" }}
             value={value[i] ?? ""}
+            readOnly={readOnly}
             onChange={(e) => {
               if (e.target.value === "") onChange(value.slice(0, i) + value.slice(i + 1));
               else fill(i, e.target.value);

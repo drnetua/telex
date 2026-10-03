@@ -32,6 +32,11 @@ const profile: Loader = () =>
     default: m.ProfileSecurityPage,
   }));
 
+const connectTelegram: Loader = () =>
+  import("../pages/connect-telegram/ConnectTelegramPage").then((m) => ({
+    default: m.ConnectTelegramPage,
+  }));
+
 /** One stable loader per section, generated from the registry. */
 const sectionLoaders = sections.map((s) => ({
   section: s,
@@ -60,6 +65,10 @@ export function AppRoutes() {
           />
         ))}
         <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
+        <Route
+          path="/connect-telegram"
+          element={<SectionRoute key="connect-telegram" load={connectTelegram} />}
+        />
       </Route>
       {/* ModelsPage frames itself (AppFrame) so that SCR-91 can render bare, outside the app frame. */}
       <Route path="/settings/models" element={<ModelsPage />} />
