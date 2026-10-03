@@ -479,13 +479,22 @@ Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim f
 
 ## 12. Glossary
 
-<!-- 🎯 Why: ⭐ the DOMAIN GLOSSARY that ends arguments a year later («checkpoint — weekly or
-     biweekly? quarter — calendar or fiscal?»).
-     📋 Write: a term / meaning table. Business + technical terms mixed.
-     📌 e.g. «Lesson | a unit inside a course made of blocks (text, video)». -->
+Canonical terms come from [`CONTEXT.md`](../../../CONTEXT.md) (repo root); the definitions there win. Terms marked **new** surfaced during design and aren't in CONTEXT yet. Recommend `/sdd:glossary telegram-link` for them.
 
 | Term | Meaning |
 |---|---|
-| <e.g. domain object A> | <its meaning in this domain> |
-| <e.g. domain object B> | <its meaning> |
-| <e.g. domain invariant name> | <the rule, in plain language> |
+| Owner | A person with a teleX account who can link one or more Telegram accounts and owns everything created in them (CONTEXT) |
+| Operator | The person who deploys and administers a teleX installation and never sees the content of anyone's chats; in E02, the person who sets the Telegram app credentials and the master key (CONTEXT) |
+| Linked Account | A Telegram account an Owner linked by signing in through teleX; belongs to exactly one Owner, keeps its identity across a lost session and a re-sign-in, and is fully deleted by an unlink (CONTEXT) |
+| Sign-in Session | The Owner's signed-in state in one browser. NOT the Telegram session of a Linked Account (CONTEXT) |
+| Status Banner | The strip under the header on every signed-in screen; E02 adds the "account disconnected" condition (CONTEXT) |
+| Inbox | The place where everything waiting for the Owner lands; in E02 it shows "Connect Telegram" or one line per Linked Account (CONTEXT) |
+| Telegram session (**new**) | teleX's own signed-in device in one Telegram account: a TDLib client and its encrypted session directory, identified by a `TelegramSessionId`. A Linked Account has one current Telegram session, and a re-sign-in replaces it (ADR-0002) |
+| Linking attempt (**new**) | One Owner's open run through the wizard (phone → code → password), at most one per Owner, discarded on cancel, after 15 minutes without a step, when its Sign-in Session ends, or on restart (sad §8) |
+| Session lost (**new**, state) | The Linked Account state after Telegram confirms the Telegram session has ended; everything attached stays until the Owner signs in again or unlinks (AC-117, AC-122) |
+| Reconnecting (**new**, state) | The Linked Account state while Telegram is unreachable; teleX retries by itself and nothing is asked of the Owner (AC-122) |
+| Chat list (**new**) | The Channels of one Linked Account as teleX keeps them (title, type, folders, archived flag, unread count), including archived chats; shown as a count in E02, as a list in E04 |
+| Master key (**new**) | `TELEX_MASTER_KEY`, the installation secret that wraps every Owner key; losing it loses every Telegram session (ADR-0003) |
+| Owner key (**new**) | A random per-Owner key, stored only wrapped by the master key, that seals the Owner's TDLib keys and later BYOK secrets (ADR-0003) |
+| Crypto-shredding | Making data unreadable by destroying its key instead of relying on every copy being deleted; how an unlink guarantees leftover session files are useless (ADR-0003) |
+| Masked phone | A phone number with only the country code and the last two digits visible; the only form of the number teleX stores (AC-01) |
