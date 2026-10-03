@@ -4,7 +4,10 @@ export type ConnectivityState = "online" | "offline" | "not-responding";
 
 type Listener = () => void;
 
-let state: ConnectivityState = "online";
+/** A device that is already offline when teleX loads gets no `offline` event, so start from its network state. */
+const startsOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+let state: ConnectivityState = startsOffline ? "offline" : "online";
+if (startsOffline) onlineManager.setOnline(false);
 let shellActive = false;
 const listeners = new Set<Listener>();
 
