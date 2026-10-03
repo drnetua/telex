@@ -100,6 +100,9 @@ interface TelegramSessions {
      */
     fun startSync(id: TelegramSessionId)
 
+    /** True while Telegram has authorized the session and it is still open: closing it alone would leave a device. */
+    fun authorized(id: TelegramSessionId): Boolean
+
     /** True when Telegram confirmed the log out within [timeout]; false for a session that is not open. */
     fun logOut(
         id: TelegramSessionId,

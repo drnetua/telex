@@ -224,6 +224,7 @@ class Linking(
             try {
                 block(attempt, sessions)
             } catch (_: TelegramUnavailable) {
+                if (sessions.authorized(attempt.sessionId)) discard(owner, "failed")
                 throw TelegramUnavailableProblem()
             } finally {
                 timer.stop(meters.timer("telex.linking.step.duration", "step", expected.name.lowercase()))
@@ -303,15 +304,20 @@ class Linking(
         sessions: TelegramSessions,
         outcome: SignInOutcome.Authorized,
     ): LinkingProgress {
+        var completed = false
         val result =
             try {
-                completion.complete(owner, attempt.target, attempt.sessionId, attempt.dbKey, outcome.user)
-            } catch (_: DuplicateKeyException) {
-                completion.afterRace(owner, outcome.user)
+                try {
+                    completion.complete(owner, attempt.target, attempt.sessionId, attempt.dbKey, outcome.user)
+                } catch (_: DuplicateKeyException) {
+                    completion.afterRace(owner, outcome.user)
+                }.also { completed = true }
+            } finally {
+                // Telegram authorized the sign-in but teleX could not finish it: log it out rather than keep it.
+                if (!completed) discard(owner, "failed")
             }
         return when (result) {
             is Completion.Refused -> {
-                sessions.logOut(attempt.sessionId, LOG_OUT_TIMEOUT)
                 discard(owner, "refused_" + result.reason.name.lowercase())
                 throw refusal(result.reason)
             }
@@ -411,9 +417,14 @@ class Linking(
         attempt.wipeKey()
         val sessions = telegram.ifAvailable ?: return
         try {
-            sessions.close(attempt.sessionId)
+            // A session Telegram authorized must be logged out, or its teleX device stays in the account.
+            if (sessions.authorized(attempt.sessionId)) sessions.logOut(attempt.sessionId, LOG_OUT_TIMEOUT)
         } finally {
-            sessions.destroy(attempt.sessionId)
+            try {
+                sessions.close(attempt.sessionId)
+            } finally {
+                sessions.destroy(attempt.sessionId)
+            }
         }
     }
 

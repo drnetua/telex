@@ -111,6 +111,8 @@ class TdlightTelegramSessions(
         }
     }
 
+    override fun authorized(id: TelegramSessionId) = sessions[id]?.isAuthorized() == true
+
     override fun logOut(
         id: TelegramSessionId,
         timeout: Duration,
@@ -149,10 +151,19 @@ class TdlightTelegramSessions(
     ): TdlightSession {
         check(configured()) { "Telegram api id and hash are not configured" }
         val session = TdlightSession(id, reopened, events)
-        sessions[id] = session
         val config =
             TdlibClientConfig(directories.create(id), dbKey, checkNotNull(apiId), checkNotNull(apiHash), useTestDc)
-        session.attach(facade.open(config) { update -> session.onUpdate(update) })
+        var opened = false
+        try {
+            session.attach(facade.open(config) { update -> session.onUpdate(update) })
+            opened = true
+        } finally {
+            if (!opened) {
+                session.dispose()
+                if (!reopened) directories.delete(id)
+            }
+        }
+        sessions[id] = session
         return session
     }
 
@@ -161,7 +172,7 @@ class TdlightTelegramSessions(
     private fun release(session: TdlightSession) {
         session.markClosing()
         try {
-            session.client().close()
+            session.clientIfAttached()?.close()
             session.closed.get(stepTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (_: TimeoutException) {
             log.warn("TDLib client {} did not report closed in time", session.id.value)

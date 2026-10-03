@@ -82,7 +82,10 @@ class LinkingCompletionIT {
     }
 
     @AfterEach
-    fun cleanUp() = linking.cancel(owner)
+    fun cleanUp() {
+        fake.failAfterAuthorization = false
+        linking.cancel(owner)
+    }
 
     private fun refusal(block: () -> Any?): Map<String, Any?> {
         val thrown =
@@ -232,6 +235,21 @@ class LinkingCompletionIT {
         assertThat(attempts.find(owner)).isNull()
         assertThat(meters.counter("telex.linking.attempts", "outcome", "refused_other_owner").count())
             .isGreaterThan(0.0)
+    }
+
+    @Test
+    fun `AC-109 a sign-in Telegram authorized but teleX could not finish is logged out and discarded`() {
+        val before = sessionDirectories()
+        toCodeStep("9996600108")
+        val sessionId = attemptSession()
+        fake.failAfterAuthorization = true
+
+        assertThat(refusal { finish() }).containsEntry(CODE, "telegram-unavailable")
+
+        assertThat(fake.wasLoggedOut(sessionId)).isTrue()
+        assertThat(sessionDirectories()).isEqualTo(before)
+        assertThat(attempts.find(owner)).isNull()
+        assertThat(rowsOf(owner)).isEmpty()
     }
 
     @Test

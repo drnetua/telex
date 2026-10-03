@@ -17,6 +17,8 @@ class ScriptedTdlib(
     /** Updates emitted as soon as a client opens (what TDLib reports on its own). */
     var onOpen: (Client) -> Unit = { it.emit(TdlibUpdate.AuthorizationState("authorizationStateWaitPhoneNumber")) },
 ) : TdlibFacade {
+    /** When set, [open] throws it before any client exists. */
+    @Volatile var openFailure: RuntimeException? = null
     val clients = CopyOnWriteArrayList<Client>()
 
     inner class Client(
@@ -45,6 +47,7 @@ class ScriptedTdlib(
         config: TdlibClientConfig,
         listener: TdlibUpdateListener,
     ): TdlibClient {
+        openFailure?.let { throw it }
         val client = Client(config, listener)
         clients += client
         onOpen(client)

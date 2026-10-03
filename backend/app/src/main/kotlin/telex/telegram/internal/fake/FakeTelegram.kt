@@ -48,6 +48,9 @@ class FakeTelegram(
     /** Test hook: while true, [open] fails as if Telegram never reached the phone step. */
     @Volatile var openUnavailable = false
 
+    /** Test hook: while true, a sign-in Telegram authorizes then fails, as when `GetMe` fails after Ready. */
+    @Volatile var failAfterAuthorization = false
+
     override fun configured() = configured
 
     override fun open(dbKey: ByteArray): TelegramSessionId {
@@ -171,6 +174,8 @@ class FakeTelegram(
         }
     }
 
+    override fun authorized(id: TelegramSessionId) = sessions[id]?.authorized == true
+
     override fun logOut(
         id: TelegramSessionId,
         timeout: Duration,
@@ -266,6 +271,7 @@ class FakeTelegram(
         phone: String,
     ): SignInOutcome {
         session.authorized = true
+        if (failAfterAuthorization) throw TelegramUnavailable()
         return SignInOutcome.Authorized(
             TelegramUser(
                 telegramUserId = phone.toLong(),

@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.context.ApplicationEventPublisher
@@ -386,6 +387,34 @@ class TdlightTelegramSessionsTest {
         val stuck = sessions.open(key)
         tdlib.respond = { _, _ -> null }
         assertThat(sessions.logOut(stuck, Duration.ofMillis(200))).isFalse()
+    }
+
+    @Test
+    fun `a session is authorized once Ready is reached, also when the step that saw it timed out (AC-109, AC-04)`() {
+        scriptSignIn()
+        val sessions = create(Duration.ofMillis(200))
+        val id = sessions.open(key)
+        assertThat(sessions.authorized(id)).isFalse()
+        tdlib.respond = { client, request ->
+            if (request is TdlibRequest.CheckCode) client.emit(auth("authorizationStateReady"))
+            null
+        }
+        assertThatThrownBy { sessions.checkCode(id, "12345") }.isInstanceOf(TelegramUnavailable::class.java)
+        await().untilAsserted { assertThat(sessions.authorized(id)).isTrue() }
+
+        sessions.close(id)
+        assertThat(sessions.authorized(id)).isFalse()
+    }
+
+    @Test
+    fun `a client that fails to open leaves nothing behind and shutdown does not hang`() {
+        tdlib.openFailure = IllegalStateException("tdlib native load failed")
+        val sessions = create()
+
+        assertThatThrownBy { sessions.open(key) }.isInstanceOf(IllegalStateException::class.java)
+
+        assertTimeoutPreemptively(Duration.ofSeconds(3)) { sessions.shutdown() }
+        assertThat(root.toFile().listFiles().orEmpty()).isEmpty()
     }
 
     @Test

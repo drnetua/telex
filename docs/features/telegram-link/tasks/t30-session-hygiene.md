@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/Linking.kt", "backend/
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings Q3, Q5"
-status: "todo"
+status: "done"
 ---
 
 # T30 — Log out sign-ins Telegram authorized but teleX did not finish, and never hang on a failed client open
