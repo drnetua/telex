@@ -393,62 +393,89 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 
 ## 9. Architecture decisions
 
-<!-- 🎯 Why: the REVERSE INDEX onto the adr/ folder. `ls adr/` gives the files; §9 gives the
-     semantics — why they exist, which SAD section they attach to, what status.
-     📋 Write: a 4-column table, one row per ADR. Mixed status is fine.
-     📌 e.g. «0001 | Store content as a table of typed blocks | Accepted | §4». -->
-
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use a sliding-window counter for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate the worker in the API process"> | Accepted | §<N> |
+| [0001](adr/0001-move-agent-pause-on-unlink-to-agent-builder.md) | Move "pause agents on unlink" from E02 to E09 and E20; E02 only announces the unlink | Accepted | §1 (spec deviation) |
+| [0002](adr/0002-own-linked-accounts-and-their-chat-list-in-messaging-behind-a-session-only-telegram-acl.md) | Own Linked Accounts and their chat list in `messaging`; keep `telegram` a session-only ACL | Accepted | §4 |
+| [0003](adr/0003-seal-each-tdlib-database-key-with-a-stored-per-owner-key-under-an-installation-master-key.md) | Seal each TDLib database key with a stored per-Owner key under an installation master key | Accepted | §4 |
+| [0004](adr/0004-use-tdlight-java-behind-the-tdlib-facade-with-a-fake-telegram-adapter.md) | Use TDLight Java behind the `telegram-tdlib` facade, with a fake Telegram adapter for tests and local runs | Accepted | §4 |
+| [0005](adr/0005-push-live-state-to-the-spa-as-sse-invalidation-hints.md) | Push live state to the SPA as SSE invalidation hints, one stream per browser tab | Accepted | §4 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/telegram-link/adr/NNNN-<title>.md`. ADR-0001 was written by `/sdd:specify`. Foundation decisions this feature builds on: [`docs/adr/0001`](../../adr/0001-kotlin-spring-modulith-postgres-react-stack.md) (stack, SPA served by the app, one instance), [`0002`](../../adr/0002-single-app-with-isolated-tdlib-subproject.md) (TDLib isolated in `telegram-tdlib`), [`0003`](../../adr/0003-postgres-jdbc-flyway-uuidv7-persistence.md) (JDBC, Flyway + rollback, UUIDv7).
 
 ## 10. Quality requirements
 
-<!-- 🎯 Why: the QUALITY TREE — take a goal from §1 and break it into concrete leaves: tests,
-     metrics, configs, drills. ⭐ Without §10, §1 is a manifesto. With §10 each declaration maps
-     to something PROVABLE.
-     📋 Write: per §1 goal — When / Then / How-verify. Numbers from spec §6 NFR VERBATIM (don't
-     round ≤250ms to ≤300ms — that's a critic F6 hit).
-     📌 e.g. «p95 ≤ 500 ms on a block update, verified by a 100 req/s load test». -->
+Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim from spec §6.
 
-Each top-3 goal from §1 expanded into a full scenario:
+**QG-1. Nothing left behind, nothing readable**
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behaviour with numbers from spec §6 NFR>
-- **How verify:** <test / chaos drill / load test / metric>
+*QG-1a: Session data at rest.*
+- **When:** any Linked Account exists, or a linking attempt is open.
+- **Then:** spec §6: "100% of stored session data unreadable without the Owner's key" (tech spec NFR-05).
+- **How verify:** spec §6 measurement, "dump of the stored data checked for plaintext session material". An integration test with the `tdlight` adapter against a stub directory, or the spike's real session, captures the raw TDLib key in memory. It then searches every column of `linked_account`, `owner_key`, `event_publication` and the captured log output, and every byte of the session volume, for that key. Zero hits. The manual dump of a real test account is recorded in the E02 pull request.
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+*QG-1b: Unlink leaves nothing.*
+- **When:** an Owner unlinks an account, with Telegram reachable or not, and also when the app stops between the database commit and deleting the files.
+- **Then:** spec §6: "0 stored items that identify the Telegram account (session, Telegram account id, phone number, name, chat list) for an unlinked account, always; 0 active teleX devices in Telegram whenever Telegram is reachable at unlink time (otherwise AC-113 applies and nothing is kept for a later retry)".
+- **How verify:** an integration test with the `fake` adapter unlinks in both cases (confirmed and unreachable). It asserts no `linked_account` or `channel` row, no sealed key and no fake-Telegram session remain. A second test kills the process after the commit and before the directory is deleted, restarts, and asserts that the sweeper removed the directory. The manual check (stored-data dump + the account's active sessions in Telegram) is recorded in the E02 pull request.
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+*QG-1c: Unlink announcement survives a restart.*
+- **When:** teleX stops right after an unlink.
+- **Then:** spec §6: "100% of unlinks are delivered to every part of teleX that acts through the account, including when teleX stops right after the unlink" (tech spec NFR-06).
+- **How verify:** spec §6 measurement. An integration test registers a test listener for `AccountUnlinked`, stops the context after the commit and before delivery, starts it again, and asserts delivery from `event_publication`.
+
+**QG-2. Stays connected by itself**
+
+*QG-2a: Reconnect after restart.*
+- **When:** teleX restarts with Linked Accounts whose sessions are valid.
+- **Then:** spec §6: "every Linked Account with a valid session is connected again ≤ 60 s after teleX is ready". An account whose session ended while teleX was stopped shows Session lost, and the others are unaffected (AC-118).
+- **How verify:** spec §6 measurement, an integration test with 2 accounts (`fake` adapter, one session ended while stopped), plus a manual restart on a test account.
+
+*QG-2b: Lost session vs outage.*
+- **When:** a session is ended from the Telegram app, or Telegram becomes unreachable.
+- **Then:** spec §6: "an account shows "Session lost" ≤ 5 min after its session is ended in Telegram, and a Telegram outage never shows "Session lost"".
+- **How verify:** spec §6 measurement, an integration test with a controlled clock. The `fake` adapter terminates a session (Session lost within the window, Status Banner condition true) and separately drops connectivity (Reconnecting only, no banner). Plus a manual check on a test account.
+
+*QG-2c: Capacity.*
+- **When:** many Linked Accounts are connected on one instance (4 vCPU / 8 GB).
+- **Then:** spec §6: "≥ 50 connected at once".
+- **How verify:** spec §6 measurement, "one-off load run with 50 accounts on Telegram's test servers, recorded in the E02 pull request". Record resident memory and CPU per client against the §7 budget.
+
+**QG-3. Linking feels like Telegram, at Telegram's speed**
+
+*QG-3a: Wizard step response.*
+- **When:** the Owner submits the phone, code or password step.
+- **Then:** spec §6: "p95 ≤ 3 s per step", excluding Telegram delivering the code to the Owner.
+- **How verify:** spec §6 measurement, "timings recorded in integration tests against the in-memory Telegram fake + manual check on a real test account recorded in the E02 pull request". The production metric is `telex.linking.step.duration`.
+
+*QG-3b: Chat list sync.*
+- **When:** a new account finishes linking, and later when its chats change in Telegram.
+- **Then:** spec §6: "an account with ≤ 500 chats (archived included) is fully synced within 60 s; later changes show within 60 s (AC-121)". A sync interrupted by a restart continues where it stopped (AC-116).
+- **How verify:** spec §6 measurement, a "manual timed run on a real test account, recorded in the E02 pull request". In CI, an integration test with a 500-chat `fake` account asserts completion, progress counts and resume after a restart.
+
+*QG-3c: Responsive and accessible.*
+- **When:** the wizard, the Accounts page or the unlink dialog is rendered in any state.
+- **Then:** spec §6: "the wizard, the Accounts page and the unlink dialog work at 360 px and 1280 px and meet WCAG 2.2 AA".
+- **How verify:** spec §6 measurement. Playwright runs with the `fake` adapter at both widths, plus an automated accessibility scan (axe) with 0 violations. The reload-mid-wizard and second-tab paths (AC-109) are e2e cases.
 
 ## 11. Risks and technical debt
 
-<!-- 🎯 Why: ⭐ collects EVERYTHING that can break — not only the technical. Without §11 risks get
-     discussed at standups and lost; debt lives only in the head of whoever accepted it.
-     📋 Write: a risk/debt table — severity — mitigation — owner. Accepted debt in its own block.
-     📌 The first risk is often a product risk, not a technical one. That's normal. -->
-
-<!-- Severity literals: Low / Medium / High for regular risks; "Open question" for rows created by
-     a Save-as-OQ resolution during the Socratic walk (see references/socratic.md). -->
-
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Worker lag may reach hours during a downstream outage> | Medium | <alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event-schema versioning in v1> | Medium | <ADR-NNNN planned for v2, tolerate unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from the Save-as-OQ> | <owner> |
+| **TDLight on JDK 25 is still unproven** (roadmap D1, spec §8 OQ-2, overdue "before design"). The natives may not load on `eclipse-temurin:25-jre`, or JNI may misbehave on JDK 25 | High | The spike is the first E02 task, before any wizard work (ADR-0004): natives load in the image and on macOS, a test-server sign-in, two clients in one process. Fallback: official TDLib built in a Dockerfile stage, which changes only `telegram-tdlib` and the Dockerfile. Everything above the port is tested on the `fake` adapter, so wizard work isn't blocked by the spike's outcome | agent (spike), Anton Husiev (Architect) |
+| **Losing `TELEX_MASTER_KEY` loses every session.** Every Linked Account would go to Session lost and need a new sign-in | Medium | The README step generates the key and puts it next to the database backup instructions. The app refuses to start when the master key differs from the one recorded (a key-check value stored with `owner_key`), instead of silently failing every unseal | Anton Husiev (Architect) |
+| **Telegram ban or limit risk for the Owner's account** (tech spec §Risks). Signing in from a new device and syncing chats can trigger Telegram's anti-abuse checks | Medium | Official sign-in flow only, Telegram's waits surfaced and never retried around (AC-02), the chat list loaded at TDLib's own pace. No sending in E02 | Anton Husiev (PM) |
+| **Third-party fork dependency.** TDLight may lag official TDLib or stop being maintained | Medium | The facade hides the binding (ADR-0004). Pin the version and re-check at each upgrade. Option 2 of ADR-0004 stays the documented way out | Anton Husiev (Architect) |
+| **Single instance by construction.** TDLib clients and SSE streams are in-process | Low | Accepted for a self-hosted installation (§7). A second instance needs account sharding and a shared SSE fan-out | Anton Husiev (Architect) |
+| **SSE through Cloudflare.** Proxies may buffer or cut long-lived responses | Low | Heartbeat every 25 s, `X-Accel-Buffering: no`, `Cache-Control: no-store`. The SPA reconnects and refetches everything after a cut (ADR-0005). Polling remains a one-file fallback in the SSE client | Anton Husiev (Architect) |
+| **E06 `app-shell` is designed in parallel** and owns the Status Banner mechanism and the live Inbox counter | Low | E02 adds the "account disconnected" condition to E06's mechanism, and its live channel (ADR-0005) is offered to E06 for the counter. Settle this in `/sdd:design app-shell` or `/sdd:tasks` of whichever lands second | Anton Husiev (PM) |
+| **Docs drift.** The tech-spec event table names `telegram` as the publisher of `AccountLinked` / `AccountUnlinked`. CLAUDE.md, the tech spec and foundation ADR-0002 name `org.drinkless.tdlib`. `docs/architecture-map.md` reflects `ce5eabf` | Low | `implement` updates the tech-spec event table, rule 1's package name and CLAUDE.md when it lands the dependency. Re-run `/sdd:survey` after E02 | Anton Husiev (Architect) |
+| **Spec §8 OQ-1 is overdue** (due "before `/sdd:design`"): the default account limit | Low | The design assumes the spec's default of 3, one installation-wide setting (`TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER`). It's a config value, so it can close any time before `/sdd:ship` | Anton Husiev (PM) |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. the entity is immutable / unversioned — OK for v1, may need audit versioning in v2>
+- TDLib's `files` directory (downloaded media) isn't covered by TDLib's database encryption. E02 downloads no files. E04 must keep media out of the session volume or encrypt it before it downloads anything (ADR-0003).
+- An open linking attempt is lost on restart, and the Owner starts again with the phone number. Acceptable because the 15-minute window is short and restarts are rare.
+- `LinkedAccountSyncProgressed` and the state events go through the persistent event registry, even though web hints don't need durability. If `event_publication` growth becomes noticeable, move the hint path to a non-persistent after-commit listener.
 
 ## 12. Glossary
 
