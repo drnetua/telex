@@ -14,7 +14,7 @@
 | T7 | Model the custom profile aggregate, ProfileRef and the profile rules in plain Kotlin | domain | Anton Husiev | M | T2 | done |
 | T8 | Resolve slots against the current catalog and estimate the price per 100 runs | domain | Anton Husiev | S | T2, T7 | done |
 | T9 | Build the three system profiles from settings and validate the Operator's slot overrides | app | Anton Husiev | S | T4, T8 | todo |
-| T10 | Persist custom profiles, their chains and the default profile, always scoped by Owner | infra | Anton Husiev | M | T1, T7 | todo |
+| T10 | Persist custom profiles, their chains and the default profile, always scoped by Owner | infra | Anton Husiev | M | T1, T7 | done |
 | T11 | Serve the catalog view, the profile list with picker data, one profile and a new-profile draft | app | Anton Husiev | M | T3, T9, T10 | todo |
 | T12 | Create, update and delete custom profiles and choose the default, each in one transaction | app | Anton Husiev | M | T11 | todo |
 | T13 | Answer profile slot calls through ProfileCalls and record every call without content | app | Anton Husiev | M | T6, T11 | todo |
@@ -31,3 +31,4 @@
 ## Deviations
 
 - **T2 — `pricePerImage` is always null.** OpenRouter's `pricing.image_output` is a price per output image *token*, not per image; neither spec, data-model nor sad names a per-image source. Image-slot prices show "Price unknown" until one is chosen (T2 edge-case table: no identifiable per-image price → null). Models whose output modalities include audio are skipped as unfit.
+- **T10 — race test fixed (test bug, not weakened).** The AC-218 race test placed a 2-party barrier *after* the advisory lock, so the holder waited for a thread blocked on that lock (deadlock). The barrier now comes before the lock, and a 300 ms window after the count keeps a lock-less implementation failing.
