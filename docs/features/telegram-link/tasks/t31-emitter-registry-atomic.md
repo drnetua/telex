@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/web/live/EmitterRegistry.kt", "b
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-03 — findings Q7"
-status: "todo"
+status: "done"
 ---
 
 # T31 — Make the SSE emitter registry add and remove atomic per Owner

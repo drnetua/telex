@@ -60,7 +60,7 @@ class EmitterRegistry(
     ): SseEmitter {
         val emitter = SseEmitter(0L)
         val stream = Stream(ownerId, sessionId, emitter)
-        streams.computeIfAbsent(ownerId) { CopyOnWriteArraySet() }.add(stream)
+        streams.compute(ownerId) { _, set -> (set ?: CopyOnWriteArraySet()).apply { add(stream) } }
         emitter.onCompletion { remove(stream) }
         emitter.onTimeout { emitter.complete() }
         emitter.onError { remove(stream) }
@@ -152,12 +152,14 @@ class EmitterRegistry(
                 setOf(ResponseBodyEmitter.DataWithMediaType(text, MediaType.TEXT_PLAIN))
         }
 
+    /** Removes under the map's per-key lock, so a concurrent [open] never adds to a set that is being dropped. */
     private fun remove(stream: Stream) {
-        val set = streams[stream.ownerId] ?: return
-        set.remove(stream)
-        if (set.isEmpty() && streams.remove(stream.ownerId, set)) {
-            gates.keys.removeIf { it.first == stream.ownerId }
+        var dropped = false
+        streams.computeIfPresent(stream.ownerId) { _, set ->
+            set.remove(stream)
+            if (set.isEmpty()) null.also { dropped = true } else set
         }
+        if (dropped) gates.keys.removeIf { it.first == stream.ownerId }
     }
 
     @PreDestroy
