@@ -8,7 +8,7 @@
 | T1 | Prove TDLight on JDK 25 and land the binding behind the TdlibFacade (spike) | infra | Anton Husiev | M | — | todo |
 | T2 | Promote the owner_key, linked_account and channel migrations into the live Flyway tree | migration | Anton Husiev | S | — | todo |
 | T3 | Add OwnerKeys envelope encryption with the master-key check and reset, and SignInSessions.isLive | app | Anton Husiev | M | T2 | todo |
-| T4 | Define the TelegramSessions port, its in-process events and the fake Telegram adapter | infra | Anton Husiev | M | — | todo |
+| T4 | Define the TelegramSessions port, its in-process events and the fake Telegram adapter | infra | Anton Husiev | M | — | done |
 | T5 | Manage Telegram session directories: per-session dir, destroy with one-minute retry, startup orphan sweep | infra | Anton Husiev | S | T4 | todo |
 | T6 | Implement the tdlight adapter: TDLib auth states, errors and chat list mapped to the port | infra | Anton Husiev | M | T1, T5 | todo |
 | T7 | Build the LinkedAccount aggregate: rules, states, masked phone, repository, events and the account limit | domain | Anton Husiev | M | T2 | todo |
