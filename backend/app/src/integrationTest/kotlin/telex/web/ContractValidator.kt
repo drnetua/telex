@@ -6,14 +6,16 @@ import com.atlassian.oai.validator.model.SimpleResponse
 import org.assertj.core.api.Assertions.assertThat
 import java.io.File
 import java.net.http.HttpResponse
+import java.util.concurrent.ConcurrentHashMap
 
 /** Checks real HTTP exchanges against `contracts/openapi.yaml`, so contract drift fails a test (test-plan.md). */
 object ContractValidator {
     const val SKELETON_SPEC = "docs/features/platform-skeleton/contracts/openapi.yaml"
     const val APP_SHELL_SPEC = "docs/features/app-shell/contracts/openapi.yaml"
+    const val MODEL_PROFILES_SPEC = "docs/features/model-profiles/contracts/openapi.yaml"
     private val REFUSED_REQUEST = setOf(400, 403)
 
-    private val validators = java.util.concurrent.ConcurrentHashMap<String, OpenApiInteractionValidator>()
+    private val validators = ConcurrentHashMap<String, OpenApiInteractionValidator>()
 
     private fun validatorFor(specPath: String): OpenApiInteractionValidator =
         validators.computeIfAbsent(specPath) { load(it) }
@@ -33,6 +35,7 @@ object ContractValidator {
         requestHeaders: Map<String, String>,
         response: HttpResponse<String>,
         specPath: String = SKELETON_SPEC,
+        ignoredKeys: Set<String> = emptySet(),
     ) {
         val request =
             SimpleRequest.Builder(method, path.substringBefore('?')).apply {
@@ -54,8 +57,8 @@ object ContractValidator {
         // response has to match the contract.
         val relevant =
             report.messages.filter {
-                response.statusCode() !in REFUSED_REQUEST ||
-                    !it.key.startsWith("validation.request.")
+                it.key !in ignoredKeys &&
+                    (response.statusCode() !in REFUSED_REQUEST || !it.key.startsWith("validation.request."))
             }
         assertThat(relevant.map { "${it.key}: ${it.message}" })
             .describedAs("$method $path -> ${response.statusCode()} must match openapi.yaml")
