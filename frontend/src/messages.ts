@@ -456,5 +456,6 @@ export const messages = {
     several: (n: number) => `${n} Telegram accounts are disconnected.`,
     signInAgain: "Sign in again",
     openAccounts: "Open Accounts",
+    more: (n: number) => `+${n} more`,
   },
 } as const;

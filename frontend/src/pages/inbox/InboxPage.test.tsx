@@ -35,6 +35,18 @@ function setup() {
 
 afterEach(() => vi.unstubAllGlobals());
 
+/** Answers by URL: the shell also reads the pulse and linked accounts for its banners. */
+function routed(handlers: { signOut: () => Response }) {
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (url === "/api/v1/sign-out") return Promise.resolve(handlers.signOut());
+    if (url === "/api/v1/linked-accounts") return Promise.resolve(json(200, { items: [] }));
+    if (url === "/api/v1/pulse") return Promise.resolve(json(200, { inboxCount: 0, conditions: [] }));
+    return Promise.resolve(json(200, me));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
 describe("SCR-10 Inbox", () => {
   it("AC-100: empty Inbox offers the single step Connect Telegram", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(200, me)));
@@ -62,21 +74,13 @@ describe("SCR-10 Inbox", () => {
   });
 
   it("AC-95: Sign out posts, clears cached Owner data and lands on sign-in", async () => {
-    const fetchMock = vi.fn((url: string) =>
-      Promise.resolve(
-        url === "/api/v1/pulse"
-          ? json(200, { inboxCount: 0, conditions: [] })
-          : url === "/api/v1/sign-out"
-            ? new Response(null, { status: 204 })
-            : json(200, me),
-      ),
-    );
+    const fetchMock = routed({ signOut: () => new Response(null, { status: 204 }) });
     vi.stubGlobal("fetch", fetchMock);
     const client = setup();
     await screen.findByRole("heading", { level: 1, name: "Inbox" });
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("heading", { name: "Sign in page" })).toBeInTheDocument();
-    const [url, init] = fetchMock.mock.calls.find(([u]) => u === "/api/v1/sign-out") as unknown as [
+    const [url, init] = fetchMock.mock.calls.find((c) => c[0] === "/api/v1/sign-out") as [
       string,
       RequestInit,
     ];
@@ -88,13 +92,7 @@ describe("SCR-10 Inbox", () => {
   it("sign-out failure routes to unavailable and keeps the Inbox", async () => {
     const handler = vi.fn();
     failureBus.handler = handler;
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(json(200, me))
-        .mockResolvedValueOnce(json(403, { code: "forbidden" })),
-    );
+    vi.stubGlobal("fetch", routed({ signOut: () => json(403, { code: "forbidden" }) }));
     setup();
     await screen.findByRole("heading", { level: 1, name: "Inbox" });
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));

@@ -1,7 +1,7 @@
 import { type ClipboardEvent, type KeyboardEvent, useEffect, useId, useRef } from "react";
 import { messages } from "../../messages";
 
-const LENGTH = 6;
+const DEFAULT_LENGTH = 6;
 
 interface CodeInputProps {
   value: string;
@@ -11,6 +11,10 @@ interface CodeInputProps {
   focusSignal?: number;
   /** Id of the element that describes the error; set on every digit while `state="invalid"`. */
   describedBy?: string;
+  /** Number of digits; E01 keeps the default of 6. */
+  length?: number;
+  /** Group label; defaults to the E01 "Sign-in code". */
+  label?: string;
 }
 
 export function CodeInput({
@@ -19,6 +23,8 @@ export function CodeInput({
   state = "input",
   focusSignal = 0,
   describedBy,
+  length = DEFAULT_LENGTH,
+  label = messages.checkEmail.codeLabel,
 }: CodeInputProps) {
   const labelId = useId();
   const refs = useRef<(HTMLInputElement | null)[]>([]);
@@ -30,9 +36,9 @@ export function CodeInput({
   function fill(index: number, raw: string) {
     const digits = raw.replace(/\D/g, "");
     if (!digits) return;
-    const next = (value.slice(0, index) + digits).slice(0, LENGTH);
+    const next = (value.slice(0, index) + digits).slice(0, length);
     onChange(next);
-    refs.current[Math.min(next.length, LENGTH - 1)]?.focus();
+    refs.current[Math.min(next.length, length - 1)]?.focus();
   }
 
   function onPaste(index: number, e: ClipboardEvent<HTMLInputElement>) {
@@ -50,10 +56,10 @@ export function CodeInput({
   return (
     <>
       <div id={labelId} className="form-label text-center">
-        {messages.checkEmail.codeLabel}
+        {label}
       </div>
       <div className="d-flex gap-2 justify-content-center" role="group" aria-labelledby={labelId}>
-        {Array.from({ length: LENGTH }, (_, i) => (
+        {Array.from({ length }, (_, i) => (
           <input
             key={i}
             ref={(el) => {
@@ -62,7 +68,7 @@ export function CodeInput({
             type="text"
             inputMode="numeric"
             autoComplete={i === 0 ? "one-time-code" : "off"}
-            maxLength={i === 0 ? LENGTH : 1}
+            maxLength={i === 0 ? length : 1}
             aria-label={messages.checkEmail.digitLabel(i + 1)}
             aria-invalid={state === "invalid"}
             aria-describedby={state === "invalid" ? describedBy : undefined}
