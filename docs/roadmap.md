@@ -1,6 +1,6 @@
 ---
 status: living
-updated_at: "2026-10-02"
+updated_at: "2026-10-03"
 ---
 
 # Roadmap — teleX
@@ -23,15 +23,15 @@ Step ids 1–29 are the epic numbers of `docs/docs/02-epics.md` (E01–E29); 0 i
 |---|---|---|:---:|---|
 | 0 | Skeleton — 13 empty Modulith modules + `verify()`, CI, Compose with Postgres + pgvector, Flyway baseline with rollback, React build served by Spring ([`_scaffold`](features/_scaffold/)) | `docs/architecture-map.md` §Constraints & known tech-debt | S | shipped |
 | 1 | Platform skeleton — Owner signs up and signs in with magic link + passkey, one-command README ([`platform-skeleton`](features/platform-skeleton/)) | `docs/docs/02-epics.md` §E01 · platform-skeleton | M | shipped |
-| 2 | Telegram link — Owner links (and fully unlinks) Telegram accounts; sessions survive restart | `docs/docs/02-epics.md` §E02 · telegram-link | M | idea |
+| 2 | Telegram link — Owner links (and fully unlinks) Telegram accounts; sessions survive restart ([`telegram-link`](features/telegram-link/)) | `docs/docs/02-epics.md` §E02 · telegram-link | M | spec'd |
 | 3 | AI consent — Owner grants, sees and revokes consent before any text reaches AI | `docs/docs/02-epics.md` §E03 · ai-consent | S | idea |
 | 4 | Chat reading — chat list with folders, history with media, live updates in the web | `docs/docs/02-epics.md` §E04 · chat-reading | M | idea |
 | 5 | Chat sending — reply, quote-reply and forward from the web with delivery status | `docs/docs/02-epics.md` §E05 · chat-sending | S | idea |
-| 6 | App shell — responsive navigation, global status bands, design system, phone + desktop Playwright profiles | `docs/docs/02-epics.md` §E06 · app-shell-responsive | S | idea |
+| 6 | App shell — responsive navigation, global status bands, design system, phone + desktop Playwright profiles ([`app-shell`](features/app-shell/)) | `docs/docs/02-epics.md` §E06 · app-shell-responsive | M | spec'd |
 | 7 | Semantic search — find a message by meaning, with filters | `docs/docs/02-epics.md` §E07 · semantic-search | S | idea |
 | 8 | Channel scope — Channel Sets (manual + from folders) and the private zone | `docs/docs/02-epics.md` §E08 · channel-scope | S | idea |
 | 9 | Agent builder — create an agent from a template, pause / clone / delete / export / import | `docs/docs/02-epics.md` §E09 · agent-builder | M | idea |
-| 10 | Model profiles — OpenRouter catalog with prices, profiles, per-slot fallback | `docs/docs/02-epics.md` §E10 · model-profiles | S | idea |
+| 10 | Model profiles — OpenRouter catalog with prices, profiles, per-slot fallback ([`model-profiles`](features/model-profiles/)) | `docs/docs/02-epics.md` §E10 · model-profiles | S | spec'd |
 | 11 | Keyword triggers — first live agent: keyword → note in Inbox, no AI call | `docs/docs/02-epics.md` §E11 · keyword-triggers | S | idea |
 | 12 | Semantic triggers — plain-language condition scored by Jev, with sensitivity and degradation | `docs/docs/02-epics.md` §E12 · semantic-triggers | M | idea |
 | 13 | Review queue and «Why?» — doubtful cases go to the human, every decision explained | `docs/docs/02-epics.md` §E13 · review-queue-and-why | S | idea |
