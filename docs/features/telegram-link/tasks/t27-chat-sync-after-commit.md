@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt", "
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings S2, S3, Q15"
-status: "todo"
+status: "done"
 ---
 
 # T27 — Start chat sync only after the Linked Account is committed, report Telegram's real total, drop chats left meanwhile

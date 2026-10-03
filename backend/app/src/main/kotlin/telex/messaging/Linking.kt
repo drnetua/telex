@@ -270,11 +270,13 @@ class Linking(
 
             is Completion.Linked -> {
                 finish(owner, attempt, "linked")
+                sessions.startSync(attempt.sessionId)
                 LinkingProgress.Completed(LinkingOutcome.LINKED, result.id, attempt.origin)
             }
 
             is Completion.SignedInAgain -> {
                 finish(owner, attempt, "signed_in_again")
+                sessions.startSync(attempt.sessionId)
                 result.replaced?.let {
                     sessions.close(it)
                     sessions.destroy(it)

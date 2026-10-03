@@ -99,7 +99,8 @@ class ChatSyncIT {
         removed: List<Long> = emptyList(),
         total: Int? = null,
         completed: Boolean = false,
-    ) = events.publishEvent(TelegramChatsChanged(linked.session, upserted, removed, total, completed))
+        loaded: Set<Long>? = null,
+    ) = events.publishEvent(TelegramChatsChanged(linked.session, upserted, removed, total, completed, loaded))
 
     private fun summary(linked: Linked) = accounts.listMine(linked.owner).single()
 
@@ -270,6 +271,28 @@ class ChatSyncIT {
 
         assertThat(summary(linked).chatsSynced).isEqualTo(CHATS)
         assertThat(summary(linked).chatSyncCompletedAt).isNotNull()
+    }
+
+    @Test
+    fun `AC-121 a chat absent from a completed load is deleted, so synced never exceeds total`() {
+        val linked = link()
+        val all = List(3) { chat(it) }
+        deliver(linked, all, total = 3, completed = true, loaded = all.map { it.chatId }.toSet())
+        assertThat(summary(linked).chatsSynced).isEqualTo(3)
+
+        val kept = listOf(chat(0), chat(2))
+        deliver(linked, kept, total = 2, completed = true, loaded = kept.map { it.chatId }.toSet())
+
+        assertThat(summary(linked).chatsSynced).isEqualTo(2)
+        assertThat(summary(linked).chatsTotal).isEqualTo(2)
+        assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM channel WHERE linked_account_id = ? AND telegram_chat_id = ?",
+                Int::class.java,
+                linked.id.value,
+                chat(1).chatId,
+            ),
+        ).isZero()
     }
 
     @Test

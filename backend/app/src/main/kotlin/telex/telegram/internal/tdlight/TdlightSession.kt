@@ -71,7 +71,9 @@ internal class TdlightSession(
     private var lost = false
     private var closing = false
     private var lastState: SessionState? = null
+    private var syncStarted = reopened
     private var loadStarted = false
+    private val counts = HashMap<TdlibChatList, Int>()
     private var loadCompleted = false
     private val chats = LinkedHashMap<Long, ChatEntry>()
     private val dirtyUpserts = LinkedHashSet<Long>()
@@ -85,6 +87,18 @@ internal class TdlightSession(
 
     @Synchronized fun markClosing() {
         closing = true
+    }
+
+    /**
+     * A fresh session holds back its state and chat events until the Linked Account exists, because the listeners
+     * drop events of a session no account holds; this announces the latest state and starts the chat load.
+     */
+    @Synchronized
+    fun startSync() {
+        if (syncStarted) return
+        syncStarted = true
+        lastState?.let { state -> publish(stateEvent(state)) }
+        if (authorized && !lost) startChatLoad()
     }
 
     fun dispose() {
@@ -133,6 +147,10 @@ internal class TdlightSession(
                 onFailed(update)
             }
 
+            is TdlibUpdate.ChatCount -> {
+                counts[update.list] = update.totalCount
+            }
+
             is TdlibUpdate.Other -> {
                 Unit
             }
@@ -152,7 +170,7 @@ internal class TdlightSession(
             STATE_READY -> {
                 authorized = true
                 emitState(SessionState.Ready)
-                startChatLoad()
+                if (syncStarted) startChatLoad()
             }
 
             STATE_LOGGING_OUT -> {
@@ -197,8 +215,12 @@ internal class TdlightSession(
         if (state == lastState || lost) return
         lastState = state
         if (state == SessionState.Closed) lost = true
+        if (syncStarted) publish(stateEvent(state))
+    }
+
+    private fun stateEvent(state: SessionState): () -> Unit {
         val event = TelegramSessionStateChanged(id, state, ++sequence)
-        publish { events.publishEvent(event) }
+        return { events.publishEvent(event) }
     }
 
     private fun onNewChat(chat: TdlibChat) {
@@ -237,6 +259,14 @@ internal class TdlightSession(
         if (loadCompleted) flush()
     }
 
+    /** Telegram's total for both lists once it said so, the loaded count once the load is done, else unknown. */
+    private fun total(): Int? =
+        when {
+            loadCompleted -> chats.values.count { it.visible }
+            TdlibChatList.Main in counts && TdlibChatList.Archive in counts -> counts.values.sum()
+            else -> null
+        }
+
     private fun flush(force: Boolean = false) {
         if (!force && dirtyUpserts.isEmpty() && dirtyRemoved.isEmpty()) return
         val event =
@@ -244,8 +274,9 @@ internal class TdlightSession(
                 sessionId = id,
                 upserted = dirtyUpserts.mapNotNull { chatId -> chats[chatId]?.let { snapshot(chatId, it) } },
                 removedChatIds = dirtyRemoved.toList(),
-                total = chats.values.count { it.visible },
+                total = total(),
                 loadCompleted = loadCompleted,
+                loadedChatIds = if (force) chats.filterValues { it.visible }.keys.toSet() else null,
             )
         dirtyUpserts.clear()
         dirtyRemoved.clear()

@@ -422,6 +422,103 @@ class TdlightTelegramSessionsTest {
     }
 
     @Test
+    fun `a fresh session announces and loads nothing until startSync (AC-01, AC-116)`() {
+        answerOnlyChatLoads()
+        val sessions = create()
+        val id = sessions.open(key)
+        val client = tdlib.clients.single()
+
+        client.emit(auth("authorizationStateReady"))
+        client.emit(TdlibUpdate.NewChat(chat(1)))
+        Thread.sleep(SETTLE_MILLIS)
+
+        assertThat(states()).isEmpty()
+        assertThat(chats()).isEmpty()
+        assertThat(client.requests.filterIsInstance<TdlibRequest.LoadChats>()).isEmpty()
+
+        sessions.startSync(id)
+
+        await().untilAsserted { assertThat(chats().lastOrNull()?.loadCompleted).isTrue() }
+        assertThat(states().map { it.state }).containsExactly(SessionState.Ready)
+        assertThat(chats().flatMap { it.upserted }.map { it.chatId }).containsExactly(1L)
+    }
+
+    @Test
+    fun `a session Telegram closed before startSync is announced Closed by it and loads nothing (AC-117)`() {
+        answerOnlyChatLoads()
+        val sessions = create()
+        val id = sessions.open(key)
+        val client = tdlib.clients.single()
+        client.emit(auth("authorizationStateReady"))
+        client.emit(auth("authorizationStateLoggingOut"))
+        client.emit(TdlibUpdate.Closed)
+        Thread.sleep(SETTLE_MILLIS)
+        assertThat(states()).isEmpty()
+
+        sessions.startSync(id)
+
+        await().untilAsserted { assertThat(states().map { it.state }).containsExactly(SessionState.Closed) }
+        assertThat(chats()).isEmpty()
+    }
+
+    @Test
+    fun `the total mid-load is Telegram's total for both lists or null, never the loaded count (AC-116)`() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        var mainLoads = 0
+        tdlib.respond = { client, request ->
+            val mainLoad = request is TdlibRequest.LoadChats && request.list == TdlibChatList.Main
+            val round = if (mainLoad) mainLoads++ else -1
+            if (round == 0) {
+                client.emit(TdlibUpdate.NewChat(chat(1)))
+                TdlibResponse.Ok("ok")
+            } else if (round == 1) {
+                client.emit(TdlibUpdate.ChatCount(TdlibChatList.Main, 5))
+                client.emit(TdlibUpdate.ChatCount(TdlibChatList.Archive, 2))
+                client.emit(TdlibUpdate.NewChat(chat(2)))
+                TdlibResponse.Ok("ok")
+            } else if (request is TdlibRequest.LoadChats) {
+                TdlibResponse.Failure(404, "Not Found")
+            } else {
+                null
+            }
+        }
+        create().reopen(TelegramSessionId(telex.shared.Uuid7.next()), key)
+
+        await().untilAsserted { assertThat(chats().lastOrNull()?.loadCompleted).isTrue() }
+        val midLoad = chats().filter { !it.loadCompleted }
+        assertThat(midLoad.first().total).isNull()
+        assertThat(midLoad.last().total).isEqualTo(7)
+        assertThat(chats().last().total).isEqualTo(2)
+    }
+
+    @Test
+    fun `only the event that completes a load lists every chat it found (AC-121)`() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        var round = 0
+        tdlib.respond = { client, request ->
+            if (request is TdlibRequest.LoadChats && request.list == TdlibChatList.Main && round++ == 0) {
+                client.emit(TdlibUpdate.NewChat(chat(1)))
+                client.emit(TdlibUpdate.NewChat(chat(2)))
+                TdlibResponse.Ok("ok")
+            } else if (request is TdlibRequest.LoadChats) {
+                TdlibResponse.Failure(404, "Not Found")
+            } else {
+                null
+            }
+        }
+        create().reopen(TelegramSessionId(telex.shared.Uuid7.next()), key)
+
+        await().untilAsserted { assertThat(chats().lastOrNull()?.loadCompleted).isTrue() }
+        assertThat(chats().dropLast(1).map { it.loadedChatIds }).containsOnlyNulls()
+        assertThat(chats().last().loadedChatIds).containsExactlyInAnyOrder(1L, 2L)
+        tdlib.clients
+            .single()
+            .emit(TdlibUpdate.NewChat(chat(3)))
+        await().untilAsserted { assertThat(chats().last().upserted.map { it.chatId }).containsExactly(3L) }
+        assertThat(chats().last().loadedChatIds).isNull()
+    }
+
+    @Test
     fun `destroy closes the client and deletes the directory`() {
         scriptSignIn()
         val sessions = create()
@@ -439,5 +536,9 @@ class TdlightTelegramSessionsTest {
         val missing =
             TdlightTelegramSessions(tdlib, { events += it }, SessionDirectories(root, Clock.systemUTC()), null, "")
         assertThat(missing.configured()).isFalse()
+    }
+
+    private companion object {
+        const val SETTLE_MILLIS = 300L
     }
 }

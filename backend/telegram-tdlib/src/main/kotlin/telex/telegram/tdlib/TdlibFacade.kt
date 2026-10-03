@@ -201,6 +201,12 @@ sealed interface TdlibUpdate {
         val unreadCount: Int,
     ) : TdlibUpdate
 
+    /** How many chats Telegram says [list] holds, loaded or not. */
+    data class ChatCount(
+        val list: TdlibChatList,
+        val totalCount: Int,
+    ) : TdlibUpdate
+
     /** Any update the facade does not model yet, by its TL name. */
     data class Other(
         val type: String,

@@ -35,6 +35,7 @@ class FakeTelegram(
         val sequence = AtomicLong()
         var phone: String? = null
         var authorized = false
+        var syncStarted = false
         var reachable = true
     }
 
@@ -56,12 +57,26 @@ class FakeTelegram(
         dbKey: ByteArray,
     ) {
         val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
+        session.syncStarted = true
         directories.create(id)
         if (endedWhileStopped.remove(id)) {
             session.authorized = false
             publishState(id, session, SessionState.Closed)
         } else if (session.authorized) {
             publishState(id, session, SessionState.Ready)
+        }
+    }
+
+    override fun startSync(id: TelegramSessionId) {
+        val session = sessions[id] ?: return
+        val phone = session.phone
+        if (!session.authorized || phone == null || session.syncStarted) return
+        session.syncStarted = true
+        publishState(id, session, SessionState.Ready)
+        publishChats(id, phone.takeLast(CHATS_DIGITS).toInt())
+        when (scenarioOf(phone)) {
+            TERMINATE -> terminate(id)
+            TERMINATE_LATER -> terminateLater(id)
         }
     }
 
@@ -125,7 +140,7 @@ class FakeTelegram(
             }
 
             else -> {
-                authorize(id, session, phone)
+                authorize(session, phone)
             }
         }
     }
@@ -138,7 +153,7 @@ class FakeTelegram(
         val phone = checkNotNull(session.phone) { "No phone sent" }
         if (scenarioOf(phone) == FLOOD_PASSWORD) return SignInOutcome.WaitRequired(FLOOD_WAIT_SECONDS)
         return if (password == PASSWORD) {
-            authorize(id, session, phone)
+            authorize(session, phone)
         } else {
             SignInOutcome.PasswordWrong(PASSWORD_HINT.takeIf { scenarioOf(phone) == TWO_STEP_HINT })
         }
@@ -230,18 +245,10 @@ class FakeTelegram(
             }?.get(PHONE_PREFIX.length)
 
     private fun authorize(
-        id: TelegramSessionId,
         session: Session,
         phone: String,
     ): SignInOutcome {
         session.authorized = true
-        publishState(id, session, SessionState.Ready)
-        val total = phone.takeLast(CHATS_DIGITS).toInt()
-        publishChats(id, total)
-        when (scenarioOf(phone)) {
-            TERMINATE -> terminate(id)
-            TERMINATE_LATER -> terminateLater(id)
-        }
         return SignInOutcome.Authorized(
             TelegramUser(
                 telegramUserId = phone.toLong(),
@@ -278,7 +285,9 @@ class FakeTelegram(
             }
         val batches = chats.chunked(BATCH_SIZE).ifEmpty { listOf(emptyList()) }
         batches.forEachIndexed { index, batch ->
-            events.publishEvent(TelegramChatsChanged(id, batch, emptyList(), total, index == batches.lastIndex))
+            val last = index == batches.lastIndex
+            val loaded = if (last) chats.map { it.chatId }.toSet() else null
+            events.publishEvent(TelegramChatsChanged(id, batch, emptyList(), total, last, loaded))
         }
     }
 

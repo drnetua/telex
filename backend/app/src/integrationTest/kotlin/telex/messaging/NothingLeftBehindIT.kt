@@ -18,9 +18,6 @@ import telex.identity.OwnerId
 import telex.identity.SignInSessions
 import telex.messaging.internal.account.AccountDeletion
 import telex.messaging.internal.lifecycle.BootReconnect
-import telex.telegram.ChatSnapshot
-import telex.telegram.ChatType
-import telex.telegram.TelegramChatsChanged
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
 import telex.telegram.internal.fake.FakeTelegram
@@ -86,31 +83,8 @@ class NothingLeftBehindIT {
                 UUID::class.java,
                 done.linkedAccountId.value,
             )!!
-        syncChats(TelegramSessionId(session), phone.takeLast(4).toInt())
         await().atMost(Duration.ofSeconds(10)).until { chatsOf(done.linkedAccountId) == phone.takeLast(4).toInt() }
         return Linked(owner, done.linkedAccountId, TelegramSessionId(session))
-    }
-
-    private fun syncChats(
-        session: TelegramSessionId,
-        total: Int,
-    ) {
-        val chats =
-            List(total) {
-                ChatSnapshot(
-                    -1_000_000_000_000L - it,
-                    ChatType.Supergroup,
-                    "Test chat ${it + 1}",
-                    emptyList(),
-                    false,
-                    0,
-                    (
-                        total -
-                            it
-                    ).toLong(),
-                )
-            }
-        events.publishEvent(TelegramChatsChanged(session, chats, emptyList(), total, true))
     }
 
     private fun chatsOf(id: LinkedAccountId) =

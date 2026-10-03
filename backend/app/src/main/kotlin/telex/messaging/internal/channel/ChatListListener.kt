@@ -43,6 +43,7 @@ class ChatListListener(
             tx.execute {
                 channels.upsert(account.ownerId.value, account.id, event.upserted)
                 channels.delete(account.id, event.removedChatIds)
+                event.loadedChatIds?.let { channels.deleteNotIn(account.id, it) }
                 channels.recordProgress(account.id, event.total, event.loadCompleted, now)
             } == true
         if (firstCompletion) {

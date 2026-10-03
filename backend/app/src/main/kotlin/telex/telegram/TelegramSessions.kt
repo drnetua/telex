@@ -59,6 +59,7 @@ sealed interface SignInOutcome {
  * The `telegram` port: open, sign in, log out, close and destroy a session. Adapters are chosen by
  * `telex.telegram.adapter` (`tdlight` default, `fake`). A step Telegram does not answer throws [TelegramUnavailable].
  */
+@Suppress("TooManyFunctions") // the whole session lifecycle is one port
 interface TelegramSessions {
     /** True when the api id and hash are present (AC-119). */
     fun configured(): Boolean
@@ -91,6 +92,13 @@ interface TelegramSessions {
         id: TelegramSessionId,
         password: String,
     ): SignInOutcome
+
+    /**
+     * Starts the chat list sync and announces the session state. Called once the Linked Account row is committed
+     * (link, or sign in again), because the events of a session no account holds yet are dropped (AC-01, AC-116).
+     * A reopened session starts on its own.
+     */
+    fun startSync(id: TelegramSessionId)
 
     /** True when Telegram confirmed the log out within [timeout]. */
     fun logOut(

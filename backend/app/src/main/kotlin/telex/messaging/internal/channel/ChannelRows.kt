@@ -59,6 +59,17 @@ class ChannelRows(
         }
     }
 
+    /** Drops the account's chats that a completed load did not find (left while teleX was stopped or offline). */
+    fun deleteNotIn(
+        account: LinkedAccountId,
+        loadedChatIds: Set<Long>,
+    ) {
+        jdbc.update("DELETE FROM channel WHERE linked_account_id = ? AND NOT (telegram_chat_id = ANY(?))") { ps ->
+            ps.setObject(1, account.value)
+            ps.setArray(2, ps.connection.createArrayOf("bigint", loadedChatIds.toTypedArray()))
+        }
+    }
+
     /**
      * Stores Telegram's reported total (archived included); [completed] also stamps the finish time from [now].
      * Returns true only on the transition from not-completed to completed.

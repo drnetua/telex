@@ -66,6 +66,10 @@ class TdlightTelegramSessions(
         start(id, dbKey, reopened = true)
     }
 
+    override fun startSync(id: TelegramSessionId) {
+        sessions[id]?.startSync()
+    }
+
     override fun sendPhone(
         id: TelegramSessionId,
         digits: String,

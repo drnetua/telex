@@ -24,11 +24,16 @@ data class ChatSnapshot(
     val order: Long,
 )
 
-/** Plain in-process Spring event carrying one batch of the chat list sync. */
+/**
+ * Plain in-process Spring event carrying one batch of the chat list sync. [total] is Telegram's total for the account
+ * (archived included), or null until known. [loadedChatIds] is set only on the event that completes a load: every
+ * chat the load found, so chats not in it are gone.
+ */
 data class TelegramChatsChanged(
     val sessionId: TelegramSessionId,
     val upserted: List<ChatSnapshot>,
     val removedChatIds: List<Long>,
     val total: Int?,
     val loadCompleted: Boolean,
+    val loadedChatIds: Set<Long>? = null,
 )

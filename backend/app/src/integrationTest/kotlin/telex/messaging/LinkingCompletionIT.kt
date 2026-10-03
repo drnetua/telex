@@ -2,6 +2,7 @@ package telex.messaging
 
 import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,6 +29,7 @@ import telex.telegram.TelegramSessions
 import telex.telegram.internal.fake.FakeTelegram
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.Base64
 import java.util.UUID
 import kotlin.io.path.listDirectoryEntries
@@ -160,8 +162,6 @@ class LinkingCompletionIT {
         assertThat((row["phone_last_digits"] as String).trim()).isEqualTo("01")
         assertThat(row["telegram_user_id"]).isEqualTo(9996610101L)
         assertThat(row[SESSION_ID]).isEqualTo(sessionId.value)
-        assertThat(row["chats_total"]).isNull()
-        assertThat(row["chat_sync_completed_at"]).isNull()
         val sealed = row["tdlib_key_sealed"] as ByteArray
         assertThat(sealed).hasSize(SEALED_BYTES)
         assertThat(ownerKeys.open(owner, sealed, done.linkedAccountId.keyAad())).hasSize(32)
@@ -171,6 +171,34 @@ class LinkingCompletionIT {
         assertThat(fake.wasLoggedOut(sessionId)).isFalse()
         assertThat(attempts.find(owner)).isNull()
         assertThat(meters.counter("telex.linking.attempts", "outcome", "linked").count()).isGreaterThan(0.0)
+        awaitSynced(done.linkedAccountId, 101)
+    }
+
+    private fun awaitSynced(
+        id: LinkedAccountId,
+        chats: Int,
+    ) = await().atMost(Duration.ofSeconds(10)).untilAsserted {
+        val row =
+            jdbc.queryForMap(
+                "SELECT chats_total, chat_sync_completed_at FROM linked_account WHERE id = ?",
+                id.value,
+            )
+        assertThat(row["chats_total"]).isEqualTo(chats)
+        assertThat(row["chat_sync_completed_at"]).isNotNull()
+        assertThat(
+            jdbc.queryForObject("SELECT count(*) FROM channel WHERE linked_account_id = ?", Int::class.java, id.value),
+        ).isEqualTo(chats)
+    }
+
+    @Test
+    fun `AC-117 a session Telegram ends right after the link ends as Session lost, not Connected`() {
+        toCodeStep("9996670003")
+
+        val done = finish() as LinkingProgress.Completed
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted {
+            assertThat(rowsOf(owner).single { it["id"] == done.linkedAccountId.value }[STATE]).isEqualTo("session_lost")
+        }
     }
 
     @Test
@@ -256,13 +284,13 @@ class LinkingCompletionIT {
         assertThat(row[STATE]).isEqualTo("connected")
         assertThat(row[SESSION_ID]).isEqualTo(newSession.value)
         assertThat(row["display_name"]).isEqualTo("Test user 0108")
-        assertThat(row["chat_sync_completed_at"]).isNull()
         assertThat(ownerKeys.open(owner, row["tdlib_key_sealed"] as ByteArray, target.keyAad())).hasSize(32)
         assertThat(rowsOf(owner)).hasSize(2)
         assertThat(sessionDirectories()).isEqualTo(before)
         assertThat(events.stream(LinkedAccountStateChanged::class.java).toList())
             .contains(LinkedAccountStateChanged(owner, target, LinkedAccountState.CONNECTED))
         assertThat(events.stream(AccountLinked::class.java).toList().map { it.linkedAccountId }).doesNotContain(target)
+        awaitSynced(target, 108)
     }
 
     @Test

@@ -228,6 +228,10 @@ class TdlightFacade : TdlibFacade {
                     TdlibUpdate.ChatPosition(update.chatId, TdlibChatPosition(fromChatList(update.chatList), 0))
                 }
 
+                is TdApi.UpdateUnreadChatCount -> {
+                    TdlibUpdate.ChatCount(fromChatList(update.chatList), update.totalCount)
+                }
+
                 else -> {
                     TdlibUpdate.Other(tlName(update))
                 }

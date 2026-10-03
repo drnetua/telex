@@ -27,7 +27,9 @@ class FakeTelegramTest {
         session: TelegramSessionId = id,
     ): SignInOutcome {
         assertThat(fake.sendPhone(session, phone)).isInstanceOf(SignInOutcome.CodeSent::class.java)
-        return fake.checkCode(session, FakeTelegram.CODE)
+        return fake.checkCode(session, FakeTelegram.CODE).also {
+            if (it is SignInOutcome.Authorized) fake.startSync(session)
+        }
     }
 
     @Test
@@ -116,6 +118,21 @@ class FakeTelegramTest {
         assertThat(chats().map { it.loadCompleted }.dropLast(1)).containsOnly(false)
         assertThat(chats().last().loadCompleted).isTrue()
         assertThat(chats().flatMap { it.upserted }.map { it.chatId }).doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun `authorization announces nothing until startSync, then Ready and the chats (AC-01, AC-116)`() {
+        assertThat(fake.sendPhone(id, "9996600120")).isInstanceOf(SignInOutcome.CodeSent::class.java)
+        assertThat(fake.checkCode(id, FakeTelegram.CODE)).isInstanceOf(SignInOutcome.Authorized::class.java)
+
+        assertThat(events).isEmpty()
+
+        fake.startSync(id)
+
+        assertThat(states().map { it.state }).containsExactly(SessionState.Ready)
+        assertThat(chats().sumOf { it.upserted.size }).isEqualTo(120)
+        assertThat(chats().last().loadedChatIds).hasSize(120)
+        assertThat(chats().dropLast(1).map { it.loadedChatIds }).containsOnlyNulls()
     }
 
     @Test
