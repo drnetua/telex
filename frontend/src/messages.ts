@@ -79,9 +79,21 @@ export const messages = {
       "This browser doesn't support passkeys. You can add one later from another device in Profile and security.",
     continue: "Continue",
   },
-  frame: {
-    profile: "Profile and security",
+  shell: {
+    mainNav: "Main",
+    more: "More",
+    close: "Close",
     signOut: "Sign out",
+    signingOut: "Signing out",
+    sections: {
+      overview: "Overview",
+      inbox: "Inbox",
+      chats: "Chats",
+      assistants: "Assistants",
+      runs: "Runs",
+      tasks: "Tasks",
+      settings: "Settings",
+    },
   },
   inbox: {
     title: "Inbox",

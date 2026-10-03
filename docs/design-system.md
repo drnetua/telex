@@ -51,8 +51,7 @@ Built components (`frontend/src/components/`) plus the reference components the 
 | Toast `action` prop | `frontend/src/components/Toast/Toast.tsx:11` | optional one action (for example "Try again"); the toast stays until dismissed or acted on | Used by ThemeSwitch |
 | ConfirmDialog | `frontend/src/components/ConfirmDialog/ConfirmDialog.tsx:27` | open / busy / confirm variant `danger` | Names the consequences; destructive confirm in `danger` |
 | FailureBoundary | `frontend/src/app/FailureBoundary.tsx:13` | error | Routes render failures to the system pages (SCR-90) |
-| PageFrame | `frontend/src/components/PageFrame/PageFrame.tsx:8` | default / signing out (busy) | **Temporary** E01 frame. E06 replaces it with AppShell and deletes it |
-| AppShell (C-01) | `docs/docs/design-system/components/AppShell/README.md` | desktop side menu / phone bottom nav + header; active section; Inbox counter | Not yet ported; arrives with E06 `app-shell` |
+| AppShell (C-01) | `frontend/src/shell/AppShell/AppShell.tsx` | desktop side menu / phone bottom nav + header + More sheet; active section; Inbox counter; banner slot | Section list comes from `frontend/src/shell/sections.ts` |
 | StatusBanner (C-04) | `docs/docs/design-system/components/StatusBanner/README.md` | one condition / most important + "N more"; not dismissable while its cause holds | Not yet ported; arrives with E06 `app-shell` (first condition: offline) |
 | SidePanel (C-05) | `docs/docs/design-system/components/SidePanel/README.md` | desktop side panel / phone full-screen sheet | Not yet ported; moved to E14 (SCR-41) per `docs/features/app-shell/adr/0001-shell-scope-moves-offline-banner-coming-soon-panel.md` |
 | StopAllButton (C-03) | `docs/docs/design-system/components/StopAllButton/README.md` | active / "Resume" | Not yet ported; arrives with E23 |

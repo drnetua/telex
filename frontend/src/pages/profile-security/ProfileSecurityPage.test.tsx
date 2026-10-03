@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiFailure } from "../../api/client";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
 import { createAppQueryClient } from "../../app/queryClient";
-import { PageFrame } from "../../components/PageFrame/PageFrame";
+import { AppShell } from "../../shell/AppShell/AppShell";
 import { ProfileSecurityPage } from "./ProfileSecurityPage";
 
 vi.mock("../../api/webauthn", async (orig) => ({
@@ -83,9 +83,9 @@ function setup(entry = "/profile") {
           <Route
             path="/profile"
             element={
-              <PageFrame>
+              <AppShell email="me@example.com">
                 <ProfileSecurityPage />
-              </PageFrame>
+              </AppShell>
             }
           />
         </Routes>

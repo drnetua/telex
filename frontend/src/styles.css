@@ -15,7 +15,80 @@
   --tblr-alert-bg: var(--telex-danger-subtle);
 }
 
-/* Phone: icon-only header buttons meet the 44 px target size (screens.md, PageFrame). */
+/* AppShell (C-01): side menu 240 px, phone bottom bar, current-section bar and bold label. */
+.telex-sidemenu {
+  width: 240px;
+  flex: none;
+}
+
+.telex-main {
+  min-width: 0;
+}
+
+.telex-navitem,
+.telex-moreitem,
+.telex-baritem {
+  position: relative;
+  min-height: 44px;
+  color: inherit;
+}
+
+.telex-navitem.active,
+.telex-moreitem.active,
+.telex-baritem.active {
+  background: var(--tblr-primary-lt);
+  color: var(--tblr-primary);
+}
+
+.telex-navitem.active::before,
+.telex-moreitem.active::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--tblr-primary);
+}
+
+.telex-moreitem {
+  align-items: center;
+}
+
+.telex-bottombar {
+  background: var(--tblr-bg-surface);
+}
+
+.telex-baritem {
+  flex: 1 1 0;
+  min-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.telex-baritem.active::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: var(--tblr-primary);
+}
+
+@media (max-width: 767.98px) {
+  .telex-main {
+    padding-bottom: 64px;
+  }
+}
+
+/* Phone: icon-only header buttons meet the 44 px target size (screens.md). */
 @media (max-width: 767.98px) {
   .touch-target {
     min-width: 44px;

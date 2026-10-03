@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createAppQueryClient, failureBus } from "../../app/queryClient";
-import { PageFrame } from "../../components/PageFrame/PageFrame";
+import { AppShell } from "../../shell/AppShell/AppShell";
 import { InboxPage } from "./InboxPage";
 
 const json = (status: number, body: unknown) =>
@@ -20,9 +20,9 @@ function setup() {
           <Route
             path="/inbox"
             element={
-              <PageFrame>
+              <AppShell email="me@example.com">
                 <InboxPage />
-              </PageFrame>
+              </AppShell>
             }
           />
           <Route path="/sign-in" element={<h1>Sign in page</h1>} />

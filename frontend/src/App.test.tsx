@@ -4,11 +4,11 @@ import { App } from "./App";
 import { messages } from "./messages";
 
 describe("App", () => {
-  it("renders the app shell with the signed-in frame and Inbox loading", () => {
+  it("shows only the loading state until getMe answers", () => {
     render(<App />);
 
-    expect(screen.getByText(messages.appName)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: messages.frame.signOut })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(screen.queryByRole("button", { name: messages.shell.signOut })).toBeNull();
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 });

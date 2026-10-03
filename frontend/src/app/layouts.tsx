@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import { Outlet } from "react-router";
 import logo from "../assets/telex-logo-192.png";
 import { useMe } from "../api/account";
-import { PageFrame } from "../components/PageFrame/PageFrame";
+import { LoadState } from "../components/LoadState/LoadState";
 import { messages } from "../messages";
+import { AppShell } from "../shell/AppShell/AppShell";
 import { useAccountTheme } from "../shell/theme";
 
 /** Bare frame for SCR-91/92/93: text wordmark, no session dependency. */
@@ -46,10 +47,12 @@ export function AuthLayout() {
 }
 
 export function AppLayout() {
-  useAccountTheme(useMe().data);
+  const me = useMe();
+  useAccountTheme(me.data);
+  if (!me.data) return <LoadState state="loading" rows={3} />;
   return (
-    <PageFrame>
+    <AppShell email={me.data.email}>
       <Outlet />
-    </PageFrame>
+    </AppShell>
   );
 }
