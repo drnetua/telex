@@ -1,6 +1,9 @@
 package telex.web.api
 
+import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonInclude
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotNull
 import telex.agents.CatalogModelView
 import telex.agents.ChainModelView
 import telex.agents.DraftView
@@ -10,6 +13,7 @@ import telex.agents.ModelProfileListView
 import telex.agents.ModelProfileView
 import telex.agents.ModelSlotKind
 import telex.agents.PriceView
+import telex.agents.ProfileDeletion
 import telex.agents.ProfileNotFound
 import telex.agents.ProfileRef
 import telex.agents.SlotView
@@ -102,4 +106,52 @@ fun ProfileRef.toBody(): ProfileRefBody =
     when (this) {
         is ProfileRef.System -> ProfileRefBody("system", key = key.wire)
         is ProfileRef.Custom -> ProfileRefBody("custom", id = id.value)
+    }
+
+/** Request schemas are `additionalProperties: false`: an unknown property makes the body unreadable (400). */
+abstract class StrictBody {
+    @JsonAnySetter
+    fun unknownProperty(
+        name: String,
+        value: Any?,
+    ): Unit = throw IllegalArgumentException("Unknown property '$name' (${value?.javaClass?.simpleName})")
+}
+
+/** A missing slot is an empty slot; the rules (and their codes) live in `agents`. */
+data class ChainInputBody(
+    val text: List<String> = emptyList(),
+    val vision: List<String> = emptyList(),
+    val image: List<String> = emptyList(),
+) : StrictBody() {
+    fun toSlots(): Map<ModelSlotKind, List<String>> =
+        mapOf(ModelSlotKind.TEXT to text, ModelSlotKind.VISION to vision, ModelSlotKind.IMAGE to image)
+}
+
+data class ProfileWriteBody(
+    val name: String = "",
+    val slots: ChainInputBody = ChainInputBody(),
+    val duplicatedFrom: ProfileRefBody? = null,
+) : StrictBody()
+
+data class DefaultProfileChoiceBody(
+    @field:NotNull @field:Valid val profile: ProfileRefBody?,
+) : StrictBody()
+
+data class DefaultProfileBody(
+    val profile: ProfileRefBody,
+)
+
+data class ModelProfileDeletionBody(
+    val defaultProfile: ProfileRefBody,
+    val defaultReset: Boolean,
+)
+
+fun ProfileDeletion.toBody() = ModelProfileDeletionBody(defaultProfile.toBody(), defaultReset)
+
+/** A profile reference in a body: a system key or a custom id; anything unresolvable is simply not found. */
+fun ProfileRefBody.toRef(): ProfileRef =
+    when (kind) {
+        "system" -> parseProfileKey(key.orEmpty())
+        "custom" -> parseProfileKey(id?.toString().orEmpty())
+        else -> throw ProfileNotFound()
     }
