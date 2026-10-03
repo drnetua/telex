@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { applyTheme, currentChoice, rememberTheme, type ThemeChoice } from "../shell/theme";
 import { meKey, type Me } from "./account";
-import { apiFetch } from "./client";
+import { ApiFailure, apiFetch } from "./client";
 
 /** `changeMyPreferences`: resolves with the saved preferences, rejects with an `ApiFailure`. */
 export function changePreferences(change: { theme: ThemeChoice }): Promise<{ theme: ThemeChoice }> {
@@ -96,4 +96,45 @@ export function useChangeTheme() {
     retry: () => failed && choose(failed),
     dismiss: () => setFailed(null),
   };
+}
+
+/** `listTimeZones`: the whole known list, fetched only while the picker is open. */
+export function useListTimeZones(enabled: boolean) {
+  return useQuery({
+    queryKey: ["time-zones"],
+    enabled,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: () => apiFetch<{ items: string[] }>("/api/v1/time-zones").then((r) => r.items),
+  });
+}
+
+export type TimeZoneSaveResult = "saved" | "refused" | "failed";
+
+/**
+ * `changeMyPreferences` for the time zone: resolves with how it went (never rejects) so SCR-64 can draw
+ * `tz-saved`, `tz-refused` or `tz-save-failed` itself. A saved zone replaces the cached `me` fields.
+ */
+export function useChangeTimeZone() {
+  const client = useQueryClient();
+  return useCallback(
+    async (timeZone: string): Promise<TimeZoneSaveResult> => {
+      try {
+        const saved = await apiFetch<SavedPreferences>("/api/v1/me/preferences", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ timeZone }),
+        });
+        client.setQueryData<Me>(meKey, (old) =>
+          old
+            ? { ...old, timeZone: saved.timeZone, timeZoneIsFallback: saved.timeZoneIsFallback }
+            : old,
+        );
+        return "saved";
+      } catch (error) {
+        return error instanceof ApiFailure && error.status === 400 ? "refused" : "failed";
+      }
+    },
+    [client],
+  );
 }

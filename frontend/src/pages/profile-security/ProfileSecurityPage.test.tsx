@@ -311,3 +311,128 @@ describe("SCR-64 passkey states (AC-89, AC-91, AC-97)", () => {
     expect(document.getElementById("sessions")).not.toBeNull();
   });
 });
+
+describe("SCR-64 Time zone card", () => {
+  const meWith = (extra: object) => (m: string, u: string) =>
+    u === "/api/v1/me" && m === "GET" ? json(200, { ...me, ...extra }) : undefined;
+  const zoneList = { items: ["Europe/Berlin", "Europe/Kyiv", "UTC"] };
+  const isPatch = ([m, u]: [string, string]) => m === "PATCH" && u === "/api/v1/me/preferences";
+  const pickerName = { name: "Choose your time zone" };
+
+  it("AC-183: shows the zone with its offset and no hint when it was detected", async () => {
+    stubApi({ onCall: meWith({ timeZone: "Europe/Kyiv" }) });
+    setup();
+    expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+    expect(screen.getByText(/^Europe\/Kyiv \u00b7 UTC[+-]\d\d:\d\d$/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Dates and times in teleX use this time zone on all your devices."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't read your device's time zone/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change time zone" })).toBeInTheDocument();
+  });
+
+  it("AC-183: shows UTC and the hint with Choose yours only when the zone is a fallback", async () => {
+    stubApi({
+      onCall: (m, u) =>
+        u === "/api/v1/time-zones"
+          ? json(200, zoneList)
+          : meWith({ timeZone: "UTC", timeZoneIsFallback: true })(m, u),
+    });
+    setup();
+    expect(
+      await screen.findByText("We couldn't read your device's time zone, so teleX uses UTC."),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Choose yours" }));
+    expect(await screen.findByRole("dialog", pickerName)).toBeInTheDocument();
+  });
+
+  it("AC-184: fetches the list only on open, searches, saves, toasts and clears the hint", async () => {
+    let saved = false;
+    const calls = stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH") {
+          saved = true;
+          return json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
+        }
+        return meWith(
+          saved ? { timeZone: "Europe/Kyiv" } : { timeZone: "UTC", timeZoneIsFallback: true },
+        )(m, u);
+      },
+    });
+    setup();
+    await screen.findByText(/couldn't read your device's time zone/);
+    expect(calls.some(([, u]) => u === "/api/v1/time-zones")).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Change time zone" }));
+    const dialog = await screen.findByRole("dialog", pickerName);
+    await userEvent.type(within(dialog).getByRole("combobox"), "kyiv");
+    await userEvent.click(await within(dialog).findByRole("option", { name: /Kyiv/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog", pickerName)).toBeNull());
+    expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+    expect(await screen.findByText("Time zone saved.")).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't read your device's time zone/)).not.toBeInTheDocument();
+    expect(calls.filter(isPatch)).toHaveLength(1);
+  });
+
+  it("AC-185: no match says so and keeps the current zone", async () => {
+    const calls = stubApi({
+      onCall: (m, u) =>
+        u === "/api/v1/time-zones"
+          ? json(200, zoneList)
+          : meWith({ timeZone: "Europe/Berlin" })(m, u),
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    const dialog = await screen.findByRole("dialog", pickerName);
+    await userEvent.type(await within(dialog).findByRole("combobox"), "Atlantis");
+    expect(within(dialog).getByText(/No time zone matches/)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog", pickerName)).toBeNull();
+    expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+    expect(calls.some(isPatch)).toBe(false);
+  });
+
+  it("AC-186: a server refusal keeps the zone and says to choose from the list", async () => {
+    stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH")
+          return json(400, {
+            code: "validation-failed",
+            errors: [{ field: "timeZone", code: "unknown-time-zone" }],
+          });
+        return meWith({ timeZone: "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+    expect(await screen.findByText("Choose a time zone from the list.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+    expect(screen.queryByText("Time zone saved.")).not.toBeInTheDocument();
+  });
+
+  it("no answer keeps the zone, shows an error toast and Try again re-sends", async () => {
+    let attempts = 0;
+    const calls = stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH") {
+          attempts += 1;
+          return attempts === 1
+            ? json(503, { code: "unavailable" })
+            : json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
+        }
+        return meWith({ timeZone: "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+    expect(await screen.findByText("Your time zone wasn't saved.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(calls.filter(isPatch)).toHaveLength(2));
+    expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+  });
+});

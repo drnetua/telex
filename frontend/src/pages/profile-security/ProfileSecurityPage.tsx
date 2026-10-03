@@ -5,6 +5,7 @@ import { messages } from "../../messages";
 import { AppearanceCard } from "./AppearanceCard";
 import { PasskeysCard } from "./PasskeysCard";
 import { SessionsCard } from "./SessionsCard";
+import { TimeZoneCard } from "./TimeZoneCard";
 
 export function ProfileSecurityPage() {
   const me = useMe();
@@ -20,6 +21,7 @@ export function ProfileSecurityPage() {
       <h1 className="page-title">{m.title}</h1>
       {me.data ? <p className="text-secondary mb-4">{m.signedInAs(me.data.email)}</p> : null}
       <AppearanceCard />
+      <TimeZoneCard />
       <PasskeysCard />
       <SessionsCard />
     </>
