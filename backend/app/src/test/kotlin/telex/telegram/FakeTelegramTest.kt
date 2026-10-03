@@ -206,6 +206,15 @@ class FakeTelegramTest {
     }
 
     @Test
+    fun `logOut of a session that is not open is not confirmed, as in the real adapter (AC-113)`() {
+        link("9996600007")
+        fake.close(id)
+
+        assertThat(fake.logOut(id, Duration.ofMillis(10))).isFalse()
+        assertThat(fake.logOut(TelegramSessionId(telex.shared.Uuid7.next()), Duration.ofMillis(10))).isFalse()
+    }
+
+    @Test
     fun `an unreachable Telegram does not answer sign-in steps`() {
         fake.dropConnectivity(id)
         assertThatThrownBy { fake.sendPhone(id, "9996600005") }.isInstanceOf(TelegramUnavailable::class.java)

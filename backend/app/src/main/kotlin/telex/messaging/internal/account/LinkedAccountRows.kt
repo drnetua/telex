@@ -38,15 +38,20 @@ class LinkedAccountRows(
             ).update()
     }
 
-    /** Deletes the Owner's account; its chat list goes by `ON DELETE CASCADE`. True when a row was deleted. */
+    /**
+     * Deletes the Owner's account; its chat list goes by `ON DELETE CASCADE`. Returns the session the deleted row held
+     * (null when it held none), or null when no row was deleted.
+     */
     fun deleteMine(
         owner: OwnerId,
         id: LinkedAccountId,
-    ): Boolean =
+    ): DeletedRow? =
         jdbc
-            .sql("DELETE FROM linked_account WHERE id = ? AND owner_id = ?")
+            .sql("DELETE FROM linked_account WHERE id = ? AND owner_id = ? RETURNING telegram_session_id")
             .params(id.value, owner.value)
-            .update() > 0
+            .query { rs, _ -> DeletedRow(rs.getObject(1, UUID::class.java)?.let(::TelegramSessionId)) }
+            .optional()
+            .orElse(null)
 
     /** Sign in again: the new session and sealed key replace the old, the account is Connected and re-syncs. */
     fun swapSession(
@@ -190,3 +195,8 @@ class LinkedAccountRows(
             createdAt = rs.getObject("created_at", OffsetDateTime::class.java).toInstant(),
         )
 }
+
+/** What a delete removed: the session the account held at that moment. */
+data class DeletedRow(
+    val session: TelegramSessionId?,
+)

@@ -93,7 +93,7 @@ class UnlinkAnnouncementRestartIT {
             ),
         )
 
-        assertThat(deletion.delete(owner, id)).isTrue()
+        assertThat(deletion.delete(owner, id)).isNotNull
 
         // committed, but the listener never completed: the registry holds the event as outstanding
         await().atMost(Duration.ofSeconds(5)).until { outstanding() >= 1 }

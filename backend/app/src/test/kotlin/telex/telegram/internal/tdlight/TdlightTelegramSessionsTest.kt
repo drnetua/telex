@@ -367,6 +367,13 @@ class TdlightTelegramSessionsTest {
     }
 
     @Test
+    fun `logOut of a session that is not open is not confirmed (AC-113)`() {
+        val sessions = create()
+
+        assertThat(sessions.logOut(TelegramSessionId(telex.shared.Uuid7.next()), Duration.ofMillis(50))).isFalse()
+    }
+
+    @Test
     fun `the chat list is loaded in batches and then kept current (AC-121)`() {
         tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
         var round = 0

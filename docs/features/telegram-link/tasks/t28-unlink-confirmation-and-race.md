@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "b
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-03 — findings S4, Q4"
-status: "todo"
+status: "done"
 ---
 
 # T28 — Unlink: report an unconfirmed sign-out for Session lost, and sign out the session the delete actually removed

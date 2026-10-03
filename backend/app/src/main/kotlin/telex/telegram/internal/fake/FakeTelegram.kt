@@ -163,15 +163,15 @@ class FakeTelegram(
         id: TelegramSessionId,
         timeout: Duration,
     ): Boolean {
-        val session = session(id)
-        if (!session.reachable) {
+        val session = sessions[id]?.takeIf { it.authorized } ?: return false
+        if (session.reachable) {
+            session.authorized = false
+            loggedOut.add(id)
+            publishState(id, session, SessionState.Closed)
+        } else {
             Thread.sleep(timeout.toMillis())
-            return false
         }
-        session.authorized = false
-        loggedOut.add(id)
-        publishState(id, session, SessionState.Closed)
-        return true
+        return session.reachable
     }
 
     override fun close(id: TelegramSessionId) {

@@ -16,14 +16,14 @@ class AccountDeletion(
     private val rows: LinkedAccountRows,
     private val events: ApplicationEventPublisher,
 ) {
-    /** True when the Owner's account existed and is gone. */
+    /** The session the Owner's account held when it was deleted, or null when it did not exist. */
     @Transactional
     fun delete(
         owner: OwnerId,
         id: LinkedAccountId,
-    ): Boolean {
-        if (!rows.deleteMine(owner, id)) return false
+    ): DeletedRow? {
+        val deleted = rows.deleteMine(owner, id) ?: return null
         events.publishEvent(AccountUnlinked(owner, id))
-        return true
+        return deleted
     }
 }

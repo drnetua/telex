@@ -100,7 +100,7 @@ interface TelegramSessions {
      */
     fun startSync(id: TelegramSessionId)
 
-    /** True when Telegram confirmed the log out within [timeout]. */
+    /** True when Telegram confirmed the log out within [timeout]; false for a session that is not open. */
     fun logOut(
         id: TelegramSessionId,
         timeout: Duration,

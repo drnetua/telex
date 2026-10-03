@@ -162,7 +162,7 @@ class NothingLeftBehindIT {
         val keep = linkAndSync(PHONE_OTHER)
 
         // the unlink transaction commits, then the process dies before close and destroy
-        assertThat(deletion.delete(linked.owner, linked.id)).isTrue()
+        assertThat(deletion.delete(linked.owner, linked.id)).isNotNull
         fake.simulateStop()
         assertThat(Files.exists(dir(linked.session))).isTrue()
 

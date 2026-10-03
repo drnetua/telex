@@ -3,6 +3,7 @@ package telex.messaging
 import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,6 +19,7 @@ import telex.identity.FixedClockConfiguration
 import telex.identity.OwnerId
 import telex.identity.OwnerKeys
 import telex.identity.SignInSessions
+import telex.messaging.internal.account.AccountDeletion
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.internal.account.NewLinkedAccount
 import telex.messaging.internal.attempt.LinkingAttempts
@@ -55,6 +57,8 @@ class UnlinkIT {
     @Autowired lateinit var meters: MeterRegistry
 
     @Autowired lateinit var linking: Linking
+
+    @Autowired lateinit var deletion: AccountDeletion
 
     @Autowired lateinit var signInSessions: SignInSessions
 
@@ -194,17 +198,52 @@ class UnlinkIT {
     fun `AC-113 a Session lost account is deleted without a sign-out attempt`() {
         val owner = owner()
         val account = connected(owner)
-        jdbc.update(
-            "UPDATE linked_account SET state = 'session_lost', telegram_session_id = NULL, tdlib_key_sealed = NULL " +
-                "WHERE id = ?",
-            account.id.value,
-        )
+        val session = account.session!!
+        fake.terminate(session)
+        await().untilAsserted {
+            assertThat(
+                jdbc.queryForObject(
+                    "SELECT state FROM linked_account WHERE id = ?",
+                    String::class.java,
+                    account.id.value,
+                ),
+            ).isEqualTo("session_lost")
+        }
+        val before = unlinkedCounter("unconfirmed")
 
         val result = accounts.unlink(owner, account.id)
 
         assertThat(result.signOutConfirmed).isFalse()
+        assertThat(fake.wasLoggedOut(session)).isFalse()
         assertThat(count("linked_account")).isZero()
         assertThat(count("channel")).isZero()
+        assertThat(Files.exists(sessionDir(session))).isFalse()
+        assertThat(unlinkedCounter("unconfirmed")).isEqualTo(before + 1)
+    }
+
+    @Test
+    fun `AC-111 the delete reports the session it removed, so a session swapped in meanwhile is not left behind`() {
+        val owner = owner()
+        val account = connected(owner)
+        val stale = account.session!!
+        jdbc.update("UPDATE linked_account SET state = 'session_lost' WHERE id = ?", account.id.value)
+        val replacement = telegram.open(ByteArray(KEY_BYTES) { 7 })
+        rows.swapSession(
+            account.id,
+            replacement,
+            ownerKeys.seal(
+                owner,
+                ByteArray(KEY_BYTES) {
+                    7
+                },
+                account.id.keyAad(),
+            ),
+            "Anna",
+        )
+
+        val removed = deletion.delete(owner, account.id)
+
+        assertThat(removed?.session).isEqualTo(replacement).isNotEqualTo(stale)
     }
 
     @Test

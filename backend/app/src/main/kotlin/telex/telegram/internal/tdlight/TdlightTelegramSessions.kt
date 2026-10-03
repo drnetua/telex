@@ -115,7 +115,7 @@ class TdlightTelegramSessions(
         id: TelegramSessionId,
         timeout: Duration,
     ): Boolean {
-        val session = sessions[id] ?: return true
+        val session = sessions[id] ?: return false
         session.client().send(TdlibRequest.LogOut)
         return try {
             session.closed.get(timeout.toMillis(), TimeUnit.MILLISECONDS)

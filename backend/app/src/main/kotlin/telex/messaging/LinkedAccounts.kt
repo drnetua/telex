@@ -65,13 +65,20 @@ class LinkedAccounts(
         owner: OwnerId,
         id: LinkedAccountId,
     ): UnlinkResult {
+        // The attempt goes first: a Sign in again completing later fails, so the session read below is final.
+        linking.discardTargeting(owner, id)
         val account = rows.getMine(owner, id) ?: throw LinkedAccountNotFound()
         val sessions = telegram.ifAvailable
-        val session = account.telegramSessionId
-        val confirmed = session != null && sessions != null && signOut(sessions, session)
-        linking.discardTargeting(owner, id)
-        if (!deletion.delete(owner, id)) throw LinkedAccountNotFound()
+        val signedOut = account.telegramSessionId
+        // A Session lost account has no open session to sign out; Telegram already ended it.
+        var confirmed =
+            account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
+                signOut(sessions, signedOut)
+        val removed = deletion.delete(owner, id) ?: throw LinkedAccountNotFound()
+        val session = removed.session
         if (session != null && sessions != null) {
+            // The row held another session than the one read: it is signed out and destroyed too.
+            if (session != signedOut) confirmed = signOut(sessions, session)
             try {
                 sessions.close(session)
             } finally {
