@@ -352,6 +352,50 @@ describe("a failed save reverts only its own choice (AC-181, AC-182)", () => {
     writes.mockRestore();
     stop();
   });
+
+  it("AC-181: a server failure on a choice another tab replaced offers no retry that brings it back", async () => {
+    const retries: Array<() => Promise<unknown>> = [];
+    vi.spyOn(failureBus, "handler").mockImplementation((_failure, retry) => {
+      retries.push(retry);
+    });
+    stubDevice(true);
+    setup("segmented");
+    const stop = startThemeRuntime();
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    act(() => {
+      localStorage.setItem(THEME_KEY, "system");
+      window.dispatchEvent(new StorageEvent("storage", { key: THEME_KEY, newValue: "system" }));
+    });
+    await act(async () => patches[0]?.settle(json(500, { code: "internal-error" })));
+    // Try again on SCR-93, if the failure went there at all.
+    await act(async () => {
+      for (const retry of retries) void retry();
+    });
+    expect(localStorage.getItem(THEME_KEY)).toBe("system");
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+    stop();
+    vi.restoreAllMocks();
+  });
+
+  it("AC-173: a sign-in failure on a choice another tab replaced still goes to sign-in", async () => {
+    const routes: Array<string | undefined> = [];
+    vi.spyOn(failureBus, "handler").mockImplementation((failure) => {
+      routes.push(failure.route);
+    });
+    stubDevice(true);
+    setup("segmented");
+    const stop = startThemeRuntime();
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    act(() => {
+      localStorage.setItem(THEME_KEY, "system");
+      window.dispatchEvent(new StorageEvent("storage", { key: THEME_KEY, newValue: "system" }));
+    });
+    await act(async () => patches[0]?.settle(json(401, { code: "unauthenticated" })));
+    await waitFor(() => expect(routes).toEqual(["sign-in"]));
+    expect(localStorage.getItem(THEME_KEY)).toBe("system");
+    stop();
+    vi.restoreAllMocks();
+  });
 });
 
 describe("failed theme save routing (AC-173, AC-176, AC-182)", () => {

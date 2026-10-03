@@ -126,7 +126,8 @@ function chooseTheme(client: QueryClient, choice: ThemeChoice): Promise<void> {
         applyTheme(now.settled);
         rememberTheme(now.settled);
       }
-      const routed = goesToFailureRouting(error);
+      // A superseded choice has nothing to retry: only the sign-in and session-ended routes still apply to it.
+      const routed = goesToFailureRouting(error) && !(superseded && error.route === "unavailable");
       writeThemeSave(client, { pending: null, failed: routed || superseded ? null : choice });
       if (routed) failureBus.handler(error, () => chooseTheme(client, choice));
     },

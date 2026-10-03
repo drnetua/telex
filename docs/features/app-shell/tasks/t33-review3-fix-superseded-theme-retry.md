@@ -8,7 +8,7 @@ files_hint: ["frontend/src/api/preferences.ts", "frontend/src/components/ThemeSw
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-3 (R3-2)"
-status: "todo"
+status: "done"
 ---
 
 # T33 — Keep a superseded theme save off SCR-93's Retry
