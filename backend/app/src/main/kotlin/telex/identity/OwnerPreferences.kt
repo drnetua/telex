@@ -34,7 +34,7 @@ class OwnerPreferences(
         ownerId: OwnerId,
         zone: String?,
     ): Preferences {
-        if (zone.isNullOrBlank()) throw refused("time-zone-required", "Choose a timezone.")
+        if (zone.isNullOrBlank()) throw refused("time-zone-required", "Choose a timezone from the list.")
         if (!TimeZones.isKnown(zone)) throw refused("unknown-time-zone", "Choose a timezone from the list.")
         owners.updateTimeZone(ownerId, zone)
         return checkNotNull(owners.preferencesOf(ownerId)) { "owner vanished" }

@@ -47,7 +47,9 @@ object ContractValidator {
                 response.headers().map().forEach { (k, values) -> values.forEach { withHeader(k, it) } }
                 if (response.body().isNotEmpty()) withBody(response.body())
             }
-        val report = validatorFor(specPath).validate(request.build(), reply.build())
+        // app-shell changes `getMe` (adds theme and timezone), so it supersedes the skeleton contract for that path.
+        val effectiveSpec = if (path.substringBefore('?') == "/api/v1/me") APP_SHELL_SPEC else specPath
+        val report = validatorFor(effectiveSpec).validate(request.build(), reply.build())
         // A 400 or 403 answers a deliberately malformed request (bad body, missing CSRF header), so only its
         // response has to match the contract.
         val relevant =
