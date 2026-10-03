@@ -38,6 +38,16 @@ class LinkedAccountRows(
             ).update()
     }
 
+    /** Deletes the Owner's account; its chat list goes by `ON DELETE CASCADE`. True when a row was deleted. */
+    fun deleteMine(
+        owner: OwnerId,
+        id: LinkedAccountId,
+    ): Boolean =
+        jdbc
+            .sql("DELETE FROM linked_account WHERE id = ? AND owner_id = ?")
+            .params(id.value, owner.value)
+            .update() > 0
+
     /** Sign in again: the new session and sealed key replace the old, the account is Connected and re-syncs. */
     fun swapSession(
         id: LinkedAccountId,

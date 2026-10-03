@@ -15,7 +15,7 @@
 | T8 | Start, resume, cancel and expire the in-memory linking attempt (one per Owner) | app | Anton Husiev | M | T3, T4, T7 | done |
 | T9 | Run the phone, code, resend and password steps with Telegram's refusals and waits | app | Anton Husiev | M | T8 | done |
 | T10 | Complete an authorized attempt: link a new account, sign in again, or refuse and log out | app | Anton Husiev | M | T5, T9 | done |
-| T11 | Unlink an account: bounded sign-out, one-transaction delete with AccountUnlinked, then destroy the session | app | Anton Husiev | S | T5, T7 | todo |
+| T11 | Unlink an account: bounded sign-out, one-transaction delete with AccountUnlinked, then destroy the session | app | Anton Husiev | S | T5, T7 | done |
 | T12 | Reconnect accounts on boot and follow Telegram's session state (Connected, Reconnecting, Session lost) | app | Anton Husiev | M | T3, T5, T7 | done |
 | T13 | Sync each account's chat list into channel rows with throttled progress events | app | Anton Husiev | M | T4, T7 | done |
 | T14 | Expose list and unlink of my Linked Accounts, and back getMe.linkedAccountCount with messaging | ports | Anton Husiev | S | T7, T11 | todo |

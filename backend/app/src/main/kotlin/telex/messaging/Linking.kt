@@ -108,6 +108,16 @@ class Linking(
         attempts.locked(owner) { discard(owner, "cancelled") }
     }
 
+    /** Discards the Owner's open attempt when it signs in again to [account] (the account is being unlinked). */
+    fun discardTargeting(
+        owner: OwnerId,
+        account: LinkedAccountId,
+    ) {
+        attempts.locked(owner) {
+            if (attempts.find(owner)?.target == account) discard(owner, "cancelled")
+        }
+    }
+
     /** Discards every attempt idle for 15 minutes or whose Sign-in Session is no longer live. */
     @Scheduled(fixedDelay = SWEEP_MILLIS)
     fun sweep() {
