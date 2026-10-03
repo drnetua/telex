@@ -40,6 +40,6 @@
 | T33 | Keep a superseded theme save off SCR-93's Retry | ui | Anton Husiev | S | — | done |
 | T34 | Bring the docs in line after review 3: SCR-10 loading N/A, proxy wording, settled risks, applied-theme wording, gap 5 due date, both-projects check deviation | docs | Anton Husiev | S | T33 | done |
 | T35 | Re-check at retry time that a failed theme save hasn't been replaced by another tab | ui | Anton Husiev | S | — | done |
-| T36 | Bring the docs in line after review 4: 502/503/504 inside vs outside the shell, W-10b wireframe N/A | docs | Anton Husiev | S | T35 | todo |
+| T36 | Bring the docs in line after review 4: 502/503/504 inside vs outside the shell, W-10b wireframe N/A | docs | Anton Husiev | S | T35 | done |
 
 **Total:** 36 tasks (T20–T27 are review follow-ups from `_review/review-2026-10-03.md`, T28–T32 from `_review/review-2026-10-03-2.md`, T33–T34 from `_review/review-2026-10-03-3.md`, T35–T36 from `_review/review-2026-10-03-4.md`), ~22.5 person-days (S ≈ 0.5 d, M ≈ 0.75 d, L ≈ 1 d).

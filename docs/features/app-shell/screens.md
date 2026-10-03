@@ -372,12 +372,6 @@ W-10a  SCR-10 default inside the shell (desktop; phone = W-S2 with this card ful
 |                  |                  |     coming next.            ||   (after the action)
 |                  |                  +-----------------------------+|
 +------------------+-------------------------------------------------+
-
-W-10b  loading (content area only)
-|  Inbox                                          |
-|  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                  |   LoadState rows=3
-|  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                           |
-|  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                      |
 ```
 
 ### SCR-64 — Profile and security

@@ -8,7 +8,7 @@ files_hint: ["docs/features/app-shell/contracts/openapi.yaml", "docs/features/ap
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-4 (R4-2, R4-3)"
-status: "todo"
+status: "done"
 ---
 
 # T36 — Bring the docs in line after review 4: 502/503/504 inside vs outside the shell, W-10b wireframe N/A

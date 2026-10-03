@@ -35,8 +35,9 @@ info:
       for field errors, `errors[]`.
     - Instants are UTC ISO 8601. The SPA formats every date in the Owner's `timeZone`.
     - In production Cloudflare answers `502`/`503`/`504` itself when the app is down. Those responses come from the
-      proxy, not from this contract. The SPA reads every 502/503/504, whatever its body, like no answer or a
-      network error, as "teleX isn't responding" (ADR-0004, AC-176).
+      proxy, not from this contract. Inside the shell the SPA reads every 502/503/504, whatever its body, like no
+      answer or a network error, as "teleX isn't responding" (ADR-0004, AC-176). Outside the shell, e.g. the first
+      `GET /api/v1/me` before the shell mounts, a 502/503/504 still opens "teleX is unavailable" (SCR-93).
 
 servers:
   - url: http://localhost:8080

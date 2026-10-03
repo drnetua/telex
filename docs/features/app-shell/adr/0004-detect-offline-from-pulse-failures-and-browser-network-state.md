@@ -26,7 +26,7 @@ AC-176 asks for a Status Banner within 5 s when the device has no network ("You'
 
 ## Considered options
 
-1. **Use the pulse as the heartbeat, plus the browser's network state.** The pulse waits at most 2 s for an answer. The browser's `offline` event, or `navigator.onLine` being false, means "You're offline". A network error, no answer in 2 s, or any 502/503/504 (whatever its body) while the network is up means "teleX isn't responding". An ordinary call with no answer in 10 s or a network error feeds the same state instead of SCR-93.
+1. **Use the pulse as the heartbeat, plus the browser's network state.** The pulse waits at most 2 s for an answer. The browser's `offline` event, or `navigator.onLine` being false, means "You're offline". A network error, no answer in 2 s, or, inside the shell, any 502/503/504 (whatever its body) while the network is up means "teleX isn't responding". Outside the shell (before it mounts) a 502/503/504 still opens SCR-93. An ordinary call with no answer in 10 s or a network error feeds the same state instead of SCR-93.
 2. **A separate ping request every 2 s,** independent of the data pulse.
 
 ## Decision outcome
