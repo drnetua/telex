@@ -201,31 +201,98 @@ C4Container
 
 ## 6. Runtime view
 
-<!-- 🎯 Why: the RUNTIME FLOW of 1–2 critical scenarios — who talks to whom, when, in what order.
-     Without §6, §5 is just boxes with no life.
-     📋 Write: a Mermaid sequenceDiagram. Participants are names from §5 (don't invent new ones).
-     Messages are semantic («saves a draft»), NO HTTP verbs / paths / status codes — endpoint-level
-     sequences arrive at the `api` stage.
-     📌 e.g. «author → web: composes draft → web → content API: save». Seed the primary flow(s) here;
-     the `sequences` stage then covers every §5 AC (no cap). Never N/A for M+; XS/S keeps ≥1 happy-path flow. -->
+These are seed flows. `/sdd:sequences` adds one flow per critical user story and covers every §5 AC with a flow or a branch. Messages are semantic. Endpoints and status codes arrive at `/sdd:api`.
 
-**Critical flow 1: <flow name>**
+**Critical flow 1: the pulse keeps the counter and banners live (AC-173, AC-174, AC-175, AC-178)**
 
 ```mermaid
 sequenceDiagram
-    actor Actor
-    participant Web
-    participant Service
-    participant Store
-    Actor->>Web: <action>
-    Web->>Service: <call>
-    Service->>Store: <write>
-    Store-->>Service: ok
-    Service-->>Web: result
-    Web-->>Actor: confirmation
+    actor Owner
+    participant SPA as Web SPA
+    participant Web as web module
+    participant Inbox as inbox module
+    participant Sources as producer modules
+
+    loop every 3 s while the tab is visible, and at once when it becomes visible
+        SPA->>Web: pulse, marked background, waits at most 2 s
+        Web->>Web: resolve the Sign-in Session without counting activity
+        alt no live session
+            Web-->>SPA: problem unauthenticated or session-ended
+            SPA-->>Owner: SCR-01 Sign in or SCR-92 Session ended, nothing of the shell kept
+        else live session
+            Web->>Inbox: waiting count for this Owner
+            Inbox->>Sources: count waiting items for this Owner (none in E06)
+            Sources-->>Inbox: counts
+            Inbox-->>Web: sum
+            Web->>Sources: active Status Banner conditions for this Owner (none in E06)
+            Sources-->>Web: condition codes
+            Web-->>SPA: inbox count and condition codes
+            SPA->>SPA: update the counter (no number at 0, 99+ above 99)
+            SPA->>SPA: show the most important condition with N more, by the fixed order
+            SPA-->>Owner: counter and banner change on the current screen, no reload
+        end
+    end
 ```
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+**Critical flow 2: the connection drops and comes back (AC-176, AC-177)**
+
+```mermaid
+sequenceDiagram
+    actor Owner
+    participant Browser as Owner's browser
+    participant SPA as Web SPA
+    participant Web as web module
+
+    alt the device loses its network
+        Browser-->>SPA: offline event, network state false
+        SPA->>SPA: connectivity becomes offline, queries pause
+        SPA-->>Owner: banner You're offline with Try again, screen kept
+    else the network is up but teleX doesn't answer
+        SPA->>Web: pulse or an action
+        Web--xSPA: no answer in time, network error, or proxy 502 503 504
+        SPA->>SPA: connectivity becomes not-responding, queries pause
+        SPA-->>Owner: banner teleX isn't responding with Try again, screen kept
+    end
+    opt Owner presses Try again while still down
+        SPA->>Web: pulse now
+        Web--xSPA: still no answer
+        SPA-->>Owner: banner says still unreachable and retrying on its own, nothing cleared
+    end
+    loop every 3 s while down
+        SPA->>Web: pulse
+    end
+    Web-->>SPA: pulse answered
+    SPA->>SPA: connectivity becomes online, paused queries refetch
+    SPA-->>Owner: banner disappears, current screen shows fresh data
+    Note over SPA,Web: an action that teleX answers with a failure still opens SCR-93 with Retry
+```
+
+**Critical flow 3: change the theme, with a failed save (AC-179, AC-181, AC-182)**
+
+```mermaid
+sequenceDiagram
+    actor Owner
+    participant SPA as Web SPA
+    participant Web as web module
+    participant Identity as identity module
+    participant DB as PostgreSQL
+
+    Owner->>SPA: chooses Dark on SCR-64
+    SPA->>SPA: apply dark at once and remember it on this device
+    SPA->>Web: change preferences, theme dark
+    Web->>Identity: change theme for this Owner
+    alt saved
+        Identity->>DB: update owner theme
+        Identity-->>Web: preferences
+        Web-->>SPA: preferences
+        SPA-->>Owner: SCR-64 shows Dark as the saved choice
+    else no answer or refused
+        Web--xSPA: save failed
+        SPA->>SPA: apply the previous theme and remember it on this device
+        SPA-->>Owner: says the change wasn't saved, offers Try again
+    end
+    Note over SPA: next open on another device shows the theme last used there, then switches once to the account theme from me
+```
 
 ## 7. Deployment view
 
