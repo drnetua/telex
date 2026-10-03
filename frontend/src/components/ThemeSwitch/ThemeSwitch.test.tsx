@@ -2,9 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { meKey, type Me } from "../../api/account";
-import { THEME_KEY } from "../../shell/theme";
-import { ThemeSwitch } from "./ThemeSwitch";
+import { failureBus } from "../../app/queryClient";
+import { THEME_KEY, startThemeRuntime } from "../../shell/theme";
+import { ThemeSaveToast, ThemeSwitch } from "./ThemeSwitch";
 
 const me: Me = {
   ownerId: "o1",
@@ -53,13 +55,22 @@ afterEach(() => {
   localStorage.clear();
 });
 
+/** The switch as the app mounts it: the failed-save toast comes from the always-mounted host in the layout. */
 function setup(variant: "segmented" | "menu") {
   render(
     <QueryClientProvider client={client}>
       <ThemeSwitch variant={variant} />
+      <ThemeSaveToast />
     </QueryClientProvider>,
   );
 }
+
+const stubDevice = (dark: boolean) =>
+  vi.stubGlobal("matchMedia", () => ({
+    matches: dark,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
 
 describe("ThemeSwitch segmented", () => {
   it("AC-179: applies and remembers Dark before the save resolves, then keeps it when saved", async () => {
@@ -163,5 +174,115 @@ describe("ThemeSwitch menu", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(attr()).toBe("dark");
     expect(patches).toHaveLength(2);
+  });
+});
+
+describe("one shared theme state (AC-179, AC-181, AC-182)", () => {
+  it("AC-181: a theme changed in another tab moves the checked option with data-bs-theme", async () => {
+    setup("segmented");
+    const stop = startThemeRuntime();
+    act(() => {
+      localStorage.setItem(THEME_KEY, "dark");
+      window.dispatchEvent(new StorageEvent("storage", { key: THEME_KEY, newValue: "dark" }));
+    });
+    expect(attr()).toBe("dark");
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    stop();
+  });
+
+  it("AC-181: a cross-device me refetch does not move the switch off the theme applied here", async () => {
+    setup("segmented");
+    // The query cache notifies observers on the next tick; let that land before asserting.
+    await act(async () => {
+      client.setQueryData<Me>(meKey, { ...me, theme: "dark" });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(attr()).toBe("light");
+    expect(screen.getByRole("radio", { name: "Light" })).toBeChecked();
+  });
+
+  it("AC-182: with two switches, an earlier failed save never reverts the newer choice made in the other", async () => {
+    stubDevice(true);
+    render(
+      <QueryClientProvider client={client}>
+        <ThemeSwitch variant="segmented" />
+        <ThemeSwitch variant="menu" />
+        <ThemeSaveToast />
+      </QueryClientProvider>,
+    );
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    await userEvent.click(screen.getByRole("button", { name: "Theme" }));
+    expect(screen.getByRole("menuitemradio", { name: "Dark" })).toBeChecked();
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "System" }));
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+    await act(async () => patches[0]?.settle(new TypeError("offline")));
+    expect(attr()).toBe("dark");
+    expect(localStorage.getItem(THEME_KEY)).toBe("system");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Theme" }));
+    expect(screen.getByRole("menuitemradio", { name: "System" })).toBeChecked();
+  });
+
+  it("AC-182: a save that fails after its switch unmounted still reverts and offers Try again", async () => {
+    let hide: () => void = () => undefined;
+    function Host() {
+      const [shown, setShown] = useState(true);
+      hide = () => setShown(false);
+      return shown ? <ThemeSwitch variant="segmented" /> : null;
+    }
+    render(
+      <QueryClientProvider client={client}>
+        <Host />
+        <ThemeSaveToast />
+      </QueryClientProvider>,
+    );
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    act(() => hide());
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    await act(async () => patches[0]?.settle(new TypeError("offline")));
+    await waitFor(() => expect(attr()).toBe("light"));
+    expect(localStorage.getItem(THEME_KEY)).toBe("light");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your theme wasn't saved.");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+});
+
+describe("failed theme save routing (AC-173, AC-176, AC-182)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each([
+    [401, "unauthenticated", "sign-in"],
+    [401, "session-ended", "session-ended"],
+    [500, "internal-error", "unavailable"],
+  ])(
+    "%i %s reverts, then goes to the failure routing (%s) with no toast",
+    async (status, code, route) => {
+      const seen: Array<{ route?: string; themeAtHandOff: string | null }> = [];
+      vi.spyOn(failureBus, "handler").mockImplementation((failure) => {
+        seen.push({ route: failure.route, themeAtHandOff: attr() });
+      });
+      setup("segmented");
+      await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+      await act(async () => patches[0]?.settle(json(status, { code })));
+      await waitFor(() => expect(seen).toHaveLength(1));
+      expect(seen[0]).toEqual({ route, themeAtHandOff: "light" });
+      expect(localStorage.getItem(THEME_KEY)).toBe("light");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    ["400", () => json(400, { code: "validation-failed" })],
+    ["403", () => json(403, { code: "forbidden" })],
+    ["no answer", () => new TypeError("offline")],
+  ])("%s keeps the failed-save toast and stays out of the failure routing", async (_, answer) => {
+    const handler = vi.spyOn(failureBus, "handler").mockImplementation(() => undefined);
+    setup("segmented");
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    await act(async () => patches[0]?.settle(answer()));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your theme wasn't saved.");
+    expect(attr()).toBe("light");
+    expect(handler).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 export type ThemeChoice = "light" | "dark" | "system";
 
@@ -12,13 +12,25 @@ const isChoice = (value: unknown): value is ThemeChoice =>
 
 const deviceIsDark = () => window.matchMedia(DARK_QUERY).matches;
 
-/** The theme last used on this device; System when nothing valid is stored or storage is blocked. */
+/** The choice remembered while storage is blocked, so it lasts as long as this page does. */
+let blockedStorageChoice: ThemeChoice | null = null;
+const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((listener) => listener());
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+/**
+ * The theme last used on this device; System when nothing valid is stored. With blocked storage it is the
+ * choice kept in memory for this page (System until one is made).
+ */
 export function currentChoice(): ThemeChoice {
   try {
     const stored = localStorage.getItem(THEME_KEY);
     return isChoice(stored) ? stored : "system";
   } catch {
-    return "system";
+    return blockedStorageChoice ?? "system";
   }
 }
 
@@ -26,8 +38,15 @@ export function rememberTheme(choice: ThemeChoice): void {
   try {
     localStorage.setItem(THEME_KEY, choice);
   } catch {
-    // Blocked storage: the account theme still applies on every load.
+    // Blocked storage: keep it for this page; the account theme still applies on every load.
+    blockedStorageChoice = choice;
   }
+  notify();
+}
+
+/** The choice applied on this device, shared by every theme control and kept current across tabs. */
+export function useAppliedTheme(): ThemeChoice {
+  return useSyncExternalStore(subscribe, currentChoice);
 }
 
 /** Sets `data-bs-theme`, resolving System through the device's mode. */
@@ -43,7 +62,9 @@ export function startThemeRuntime(): () => void {
     if (currentChoice() === "system") applyTheme("system");
   };
   const onStorage = (event: StorageEvent) => {
-    if (event.key === THEME_KEY) applyTheme(currentChoice());
+    if (event.key !== THEME_KEY) return;
+    applyTheme(currentChoice());
+    notify();
   };
   media.addEventListener("change", onDeviceChange);
   window.addEventListener("storage", onStorage);

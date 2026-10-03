@@ -5,8 +5,9 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiFailure } from "../../api/client";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
-import { createAppQueryClient } from "../../app/queryClient";
+import { createAppQueryClient, failureBus } from "../../app/queryClient";
 import { AppShell } from "../../shell/AppShell/AppShell";
+import { rememberTheme } from "../../shell/theme";
 import { ProfileSecurityPage } from "./ProfileSecurityPage";
 
 vi.mock("../../api/webauthn", async (orig) => ({
@@ -95,6 +96,7 @@ function setup(entry = "/profile") {
 }
 
 afterEach(() => {
+  localStorage.clear();
   vi.unstubAllGlobals();
   vi.mocked(canCreatePasskey).mockResolvedValue(true);
   vi.mocked(createPasskey).mockResolvedValue(undefined);
@@ -127,6 +129,8 @@ describe("SCR-64 Profile and security", () => {
 
   it("AC-179: shows the Appearance card with the saved theme and the System hint", async () => {
     stubApi({});
+    // The app layout's useAccountTheme has applied the saved theme on this device by the time SCR-64 shows.
+    rememberTheme("light");
     setup();
     const group = await screen.findByRole("radiogroup", { name: "Theme" });
     await waitFor(() => expect(within(group).getByRole("radio", { name: "Light" })).toBeChecked());
@@ -420,7 +424,7 @@ describe("SCR-64 Time zone card", () => {
         if (u === "/api/v1/me/preferences" && m === "PATCH") {
           attempts += 1;
           return attempts === 1
-            ? json(500, { code: "internal-error" })
+            ? Promise.reject(new TypeError("offline"))
             : json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
         }
         return meWith({ timeZone: "Europe/Berlin" })(m, u);
@@ -429,10 +433,55 @@ describe("SCR-64 Time zone card", () => {
     setup();
     await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
     await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
-    expect(await screen.findByText("Your time zone wasn't saved.")).toBeInTheDocument();
+    const toast = (await screen.findByText("Your time zone wasn't saved.")).closest(".toast");
+    if (!(toast instanceof HTMLElement)) throw new Error("no toast");
     expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(within(toast).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(calls.filter(isPatch)).toHaveLength(2));
     expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+  });
+
+  it.each([
+    [401, "unauthenticated", "sign-in"],
+    [401, "session-ended", "session-ended"],
+    [500, "internal-error", "unavailable"],
+  ])(
+    "AC-173/176: a time zone save answered %i %s keeps the zone and goes to the failure routing (%s), no toast",
+    async (status, code, route) => {
+      const handler = vi.spyOn(failureBus, "handler").mockImplementation(() => undefined);
+      stubApi({
+        onCall: (m, u) => {
+          if (u === "/api/v1/time-zones") return json(200, zoneList);
+          if (u === "/api/v1/me/preferences" && m === "PATCH") return json(status, { code });
+          return meWith({ timeZone: "Europe/Berlin" })(m, u);
+        },
+      });
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+      await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+      await waitFor(() => expect(handler).toHaveBeenCalledTimes(1));
+      expect(handler.mock.calls[0]?.[0]).toMatchObject({ status, route });
+      expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+      expect(screen.queryByText("Your time zone wasn't saved.")).not.toBeInTheDocument();
+      handler.mockRestore();
+    },
+  );
+
+  it("a time zone save answered 403 keeps the error toast and stays out of the failure routing", async () => {
+    const handler = vi.spyOn(failureBus, "handler").mockImplementation(() => undefined);
+    stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH")
+          return json(403, { code: "forbidden" });
+        return meWith({ timeZone: "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+    expect(await screen.findByText("Your time zone wasn't saved.")).toBeInTheDocument();
+    expect(handler).not.toHaveBeenCalled();
+    handler.mockRestore();
   });
 });

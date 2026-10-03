@@ -179,6 +179,33 @@ describe("useAccountTheme (AC-181)", () => {
     expect(localStorage.getItem(THEME_KEY)).toBeNull();
   });
 
+  it.each([
+    ["dark", false, true],
+    ["light", true, false],
+  ] as const)(
+    "AC-180: with blocked storage, an account %s is not overridden by device mode changes",
+    (theme, deviceDark, flipTo) => {
+      const media = stubMatchMedia(deviceDark);
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      // First paint on this device found nothing usable: System.
+      rememberTheme("system");
+      applyTheme("system");
+      const stop = startThemeRuntime();
+      renderHook(() => useAccountTheme(me(theme)));
+      expect(attr()).toBe(theme);
+      media.flip(flipTo);
+      expect(attr()).toBe(theme);
+      media.flip(!flipTo);
+      expect(attr()).toBe(theme);
+      stop();
+    },
+  );
+
   it("first-time device (nothing stored) adopts the account theme", () => {
     stubMatchMedia(false);
     applyTheme("system");

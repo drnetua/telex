@@ -3,6 +3,7 @@ import { Outlet } from "react-router";
 import logo from "../assets/telex-logo-192.png";
 import { useMe } from "../api/account";
 import { LoadState } from "../components/LoadState/LoadState";
+import { ThemeSaveToast } from "../components/ThemeSwitch/ThemeSwitch";
 import { messages } from "../messages";
 import { AppShell } from "../shell/AppShell/AppShell";
 import { useAccountTheme } from "../shell/theme";
@@ -53,8 +54,11 @@ export function AppLayout() {
   useSaveDetectedTimeZone(me.data);
   if (!me.data) return <LoadState state="loading" rows={3} />;
   return (
-    <AppShell email={me.data.email}>
-      <Outlet />
-    </AppShell>
+    <>
+      <AppShell email={me.data.email}>
+        <Outlet />
+      </AppShell>
+      <ThemeSaveToast />
+    </>
   );
 }

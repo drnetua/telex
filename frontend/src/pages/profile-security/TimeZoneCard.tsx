@@ -46,7 +46,7 @@ export function TimeZoneCard() {
     const result = await change(next);
     setSaving(false);
     if (result === "refused") setRefused(true);
-    else setOutcome(result);
+    else if (result !== "routed") setOutcome(result);
   }
 
   function open() {

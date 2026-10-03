@@ -17,27 +17,31 @@ interface ThemeSwitchProps {
   variant: "segmented" | "menu";
 }
 
-/** The one control that changes the theme: applies at once, remembers, saves, reverts with Try again on failure. */
+/** The one control that changes the theme: applies at once, remembers, saves, reverts on failure. */
 export function ThemeSwitch({ variant }: ThemeSwitchProps) {
-  const { shown, choose, failed, retry, dismiss } = useChangeTheme();
-  return (
-    <>
-      {variant === "segmented" ? (
-        <Segmented shown={shown} onChoose={choose} />
-      ) : (
-        <Menu shown={shown} onChoose={choose} />
-      )}
-      {failed ? (
-        <Toast
-          tone="error"
-          message={m.saveFailed}
-          dismissLabel={m.dismiss}
-          action={{ label: m.tryAgain, onClick: retry }}
-          onDismiss={dismiss}
-        />
-      ) : null}
-    </>
+  const { shown, choose } = useChangeTheme();
+  return variant === "segmented" ? (
+    <Segmented shown={shown} onChoose={choose} />
+  ) : (
+    <Menu shown={shown} onChoose={choose} />
   );
+}
+
+/**
+ * The failed-save Toast with Try again, shared by every ThemeSwitch. Mounted once in the layout so a save that
+ * fails after its switch closed (menu, sheet, page change) is still told.
+ */
+export function ThemeSaveToast() {
+  const { failed, retry, dismiss } = useChangeTheme();
+  return failed ? (
+    <Toast
+      tone="error"
+      message={m.saveFailed}
+      dismissLabel={m.dismiss}
+      action={{ label: m.tryAgain, onClick: retry }}
+      onDismiss={dismiss}
+    />
+  ) : null;
 }
 
 interface PartProps {
