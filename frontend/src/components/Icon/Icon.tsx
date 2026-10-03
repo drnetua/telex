@@ -1,6 +1,7 @@
 import {
   IconActivity,
   IconAlertCircle,
+  IconAlertTriangle,
   IconBan,
   IconBrandTelegram,
   IconCheck,
@@ -33,6 +34,7 @@ import {
 const icons = {
   search: IconSearch,
   "alert-circle": IconAlertCircle,
+  "alert-triangle": IconAlertTriangle,
   ban: IconBan,
   "brand-telegram": IconBrandTelegram,
   user: IconUser,

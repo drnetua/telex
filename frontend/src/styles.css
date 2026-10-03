@@ -157,3 +157,35 @@
     justify-content: center;
   }
 }
+
+/* DataTable (C-29): under 600 px rows become label/value cards. */
+@media (max-width: 599.98px) {
+  .data-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .data-table tr {
+    display: block;
+    padding: 0.5rem 0;
+    border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+  }
+
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 0;
+    padding: 0.25rem var(--tblr-card-cap-padding-x, 1rem);
+    text-align: end;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    color: var(--tblr-secondary);
+    text-align: start;
+  }
+}

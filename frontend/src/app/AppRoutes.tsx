@@ -4,6 +4,7 @@ import { CheckEmailPage } from "../pages/check-email/CheckEmailPage";
 import { CreatePasskeyPage } from "../pages/create-passkey/CreatePasskeyPage";
 import { ConfirmLinkPage } from "../pages/confirm-link/ConfirmLinkPage";
 import { messages } from "../messages";
+import { ModelsPage } from "../pages/models/ModelsPage";
 import { SignInPage } from "../pages/sign-in/SignInPage";
 import { NotFoundPage } from "../pages/system/NotFoundPage";
 import { SessionEndedPage } from "../pages/system/SessionEndedPage";
@@ -59,6 +60,9 @@ export function AppRoutes() {
           />
         ))}
         <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
+        <Route path="/settings/models" element={<ModelsPage />} />
+        <Route path="/settings/models/profiles/new" element={<ModelsPage />} />
+        <Route path="/settings/models/profiles/:id" element={<ModelsPage />} />
       </Route>
       <Route element={<BareSystemLayout />}>
         <Route path="/session-ended" element={<SessionEndedPage />} />

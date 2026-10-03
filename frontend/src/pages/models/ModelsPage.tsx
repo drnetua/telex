@@ -1,0 +1,54 @@
+import { useSearchParams } from "react-router";
+import { useModelCatalog, useModelProfiles } from "../../api/models";
+import { messages } from "../../messages";
+import { CatalogTab } from "./CatalogTab";
+
+const m = messages.models;
+
+/** SCR-66. The tab lives in the URL: `?tab=catalog`, anything else is Profiles. */
+export function ModelsPage() {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "catalog" ? "catalog" : "profiles";
+  // Both lists are requested when the page opens; each tab renders from its own query.
+  useModelProfiles();
+  useModelCatalog();
+
+  function select(next: "profiles" | "catalog") {
+    setParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (next === "catalog") p.set("tab", "catalog");
+        else p.delete("tab");
+        return p;
+      },
+      { replace: false },
+    );
+  }
+
+  const tabs = [
+    { id: "profiles", label: m.profilesTab },
+    { id: "catalog", label: m.catalogTab },
+  ] as const;
+
+  return (
+    <>
+      <h1 className="page-title mb-3">{m.title}</h1>
+      <ul className="nav nav-tabs mb-3" role="tablist" aria-label={m.tabsLabel}>
+        {tabs.map((t) => (
+          <li className="nav-item" role="presentation" key={t.id}>
+            <button
+              type="button"
+              role="tab"
+              className={`nav-link${tab === t.id ? " active" : ""}`}
+              aria-selected={tab === t.id}
+              onClick={() => select(t.id)}
+            >
+              {t.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {tab === "catalog" ? <CatalogTab onGoToProfiles={() => select("profiles")} /> : null}
+    </>
+  );
+}

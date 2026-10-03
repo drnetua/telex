@@ -31,7 +31,7 @@ focusManager.subscribe((focused) => focused && markBackgroundTick());
 onlineManager.subscribe((online) => online && markBackgroundTick());
 
 /** Only focus and reconnect refetches carry the background marker; page opens, mutations and first loads count as activity. */
-const isBackground = () => backgroundTrigger;
+export const isBackground = () => backgroundTrigger;
 
 /** The SPA's session state. */
 export function useMe() {

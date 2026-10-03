@@ -20,7 +20,7 @@
 | T13 | Answer profile slot calls through ProfileCalls and record every call without content | app | Anton Husiev | M | T6, T11 | done |
 | T14 | Expose the read endpoints: catalog, profile list, one profile and the draft | ports | Anton Husiev | M | T11 | done |
 | T15 | Expose the write endpoints for profiles and the default profile with their problem codes | ports | Anton Husiev | M | T12, T14 | todo |
-| T16 | Add the models API hooks, the Models route and link, and the Model catalog tab | ui | Anton Husiev | M | — | todo |
+| T16 | Add the models API hooks, the Models route and link, and the Model catalog tab | ui | Anton Husiev | M | — | done |
 | T17 | Build the Profiles tab: the profile picker, profile cards, delete and the AI-not-set-up alert | ui | Anton Husiev | M | T16 | todo |
 | T18 | Build the profile editor modal with the chain editor and the model chooser | ui | Anton Husiev | M | T17 | todo |
 | T19 | Add Playwright end-to-end tests for the Models page at 360 px and 1280 px with axe and a 500-model load timing | tests | Anton Husiev | M | T15, T18 | todo |
