@@ -79,7 +79,7 @@ Cross-cutting, not an SCR. These are the frame states every signed-in screen inh
 | counter | `inboxCount` 1…99 (AC-174) | `tx-count` pill (Tabler `badge bg-primary`, tokens only) with the number and `aria-label` "{n} items need you". A change is announced politely once per change, not every pulse | W-S1 |
 | counter-max | `inboxCount` > 99 (AC-174) | Pill "99+", `aria-label` "More than 99 items need you" | — |
 | theme-switch | `getMe.theme` differs from the theme applied at first paint (AC-181, Flow 6) | One switch of `data-bs-theme`, no reload, no transition animation | — |
-| theme-menu-open | Desktop: the footer `ThemeSwitch` chosen | Tabler `dropdown-menu` (opens upward) with three `menuitemradio` items, each icon plus word: `sun` Light, `moon` Dark, `device-desktop` System. The saved one is checked. Escape closes it and returns focus | W-S6 |
+| theme-menu-open | Desktop: the footer `ThemeSwitch` chosen | Tabler `dropdown-menu` (opens upward) with three `menuitemradio` items, each icon plus word: `sun` Light, `moon` Dark, `device-desktop` System. The theme applied on this device is checked. Focus goes to it on open; ↑ ↓ Home End move within the menu, Escape closes it and returns focus, and Tab or focus leaving the menu closes it | W-S6 |
 | theme-applied / theme-save-failed | A theme chosen in the shell (AC-179, AC-182) | As `ThemeSwitch` on SCR-64 (`theme-applied`, `theme-save-failed`): apply at once; on failure revert + error `Toast` "Your theme wasn't saved." with action "Try again" | — |
 | section-loading | A lazily loaded section chunk is still downloading (sad §4) | `LoadState state="loading"` in the content area; the navigation stays | — |
 | section-load-failed | The chunk can't download because there's no network or teleX isn't answering (AC-176) | Content: `EmptyState kind="blocked"` (icon `wifi-off`) "This section didn't load." with action "Try again". The banner explains why | W-S5 |
@@ -528,7 +528,7 @@ One page at each unbuilt section's own address: `/overview`, `/chats`, `/assista
 | empty | N/A: the page *is* the stand-in; it has no collection | — | — |
 | error | Shell `section-load-failed`; otherwise N/A (no request) | — | — |
 
-Sentences (messages catalog, draft):
+Sentences (messages catalog, accepted 2026-10-03):
 - **Overview:** "See your day at a glance: what assistants did, what waits for you and what it cost."
 - **Chats:** "Read and answer your Telegram chats, with assistants working alongside you."
 - **Assistants:** "Set up the assistants that work for you, with their rules and limits."
@@ -602,8 +602,8 @@ W-95  SCR-95 open over SCR-10 (360)
 The pipeline should close these. Each has a default that `implement` follows until it's decided.
 
 1. **No desktop header bar in E06.** The reference AppShell's header holds only the account switcher and Stop all, and neither exists yet (spec §3). Default: no header bar on desktop, and the banner sits at the top of the main column; E02/E04 or E23 add the bar with its first item. Owner: Designer, at E02's `/sdd:screens`.
-2. **Theme in the shell and the picker as a dialog differ from `ux-flows.md`**, whose platform decisions say "Theme and timezone are edited in place on SCR-64. No separate page or dialog." Decided here (user, 2026-10-03): theme also in the sidebar footer and under More, and the timezone picker in a dialog. AC-179 ("on Profile and security") still holds. `ux-flows.md` §Platform decisions and Flow US-73 should be updated. Owner: Designer, before `/sdd:tasks`.
+2. **Theme in the shell and the picker as a dialog differ from `ux-flows.md`**, whose platform decisions say "Theme and timezone are edited in place on SCR-64. No separate page or dialog." Decided here (user, 2026-10-03): theme also in the sidebar footer and under More, and the timezone picker in a dialog. AC-179 ("on Profile and security") still holds. Done: `ux-flows.md` §Platform decisions and Flow US-73 were updated (T27).
 3. **Every 502/503/504 inside the shell goes to the banner, whatever its body** (user decision 2026-10-03). `sad.md` §8 Failure routing, ADR-0004 and `contracts/openapi.yaml` `info.description` say "from the proxy". Their wording should drop that qualifier. Owner: Architect, before `/sdd:tasks`.
 4. **A failed timezone save has no AC** (ux-flows ledger 3, sad §6 flags). Default: drawn like AC-182 (`tz-save-failed` with Try again, `tz-refused`). Owner: PM, at the next `clarify` pass.
 5. **Three new SCR ids** (SCR-69, SCR-94, SCR-95) still need adding to `docs/docs/03-product-spec.md`. Owner: PM.
-6. **Spec §8 OQs settled here** (phone bar sections, banner importance order). `spec.md` §8 should tick them, with the decision dated 2026-10-03. Owner: PM, before `/sdd:tasks`.
+6. **Spec §8 OQs settled here** (phone bar sections, banner importance order). Done: `spec.md` §8 ticks both, dated 2026-10-03 (T27).

@@ -8,7 +8,7 @@ files_hint: ["docs/features/app-shell/adr/0006-extend-the-shell-through-client-s
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-2 (R2-10, R2-11, R2-12)"
-status: "todo"
+status: "done"
 ---
 
 # T32 — Bring the docs in line after review 2: ADR-0006 deviation heading, draft labels, inventory line refs, applied-theme wording, deferred visual tier, load-test sample deviation

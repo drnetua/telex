@@ -22,7 +22,7 @@ One shell around every signed-in screen. On desktop widths it's a side menu with
 | E2E | — | <!-- N/A: every flow in this feature is user-facing; full flows run as e2e-through-UI --> |
 | Load | Shell load NFR only (first signed-in screen usable ≤ 2.5 s p75). | The load or performance tool already in your repo, or e.g. k6 or Locust. See §NFR validation. |
 | Component | `AppShell` (desktop menu, phone bar, current-section marking, counter, footer, sign out), `StatusBanner`, `ThemeSwitch` (segmented and menu), `TimeZonePicker`, `Toast` with an action, and the pages SCR-10, -64, -69, -94, -95, -92, -93 in every state their `screens.md` rows list. | Render in isolation with API calls answered by in-test handlers. Assert copy from the message catalog, roles and `aria-*` attributes, focus, and busy, disabled and alert states. |
-| Visual-regression | The shell frame: desktop side menu, phone bottom bar, More sheet, a Status Banner (single and "+N more"), and the Coming soon page, each in light and dark at 360 px and 1280 px. | Snapshot the rendered frame with deterministic data (fixed email, fixed counter, fixed fonts) and fail on an unintended diff. Baselines change only in a deliberate update committed with the change that caused it. |
+| Visual-regression | **Deferred** (review 2026-10-03, B7 → spec §8): no baselines exist yet; `aria-current` + bold weight and the "+N more" text are asserted by component and e2e tests meanwhile. Planned scope: the shell frame: desktop side menu, phone bottom bar, More sheet, a Status Banner (single and "+N more"), and the Coming soon page, each in light and dark at 360 px and 1280 px. | Snapshot the rendered frame with deterministic data (fixed email, fixed counter, fixed fonts) and fail on an unintended diff. Baselines change only in a deliberate update committed with the change that caused it. |
 | E2E-through-UI | The `ux-flows.md` flows in a real browser against the full app started with the `e2e` profile and a throwaway Postgres. | Every test runs in both the phone (360 px) and desktop (1280 px) projects. Every shell screen it visits gets an accessibility scan in both themes and a no-sideways-scroll check. Network loss, unanswered requests, device timezone and device color scheme are emulated by the browser harness. Two Owners or two devices use separate browser contexts. |
 
 ## AC coverage
@@ -125,6 +125,7 @@ Each error and authorization AC (AC-173, AC-175, AC-177, AC-182, AC-185, AC-186)
 The shell-load NFR is the one throughput-style budget, so it gets its own scenario:
 
 - **Shell load ≤ 2.5 s p75 (phone profile, fast-4G):** 20 cold opens of a signed-in Owner on the phone profile with the network throttled to fast 4G, a fresh cache each time. Measure from navigation start until SCR-10 and its counter are interactive. Assert p75 ≤ 2.5 s. Use the performance tool already in your repo, or e.g. k6 or Locust.
+- **Deliberate deviation (review 2026-10-03-2, R2-12):** what is built is `e2e/tests/shell-sweep.spec.ts`, which runs on every PR in both projects with **5** cold opens (fast-4G throttling over CDP, cache disabled), measured in the page with `performance.now()` from navigation start to the counter's first render, and asserts p75 < 2.5 s with no headroom. It is a per-PR early warning against regressions, not the release measurement: with 5 samples the p75 is the 4th value. The 20-open scheduled phone-only run is not built yet; until it is, the manual browser pass before `/sdd:ship` records a phone load time in the PR.
 
 The other numeric §6 targets are timing and layout budgets, not load. They are asserted inside the e2e-through-UI rows above, on both profiles:
 
@@ -140,5 +141,5 @@ Not automated: "latest two versions of Chrome and Safari, including Safari on iO
 ## CI placement
 
 - On every PR: unit, component, contract, integration (with its throwaway container), and the module-boundary and migration checks. These are the existing `build` and `integrationTest` runs.
-- On every PR as well, because spec §6 requires both widths from E06 on: e2e-through-UI in both projects with the accessibility scan, width and target checks, plus visual-regression against the committed baselines.
-- On a schedule and before release: the shell-load scenario with throttling (it's slow and noisy on shared runners), and the manual browser pass before `/sdd:ship`.
+- On every PR as well, because spec §6 requires both widths from E06 on: e2e-through-UI in both projects with the accessibility scan, width and target checks, plus the 5-open shell-load check (see §NFR validation). Visual regression is deferred (spec §8).
+- On a schedule and before release (not built yet, see §NFR validation): the 20-open shell-load scenario with throttling (it's slow and noisy on shared runners), and the manual browser pass before `/sdd:ship`.
