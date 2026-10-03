@@ -47,6 +47,8 @@ Built components (`frontend/src/components/`) plus the reference components the 
 | EmptyState | `frontend/src/components/EmptyState/EmptyState.tsx:14` | kind: none / blocked / first | One sentence and one action |
 | LoadState | `frontend/src/components/LoadState/LoadState.tsx:7` | loading (skeleton rows) | The one loading pattern |
 | Toast | `frontend/src/components/Toast/Toast.tsx:14` | info (polite, self-dismiss) / error (assertive, stays until dismissed) | Feedback on a single action; not for conditions affecting all of teleX |
+| ThemeSwitch | `frontend/src/components/ThemeSwitch/ThemeSwitch.tsx:23` | variant `segmented` (radio group, icon + word) / `menu` (ghost button + `menuitemradio` dropdown, opens upward); save failed (error Toast with Try again) | The one theme control: apply at once, remember on this device, save, revert on failure |
+| Toast `action` prop | `frontend/src/components/Toast/Toast.tsx:11` | optional one action (for example "Try again"); the toast stays until dismissed or acted on | Used by ThemeSwitch |
 | ConfirmDialog | `frontend/src/components/ConfirmDialog/ConfirmDialog.tsx:27` | open / busy / confirm variant `danger` | Names the consequences; destructive confirm in `danger` |
 | FailureBoundary | `frontend/src/app/FailureBoundary.tsx:13` | error | Routes render failures to the system pages (SCR-90) |
 | PageFrame | `frontend/src/components/PageFrame/PageFrame.tsx:8` | default / signing out (busy) | **Temporary** E01 frame. E06 replaces it with AppShell and deletes it |

@@ -89,7 +89,18 @@ export const messages = {
     connect: "Connect Telegram",
     note: "Telegram linking is coming next.",
   },
+  theme: {
+    label: "Theme",
+    light: "Light",
+    dark: "Dark",
+    system: "System",
+    hint: "System follows your device's light or dark mode.",
+    saveFailed: "Your theme wasn't saved.",
+    tryAgain: "Try again",
+    dismiss: "Dismiss",
+  },
   profileSecurity: {
+    appearanceTitle: "Appearance",
     title: "Profile and security",
     signedInAs: (email: string) => `Signed in as ${email}`,
     passkeysTitle: "Passkeys",

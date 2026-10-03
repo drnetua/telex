@@ -4,12 +4,15 @@ import {
   IconBrandTelegram,
   IconCheck,
   IconClock,
+  IconDeviceDesktop,
   IconInfoCircle,
   IconLock,
   IconLogout,
+  IconMoon,
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconSun,
   IconTrash,
   IconUser,
   IconWifiOff,
@@ -31,6 +34,9 @@ const icons = {
   plus: IconPlus,
   trash: IconTrash,
   check: IconCheck,
+  sun: IconSun,
+  moon: IconMoon,
+  "device-desktop": IconDeviceDesktop,
 } satisfies Record<string, TablerIcon>;
 
 export type IconName = keyof typeof icons;

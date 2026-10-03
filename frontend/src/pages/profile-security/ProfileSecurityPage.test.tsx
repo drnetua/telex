@@ -17,7 +17,14 @@ vi.mock("../../api/webauthn", async (orig) => ({
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
+const me = {
+  ownerId: "o1",
+  email: "me@example.com",
+  linkedAccountCount: 0,
+  theme: "light",
+  timeZone: null,
+  timeZoneIsFallback: false,
+};
 const passkey = {
   id: "p1",
   label: "Safari on iPhone",
@@ -103,6 +110,18 @@ describe("SCR-64 Profile and security", () => {
       await screen.findByRole("heading", { level: 1, name: "Profile and security" }),
     ).toBeInTheDocument();
     expect(await screen.findByText("Signed in as me@example.com")).toBeInTheDocument();
+  });
+
+  it("AC-179: shows the Appearance card with the saved theme and the System hint", async () => {
+    stubApi({});
+    setup();
+    const group = await screen.findByRole("radiogroup", { name: "Theme" });
+    await waitFor(() => expect(within(group).getByRole("radio", { name: "Light" })).toBeChecked());
+    expect(within(group).getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getByRole("heading", { level: 2, name: "Appearance" })).toBeInTheDocument();
+    expect(
+      screen.getByText("System follows your device's light or dark mode."),
+    ).toBeInTheDocument();
   });
 
   it("AC-89: lists passkey with label and Never used", async () => {

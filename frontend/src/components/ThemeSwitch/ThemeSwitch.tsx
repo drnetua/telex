@@ -1,0 +1,136 @@
+import { useEffect, useRef, useState } from "react";
+import { useChangeTheme } from "../../api/preferences";
+import { messages } from "../../messages";
+import type { ThemeChoice } from "../../shell/theme";
+import { Icon, type IconName } from "../Icon/Icon";
+import { Toast } from "../Toast/Toast";
+
+const m = messages.theme;
+
+const options: Array<{ value: ThemeChoice; icon: IconName; label: string }> = [
+  { value: "light", icon: "sun", label: m.light },
+  { value: "dark", icon: "moon", label: m.dark },
+  { value: "system", icon: "device-desktop", label: m.system },
+];
+
+interface ThemeSwitchProps {
+  variant: "segmented" | "menu";
+}
+
+/** The one control that changes the theme: applies at once, remembers, saves, reverts with Try again on failure. */
+export function ThemeSwitch({ variant }: ThemeSwitchProps) {
+  const { shown, choose, failed, retry, dismiss } = useChangeTheme();
+  return (
+    <>
+      {variant === "segmented" ? (
+        <Segmented shown={shown} onChoose={choose} />
+      ) : (
+        <Menu shown={shown} onChoose={choose} />
+      )}
+      {failed ? (
+        <Toast
+          tone="error"
+          message={m.saveFailed}
+          dismissLabel={m.dismiss}
+          action={{ label: m.tryAgain, onClick: retry }}
+          onDismiss={dismiss}
+        />
+      ) : null}
+    </>
+  );
+}
+
+interface PartProps {
+  shown: ThemeChoice;
+  onChoose: (choice: ThemeChoice) => void;
+}
+
+function Segmented({ shown, onChoose }: PartProps) {
+  return (
+    <div className="form-selectgroup" role="radiogroup" aria-label={m.label}>
+      {options.map((o) => (
+        <label key={o.value} className="form-selectgroup-item">
+          <input
+            type="radio"
+            name="theme"
+            className="form-selectgroup-input"
+            value={o.value}
+            checked={shown === o.value}
+            onChange={() => onChoose(o.value)}
+          />
+          <span className="form-selectgroup-label d-flex align-items-center gap-2">
+            <Icon name={o.icon} size={18} />
+            {o.label}
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function Menu({ shown, onChoose }: PartProps) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const current = options.find((o) => o.value === shown) ?? options[2];
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
+    const onPointer = (event: MouseEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="dropdown dropup">
+      <button
+        ref={trigger}
+        type="button"
+        className="btn btn-ghost-dark"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Icon name={current?.icon ?? "device-desktop"} size={18} />
+        {m.label}
+      </button>
+      {open ? (
+        <div className="dropdown-menu show" role="menu" aria-label={m.label}>
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={shown === o.value}
+              className={`dropdown-item d-flex align-items-center gap-2${shown === o.value ? " active" : ""}`}
+              onClick={() => {
+                setOpen(false);
+                onChoose(o.value);
+                trigger.current?.focus();
+              }}
+            >
+              <Icon name={o.icon} size={18} />
+              {o.label}
+              {shown === o.value ? (
+                <span className="ms-auto">
+                  <Icon name="check" size={16} />
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}

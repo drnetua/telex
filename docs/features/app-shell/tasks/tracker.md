@@ -13,7 +13,7 @@
 | T6 | Serve GET /api/v1/pulse and the e2e-profile fixture Inbox and condition sources | ports | Anton Husiev | M | T4 | done |
 | T7 | Add the connectivity state and the 3 s pulse query, and narrow fetch-client failure routing | ui | Anton Husiev | M | — | done |
 | T8 | Apply the theme before first paint, follow System, sync tabs and switch once to the account theme | ui | Anton Husiev | S | — | done |
-| T9 | Build ThemeSwitch (segmented and menu), the Toast action prop and the Appearance card on SCR-64 | ui | Anton Husiev | M | T8 | todo |
+| T9 | Build ThemeSwitch (segmented and menu), the Toast action prop and the Appearance card on SCR-64 | ui | Anton Husiev | M | T8 | done |
 | T10 | Port AppShell (C-01) from the section registry: side menu, phone bottom bar, More sheet and Sign out | ui | Anton Husiev | L | T9 | todo |
 | T11 | Route every section lazily, with the Coming soon page (SCR-94) and the Settings page (SCR-69) | ui | Anton Husiev | M | T10 | todo |
 | T12 | Show the live Inbox counter in the shell from the pulse (none at 0, 99+ above 99) | ui | Anton Husiev | S | T7, T10 | todo |
