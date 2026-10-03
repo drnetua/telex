@@ -1,0 +1,933 @@
+# Derived contract for telegram-link (/sdd:api, 2026-10-03).
+#   fields + constraints  ← data-model.md (linked_account, channel; owner_key is internal) + sad §8 "Linking attempt"
+#                           (in-memory, never stored)
+#   error responses       ← sad.md §6 alt-branches (Critical flows 1–3 + Flows 4–13) and sad §8 Error handling
+#   endpoint list + shape ← spec.md §4 / §5
+# Deviations from the sdd defaults, inherited from platform-skeleton (each recorded in api-sync-report.md §C):
+#   - auth: opaque session cookie `telex_session` + CSRF header, not BearerAuth (E01 ADR-0001);
+#   - errors: RFC 9457 problem+json with teleX `code` / `errors[]` extensions, not {code, message, details?};
+#     `code` is a lowercase kebab-case DNS-1123 label (CLAUDE.md §Errors);
+#   - lists are returned whole, without cursor pagination (an Owner has at most a few Linked Accounts);
+#   - no Idempotency-Key (each mutating call here is either naturally idempotent or ends in a terminal state).
+openapi: 3.1.0
+
+info:
+  title: teleX Telegram linking API
+  version: 0.1.0
+  contact:
+    name: teleX backend (messaging / web modules)
+    url: https://github.com/drnetua/telex
+  description: |
+    An Owner hands teleX access to their own Telegram account and can take it back completely. From the browser
+    the Owner goes through the sign-in steps Telegram itself asks for (phone number, the code sent to their
+    other devices, the two-step verification password if they have one). teleX then holds that account's
+    Telegram session encrypted with a per-Owner key, syncs its chat list in the background with visible
+    progress and reconnects it by itself after a restart. A lost session is not an unlink: the Linked Account
+    waits for "Sign in again". An unlink signs teleX out of Telegram and keeps nothing. Every later epic that
+    works in Telegram builds on the Linked Account this API creates.
+
+    Conventions for every operation (as in platform-skeleton):
+    - JSON property names are camelCase.
+    - Every state-changing request (POST, DELETE) carries `X-XSRF-TOKEN` echoing the `XSRF-TOKEN` cookie;
+      a missing or wrong token answers `403 forbidden`.
+    - A request the SPA sends on its own (a refetch after a live-update hint) carries `X-Telex-Background: 1`
+      and does not count as Sign-in Session activity. The live-update stream counts as background by its path
+      (ADR-0005).
+    - Every response carries `Cache-Control: no-store`.
+    - Errors are RFC 9457 `application/problem+json`: `type = urn:telex:error:<code>`, the `code` extension,
+      and the extensions named per code below. `code` keys the SPA message catalog; Telegram's own error texts
+      are never passed through.
+    - Every Linked Account operation looks only among the caller's own accounts. Another Owner's account and
+      an id that never existed answer the same `404 not-found` (AC-03).
+    - The phone number, login code and password go from the request straight to Telegram and are never
+      stored, echoed or logged. Responses carry only the masked phone (country code and last two digits).
+
+servers:
+  - url: http://localhost:8080
+    description: Local (one-command install; TELEX_PUBLIC_URL default)
+  - url: https://telex.example.test
+    description: Production behind Cloudflare (TELEX_PUBLIC_URL)
+
+security:
+  - SessionCookie: []
+
+tags:
+  - name: linked-accounts
+    description: The Owner's Linked Accounts — list with state and sync, unlink (US-03, US-50, US-51, US-52)
+  - name: linking
+    description: The Owner's one open linking attempt — the SCR-02 wizard, new link or "Sign in again" (US-02, US-50, US-51, US-53)
+  - name: live
+    description: The live-update stream of invalidation hints (ADR-0005)
+
+paths:
+  /api/v1/linked-accounts:
+    get:
+      tags: [linked-accounts]
+      summary: List my Linked Accounts
+      description: |
+        Every Linked Account of the caller, oldest first, each with its Telegram name, masked phone, state and
+        chat sync counts (SCR-60, the SCR-10 account lines, the "account disconnected" Status Banner condition).
+        Session lost accounts are included (AC-115, AC-117). The list is the one data path for live state: the
+        SPA refetches it on every `linked-accounts` hint (ADR-0005). The Linked Accounts stay connected through
+        a sign-out or an ended Sign-in Session, and are listed again on the next sign-in (AC-110).
+      operationId: listMyLinkedAccounts
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: The caller's Linked Accounts (empty when none — the Inbox shows "Connect Telegram")
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkedAccountList" }
+              example:
+                items:
+                  - id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e5f"
+                    displayName: "Test User"
+                    phone: { countryCode: "999", lastDigits: "00" }
+                    state: "connected"
+                    chatSync: { chatsSynced: 312, chatsTotal: 480, completedAt: null }
+                    linkedAt: "2026-10-03T09:00:00Z"
+                  - id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60"
+                    displayName: "Test User"
+                    phone: { countryCode: "999", lastDigits: "01" }
+                    state: "session_lost"
+                    chatSync: { chatsSynced: 57, chatsTotal: 57, completedAt: "2026-10-01T08:01:00Z" }
+                    linkedAt: "2026-10-01T08:00:00Z"
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/linked-accounts/{linkedAccountId}:
+    delete:
+      tags: [linked-accounts]
+      summary: Unlink one of my Linked Accounts
+      description: |
+        After the C-33 confirmation on SCR-60. teleX logs the Telegram session out and waits up to 10 s for
+        Telegram to confirm. Whatever the answer, one transaction then deletes the account, its sealed key and
+        its chat list and records `AccountUnlinked`, and the session directory is destroyed (Critical flow 2,
+        AC-111, AC-112). `signOutConfirmed: false` means Telegram couldn't confirm the sign-out (unreachable,
+        timed out, or the session was already lost); the SPA then warns the Owner to check active sessions in
+        the Telegram app (AC-113). An open "Sign in again" attempt for this account is discarded with it. The SPA
+        goes to the Inbox when the refetched list is empty (AC-111). Unlinking an id that is not among the
+        caller's accounts — another Owner's, already unlinked, or never existing — answers `not-found` (AC-03).
+      operationId: unlinkMyLinkedAccount
+      parameters:
+        - $ref: "#/components/parameters/LinkedAccountIdPath"
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "200":
+          description: Unlinked — nothing about the account is kept
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UnlinkResult" }
+              examples:
+                confirmed:
+                  value: { signOutConfirmed: true }
+                notConfirmed:
+                  value: { signOutConfirmed: false }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/v1/linking-attempt:
+    get:
+      tags: [linking]
+      summary: Read my open linking attempt
+      description: |
+        SCR-02 opens at the step this answers, never at a step kept in the browser, so a reload, a second tab
+        or another device continues where the attempt stopped (AC-109). An attempt whose last-stepping Sign-in
+        Session is no longer live is discarded here and answers `linking-attempt-not-found` (Flow 8, AC-110).
+      operationId: getMyLinkingAttempt
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: The open attempt at its current step
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkingAttempt" }
+              example:
+                step: "code"
+                origin: "inbox"
+                targetLinkedAccountId: null
+                codeLength: 5
+                passwordHint: null
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "404": { $ref: "#/components/responses/LinkingAttemptNotFound" }
+    post:
+      tags: [linking]
+      summary: Start or resume my linking attempt
+      description: |
+        "Connect Telegram" on SCR-10, "Add account" or "Sign in again" on SCR-60 or in the Status Banner
+        (Flow 4, Flow 10). The Owner has at most one open attempt:
+        - an open attempt whose Sign-in Session is live is returned as it is (`200`), and the request body is
+          ignored — the SPA shows that attempt, whatever its origin or target (AC-109);
+        - otherwise a new attempt starts at the phone step (`201`) with a fresh Telegram session.
+        Refusals before the wizard opens, shown where the Owner chose the action (ux-flows):
+        - Telegram app credentials missing, or no master key on an installation that never stored an Owner key
+          → `telegram-linking-not-set-up` (AC-119);
+        - a new account when the caller already has as many Linked Accounts as the installation limit, Session
+          lost ones included → `linked-account-limit-reached` with `limit` (AC-115);
+        - "Sign in again" (`targetLinkedAccountId`) for an account not among the caller's → `not-found` (AC-03),
+          and for one of theirs that isn't Session lost → `telegram-account-already-linked`. "Sign in again" takes
+          no new place, so it skips the limit check.
+      operationId: startMyLinkingAttempt
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartLinkingRequest" }
+            examples:
+              connectTelegram:
+                value: { origin: "inbox" }
+              signInAgain:
+                value: { origin: "accounts", targetLinkedAccountId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60" }
+      responses:
+        "200":
+          description: The Owner's open attempt, resumed at its current step
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkingAttempt" }
+              example:
+                step: "password"
+                origin: "accounts"
+                targetLinkedAccountId: null
+                codeLength: null
+                passwordHint: "Test hint"
+        "201":
+          description: A new attempt at the phone step
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkingAttempt" }
+              example:
+                step: "phone"
+                origin: "inbox"
+                targetLinkedAccountId: null
+                codeLength: null
+                passwordHint: null
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The limit is reached, or "Sign in again" targets an account that is not Session lost
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                limitReached: { $ref: "#/components/examples/LimitReached" }
+                alreadyLinked: { $ref: "#/components/examples/AlreadyLinked" }
+        "503": { $ref: "#/components/responses/LinkingNotSetUp" }
+    delete:
+      tags: [linking]
+      summary: Cancel my linking attempt
+      description: |
+        Cancel on SCR-02 (Flow 8, AC-109). Discards the attempt and destroys its Telegram session, which never
+        signed in, so no teleX device is left in Telegram. A no-op when no attempt is open (already cancelled,
+        expired or discarded in another tab).
+      operationId: cancelMyLinkingAttempt
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "204": { description: No open attempt any more }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/v1/linking-attempt/phone:
+    post:
+      tags: [linking]
+      summary: Submit the phone number
+      description: |
+        Sends the number to Telegram and asks for a login code (Flow 5). The number is never stored: the server
+        keeps only its digits and hands them to Telegram. A number Telegram refuses, or one with no digits,
+        answers `telegram-phone-invalid` (AC-107). A refusal for the number keeps the attempt at the phone step,
+        except `telegram-wait-required`, which ends the attempt (AC-02).
+      operationId: submitLinkingPhone
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LinkingPhoneRequest" }
+            example:
+              phoneNumber: "+380 00 000 00 00"
+      responses:
+        "200":
+          description: Code sent to the Owner's other devices; the attempt is at the code step
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkingAttempt" }
+              example:
+                step: "code"
+                origin: "inbox"
+                targetLinkedAccountId: null
+                codeLength: 5
+                passwordHint: null
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/LinkingAttemptNotFound" }
+        "409": { $ref: "#/components/responses/LinkingStepMismatch" }
+        "422":
+          description: Telegram refused the number; the attempt stays at the phone step (AC-107)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                invalid:
+                  value:
+                    type: "urn:telex:error:telegram-phone-invalid"
+                    title: "Unprocessable Content"
+                    status: 422
+                    detail: "This isn't a valid phone number."
+                    code: "telegram-phone-invalid"
+                unregistered:
+                  value:
+                    type: "urn:telex:error:telegram-phone-unregistered"
+                    title: "Unprocessable Content"
+                    status: 422
+                    detail: "No Telegram account uses this number."
+                    code: "telegram-phone-unregistered"
+                banned:
+                  value:
+                    type: "urn:telex:error:telegram-phone-banned"
+                    title: "Unprocessable Content"
+                    status: 422
+                    detail: "Telegram has banned this number."
+                    code: "telegram-phone-banned"
+        "429": { $ref: "#/components/responses/TelegramWaitRequired" }
+        "503": { $ref: "#/components/responses/TelegramUnavailable" }
+
+  /api/v1/linking-attempt/code:
+    post:
+      tags: [linking]
+      summary: Submit the login code
+      description: |
+        Checks the code with Telegram (Flow 6). A wrong or expired code keeps the attempt at the code step
+        (AC-02). A right code either moves to the password step (two-step verification on) or completes the
+        sign-in, and the answer is then the outcome of Critical flow 1 — linked, signed in again, or refused
+        (see `LinkingCompleted` and the `409` refusals).
+      operationId: submitLinkingCode
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LinkingCodeRequest" }
+            example:
+              code: "12345"
+      responses:
+        "200": { $ref: "#/components/responses/LinkingStepAccepted" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/LinkingAttemptNotFound" }
+        "409": { $ref: "#/components/responses/LinkingRefusedOrStepMismatch" }
+        "422":
+          description: The code is wrong or expired; the attempt stays at the code step (AC-02)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                wrong:
+                  value:
+                    type: "urn:telex:error:telegram-code-wrong"
+                    title: "Unprocessable Content"
+                    status: 422
+                    detail: "The code is wrong."
+                    code: "telegram-code-wrong"
+                expired:
+                  value:
+                    type: "urn:telex:error:telegram-code-expired"
+                    title: "Unprocessable Content"
+                    status: 422
+                    detail: "The code has expired."
+                    code: "telegram-code-expired"
+        "429": { $ref: "#/components/responses/TelegramWaitRequired" }
+        "503": { $ref: "#/components/responses/TelegramUnavailable" }
+
+  /api/v1/linking-attempt/code/resend:
+    post:
+      tags: [linking]
+      summary: Ask for a new login code
+      description: Asks Telegram to send a new code (Flow 6, AC-02). The attempt stays at the code step.
+      operationId: resendLinkingCode
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "200":
+          description: A new code was sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkingAttempt" }
+              example:
+                step: "code"
+                origin: "inbox"
+                targetLinkedAccountId: null
+                codeLength: 5
+                passwordHint: null
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/LinkingAttemptNotFound" }
+        "409": { $ref: "#/components/responses/LinkingStepMismatch" }
+        "429": { $ref: "#/components/responses/TelegramWaitRequired" }
+        "503": { $ref: "#/components/responses/TelegramUnavailable" }
+
+  /api/v1/linking-attempt/password:
+    post:
+      tags: [linking]
+      summary: Submit the two-step verification password
+      description: |
+        Checks the password with Telegram (Flow 7). A wrong password keeps the attempt at the password step and
+        carries the hint the Owner set in Telegram, if any (AC-106). A right password completes the sign-in with
+        the outcome of Critical flow 1.
+      operationId: submitLinkingPassword
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LinkingPasswordRequest" }
+            example:
+              password: "<two-step-verification-password>"
+      responses:
+        "200": { $ref: "#/components/responses/LinkingStepAccepted" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/LinkingAttemptNotFound" }
+        "409": { $ref: "#/components/responses/LinkingRefusedOrStepMismatch" }
+        "422":
+          description: The password is wrong; the attempt stays at the password step (AC-106)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:telegram-password-wrong"
+                title: "Unprocessable Content"
+                status: 422
+                detail: "The password is wrong."
+                code: "telegram-password-wrong"
+                passwordHint: "Test hint"
+        "429": { $ref: "#/components/responses/TelegramWaitRequired" }
+        "503": { $ref: "#/components/responses/TelegramUnavailable" }
+
+  /api/v1/live-updates:
+    get:
+      tags: [live]
+      summary: Open the live-update stream
+      description: |
+        One Server-Sent Events stream per tab (ADR-0005). It carries invalidation hints only, never Owner data:
+        each event names a query the SPA refetches through REST. E02 sends `linked-accounts` when one of the
+        caller's accounts is linked, unlinked, changes state or makes sync progress (Flows 2, 9, 11, 12), at
+        most once per second per hint name. A comment line (`: keep-alive`) every 25 s keeps proxies from
+        closing an idle stream. The stream counts as background by its path, so it never bumps Sign-in Session
+        activity, and it closes when the Sign-in Session ends. After any reconnect the SPA refetches everything
+        it shows, so a missed hint never leaves stale state. E04 and E06 add hint names, not new streams.
+      operationId: openLiveUpdates
+      responses:
+        "200":
+          description: An open stream
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+            X-Accel-Buffering:
+              description: Asks proxies not to buffer the stream
+              schema: { type: string, const: "no" }
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  `event: hint` with `data:` one `LiveHint` value per event; comment heartbeats in between.
+                contentSchema: { $ref: "#/components/schemas/LiveHint" }
+              example: "event: hint\ndata: linked-accounts\n\n: keep-alive\n\n"
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: telex_session
+      description: |
+        Opaque Sign-in Session key set at sign-in (platform-skeleton ADR-0001). Liveness is enforced server-side.
+
+  parameters:
+    XsrfToken:
+      in: header
+      name: X-XSRF-TOKEN
+      required: true
+      description: Echo of the `XSRF-TOKEN` cookie; required on every state-changing request.
+      schema: { type: string }
+    Background:
+      in: header
+      name: X-Telex-Background
+      required: false
+      description: "`1` on requests the SPA sends on its own (refetches after a hint); such requests don't count as session activity."
+      schema: { type: string, enum: ["1"] }
+    LinkedAccountIdPath:
+      in: path
+      name: linkedAccountId
+      required: true
+      schema: { $ref: "#/components/schemas/LinkedAccountId" }
+
+  examples:
+    LimitReached:
+      value:
+        type: "urn:telex:error:linked-account-limit-reached"
+        title: "Conflict"
+        status: 409
+        detail: "You have reached the limit of linked accounts."
+        code: "linked-account-limit-reached"
+        limit: 3
+    AlreadyLinked:
+      value:
+        type: "urn:telex:error:telegram-account-already-linked"
+        title: "Conflict"
+        status: 409
+        detail: "This Telegram account is already linked."
+        code: "telegram-account-already-linked"
+    OwnedByAnotherOwner:
+      value:
+        type: "urn:telex:error:telegram-account-owned-by-another-owner"
+        title: "Conflict"
+        status: 409
+        detail: "This Telegram account is linked to another teleX account."
+        code: "telegram-account-owned-by-another-owner"
+    AccountMismatch:
+      value:
+        type: "urn:telex:error:telegram-account-mismatch"
+        title: "Conflict"
+        status: 409
+        detail: "You signed in to a different Telegram account."
+        code: "telegram-account-mismatch"
+    StepMismatch:
+      value:
+        type: "urn:telex:error:linking-step-mismatch"
+        title: "Conflict"
+        status: 409
+        detail: "The linking attempt is at another step."
+        code: "linking-step-mismatch"
+        step: "password"
+
+  responses:
+    LinkingStepAccepted:
+      description: |
+        The step was accepted. `outcome: next` — the attempt moved on (to the password step). `outcome: linked` —
+        a new Linked Account was created and is Connected, its chat list starts syncing (AC-01, AC-114, AC-116).
+        `outcome: signed-in-again` — the same Linked Account came back Connected with everything attached
+        (AC-108, AC-117). After `linked` or `signed-in-again` the attempt is gone, and the SPA returns to
+        `origin` (SCR-10 for `inbox`, SCR-60 for `accounts`).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LinkingStepResult" }
+          examples:
+            next:
+              value:
+                outcome: "next"
+                attempt: { step: "password", origin: "inbox", targetLinkedAccountId: null, codeLength: null, passwordHint: "Test hint" }
+            linked:
+              value:
+                outcome: "linked"
+                linkedAccountId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e5f"
+                origin: "inbox"
+            signedInAgain:
+              value:
+                outcome: "signed-in-again"
+                linkedAccountId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60"
+                origin: "accounts"
+    LinkingRefusedOrStepMismatch:
+      description: |
+        After Telegram authorized the sign-in, teleX refused it: the sign-in is logged out and destroyed, so no
+        teleX device is left in Telegram, and the attempt is gone (Critical flow 1, Flow 10).
+        - `telegram-account-owned-by-another-owner` — the Telegram account is another Owner's Linked Account (AC-04).
+        - `telegram-account-already-linked` — it is already the caller's and not Session lost (AC-108).
+        - `linked-account-limit-reached` — a new account, and the last place was taken during the attempt (AC-115).
+        - `telegram-account-mismatch` — "Sign in again" signed in to a different Telegram account; the target
+          stays Session lost (AC-117).
+        Or `linking-step-mismatch`: the attempt is at another step (another tab moved it on); nothing changed,
+        and `step` tells the SPA where it is.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            ownedByAnotherOwner: { $ref: "#/components/examples/OwnedByAnotherOwner" }
+            alreadyLinked: { $ref: "#/components/examples/AlreadyLinked" }
+            limitReached: { $ref: "#/components/examples/LimitReached" }
+            accountMismatch: { $ref: "#/components/examples/AccountMismatch" }
+            stepMismatch: { $ref: "#/components/examples/StepMismatch" }
+    LinkingStepMismatch:
+      description: The attempt is at another step (another tab moved it on); nothing changed, `step` says where it is
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            stepMismatch: { $ref: "#/components/examples/StepMismatch" }
+    LinkingAttemptNotFound:
+      description: |
+        No open attempt: never started, cancelled, 15 minutes without a step, its Sign-in Session ended, ended by
+        a refusal or a Telegram wait, or teleX restarted (AC-109, AC-110). The SPA starts again at the phone step.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:linking-attempt-not-found"
+            title: "Not Found"
+            status: 404
+            detail: "There is no open linking attempt."
+            code: "linking-attempt-not-found"
+    TelegramWaitRequired:
+      description: |
+        Telegram limits attempts for this number and gives a wait. The attempt is ended and its Telegram session
+        destroyed; the SPA counts down to `retryAt` (AC-02). Starting again with the same number before then
+        answers this again from Telegram, without a code being sent. teleX stores nothing about the wait.
+      headers:
+        Retry-After:
+          description: Seconds until `retryAt`
+          schema: { type: integer, minimum: 0 }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:telegram-wait-required"
+            title: "Too Many Requests"
+            status: 429
+            detail: "Telegram asks you to wait before trying again."
+            code: "telegram-wait-required"
+            retryAt: "2026-10-03T10:15:00Z"
+    TelegramUnavailable:
+      description: |
+        Telegram didn't answer the step in time. The attempt stays at its step and the Owner can retry
+        (api-sync-report §B sequence gap, owner `sequences`).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:telegram-unavailable"
+            title: "Service Unavailable"
+            status: 503
+            detail: "Telegram can't be reached right now."
+            code: "telegram-unavailable"
+    LinkingNotSetUp:
+      description: |
+        Telegram linking isn't set up on this installation: the Telegram app credentials are missing, or the
+        master key is missing on an installation that never stored an Owner key. The Operator has to finish the
+        README setup step; the wizard doesn't open (AC-119).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:telegram-linking-not-set-up"
+            title: "Service Unavailable"
+            status: 503
+            detail: "Telegram linking isn't set up on this installation yet."
+            code: "telegram-linking-not-set-up"
+    NotSignedIn:
+      description: |
+        No live Sign-in Session (platform-skeleton). `unauthenticated`: no cookie or an unknown key.
+        `session-ended`: ended elsewhere, idle or too old — mid-wizard, the Owner signs in again and the open
+        attempt is discarded (Flow 8, AC-110).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            unauthenticated:
+              value:
+                type: "urn:telex:error:unauthenticated"
+                title: "Unauthorized"
+                status: 401
+                detail: "Sign in to continue."
+                code: "unauthenticated"
+            sessionEnded:
+              value:
+                type: "urn:telex:error:session-ended"
+                title: "Unauthorized"
+                status: 401
+                detail: "Your session has ended."
+                code: "session-ended"
+    NotFound:
+      description: Not among the caller's Linked Accounts — identical for another Owner's account, an unlinked one and a missing one (AC-03)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:not-found"
+            title: "Not Found"
+            status: 404
+            detail: "Not found."
+            code: "not-found"
+    ValidationFailed:
+      description: The request body is missing a required field or breaks a declared bound
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:validation-failed"
+            title: "Bad Request"
+            status: 400
+            detail: "Some fields are invalid."
+            code: "validation-failed"
+            errors:
+              - field: "phoneNumber"
+                code: "required"
+                message: "This field is required."
+    Forbidden:
+      description: Missing or wrong CSRF token
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:forbidden"
+            title: "Forbidden"
+            status: 403
+            detail: "The request was refused."
+            code: "forbidden"
+
+  schemas:
+    # ---- Errors (RFC 9457 + teleX extensions; telex.shared.problemDetail)
+    ErrorCode:
+      description: |
+        Stable machine code; keys `frontend/src/messages.ts`. Lowercase kebab-case, a valid DNS-1123 label.
+        Lists the codes this API answers: the platform-skeleton ones it reuses and the ones it adds.
+      type: string
+      maxLength: 63
+      pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      enum:
+        # reused from platform-skeleton
+        - validation-failed
+        - unauthenticated
+        - session-ended
+        - not-found
+        - forbidden
+        - internal-error
+        # added by telegram-link (sad §8 Error handling, plus the two marked)
+        - telegram-linking-not-set-up
+        - linked-account-limit-reached
+        - linking-attempt-not-found
+        - linking-step-mismatch # added by api: sequence gap
+        - telegram-phone-invalid
+        - telegram-phone-unregistered
+        - telegram-phone-banned
+        - telegram-code-wrong
+        - telegram-code-expired
+        - telegram-wait-required
+        - telegram-password-wrong
+        - telegram-unavailable # added by api: sequence gap
+        - telegram-account-owned-by-another-owner
+        - telegram-account-already-linked
+        - telegram-account-mismatch
+    FieldProblem:
+      type: object
+      required: [field, code, message]
+      additionalProperties: false
+      properties:
+        field: { type: string, description: "Request property name, e.g. `phoneNumber`" }
+        code:
+          type: string
+          maxLength: 63
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+          pattern: "^urn:telex:error:[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string, description: "Human-readable; the SPA shows its own copy keyed by `code`" }
+        instance: { type: string, format: uri-reference }
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldProblem" }
+        retryAt:
+          type: string
+          format: date-time
+          description: "`telegram-wait-required` only: now + the wait Telegram gave"
+        passwordHint:
+          type: [string, "null"]
+          maxLength: 255
+          description: "`telegram-password-wrong` only: the hint the Owner set in Telegram, null when none (AC-106)"
+        limit:
+          type: integer
+          minimum: 1
+          description: "`linked-account-limit-reached` only: the installation's account limit (AC-115)"
+        step:
+          $ref: "#/components/schemas/LinkingStep"
+          description: "`linking-step-mismatch` only: the step the attempt is at"
+
+    # ---- Ids
+    LinkedAccountId: { type: string, format: uuid, description: "UUIDv7 (linked_account.id)" }
+
+    # ---- Linked Accounts
+    LinkedAccountState:
+      type: string
+      enum: [connected, reconnecting, session_lost]
+      description: |
+        linked_account.state. `connected` — Telegram reports authorization ready. `reconnecting` — Telegram is
+        unreachable; teleX retries by itself, no Owner action (AC-122). `session_lost` — Telegram confirmed the
+        session ended; "Sign in again" or unlink, and the Status Banner shows (AC-117, AC-122).
+    MaskedPhone:
+      type: object
+      required: [countryCode, lastDigits]
+      additionalProperties: false
+      description: The only form of the phone number teleX keeps; the SPA formats it with the middle masked (AC-01)
+      properties:
+        countryCode: { type: string, pattern: "^[0-9]{1,3}$", description: "linked_account.phone_country_code" }
+        lastDigits: { type: string, pattern: "^[0-9]{2}$", description: "linked_account.phone_last_digits" }
+    ChatSync:
+      type: object
+      required: [chatsSynced, chatsTotal, completedAt]
+      additionalProperties: false
+      description: |
+        Chat list sync of the account (AC-116, AC-121). While `completedAt` is null the SPA shows
+        "`chatsSynced` of `chatsTotal`"; afterwards it shows `chatsSynced` as the number of chats, which follows
+        joins and leaves within a minute.
+      properties:
+        chatsSynced:
+          type: integer
+          minimum: 0
+          description: "COUNT of the account's channel rows (data-model: derived, not stored)"
+        chatsTotal:
+          type: [integer, "null"]
+          minimum: 0
+          description: "linked_account.chats_total — Telegram's total, archived chats included; null until reported"
+        completedAt:
+          type: [string, "null"]
+          format: date-time
+          description: linked_account.chat_sync_completed_at
+    LinkedAccount:
+      type: object
+      required: [id, displayName, phone, state, chatSync, linkedAt]
+      additionalProperties: false
+      properties:
+        id: { $ref: "#/components/schemas/LinkedAccountId" }
+        displayName: { type: string, maxLength: 255, description: "linked_account.display_name — the Telegram name" }
+        phone: { $ref: "#/components/schemas/MaskedPhone" }
+        state: { $ref: "#/components/schemas/LinkedAccountState" }
+        chatSync: { $ref: "#/components/schemas/ChatSync" }
+        linkedAt: { type: string, format: date-time, description: "linked_account.created_at; the list order" }
+    LinkedAccountList:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/LinkedAccount" }
+    UnlinkResult:
+      type: object
+      required: [signOutConfirmed]
+      additionalProperties: false
+      properties:
+        signOutConfirmed:
+          type: boolean
+          description: False when Telegram couldn't confirm the sign-out within 10 s; the SPA shows the check-active-sessions warning (AC-113)
+
+    # ---- Linking attempt (held in memory, never stored — sad §8)
+    LinkingOrigin:
+      type: string
+      enum: [inbox, accounts]
+      description: Where the attempt started, and where the SPA returns after it (SCR-10 or SCR-60)
+    LinkingStep:
+      type: string
+      enum: [phone, code, password]
+    LinkingAttempt:
+      type: object
+      required: [step, origin, targetLinkedAccountId, codeLength, passwordHint]
+      additionalProperties: false
+      properties:
+        step: { $ref: "#/components/schemas/LinkingStep" }
+        codeLength:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 16
+          description: At the code step, the number of digits of the code Telegram sent (TDLib code info), so the SPA sizes its code field; null at other steps
+        origin: { $ref: "#/components/schemas/LinkingOrigin" }
+        targetLinkedAccountId:
+          oneOf:
+            - $ref: "#/components/schemas/LinkedAccountId"
+            - type: "null"
+          description: The Session lost account this "Sign in again" attempt brings back; null for a new link
+        passwordHint:
+          type: [string, "null"]
+          maxLength: 255
+          description: At the password step, the hint the Owner set in Telegram (null when none, and at other steps)
+    StartLinkingRequest:
+      type: object
+      required: [origin]
+      additionalProperties: false
+      properties:
+        origin: { $ref: "#/components/schemas/LinkingOrigin" }
+        targetLinkedAccountId:
+          $ref: "#/components/schemas/LinkedAccountId"
+          description: Set for "Sign in again" on a Session lost account; omitted for "Connect Telegram" and "Add account"
+    LinkingPhoneRequest:
+      type: object
+      required: [phoneNumber]
+      additionalProperties: false
+      properties:
+        phoneNumber:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: As typed, international format; the server keeps the digits only and passes them to Telegram. Never stored.
+    LinkingCodeRequest:
+      type: object
+      required: [code]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: "^[0-9]{1,16}$"
+          description: The login code from the Telegram app; Telegram decides whether it is right. Never stored.
+    LinkingPasswordRequest:
+      type: object
+      required: [password]
+      additionalProperties: false
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          description: The two-step verification password; passed to Telegram, never stored, echoed or logged.
+    LinkingNext:
+      type: object
+      required: [outcome, attempt]
+      additionalProperties: false
+      properties:
+        outcome: { type: string, const: next }
+        attempt: { $ref: "#/components/schemas/LinkingAttempt" }
+    LinkingCompleted:
+      type: object
+      required: [outcome, linkedAccountId, origin]
+      additionalProperties: false
+      properties:
+        outcome: { type: string, enum: [linked, signed-in-again] }
+        linkedAccountId: { $ref: "#/components/schemas/LinkedAccountId" }
+        origin: { $ref: "#/components/schemas/LinkingOrigin" }
+    LinkingStepResult:
+      oneOf:
+        - $ref: "#/components/schemas/LinkingNext"
+        - $ref: "#/components/schemas/LinkingCompleted"
+      discriminator:
+        propertyName: outcome
+        mapping:
+          next: "#/components/schemas/LinkingNext"
+          linked: "#/components/schemas/LinkingCompleted"
+          signed-in-again: "#/components/schemas/LinkingCompleted"
+
+    # ---- Live updates
+    LiveHint:
+      type: string
+      enum: [linked-accounts]
+      description: |
+        Names a query to refetch. `linked-accounts` → `listMyLinkedAccounts` (and the SCR-10 lines and the
+        Status Banner, which read it). E04 and E06 add values.

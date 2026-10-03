@@ -347,6 +347,457 @@ sequenceDiagram
     end
 ```
 
+The flows below were added by `/sdd:sequences`. They use the generic participants: `<user>` is the Owner, `<ui>` is the SPA, `<service>` is the teleX app (the `messaging`, `telegram`, `identity` and `web` modules together), `<data-store>` is the database, `<external-system>` is Telegram and `<message-bus>` is the event publication registry. The linking attempt is held in memory and is never persisted (§8).
+
+### Flow 4: start or resume linking (AC-119, AC-120, AC-115, AC-109, AC-114)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over O,S: Precondition: the Owner has a live Sign-in Session and is on the Inbox (Connect Telegram) or the Accounts page (Add account)
+    O->>U: choose Connect Telegram or Add account
+    U->>S: start or resume linking, with where it started
+    alt Telegram app credentials missing, or no master key on a fresh installation
+        S-->>U: refusal linking not set up
+        U-->>O: say linking isn't set up and the Operator has to finish the setup, wizard not opened
+    else this Owner already has an open attempt (reload, second tab or another device)
+        S->>S: find the Owner's open attempt in memory
+        S-->>U: attempt at its current step
+        U-->>O: show the wizard at that step, not the phone step
+    else no open attempt
+        S->>D: count this Owner's Linked Accounts, Session lost included
+        D-->>S: count
+        alt count has reached the installation limit
+            S-->>U: refusal limit reached, with the limit
+            U-->>O: show the limit and that unlinking an account frees a place, wizard not opened
+        else below the limit
+            S->>S: open a new Telegram session with a fresh database key
+            S->>S: hold the attempt in memory with its step, start point and Sign-in Session
+            Note over S: the attempt and its key are never persisted, a restart discards them (§11 accepted debt)
+            S-->>U: attempt at the phone step
+            U-->>O: show the phone step
+        end
+    end
+    Note over O,S: Postcondition: at most one open attempt per Owner, the wizard step always comes from it, and no Owner's Telegram data reaches the Operator
+```
+
+### Flow 5: phone step errors (AC-107, AC-02)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant X as <external-system>
+
+    Note over O,S: Precondition: the Owner's open attempt is at the phone step
+    O->>U: type the phone number
+    U->>S: submit phone
+    S->>S: check the attempt is this Owner's and its Sign-in Session is live, record the step time
+    S->>X: send the phone number and ask for a login code
+    alt the number isn't valid
+        X-->>S: phone invalid
+        S-->>U: refusal phone invalid, attempt stays at the phone step
+        U-->>O: say the number isn't valid
+    else no Telegram account has this number
+        X-->>S: phone unregistered
+        S-->>U: refusal phone unregistered, attempt stays at the phone step
+        U-->>O: say to create the account in the Telegram app first
+    else Telegram has banned the number
+        X-->>S: phone banned
+        S-->>U: refusal phone banned, attempt stays at the phone step
+        U-->>O: say Telegram has banned this number
+    else Telegram's wait for this number is still running
+        X-->>S: wait required, with the seconds left
+        S->>S: discard the attempt and destroy its Telegram session
+        S-->>U: refusal wait required, with the retry time
+        U-->>O: end the attempt and count down to the retry time
+    else code sent
+        X-->>S: code sent to the Owner's other devices
+        S-->>U: attempt at the code step
+        U-->>O: show the code step
+    end
+    Note over O,S: Postcondition: teleX never creates a Telegram account, sends no code while Telegram's wait runs, and stores nothing about the number
+```
+
+### Flow 6: code step errors and a new code (AC-02)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant X as <external-system>
+
+    Note over O,S: Precondition: the Owner's open attempt is at the code step and a code was sent
+    opt the Owner asks for a new code
+        O->>U: ask for a new code
+        U->>S: resend code
+        S->>X: resend the login code
+        X-->>S: new code sent
+        S-->>U: attempt at the code step
+    end
+    O->>U: type the code
+    U->>S: submit code
+    S->>S: check the attempt is this Owner's and its Sign-in Session is live, record the step time
+    S->>X: check the code
+    alt the code is wrong
+        X-->>S: code invalid
+        S-->>U: refusal code wrong, attempt stays at the code step
+        U-->>O: say the code is wrong, offer to try again or ask for a new code
+    else the code has expired
+        X-->>S: code expired
+        S-->>U: refusal code expired, attempt stays at the code step
+        U-->>O: say the code has expired, offer a new code
+    else Telegram limits the attempts
+        X-->>S: wait required, with the seconds left
+        S->>S: discard the attempt and destroy its Telegram session
+        S-->>U: refusal wait required, with the retry time
+        U-->>O: end the attempt and count down to the retry time
+    else the code is right
+        X-->>S: password needed, or authorized
+        S-->>U: attempt at the password step, or the outcome of flow 1
+    end
+    Note over O,S: Postcondition: the code went straight to Telegram and was never stored, shown back or logged
+```
+
+### Flow 7: password step error (AC-106)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant X as <external-system>
+
+    Note over O,S: Precondition: the Owner's open attempt is at the password step, holding the hint Telegram gave with it
+    O->>U: type the two-step verification password
+    U->>S: submit password
+    S->>S: check the attempt is this Owner's and its Sign-in Session is live, record the step time
+    S->>X: check the password
+    alt the password is wrong
+        X-->>S: password invalid
+        S-->>U: refusal password wrong, with the hint if the Owner set one
+        U-->>O: say the password is wrong, show the hint, explain a forgotten password is reset only in the Telegram app
+    else Telegram limits the attempts
+        X-->>S: wait required, with the seconds left
+        S->>S: discard the attempt and destroy its Telegram session
+        S-->>U: refusal wait required, with the retry time
+        U-->>O: end the attempt and count down to the retry time
+    else the password is right
+        X-->>S: authorized as a Telegram user
+        S-->>U: the outcome of flow 1 (linked, signed in again, or refused)
+    end
+    Note over O,S: Postcondition: the password and its hint were never stored or logged
+```
+
+### Flow 8: attempt discarded on cancel, inactivity or an ended Sign-in Session (AC-109, AC-110)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant C as <client>
+    participant S as <service>
+    participant X as <external-system>
+
+    Note over O,S: Precondition: the Owner has an open attempt that Telegram hasn't authorized yet. The client is the one-minute scheduler
+    alt the Owner cancels
+        O->>U: Cancel
+        U->>S: cancel my attempt
+        S->>S: discard the attempt, a no-op if it is already gone
+        S-->>U: attempt cancelled
+        U-->>O: back to where the attempt started
+    else the one-minute sweep runs
+        C->>S: sweep open attempts
+        loop each open attempt
+            S->>S: skip it if it was already discarded
+            S->>S: check its last step time and whether the Sign-in Session that last stepped it is live
+            opt 15 min without a step, or that Sign-in Session ended or was revoked
+                S->>S: discard the attempt
+            end
+        end
+    else the Owner's Sign-in Session ends mid-wizard, before the sweep
+        O->>U: take the next wizard step
+        U->>S: submit the step
+        S-->>U: sign-in required
+        U-->>O: the E01 session-ended page
+        O->>U: sign in again and choose Connect Telegram
+        U->>S: start or resume linking
+        S->>S: the open attempt's Sign-in Session isn't live, discard it
+        S-->>U: a new attempt at the phone step (flow 4)
+    end
+    S->>S: close and destroy the discarded attempt's Telegram session and its directory
+    Note over S,X: the session never signed in, so Telegram lists no teleX device for it
+    Note over S: a failed directory deletion is retried every minute
+    alt the deletion keeps failing until a restart
+        S->>S: the startup sweep deletes the directory, unreadable meanwhile because its key existed only in memory
+    end
+    Note over O,S: Postcondition: no open attempt and nothing stored, the next start begins at the phone step
+```
+
+### Flow 9: live account state, Reconnecting or Session lost (AC-122, AC-117)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant B as <message-bus>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over X,S: Trigger: Telegram's connection or authorization changes for a connected Linked Account's Telegram session
+    X->>S: session state changed, with TDLib's sequence
+    S->>S: map the Telegram session to its Linked Account, drop the change if its sequence isn't newer
+    alt connection lost (Telegram unreachable)
+        S->>D: set the account Reconnecting
+        Note over S,D: persists the Linked Account state, looked up by Telegram session id
+        Note over S,X: TDLib keeps retrying the connection by itself with backoff, nothing is asked of the Owner
+        X->>S: authorization ready again
+        S->>D: set the account Connected
+    else authorization closed (the session was ended in the Telegram app or by Telegram)
+        S->>D: set the account Session lost, keep its chat list and everything attached
+        Note over S,D: persists the Linked Account state
+        S->>S: close the Telegram client, keep its directory until Sign in again or unlink
+    end
+    S->>B: record LinkedAccountStateChanged
+    B->>S: deliver to the live-update listener
+    S-->>U: hint linked-accounts on each of the Owner's open tabs
+    U->>S: refetch my Linked Accounts
+    S->>D: read this Owner's Linked Accounts
+    D-->>S: accounts with states
+    S-->>U: accounts with states
+    alt any account is Session lost
+        U-->>O: Session lost with Sign in again on Accounts, the account-disconnected Status Banner on every signed-in screen
+    else no account is Session lost
+        U-->>O: Reconnecting or Connected on Accounts, no banner
+    end
+    alt the event isn't delivered
+        Note over B,S: the publication stays incomplete in the registry and is republished on restart, and a tab whose stream dropped refetches everything when it reconnects
+    end
+    Note over O,X: Postcondition: an outage never shows Session lost, and Session lost shows within 5 min of the session ending
+```
+
+### Flow 10: Sign in again to a Session lost account (AC-117, AC-108)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant B as <message-bus>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over O,S: Precondition: the Owner's Linked Account A is Session lost
+    O->>U: Sign in again on Accounts or in the Status Banner
+    U->>S: start linking for account A
+    S->>D: find A among this Owner's Linked Accounts
+    alt A isn't among them (another Owner's account, or unlinked)
+        S-->>U: not found
+        U-->>O: the account isn't there
+    else A is this Owner's and Session lost
+        S->>S: open an attempt that targets A, no limit check because A already counts
+        S-->>U: attempt at the phone step
+        Note over O,X: phone, code and password as in flows 5, 6 and 7
+        X-->>S: authorized as a Telegram user
+        alt the same Telegram user as A, matched by Telegram identity, not by phone
+            S->>S: seal the new database key with the Owner's key
+            S->>D: put the new Telegram session and sealed key on A, set Connected
+            Note over S,D: persists the Linked Account's Telegram session id, sealed key and state
+            S->>S: destroy the old session directory
+            S->>B: record LinkedAccountStateChanged
+            S-->>U: signed in again, everything attached kept
+            U-->>O: A Connected, the Status Banner goes away, the sync resumes (flow 11)
+        else a Telegram user that is another Owner's Linked Account
+            S->>X: log out and destroy the new session
+            S-->>U: refusal account owned by another Owner
+            U-->>O: the one-Owner rule (AC-04), A stays Session lost
+        else any other Telegram user
+            S->>X: log out and destroy the new session
+            S-->>U: refusal account mismatch
+            U-->>O: link that account as a new account, A stays Session lost
+        end
+    end
+    Note over O,X: Postcondition: A keeps its id and everything attached, and no extra teleX device is left in any Telegram account
+```
+
+### Flow 11: chat list sync, progress and later changes (AC-116, AC-121)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant B as <message-bus>
+    participant D as <data-store>
+    participant X as <external-system>
+
+    Note over X,S: Trigger: a Linked Account becomes Connected (new link, Sign in again, or reconnect after a restart)
+    S->>D: read the account's stored sync counts
+    S->>X: load the main and archived chat lists
+    loop until every chat is loaded
+        X-->>S: chats changed, a batch plus the account's total
+        S->>S: upsert by Telegram chat id, so a chat seen again is not counted twice
+        S->>D: upsert the chat-list rows, store the synced count and the total
+        Note over S,D: persists chat-list rows keyed by Linked Account and Telegram chat id, and the account's sync counts
+        S->>B: record LinkedAccountSyncProgressed, at most one per second per account
+        B->>S: deliver to the live-update listener
+        S-->>U: hint linked-accounts, if the Owner has a page open
+        U->>S: refetch my Linked Accounts
+        S-->>U: synced count of the total, archived chats included
+        U-->>O: sync progress
+    end
+    S->>D: mark the sync finished
+    S-->>U: hint linked-accounts
+    U-->>O: the number of chats
+    Note over O,S: the sync runs in the service whether or not a page is open, and a page opened later reads the current counts
+    Note over S,X: a restart mid-sync resumes from the stored counts, not from zero, and TDLib retries by itself after an outage
+    loop while the account is connected
+        X-->>S: a chat joined, left or renamed, or new messages changed a chat's order or unread count
+        S->>D: upsert or remove the chat-list row and update the count
+        S->>B: record LinkedAccountSyncProgressed
+        S-->>U: hint linked-accounts, the count is current within a minute
+    end
+    alt the progress event isn't delivered
+        Note over B,S: the publication stays incomplete in the registry and is republished on restart, and the next refetch reads the counts anyway
+    end
+    Note over O,X: Postcondition: the chat list teleX keeps matches Telegram's while the account is connected, and showing it is E04
+```
+
+### Cross-cutting: Flow 12, the unlink announcement survives a restart (AC-112)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as <service>
+    participant B as <message-bus>
+    participant L as <service> listener
+    participant D as <data-store>
+
+    Note over S,D: Trigger: an Owner confirms the unlink of Linked Account A (flow 2)
+    S->>D: in one transaction delete A, its sealed key and its chat list, and record AccountUnlinked
+    Note over S,D: persists the AccountUnlinked publication, carrying only A's teleX id and no Telegram data
+    B->>L: deliver AccountUnlinked to every listener
+    L->>L: skip if A was already handled, keyed by A's id
+    L->>L: drop A from whatever lists or offers accounts (live hints in E02, agent pause and schedule cancel from E09 and E20)
+    L->>B: mark the publication complete
+    alt teleX stops after the commit and before every listener completed
+        Note over B,D: the publication stays incomplete in the registry, and A is already gone from the store
+        B->>D: on restart, read the incomplete publications
+        B->>L: republish AccountUnlinked
+        L->>L: skip if A was already handled, otherwise handle it
+        L->>B: mark the publication complete
+        Note over S,D: the boot reconnect never sees A, and the startup sweep removes a session directory left behind
+    end
+    Note over B,L: a failing listener is retried on each restart, and its incomplete publication stays visible in the registry as the dead-letter
+    opt the Owner links the same Telegram account again later
+        S->>D: insert a new Linked Account with a new id and nothing attached
+        Note over S,D: persists a new Linked Account, unrelated to A
+    end
+    Note over S,L: Postcondition: A appears nowhere that lists or offers accounts, also after a restart
+```
+
+### Flow 13: view my Linked Accounts, and another Owner's are invisible (AC-114, AC-03, AC-110)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as <user>
+    participant U as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over O,S: Precondition: the Owner has a live Sign-in Session and two Linked Accounts
+    O->>U: open Accounts
+    U->>S: list my Linked Accounts
+    S->>D: read the Linked Accounts whose Owner is the caller
+    Note over S,D: every account and chat-list read filters on the caller's Owner id
+    D-->>S: the caller's accounts
+    S-->>U: each with Telegram name, masked phone, state and sync counts
+    U-->>O: both accounts listed, each with its own state and sync
+    alt the Owner names another Owner's account B, or its chats, by any route
+        U->>S: get, Sign in again or unlink account B
+        S->>D: find B among the caller's accounts
+        D-->>S: nothing
+        S-->>U: not found, the same answer as for an id that never existed
+        U-->>O: the account isn't there
+    end
+    alt the Owner signs out, or the Sign-in Session ends or is revoked
+        O->>U: sign out
+        U->>S: end the Sign-in Session
+        Note over S: the Linked Accounts and their Telegram sessions are untouched and keep syncing
+        O->>U: sign in again later and open Accounts
+        U->>S: list my Linked Accounts
+        S-->>U: the same accounts, still connected
+    end
+    Note over O,S: Postcondition: an Owner sees only their own Linked Accounts, and teleX signing the Owner out never touches them
+```
+
+### Coverage
+
+| User story | Flows |
+|---|---|
+| US-02 Link a Telegram account | 1, 4, 5, 6, 7, 8 |
+| US-03 Unlink an account for good | 2, 12, 13 |
+| US-50 Link several accounts | 4, 13 (and 1 for the limit at the end) |
+| US-51 Know each account's state | 9, 10, 11 |
+| US-52 Stay connected across restarts | 3, 11 (resume) |
+| US-53 Enable Telegram linking | 4 (plus the non-runtime half below) |
+
+| AC | Shown by |
+|---|---|
+| AC-01 | flow 1 (2FA path, new-account branch), flow 6 (no-2FA path goes straight to flow 1's outcome) |
+| AC-02 | flow 5 (wait still running), flow 6 (wrong, expired, new code, attempts limited), flow 7 (attempts limited) |
+| AC-106 | flow 7 |
+| AC-107 | flow 5 |
+| AC-04 | flow 1 (refusal branch), flow 10 (another Owner's account on Sign in again) |
+| AC-108 | flow 1 (refusal and Session lost branches), flow 10 |
+| AC-109 | flow 4 (resume in another tab or device), flow 8 (cancel, 15-min sweep) |
+| AC-110 | flow 8 (Sign-in Session ends mid-wizard), flow 13 (sign-out leaves accounts connected) |
+| AC-03 | flow 13 (another Owner's account is not found), flow 10 (Sign in again on a foreign id). The Operator half is non-runtime, see below |
+| AC-111 | flow 2 |
+| AC-112 | flow 2, flow 12 (delivery across a restart, re-link creates a new account) |
+| AC-113 | flow 2 (not-confirmed branch) |
+| AC-114 | flow 4 (Add account from Accounts), flow 13 (both listed) |
+| AC-115 | flow 4 (at the start), flow 1 (at the end, inside the insert) |
+| AC-116 | flow 11 (progress, leave and return, resume after restart), flow 1 (sync starts) |
+| AC-121 | flow 11 (changes while connected) |
+| AC-117 | flow 9 (Session lost detected), flow 10 (Sign in again, mismatch refused) |
+| AC-122 | flow 9 (Reconnecting vs Session lost, Status Banner), flow 3 (unreachable at boot) |
+| AC-36 | flow 3 |
+| AC-118 | flow 3 (session ended while stopped) |
+| AC-119 | flow 4 (not set up) |
+| AC-120 | flow 4 (wizard starts). The Operator half is non-runtime, see below |
+
+**Non-runtime N/A:** "the Operator sees no Telegram name, phone number or chat" (AC-03 second half, AC-120 second half). teleX has no Operator endpoint that reads Linked Accounts, and the guarantee is a property of what logs, metrics and config contain (§8 Logging, §7 Monitoring). So it's checked by scanning captured logs and metric tags in an integration test and by the security review, not by a flow.
+
+**Flagged for design, data-model and api** (flags only; no ADR written):
+- Flows 1–3 were drawn by `design` with concrete module names (`SPA`, `web`, `messaging`, `identity`, `telegram`). They are left as written. Flows 4–13 use the generic participants.
+- **AC-117's 5-minute bound** (flow 9) assumes TDLib reports a closed authorization on its own soon after the session is ended in Telegram. The TDLib spike should confirm this on an idle account. If it doesn't hold, a periodic liveness check per Telegram session is needed, which is a design change to §8.
+- **Sign in again on an account that is Connected** (flow 10) isn't specified: the "Sign in again" action only exists for Session lost. `/sdd:api` should decide its answer (probably the `telegram-account-already-linked` problem, or a no-op).
+- Flow 7 adds Telegram's attempt limit on the password step, from spec §6.1 ("Telegram's own attempt limits apply"), beyond AC-106's literal text.
+- **Persist hints for `/sdd:data-model`:**
+  - Linked Account reads by the caller's Owner id: flows 4 (count), 10, 13.
+  - Uniqueness of the Telegram user id across the installation: flow 1, §8.
+  - Lookup by the current Telegram session id: flow 9 state changes, flow 10 swap.
+  - Chat-list rows keyed by Linked Account and Telegram chat id: flow 11 upsert and remove, flow 2 and flow 12 delete by account.
+  - Sync counts (synced, total, finished) on the Linked Account: flow 11 resume.
+  - The event publication registry's incomplete-publication read on restart: flow 12, already provided by Modulith.
+
 ## 7. Deployment view
 
 **Topology.** One app instance plus one Postgres (foundation ADR-0001; spec §6 availability N/A). This feature makes "one instance" a hard rule. TDLib clients live in the app process and own their session directories, so two instances would run two clients on the same session.

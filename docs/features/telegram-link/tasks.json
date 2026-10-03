@@ -1,0 +1,541 @@
+{
+  "slug": "telegram-link",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Prove TDLight on JDK 25 and land the binding behind the TdlibFacade (spike)",
+      "layer": "infra",
+      "deps": [],
+      "acs": [],
+      "dod": "TDLight natives load on eclipse-temurin:25-jre (linux x64) and on macOS, two facade clients run in one process, a test-server sign-in completes, and spike.md records image growth, memory per client and the idle-session-termination timing.",
+      "files_hint": [
+        "gradle/libs.versions.toml",
+        "backend/telegram-tdlib/",
+        "Dockerfile",
+        "CLAUDE.md",
+        "docs/docs/01-tech-spec.md",
+        "docs/features/telegram-link/spike.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t01-tdlight-spike-and-facade.md"
+    },
+    {
+      "id": "T2",
+      "title": "Promote the owner_key, linked_account and channel migrations into the live Flyway tree",
+      "layer": "migration",
+      "deps": [],
+      "acs": [
+        "AC-04",
+        "AC-108",
+        "AC-111"
+      ],
+      "dod": "The three staged pairs are promoted to db/migration V…__*.sql + db/rollback U…__*.sql, MigrationRollbackIT applies up → down → up for all of them, and a schema IT proves the telegram_user_id uniqueness and the channel cascade.",
+      "files_hint": [
+        "docs/features/telegram-link/migrations/01_create_owner_key.up.sql",
+        "docs/features/telegram-link/migrations/01_create_owner_key.down.sql",
+        "docs/features/telegram-link/migrations/02_create_linked_account.up.sql",
+        "docs/features/telegram-link/migrations/02_create_linked_account.down.sql",
+        "docs/features/telegram-link/migrations/03_create_channel.up.sql",
+        "docs/features/telegram-link/migrations/03_create_channel.down.sql"
+      ],
+      "file": "docs/features/telegram-link/tasks/t02-promote-telegram-link-migrations.md"
+    },
+    {
+      "id": "T3",
+      "title": "Add OwnerKeys envelope encryption with the master-key check and reset, and SignInSessions.isLive",
+      "layer": "app",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-110",
+        "AC-119"
+      ],
+      "dod": "OwnerKeys seals and opens with AES-256-GCM bound to an AAD, lazily creates the Owner key, refuses to start on a missing or wrong master key once a key exists, reports \"not set up\" on a fresh installation without one, performs the explicit reset, and SignInSessions.isLive answers per session — all covered by unit + integration tests.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/OwnerKeys.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/key/",
+        "backend/app/src/main/kotlin/telex/identity/SignInSessions.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/OwnerKeysIT.kt",
+        "backend/app/src/test/kotlin/telex/identity/internal/key/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t03-identity-owner-keys-and-session-liveness.md"
+    },
+    {
+      "id": "T4",
+      "title": "Define the TelegramSessions port, its in-process events and the fake Telegram adapter",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122"
+      ],
+      "dod": "The TelegramSessions port and its port types and events exist at the telegram module root, the fake adapter (selected by telex.telegram.adapter=fake) scripts codes, 2FA, flood waits, banned/unregistered numbers, connectivity drops, session termination and N chats, and unit tests drive every scripted branch.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessionId.kt",
+        "backend/app/src/main/kotlin/telex/telegram/SignInOutcome.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessionStateChanged.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramChatsChanged.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/",
+        "backend/app/src/main/kotlin/telex/telegram/internal/TelegramAdapterConfiguration.kt",
+        "backend/app/src/test/kotlin/telex/telegram/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t04-telegram-port-and-fake-adapter.md"
+    },
+    {
+      "id": "T5",
+      "title": "Manage Telegram session directories: per-session dir, destroy with one-minute retry, startup orphan sweep",
+      "layer": "infra",
+      "deps": [
+        "T4"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-112"
+      ],
+      "dod": "Every Telegram session gets one directory under telex.telegram.sessions-dir, destroy deletes it and retries failures every minute, and sweepOrphans(referenced) deletes every directory not in the referenced set — covered by unit tests on a temp directory.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/files/",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/",
+        "backend/app/src/test/kotlin/telex/telegram/internal/files/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t05-telegram-session-directories.md"
+    },
+    {
+      "id": "T6",
+      "title": "Implement the tdlight adapter: TDLib auth states, errors and chat list mapped to the port",
+      "layer": "infra",
+      "deps": [
+        "T1",
+        "T5"
+      ],
+      "acs": [
+        "AC-36",
+        "AC-121"
+      ],
+      "dod": "The tdlight adapter implements every TelegramSessions operation over TdlibFacade, maps authorization/connection states to Ready/Connecting/Closed and TDLib errors to port outcomes, streams the main + archived chat list as TelegramChatsChanged batches, and an IT proves the raw TDLib key appears nowhere in the DB, logs or session volume.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/",
+        "backend/telegram-tdlib/",
+        "backend/app/src/integrationTest/kotlin/telex/telegram/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t06-tdlight-adapter.md"
+    },
+    {
+      "id": "T7",
+      "title": "Build the LinkedAccount aggregate: rules, states, masked phone, repository, events and the account limit",
+      "layer": "domain",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-108",
+        "AC-115",
+        "AC-03"
+      ],
+      "dod": "The LinkedAccount aggregate decides new-link / signed-in-again / refuse (other Owner, already linked, limit, mismatch) by Telegram identity, its JdbcClient repository serves every data-model access pattern Owner-scoped (including the chat count and the advisory-locked limit count), and the four messaging event types exist — covered by unit tests and a repository IT.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccountId.kt",
+        "backend/app/src/main/kotlin/telex/messaging/ChannelId.kt",
+        "backend/app/src/main/kotlin/telex/messaging/AccountLinked.kt",
+        "backend/app/src/main/kotlin/telex/messaging/AccountUnlinked.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccountStateChanged.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccountSyncProgressed.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/",
+        "backend/app/src/main/kotlin/telex/messaging/internal/config/",
+        "backend/app/src/test/kotlin/telex/messaging/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkedAccountRepositoryIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t07-linked-account-aggregate.md"
+    },
+    {
+      "id": "T8",
+      "title": "Start, resume, cancel and expire the in-memory linking attempt (one per Owner)",
+      "layer": "app",
+      "deps": [
+        "T3",
+        "T4",
+        "T7"
+      ],
+      "acs": [
+        "AC-109",
+        "AC-110",
+        "AC-119",
+        "AC-114"
+      ],
+      "dod": "Linking.start/get/cancel enforce one open attempt per Owner, refuse when linking isn't set up or the limit is reached, resume an open attempt from any tab, and the one-minute sweep discards attempts after 15 min without a step or when their Sign-in Session is no longer live, always destroying the attempt's Telegram session — covered by an ApplicationModuleTest on the fake adapter with a fixed clock.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/attempt/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingAttemptIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t08-linking-attempt-lifecycle.md"
+    },
+    {
+      "id": "T9",
+      "title": "Run the phone, code, resend and password steps with Telegram's refusals and waits",
+      "layer": "app",
+      "deps": [
+        "T8"
+      ],
+      "acs": [
+        "AC-02",
+        "AC-106",
+        "AC-107"
+      ],
+      "dod": "Linking.submitPhone/resendCode/submitCode/submitPassword check ownership, live Sign-in Session and step, map every Telegram outcome to the step's result or domain problem (wait ends the attempt with retryAt), never store or log the typed values, and an ApplicationModuleTest covers every branch on the fake adapter.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/attempt/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingStepsIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t09-linking-wizard-steps.md"
+    },
+    {
+      "id": "T10",
+      "title": "Complete an authorized attempt: link a new account, sign in again, or refuse and log out",
+      "layer": "app",
+      "deps": [
+        "T5",
+        "T9"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-04",
+        "AC-108",
+        "AC-115",
+        "AC-117"
+      ],
+      "dod": "On Telegram authorizing an attempt, messaging either inserts a Connected Linked Account with the sealed TDLib key and AccountLinked, swaps the new session into the Session-lost target with LinkedAccountStateChanged, or logs out and destroys the new session with the right refusal — inside one transaction under the Owner's advisory lock — covered by an ApplicationModuleTest on the fake adapter.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/attempt/",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t10-complete-authorized-attempt.md"
+    },
+    {
+      "id": "T11",
+      "title": "Unlink an account: bounded sign-out, one-transaction delete with AccountUnlinked, then destroy the session",
+      "layer": "app",
+      "deps": [
+        "T5",
+        "T7"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-112",
+        "AC-113"
+      ],
+      "dod": "LinkedAccounts.unlink logs the session out with a 10 s bound, deletes the account, its sealed key and its chat list and records AccountUnlinked in one transaction, discards a Sign-in-again attempt that targets it, destroys the session directory after commit and reports signOutConfirmed — covered by an ApplicationModuleTest for the confirmed and unreachable cases.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t11-unlink-linked-account.md"
+    },
+    {
+      "id": "T12",
+      "title": "Reconnect accounts on boot and follow Telegram's session state (Connected, Reconnecting, Session lost)",
+      "layer": "app",
+      "deps": [
+        "T3",
+        "T5",
+        "T7"
+      ],
+      "acs": [
+        "AC-36",
+        "AC-118",
+        "AC-117",
+        "AC-122"
+      ],
+      "dod": "On boot messaging applies a master-key reset if one happened, sweeps orphan session directories, reopens every non-Session-lost account in parallel, and maps TelegramSessionStateChanged (newer sequence only) to the stored state with LinkedAccountStateChanged on a real change — covered by an ApplicationModuleTest with two accounts and a controlled clock.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t12-account-lifecycle-and-reconnect.md"
+    },
+    {
+      "id": "T13",
+      "title": "Sync each account's chat list into channel rows with throttled progress events",
+      "layer": "app",
+      "deps": [
+        "T4",
+        "T7"
+      ],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "TelegramChatsChanged upserts and removes channel rows by (linked_account_id, telegram_chat_id), stores chats_total and chat_sync_completed_at, and publishes LinkedAccountSyncProgressed at most once per second per account with a trailing publish — covered by an ApplicationModuleTest with a 500-chat fake account, including resume after a restart.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t13-chat-list-sync.md"
+    },
+    {
+      "id": "T14",
+      "title": "Expose list and unlink of my Linked Accounts, and back getMe.linkedAccountCount with messaging",
+      "layer": "ports",
+      "deps": [
+        "T7",
+        "T11"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-110",
+        "AC-113",
+        "AC-114"
+      ],
+      "dod": "GET /api/v1/linked-accounts and DELETE /api/v1/linked-accounts/{id} answer exactly the contract (Owner-scoped, 404 not-found for anything not the caller's, signOutConfirmed), getMe.linkedAccountCount comes from messaging, and an IT validates every response against openapi.yaml.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/LinkedAccountsController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/MeController.kt",
+        "backend/app/src/main/kotlin/telex/identity/OwnerProfiles.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkedAccountsApiIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t14-linked-accounts-endpoints.md"
+    },
+    {
+      "id": "T15",
+      "title": "Expose the linking-attempt endpoints with the contract's problem codes, validation and Retry-After",
+      "layer": "ports",
+      "deps": [
+        "T10"
+      ],
+      "acs": [
+        "AC-02",
+        "AC-106",
+        "AC-107",
+        "AC-109",
+        "AC-119"
+      ],
+      "dod": "The seven linking operations answer exactly openapi.yaml (status, problem code, extensions retryAt/passwordHint/limit/step, Retry-After, validation-failed), request values never reach logs, and an IT validates every documented response on the fake adapter.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/LinkingController.kt",
+        "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t15-linking-endpoints.md"
+    },
+    {
+      "id": "T16",
+      "title": "Serve the live-update SSE stream of invalidation hints per Owner",
+      "layer": "ports",
+      "deps": [
+        "T7"
+      ],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122"
+      ],
+      "dod": "GET /api/v1/live-updates streams `event: hint` / `data: linked-accounts` to every open tab of the affected Owner after each messaging account event (≤ 1 per second per Owner), sends a 25 s heartbeat with the contract headers, never bumps session activity and closes when the Sign-in Session ends — covered by an IT.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/live/",
+        "backend/app/src/main/kotlin/telex/web/security/",
+        "backend/app/src/integrationTest/kotlin/telex/web/LiveUpdatesIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t16-live-updates-sse.md"
+    },
+    {
+      "id": "T17",
+      "title": "Wire the Operator config, the session volume and the README Telegram setup step",
+      "layer": "wiring",
+      "deps": [
+        "T3",
+        "T6"
+      ],
+      "acs": [
+        "AC-119",
+        "AC-120"
+      ],
+      "dod": "application.yaml binds every TELEX_* setting of the feature, the local profile uses the fake adapter unless real credentials are set, compose mounts the telex-tdlib volume and passes the variables, the README has the Operator's Telegram setup step, and the tech-spec event table and sad §8 Events reflect messaging as publisher and the in-process telegram events.",
+      "files_hint": [
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/main/resources/application-local.yaml",
+        "compose.yaml",
+        "README.md",
+        "docs/docs/01-tech-spec.md",
+        "docs/features/telegram-link/sad.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t17-operator-config-and-readme.md"
+    },
+    {
+      "id": "T18",
+      "title": "Add the SPA API clients, the single SSE live-update client and all new copy",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122"
+      ],
+      "dod": "Typed clients for the ten operations, a single EventSource client that invalidates the linked-accounts query on a hint and everything on reconnect, background refetches with X-Telex-Background, and every string from screens.md in messages.ts (linking, accounts, banner groups + the 15 new problem codes) — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/api/linkedAccounts.ts",
+        "frontend/src/api/linking.ts",
+        "frontend/src/api/live.ts",
+        "frontend/src/api/client.ts",
+        "frontend/src/App.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t18-spa-api-live-client-and-copy.md"
+    },
+    {
+      "id": "T19",
+      "title": "Build LinkedAccountSummary, port StatusBanner, extend CodeInput, Icon and PageFrame",
+      "layer": "ui",
+      "deps": [
+        "T18"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-122"
+      ],
+      "dod": "LinkedAccountSummary renders every account state (line and row variants) with icon + words and the sync line, StatusBanner shows the account-disconnected condition for one or several lost accounts with its action, CodeInput takes length and label, Icon has unlink, PageFrame has the Accounts button and the banner slot — covered by Vitest at the component level.",
+      "files_hint": [
+        "frontend/src/components/LinkedAccountSummary/",
+        "frontend/src/components/StatusBanner/",
+        "frontend/src/components/CodeInput/",
+        "frontend/src/components/Icon/",
+        "frontend/src/components/PageFrame/",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t19-account-components-banner-and-frame.md"
+    },
+    {
+      "id": "T20",
+      "title": "Build the SCR-02 wizard steps: phone, code, password with their validation and refusals",
+      "layer": "ui",
+      "deps": [
+        "T19"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-106",
+        "AC-107"
+      ],
+      "dod": "SCR-02 renders the step the server answers and implements the loading, phone, phone-validation, phone-refused, code, code-validation, code-wrong, code-expired, resending, resent, password, password-validation, password-wrong, submitting, telegram-unavailable and step-mismatch states — covered by Vitest at 360 px and 1280 px layouts.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/",
+        "frontend/src/app/AppRoutes.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t20-connect-telegram-wizard-steps.md"
+    },
+    {
+      "id": "T21",
+      "title": "Build the SCR-02 outcomes: wait countdown, refusals, attempt ended, cancel and success",
+      "layer": "ui",
+      "deps": [
+        "T20"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-108",
+        "AC-109",
+        "AC-115",
+        "AC-117"
+      ],
+      "dod": "SCR-02 implements the wait, refused-other-owner, refused-already-linked, refused-limit, refused-mismatch, attempt-ended, starting-again, cancelling, success and error states, with the countdown announced only at start and end — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t21-connect-telegram-wizard-outcomes.md"
+    },
+    {
+      "id": "T22",
+      "title": "Make SCR-10 Inbox start linking and list one line per Linked Account",
+      "layer": "ui",
+      "deps": [
+        "T19"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-119"
+      ],
+      "dod": "SCR-10 implements loading, default (empty) with a working Connect Telegram, starting, start-refused, resumed, with-accounts, linked, live, banner and error states, driven by listMyLinkedAccounts instead of Me.linkedAccountCount — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/pages/inbox/",
+        "frontend/src/app/AppRoutes.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t22-inbox-connect-telegram-and-account-lines.md"
+    },
+    {
+      "id": "T23",
+      "title": "Build SCR-60 Accounts: the list with states, Add account, Sign in again and the unlink dialog",
+      "layer": "ui",
+      "deps": [
+        "T19"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-111",
+        "AC-113",
+        "AC-114"
+      ],
+      "dod": "SCR-60 implements loading, default list with every row state, empty, starting, start-refused, resumed, unlink-confirm, unlinking, unlinked, unlinked-unconfirmed, unlink-gone, linked, live, banner and error — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/pages/accounts/",
+        "frontend/src/app/AppRoutes.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t23-accounts-page-and-unlink-dialog.md"
+    },
+    {
+      "id": "T24",
+      "title": "Prove nothing is left behind or leaked: unlink dump, restart delivery, registry and log scans",
+      "layer": "tests",
+      "deps": [
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T16"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-112",
+        "AC-120"
+      ],
+      "dod": "Integration tests on the fake adapter prove an unlink (confirmed and unreachable) leaves no identifying row, key or session dir, a crash after the commit is cleaned by the startup sweep, AccountUnlinked is delivered after a restart, and no event_publication payload, log line or metric tag carries a phone, name, Telegram id, chat title, code or password.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/messaging/NothingLeftBehindIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkAnnouncementRestartIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/TelegramDataHygieneIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t24-nothing-left-behind-integration-tests.md"
+    },
+    {
+      "id": "T25",
+      "title": "Add Playwright end-to-end tests of linking, live state and unlink at 360 px and 1280 px with axe",
+      "layer": "tests",
+      "deps": [
+        "T14",
+        "T15",
+        "T17",
+        "T21",
+        "T22",
+        "T23"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-109",
+        "AC-117",
+        "AC-122"
+      ],
+      "dod": "Playwright on the fake adapter at 360 px and 1280 px links an account with 2FA, hits a wrong code and a wait, reloads and opens a second tab mid-wizard, sees Session lost with the banner and signs in again, unlinks, and the axe scan reports 0 violations on every screen state visited.",
+      "files_hint": [
+        "e2e/tests/telegram-link.spec.ts",
+        "e2e/support/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t25-end-to-end-browser-tests.md"
+    }
+  ]
+}
