@@ -24,7 +24,7 @@
 | T17 | Build the Profiles tab: the profile picker, profile cards, delete and the AI-not-set-up alert | ui | Anton Husiev | M | T16 | done |
 | T18 | Build the profile editor modal with the chain editor and the model chooser | ui | Anton Husiev | M | T17 | todo |
 | T19 | Add Playwright end-to-end tests for the Models page at 360 px and 1280 px with axe and a 500-model load timing | tests | Anton Husiev | M | T15, T18 | todo |
-| T20 | Document the AI settings in the README and add the real-call smoke check per slot | docs | Anton Husiev | S | T9, T13 | todo |
+| T20 | Document the AI settings in the README and add the real-call smoke check per slot | docs | Anton Husiev | S | T9, T13 | done |
 
 **Total:** 20 tasks, ~18 person-days.
 
