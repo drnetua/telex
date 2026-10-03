@@ -311,21 +311,26 @@ No new deployment unit. The feature ships inside the existing app image: one Spr
 
 ## 8. Crosscutting concepts
 
-<!-- 🎯 Why: CROSS-CUTTING PATTERNS spanning several modules: logging, errors, authorization, ID
-     strategy, events, caching. ⭐ The second-densest section. A pattern inside one module is NOT
-     here; a project-wide convention belongs in the convention file.
-     📋 Write: a table — concept / convention / where defined. One row per concept.
-     📌 e.g. «sortable time-based IDs generated in the app layer» as a default from the convention file. -->
+Repo conventions are inherited unchanged unless the row says otherwise.
 
 | Concept | Convention | Where defined |
 |---|---|---|
-| Logging | <e.g. structured, fields `module=<name>`> | <convention file §X or here> |
-| Authentication | <e.g. token-based via middleware> | <convention file §X> |
-| Error handling | <e.g. domain sentinel → ports error mapping → JSON> | <convention file §X> |
-| ID strategy | <e.g. sortable time-based ID in the app layer> | <convention file §X> |
-| Internationalisation | <e.g. N/A, single language> | — |
-| Observability | <e.g. tracing on the request boundary> | — |
-| Events | <module-specific patterns, if any> | <here> |
+| Logging | Spring Boot defaults. The pulse is not logged per request. An unknown Status Banner condition code is logged once by the SPA console and ignored | `application.yaml`; ADR-0006 |
+| Authentication | Every new endpoint (`pulse`, `me/preferences`, `time-zones`) needs a live Sign-in Session through the existing cookie filter. The pulse is sent with `X-Telex-Background: 1`, so it never extends a session | platform-skeleton ADR-0001, ADR-0005 |
+| Authorization | Only the current Owner: preferences are read and written for the session's Owner, and every Inbox and condition source is called with that Owner's id and filters on `owner_id` (AC-175) | `CLAUDE.md`; spec §6.1 |
+| Error handling | RFC 9457 problems. New codes: `unknown-time-zone` (a timezone not on the list) and `time-zone-required` (an empty timezone, AC-186), both field errors on `timeZone`. A theme outside light, dark or system is a `validation-failed` field error | `telex.web.ProblemHandler`; `/sdd:api` |
+| Failure routing in the SPA | Narrowed from E01: no answer within 10 s, a network error, or a 502/503/504 from the proxy feed the connectivity state and the Status Banner, and the screen stays. `unauthenticated` → SCR-01, `session-ended` → SCR-92, other answered failures → SCR-93 with Retry. A pulse failure routes the same way | `frontend/src/api/client.ts`; ADR-0004 |
+| Connectivity | One client state, `online`, `offline` or `not-responding`, fed by browser `online`/`offline` events, the pulse and every call. It drives TanStack Query's `onlineManager`, so paused queries refetch on recovery | `frontend/src/shell/connectivity.ts`; ADR-0004 |
+| Status Banner | Conditions come from the client (offline, not-responding) and from `StatusConditionSource` codes in the pulse. The SPA's condition catalog holds each code's text, single action and importance. The most important condition shows, the rest are listed under "N more", and none can be closed | `frontend/src/shell/conditions.ts`; ADR-0006 |
+| Theme | `data-bs-theme` on `<html>` (Tabler's attribute, tokens from `styles.css` for both themes). An inline script applies the theme last used on this device (localStorage `telex.theme`, System resolved through `matchMedia`) before first paint. After `me` arrives the shell switches once if the account differs. System follows `prefers-color-scheme` changes live, and other tabs in the same browser follow through the `storage` event. A change applies before it saves and reverts if the save fails | `frontend/index.html`, `frontend/src/shell/theme.ts`; AC-179…AC-182 |
+| Time and timezone | The server sends instants in UTC (ISO 8601). Every date shown goes through `formatInstant(instant, timeZone)` (`Intl.DateTimeFormat` with the Owner's saved zone). The device zone comes from `Intl.DateTimeFormat().resolvedOptions().timeZone`, and is saved only while none is saved, through a server-side "only if unset" write. A zone off the list, or one that can't be read, saves UTC. The "pick your own" hint on SCR-64 shows whenever the saved zone is UTC | `frontend/src/shell/time.ts`, `identity.OwnerPreferences`; ADR-0005 |
+| Known timezone list | `ZoneId.getAvailableZoneIds()` limited to `Area/City` names plus `UTC`, served by `GET /api/v1/time-zones`. The SPA searches it by city or region, and the server rejects anything else | `identity.TimeZones` |
+| ID strategy | No new aggregate, so no new id | `telex.shared.Ids` |
+| Responsive layout | One breakpoint, 768 px (`docs/design-system.md` `bp-tablet`): side menu at 768 px and wider, bottom bar of five items plus "More" below it. Bottom-bar targets are at least 44 × 44 px. Every shell screen fits 360 px with no sideways scroll | `docs/design-system.md`; AC-43, AC-07b |
+| Internationalisation | English only, all strings in `frontend/src/messages.ts`, sentence case, no emoji. Section names, condition texts and "Coming soon" descriptions live there too | `docs/docs/design-system/README.md` §Content |
+| Accessibility | WCAG 2.2 AA in both themes (D-18). The current section and every banner are marked by icon and words, never by color alone. Axe runs in e2e on every shell screen at both widths and in both themes | spec §6; `e2e/` |
+| Events | No new Modulith event. Live signals travel by pulse (ADR-0002). A producer that needs to tell other modules about Inbox changes (E19's bot counter) adds its event then | ADR-0002, ADR-0003 |
+| Observability | Actuator `http.server.requests` covers the new endpoints (§7) | — |
 
 ## 9. Architecture decisions
 
