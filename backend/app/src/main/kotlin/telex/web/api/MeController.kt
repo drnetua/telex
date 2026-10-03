@@ -36,13 +36,10 @@ data class DetectedTimeZoneBody(
     val timeZone: String?,
 )
 
-/** `Preferences.timeZone` is never null on the wire: an Owner with none saved yet is shown UTC as the fallback. */
-private fun Preferences.toBody() =
-    if (timeZone == null) {
-        PreferencesBody(theme.wire, "UTC", true)
-    } else {
-        PreferencesBody(theme.wire, timeZone, timeZoneIsFallback)
-    }
+/** An Owner with no zone saved yet has `timeZone` null and no fallback flag, exactly as `GET /me` shows. */
+private fun Preferences.toBody() = PreferencesBody(theme.wire, timeZone, timeZoneIsFallback)
+
+private val changeableKeys = setOf("theme", "timeZone")
 
 @RestController
 @RequestMapping("/api/v1/me")
@@ -77,6 +74,7 @@ class MeController(
         @RequestBody body: Map<String, Any?>,
     ): PreferencesBody {
         val owner = principal.ownerId
+        body.keys.firstOrNull { it !in changeableKeys }?.let { throw unknownKey(it) }
         val theme =
             if ("theme" in body) {
                 (body["theme"] as? String)?.let(Theme::fromWire) ?: throw unknownTheme()
@@ -93,6 +91,16 @@ class MeController(
         @AuthenticationPrincipal principal: SignedInOwner,
         @RequestBody body: DetectedTimeZoneBody,
     ): PreferencesBody = preferences.saveDetectedTimeZone(principal.ownerId, body.timeZone).toBody()
+
+    private fun unknownKey(key: String): DomainProblem {
+        val message = "Only theme and timeZone can be changed."
+        return DomainProblem(
+            HttpStatus.BAD_REQUEST,
+            "validation-failed",
+            message,
+            listOf(FieldProblem(key, "unknown-property", message)),
+        )
+    }
 
     private fun unknownTheme(): DomainProblem {
         val message = "Choose light, dark or system."

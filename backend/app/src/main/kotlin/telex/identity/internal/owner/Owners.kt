@@ -45,16 +45,20 @@ class Owners(
             .optional()
             .orElse(null)
 
-    fun preferencesOf(id: OwnerId): Preferences? =
+    fun preferencesOf(id: OwnerId): Preferences? = emailAndPreferencesOf(id)?.second
+
+    /** The address and the preferences in one `SELECT`, for `GET /me`. */
+    fun emailAndPreferencesOf(id: OwnerId): Pair<String, Preferences>? =
         jdbc
-            .sql("SELECT theme, time_zone, time_zone_is_fallback FROM owner WHERE id = ?")
+            .sql("SELECT email, theme, time_zone, time_zone_is_fallback FROM owner WHERE id = ?")
             .param(id.value)
             .query { rs, _ ->
-                Preferences(
-                    checkNotNull(Theme.fromWire(rs.getString("theme"))),
-                    rs.getString("time_zone"),
-                    rs.getBoolean("time_zone_is_fallback"),
-                )
+                rs.getString("email") to
+                    Preferences(
+                        checkNotNull(Theme.fromWire(rs.getString("theme"))),
+                        rs.getString("time_zone"),
+                        rs.getBoolean("time_zone_is_fallback"),
+                    )
             }.optional()
             .orElse(null)
 

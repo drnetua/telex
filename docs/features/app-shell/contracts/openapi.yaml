@@ -534,7 +534,11 @@ components:
       additionalProperties: false
       properties:
         theme: { $ref: "#/components/schemas/Theme" }
-        timeZone: { $ref: "#/components/schemas/TimeZoneId" }
+        timeZone:
+          description: Null until the Owner's first save, as in `Me`.
+          oneOf:
+            - { $ref: "#/components/schemas/TimeZoneId" }
+            - { type: "null" }
         timeZoneIsFallback: { type: boolean, description: owner.time_zone_is_fallback }
     PreferencesChange:
       type: object

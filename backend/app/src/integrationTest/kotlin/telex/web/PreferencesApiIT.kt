@@ -189,6 +189,29 @@ class PreferencesApiIT(
     }
 
     @Test
+    fun `PATCH theme for an Owner with no saved zone answers timeZone null and not a fallback, like GET me`() {
+        val (_, s) = signedIn()
+
+        val r = call("PATCH", prefs, s.key, """{"theme":"dark"}""")
+
+        assertThat(r.statusCode()).isEqualTo(200)
+        assertThat(r.body()).contains("\"theme\":\"dark\"", "\"timeZone\":null", "\"timeZoneIsFallback\":false")
+        assertThat(call("GET", "/api/v1/me", s.key).body())
+            .contains("\"timeZone\":null", "\"timeZoneIsFallback\":false")
+    }
+
+    @Test
+    fun `PATCH with an unknown key is 400 validation-failed and changes nothing`() {
+        val (o, s) = signedIn()
+
+        val r = call("PATCH", prefs, s.key, """{"themes":"dark"}""")
+
+        assertThat(r.statusCode()).isEqualTo(400)
+        assertThat(r.body()).contains("\"code\":\"validation-failed\"")
+        assertThat(stored(o).theme.wire).isEqualTo("system")
+    }
+
+    @Test
     fun `PATCH without the CSRF header is 403 and without a session 401`() {
         val (o, s) = signedIn()
 

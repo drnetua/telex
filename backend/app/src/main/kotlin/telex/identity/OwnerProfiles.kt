@@ -18,8 +18,7 @@ class OwnerProfiles(
     private val owners: Owners,
 ) {
     fun me(ownerId: OwnerId): Me? =
-        owners.emailOf(ownerId)?.let { email ->
-            val prefs = checkNotNull(owners.preferencesOf(ownerId)) { "owner vanished" }
+        owners.emailAndPreferencesOf(ownerId)?.let { (email, prefs) ->
             Me(ownerId, email, 0, prefs.theme, prefs.timeZone, prefs.timeZoneIsFallback)
         }
 }

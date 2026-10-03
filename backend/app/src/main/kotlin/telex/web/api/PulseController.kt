@@ -2,7 +2,6 @@ package telex.web.api
 
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Pattern
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -14,10 +13,7 @@ import telex.shared.StatusConditionSource
 /** What the shell polls: the Inbox count and the active Status Banner condition codes of one Owner. */
 data class Pulse(
     @field:NotNull @field:Min(0) val inboxCount: Int?,
-    @field:NotNull val conditions: List<
-        @Pattern(regexp = "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-        String,
-    >?,
+    @field:NotNull val conditions: List<String>?,
 )
 
 /** The one live channel (ADR-0002): answers for the calling Owner only and is not logged per request. */

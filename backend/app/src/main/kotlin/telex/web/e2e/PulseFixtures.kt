@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import telex.identity.SignedInOwner
 import telex.inbox.InboxSource
+import telex.shared.DomainProblem
+import telex.shared.FieldProblem
 import telex.shared.StatusConditionSource
 import telex.web.api.Pulse
 import java.util.UUID
@@ -40,6 +42,8 @@ class PulseFixtures :
     override fun activeConditions(ownerId: UUID): Set<String> = conditions[ownerId] ?: emptySet()
 }
 
+private val conditionCode = Regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+
 /** Sets the calling Owner's fixture values; it cannot name another Owner. */
 @Profile("e2e")
 @RestController
@@ -53,6 +57,15 @@ class PulseFixtureController(
         @AuthenticationPrincipal principal: SignedInOwner,
         @RequestBody @Valid body: Pulse,
     ) {
+        if (body.conditions.orEmpty().any { !conditionCode.matches(it) }) {
+            val message = "Condition codes are kebab-case labels."
+            throw DomainProblem(
+                HttpStatus.BAD_REQUEST,
+                "validation-failed",
+                message,
+                listOf(FieldProblem("conditions", "pattern", message)),
+            )
+        }
         fixtures.set(principal.ownerId.value, body.inboxCount ?: 0, body.conditions.orEmpty())
     }
 }
