@@ -34,8 +34,9 @@
 | T27 | Amend AC-211 to per-1M-token prices for image models and register the new components in the design-system inventory | docs | Anton Husiev | S | T26 | done |
 | T28 | Make agents events survive the publication registry, and tighten the T21–T24 tests and build wiring | app | Anton Husiev | S | — | done |
 | T29 | Drop notices for good on navigation, refresh the draft after a save, round prices before the range check, and align the AC-211 docs | ui | Anton Husiev | S | T26, T27, T28 | done |
+| T30 | Keep the editor on a refused create, record calls after an interrupt, skip unreadable catalog entries, and match the event wire values | app | Anton Husiev | S | T29 | todo |
 
-**Total:** 29 tasks (T21–T29: follow-ups from review 2026-10-03), ~20 person-days.
+**Total:** 30 tasks (T21–T30: follow-ups from review 2026-10-03), ~20 person-days.
 
 ## Deviations
 

@@ -681,6 +681,35 @@
         "docs/design-system.md"
       ],
       "file": "docs/features/model-profiles/tasks/t29-fix-notice-draft-rounding-docs.md"
+    },
+    {
+      "id": "T30",
+      "title": "Keep the editor on a refused create, record calls after an interrupt, skip unreadable catalog entries, and match the event wire values",
+      "layer": "app",
+      "deps": [
+        "T29"
+      ],
+      "acs": [
+        "AC-218",
+        "AC-226",
+        "AC-229",
+        "AC-212",
+        "AC-211"
+      ],
+      "dod": "A POST 409 (profile-limit-reached, ai-not-configured) or a non-field 400 on create keeps the dialog open with the typed values and sends no extra draft request; a call interrupted on a virtual thread still writes its model_call row with a timeout attempt; an out-of-range context_length or a non-string modality skips only that model; the stored ModelCallFinished JSON uses the events.md wire values for slot and outcome; ProfileCallsIT restores the root logger level; the tracker describes per-1M-token prices for image models.",
+      "files_hint": [
+        "frontend/src/api/models.ts",
+        "frontend/src/pages/models/ProfileEditorModal.tsx",
+        "frontend/src/pages/models/ProfileEditorModal.test.tsx",
+        "backend/app/src/main/kotlin/telex/agents/internal/call/ProfileCallService.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/ModelListParser.kt",
+        "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelCallFinished.kt",
+        "backend/app/src/main/kotlin/telex/llm/ModelSlotKind.kt",
+        "backend/app/src/integrationTest/kotlin/telex/agents/call/",
+        "docs/features/model-profiles/tasks/tracker.md"
+      ],
+      "file": "docs/features/model-profiles/tasks/t30-fix-rereview-r1-r6.md"
     }
   ]
 }
