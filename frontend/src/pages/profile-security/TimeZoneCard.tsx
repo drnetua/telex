@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMe } from "../../api/account";
 import { useChangeTimeZone, useListTimeZones } from "../../api/preferences";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
+import { LoadState } from "../../components/LoadState/LoadState";
 import { Toast } from "../../components/Toast/Toast";
 import { TimeZonePicker } from "../../components/TimeZonePicker/TimeZonePicker";
 import { cityOf } from "../../components/TimeZonePicker/zoneNames";
@@ -35,10 +36,22 @@ export function TimeZoneCard() {
   const lastPick = useRef<string | null>(null);
   const list = useListTimeZones(picking);
 
-  const zone = me?.timeZone ?? "UTC";
+  const changeButton = useRef<HTMLDivElement>(null);
+  const refocus = useRef(false);
+
+  // The opener is busy (disabled) while the save runs, so focus goes back to it once it settles.
+  useEffect(() => {
+    if (!saving && refocus.current) {
+      refocus.current = false;
+      changeButton.current?.querySelector("button")?.focus();
+    }
+  }, [saving]);
+
+  const zone = me?.timeZone ?? null;
 
   async function save(next: string) {
     lastPick.current = next;
+    refocus.current = true;
     setPicking(false);
     setSaving(true);
     setRefused(false);
@@ -63,31 +76,39 @@ export function TimeZoneCard() {
         </h2>
       </div>
       <div className="card-body">
-        {me?.timeZoneIsFallback ? (
-          <div className="alert alert-info d-flex align-items-center gap-2 mb-3" role="status">
-            <Icon name="info-circle" size={18} />
-            <span>{m.fallbackHint}</span>
-            <button type="button" className="btn btn-link ms-auto" onClick={open}>
-              {m.chooseYours}
-            </button>
-          </div>
-        ) : null}
-        <div className="d-flex justify-content-between align-items-center gap-2">
-          <div>
-            <h4 className="mb-0">{cityOf(zone)}</h4>
-            <small className="d-block text-secondary">{m.detail(zone, offsetOf(zone))}</small>
-          </div>
-          <Button className="btn-secondary" busy={saving} onClick={open}>
-            {saving ? m.saving : m.change}
-          </Button>
-        </div>
-        {refused ? (
-          <div className="invalid-feedback d-flex align-items-center gap-1 mt-2">
-            <Icon name="alert-circle" size={16} />
-            {m.refused}
-          </div>
-        ) : null}
-        <small className="d-block text-secondary mt-2">{m.hint}</small>
+        {zone === null ? (
+          <LoadState state="loading" rows={1} />
+        ) : (
+          <>
+            {me?.timeZoneIsFallback ? (
+              <div className="alert alert-info d-flex align-items-center gap-2 mb-3" role="status">
+                <Icon name="info-circle" size={18} />
+                <span>{m.fallbackHint}</span>
+                <button type="button" className="btn btn-link ms-auto" onClick={open}>
+                  {m.chooseYours}
+                </button>
+              </div>
+            ) : null}
+            <div className="d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <h4 className="mb-0">{cityOf(zone)}</h4>
+                <small className="d-block text-secondary">{m.detail(zone, offsetOf(zone))}</small>
+              </div>
+              <div ref={changeButton}>
+                <Button className="btn-secondary" busy={saving} onClick={open}>
+                  {saving ? m.saving : m.change}
+                </Button>
+              </div>
+            </div>
+            {refused ? (
+              <div className="invalid-feedback d-flex align-items-center gap-1 mt-2">
+                <Icon name="alert-circle" size={16} />
+                {m.refused}
+              </div>
+            ) : null}
+            <small className="d-block text-secondary mt-2">{m.hint}</small>
+          </>
+        )}
       </div>
       {picking ? (
         <TimeZonePicker

@@ -335,6 +335,38 @@ describe("SCR-64 Time zone card", () => {
     expect(screen.getByRole("button", { name: "Change time zone" })).toBeInTheDocument();
   });
 
+  it("AC-183: shows a one-row LoadState, no UTC and no Change button while the zone is not yet saved", async () => {
+    stubApi({ onCall: meWith({ timeZone: null }) });
+    setup();
+    const card = (await screen.findByRole("heading", { name: "Time zone" })).closest("section");
+    await waitFor(() => expect(card?.querySelector('[aria-busy="true"]')).not.toBeNull());
+    expect(card?.querySelectorAll(".placeholder")).toHaveLength(1);
+    expect(within(card as HTMLElement).queryByText(/UTC/)).toBeNull();
+    expect(within(card as HTMLElement).queryByRole("button", { name: /time zone/i })).toBeNull();
+  });
+
+  it("AC-184: focus lands on the Change time zone button once the save settles", async () => {
+    let saved = false;
+    stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH") {
+          saved = true;
+          return json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
+        }
+        return meWith({ timeZone: saved ? "Europe/Kyiv" : "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    const dialog = await screen.findByRole("dialog", pickerName);
+    await userEvent.click(await within(dialog).findByRole("option", { name: /Kyiv/ }));
+    await screen.findByText("Time zone saved.");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Change time zone" })).toHaveFocus(),
+    );
+  });
+
   it("AC-183: shows UTC and the hint with Choose yours only when the zone is a fallback", async () => {
     stubApi({
       onCall: (m, u) =>

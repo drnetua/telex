@@ -63,15 +63,31 @@ describe("useMe (AC-96, ADR-0005)", () => {
 });
 
 describe("Me theme fields (AC-181)", () => {
-  it("carries theme, timeZone and timeZoneIsFallback", () => {
-    const me: Me = {
-      ownerId: "o1",
-      email: "a@b.c",
-      linkedAccountCount: 0,
-      theme: "system",
-      timeZone: null,
-      timeZoneIsFallback: true,
-    };
-    expect(me.theme).toBe("system");
+  it("parses theme, timeZone and timeZoneIsFallback from /api/v1/me", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          Response.json({
+            ownerId: "o1",
+            email: "a@b.c",
+            linkedAccountCount: 0,
+            theme: "dark",
+            timeZone: "Europe/Kyiv",
+            timeZoneIsFallback: true,
+          }),
+        ),
+      ),
+    );
+    const client = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useMe(), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    const me: Me | undefined = result.current.data;
+    expect(me?.theme).toBe("dark");
+    expect(me?.timeZone).toBe("Europe/Kyiv");
+    expect(me?.timeZoneIsFallback).toBe(true);
   });
 });
