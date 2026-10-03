@@ -140,7 +140,8 @@ backend/app/src/main/kotlin/telex/
 ├── shared/
 │   └── StatusConditionSource      interface: activeConditions(ownerId): Set<String> (condition codes), no beans
 └── web/api/
-    ├── MeController               existing; body gains theme, timeZone; PATCH /api/v1/me/preferences
+    ├── MeController               existing; body gains theme, timeZone; PATCH /api/v1/me/preferences;
+    │                              POST /api/v1/me/preferences/detected-time-zone (first save, only if unset — added by /sdd:api)
     ├── TimeZonesController        GET /api/v1/time-zones
     └── PulseController            GET /api/v1/pulse → { inboxCount, conditions[] } (Inbox + all StatusConditionSource beans)
 
@@ -294,6 +295,268 @@ sequenceDiagram
     end
     Note over SPA: next open on another device shows the theme last used there, then switches once to the account theme from me
 ```
+
+### Flow 4: open teleX and move between sections (US-70, US-43 — AC-170, AC-43, AC-171, AC-172)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,UI: Precondition: the Owner has a live Sign-in Session (no session is Flow 5)
+    U->>UI: opens teleX with no section in the address
+    UI->>S: load the Owner's account
+    S->>D: read the Owner with theme and timezone
+    D-->>S: Owner
+    S-->>UI: Owner and preferences
+    UI->>UI: build the navigation from the section registry, start the pulse (seed flow 1)
+    alt screen 768 px or wider
+        UI-->>U: SCR-10 Inbox as start screen, side menu with the seven sections in app-map order, Inbox marked current by icon and words
+    else screen narrower than 768 px
+        UI-->>U: SCR-10 Inbox, bottom bar with Inbox and counter, Chats, Assistants, Tasks, More
+    end
+    U->>UI: chooses a section
+    alt a section its epic hasn't built (Overview, Chats, Assistants, Runs, Tasks)
+        UI-->>U: SCR-94 Coming soon named for the section, one-sentence purpose, Go to Inbox, navigation kept with the section marked current
+    else Settings
+        UI-->>U: SCR-69 lists its subsections, Profile and security one step away
+        U->>UI: opens Profile and security
+        UI-->>U: SCR-64 Profile and security
+    else phone, a section under More
+        UI-->>U: SCR-95 More lists Overview, Runs, Settings, Inbox stays in the bar
+        U->>UI: picks one, or closes More
+        UI-->>U: the chosen section, or back to the screen More was opened from
+    end
+    U->>UI: Sign out from the shell
+    UI->>S: end the Sign-in Session
+    S->>D: end the session
+    Note over S,D: persists the ended Sign-in Session (existing E01 write)
+    S-->>UI: signed out
+    UI->>UI: drop cached Owner data, stop the pulse
+    UI-->>U: SCR-01 Sign in, nothing of the shell kept
+    Note over U,UI: Postcondition: every section is one or two taps away on either width, Sign out on every shell screen
+```
+
+### Flow 5: open a section without a live session, then return after sign-in (US-70 — AC-173)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,UI: Precondition: no live Sign-in Session in this browser, or one that stopped while a tab was open
+    alt opens a link to a section, for example Runs
+        U->>UI: opens the section address
+    else next action in a tab that was open
+        U->>UI: takes an action
+    end
+    UI->>S: load the Owner's account, or the action
+    S->>D: look up the Sign-in Session from the cookie
+    D-->>S: no session, or an ended one
+    alt never signed in, or signed out
+        S-->>UI: refused, not signed in
+        UI->>UI: remember the section in this browser, first refusal wins, never an auth page
+        UI-->>U: SCR-01 Sign in, no section, counter or banner shown
+    else ran out or revoked
+        S-->>UI: refused, session ended
+        UI->>UI: remember the section in this browser
+        UI-->>U: SCR-92 Session ended, nothing of the shell shown
+        U->>UI: Sign in again
+        UI-->>U: SCR-01 Sign in
+    end
+    U->>UI: finishes sign-in with a Sign-in Code, Passkey or Sign-in Link
+    UI->>S: complete sign-in
+    S->>D: create the Sign-in Session, and the Owner for a brand-new account
+    Note over S,D: persists Sign-in Session and, for a new account, Owner (existing E01 writes)
+    S-->>UI: signed in, with whether the account is new
+    opt brand-new account
+        UI-->>U: SCR-09 passkey offer
+        U->>UI: creates a passkey or skips
+    end
+    alt sign-in finished in the browser that remembered a section
+        UI->>UI: take and clear the remembered section
+        UI-->>U: the linked section inside the shell
+    else Sign-in Link opened in another browser, or nothing remembered
+        UI-->>U: SCR-10 Inbox
+    end
+    Note over U,UI: Postcondition: no shell content was shown before a live session existed
+```
+
+### Flow 6: theme on first paint across devices, and System following the device (US-73 — AC-180, AC-181)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant X as <external-system>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over X,UI: X is the Owner's browser and device: theme last used here, light or dark mode
+    Note over U,S: Precondition: the Owner's account holds a theme, light, dark or system
+    U->>UI: opens teleX on a device
+    UI->>X: read the theme last used on this device
+    alt used teleX on this device before
+        X-->>UI: remembered theme
+        UI->>UI: apply it before first paint, System resolved through the device's mode
+    else first time on this device
+        X-->>UI: nothing remembered
+        UI->>UI: follow the device's mode until the account theme is known
+    end
+    UI->>S: load the Owner's account
+    S->>D: read the Owner's theme and timezone
+    D-->>S: Owner
+    S-->>UI: account theme
+    alt account theme differs from the one applied
+        UI->>UI: switch once to the account theme
+        UI->>X: remember it on this device
+    else the same
+        UI->>UI: no switch
+    end
+    UI-->>U: first signed-in screen in the account's theme
+    opt the Owner chose System and the device switches between light and dark
+        X-->>UI: device mode changed
+        UI-->>U: every screen follows, no reload
+    end
+    opt another tab in this browser changes the theme
+        X-->>UI: remembered theme changed
+        UI-->>U: this tab follows, no reload
+    end
+    Note over U,S: Postcondition: devices already open elsewhere pick up a change on their next open or reload
+```
+
+### Flow 7: first timezone save from the device (US-74 — AC-183)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant X as <external-system>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over X,UI: X is the Owner's browser and device: its timezone
+    Note over U,S: Precondition: a signed-in Owner with no timezone saved yet
+    U->>UI: opens teleX
+    UI->>S: load the Owner's account
+    S->>D: read the Owner
+    D-->>S: Owner without a timezone
+    S-->>UI: no timezone saved
+    UI->>X: read the device's timezone
+    X-->>UI: a named region, or nothing readable
+    UI->>S: save this timezone only if none is saved yet
+    S->>S: keep it if it is on the known list, else use UTC and mark it as the fallback
+    S->>D: set the timezone and fallback flag only where no timezone is saved
+    alt still unset
+        Note over S,D: persists Owner timezone and fallback flag, conditional on unset
+        D-->>S: saved
+    else another device saved first
+        D-->>S: nothing changed
+    end
+    S-->>UI: the saved timezone and whether it is the fallback
+    UI-->>U: dates shown in the saved timezone
+    opt opens Profile and security
+        UI-->>U: SCR-64 shows the timezone, session and passkey last-used dates in it, and the pick-your-own hint while the fallback flag is set
+    end
+    opt the save gets no answer
+        UI-->>U: Status Banner per seed flow 2, the next open tries the save again
+    end
+    opt later opens teleX on a device in another timezone
+        UI->>S: load the Owner's account
+        S-->>UI: timezone already saved
+        UI->>UI: no save, dates keep using the saved timezone
+    end
+    Note over U,S: Postcondition: the Owner has exactly one timezone
+```
+
+### Flow 8: change the timezone (US-74 — AC-184, AC-185, AC-186)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as <user>
+    participant UI as <ui>
+    participant S as <service>
+    participant D as <data-store>
+
+    Note over U,S: Precondition: the Owner is on SCR-64 with a saved timezone
+    U->>UI: opens the timezone picker
+    UI->>S: get the known timezone list
+    S-->>UI: Area/City names plus UTC
+    U->>UI: types a city or region
+    UI->>UI: filter the list on the device
+    alt nothing matches
+        UI-->>U: says nothing matches, suggests a nearby city, current timezone unchanged
+    else tries to leave it empty
+        UI-->>U: no empty choice, current timezone kept
+    else picks a timezone
+        UI->>S: change the timezone
+        S->>S: check it is not empty and is on the known list
+        alt on the list
+            S->>D: update the Owner's timezone, clear the fallback flag
+            Note over S,D: persists Owner timezone
+            D-->>S: saved
+            S-->>UI: preferences with the new timezone
+            UI-->>U: SCR-64 shows it, every date re-renders in it
+        else empty
+            S-->>UI: refused, timezone required
+            UI-->>U: says a timezone is required, current one kept
+        else not on the list, for example a tampered value
+            S-->>UI: refused, unknown timezone
+            UI-->>U: says the timezone isn't known, current one kept
+        else no answer
+            UI-->>U: says it wasn't saved, current one kept, Status Banner per seed flow 2
+        end
+    end
+    Note over U,S: Postcondition: exactly one timezone saved, other open devices pick it up on next open or reload
+```
+
+### Coverage
+
+| User story | Flows |
+|---|---|
+| US-43 Use teleX fully from a phone | Flow 4 (bottom bar, More) |
+| US-70 Reach any section from anywhere | Flow 4, Flow 5 |
+| US-71 See what waits for me | Seed flow 1 |
+| US-72 Know when teleX can't serve me | Seed flow 2, seed flow 1 (several conditions) |
+| US-73 Choose my theme | Seed flow 3, Flow 6 |
+| US-74 See times in my timezone | Flow 7, Flow 8 |
+
+| AC | Shown by |
+|---|---|
+| AC-170 | Flow 4, `alt` 768 px or wider |
+| AC-43 | Flow 4, `else` narrower than 768 px, and the More branch |
+| AC-07b | N/A, not a runtime flow: a layout property of every shell screen, verified by the 360 px width check in e2e (§10 QG-2a) |
+| AC-171 | Flow 4, `alt` a section its epic hasn't built |
+| AC-172 | Flow 4, `else` Settings, and Sign out |
+| AC-173 | Flow 5, all branches. Seed flow 1, `alt` no live session (a pulse in an open tab) |
+| AC-174 | Seed flow 1, `else` live session (count, no number at 0, 99+) |
+| AC-175 | Seed flow 1, sources called for this Owner only (§8 Authorization) |
+| AC-176 | Seed flow 2, both `alt` branches and recovery; answered failure note (SCR-93) |
+| AC-177 | Seed flow 2, `opt` Try again while still down |
+| AC-178 | Seed flow 1, most important condition with N more; no close control is a UI rule with no runtime step |
+| AC-179 | Seed flow 3, `alt` saved |
+| AC-180 | Flow 6, `opt` System and the device switches |
+| AC-181 | Flow 6, both first-paint branches and the single switch. Seed flow 3, closing note |
+| AC-182 | Seed flow 3, `else` no answer or refused |
+| AC-183 | Flow 7, all branches |
+| AC-184 | Flow 8, `alt` on the list |
+| AC-185 | Flow 8, `alt` nothing matches |
+| AC-186 | Flow 8, `else` tries to leave it empty, and `else` empty refused by the service |
+
+**Flags (for `design` / `clarify` / `data-model`, not decided here):**
+- Seed flows 1–3 (from `design`) name concrete participants (Web SPA, web module, PostgreSQL), while flows 4–8 use the generic vocabulary. They were left untouched. Harmonising them is a deliberate manual diff.
+- A timezone save that gets no answer (Flow 7, Flow 8) has no spec AC. The flows draw it like the theme (AC-182): keep the current value, say it wasn't saved, show the Status Banner. Candidate AC for `clarify` (ux-flows ledger item 3).
+- Persist hints for `data-model`: the Owner gains theme, timezone and the fallback flag, all read and written by Owner id (no new index). Flow 7's first save is a conditional write "only where no timezone is saved", so two devices can't overwrite each other. Inbox and condition sources must each be one indexed count by Owner id (§11), owned by the producer epics.
+- No participant outside §3/§5: `<external-system>` in Flows 6 and 7 is the Owner's browser and device from the §3 context table. No sync-vs-async decision is new (the pulse is plain polling, ADR-0002), so nothing here is ADR-worthy.
 
 ## 7. Deployment view
 

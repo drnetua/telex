@@ -1,0 +1,423 @@
+{
+  "slug": "app-shell",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Promote the staged owner-preferences migration into the live Flyway tree",
+      "layer": "migration",
+      "deps": [],
+      "acs": [
+        "AC-179",
+        "AC-183",
+        "AC-186"
+      ],
+      "dod": "The staged pair is promoted to db/migration V…__add_owner_preferences.sql + db/rollback U…, MigrationRollbackIT applies up → down → up, and an integration assertion proves owner_theme_ck and owner_time_zone_fallback_ck reject bad rows.",
+      "files_hint": [
+        "docs/features/app-shell/migrations/01_add_owner_preferences.up.sql",
+        "docs/features/app-shell/migrations/01_add_owner_preferences.down.sql"
+      ],
+      "file": "docs/features/app-shell/tasks/t01-promote-owner-preferences-migration.md"
+    },
+    {
+      "id": "T2",
+      "title": "Add the Theme type and the known timezone list to identity",
+      "layer": "domain",
+      "deps": [],
+      "acs": [
+        "AC-184",
+        "AC-186"
+      ],
+      "dod": "Unit tests prove Theme wire values and that TimeZones lists only sorted Area/City ids plus UTC, accepting Europe/Kyiv and America/Argentina/Buenos_Aires and rejecting empty, EST, Etc/* and unknown ids.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/Theme.kt",
+        "backend/app/src/main/kotlin/telex/identity/TimeZones.kt",
+        "backend/app/src/test/kotlin/telex/identity/TimeZonesTest.kt",
+        "backend/app/src/test/kotlin/telex/identity/ThemeTest.kt"
+      ],
+      "file": "docs/features/app-shell/tasks/t02-theme-and-known-time-zones.md"
+    },
+    {
+      "id": "T3",
+      "title": "Read and change the Owner's theme and timezone in identity, with the save-if-unset write",
+      "layer": "infra",
+      "deps": [
+        "T1",
+        "T2"
+      ],
+      "acs": [
+        "AC-179",
+        "AC-183",
+        "AC-184",
+        "AC-186"
+      ],
+      "dod": "OwnerPreferencesIT on Testcontainers proves theme change, change-timezone clearing the fallback, refusal of empty/unknown zones with the value kept, and a save-if-unset that never overwrites a saved zone (including a two-call race).",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/OwnerPreferences.kt",
+        "backend/app/src/main/kotlin/telex/identity/OwnerProfiles.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/owner/Owners.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/"
+      ],
+      "file": "docs/features/app-shell/tasks/t03-owner-preferences.md"
+    },
+    {
+      "id": "T4",
+      "title": "Create the inbox module (InboxSource + sum) and the shared StatusConditionSource contract",
+      "layer": "wiring",
+      "deps": [],
+      "acs": [
+        "AC-174",
+        "AC-175"
+      ],
+      "dod": "InboxTest proves the sum over zero, one and several InboxSource beans for one Owner id, and ModularityTest verifies 15 modules with inbox depending on shared only and shared still bean-free.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/inbox/",
+        "backend/app/src/main/kotlin/telex/shared/StatusConditionSource.kt",
+        "backend/app/src/main/kotlin/telex/web/package-info.java",
+        "backend/app/src/test/kotlin/telex/inbox/",
+        "backend/app/src/test/kotlin/telex/ModularityTest.kt"
+      ],
+      "file": "docs/features/app-shell/tasks/t04-inbox-module-and-condition-source.md"
+    },
+    {
+      "id": "T5",
+      "title": "Serve me with preferences, PATCH /me/preferences, the detected-timezone save and GET /time-zones",
+      "layer": "ports",
+      "deps": [
+        "T3"
+      ],
+      "acs": [
+        "AC-179",
+        "AC-182",
+        "AC-183",
+        "AC-184",
+        "AC-186"
+      ],
+      "dod": "PreferencesApiIT validates getMe, changeMyPreferences, saveDetectedTimeZone and listTimeZones against contracts/openapi.yaml, including 400 time-zone-required / unknown-time-zone / unknown-theme with the stored value unchanged, 401 and 403.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/MeController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/TimeZonesController.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PreferencesApiIT.kt"
+      ],
+      "file": "docs/features/app-shell/tasks/t05-preferences-and-time-zones-endpoints.md"
+    },
+    {
+      "id": "T6",
+      "title": "Serve GET /api/v1/pulse and the e2e-profile fixture Inbox and condition sources",
+      "layer": "ports",
+      "deps": [
+        "T4"
+      ],
+      "acs": [
+        "AC-173",
+        "AC-174",
+        "AC-175",
+        "AC-178"
+      ],
+      "dod": "PulseApiIT proves the pulse answers 0/[] by default, 401 without a session, never bumps session activity, and under the e2e profile reports only the calling Owner's fixture count and conditions, with the fixture path 404 when the profile is off.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/PulseController.kt",
+        "backend/app/src/main/kotlin/telex/web/e2e/",
+        "backend/app/src/integrationTest/kotlin/telex/web/PulseApiIT.kt"
+      ],
+      "file": "docs/features/app-shell/tasks/t06-pulse-endpoint-and-e2e-fixtures.md"
+    },
+    {
+      "id": "T7",
+      "title": "Add the connectivity state and the 3 s pulse query, and narrow fetch-client failure routing",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-173",
+        "AC-176",
+        "AC-177"
+      ],
+      "dod": "Vitest proves no-answer, network errors and 502/503/504 inside the shell set connectivity to not-responding without leaving the screen, 500/403 still route to SCR-93, the pulse polls every 3 s only while visible with networkMode always, and its first success restores online.",
+      "files_hint": [
+        "frontend/src/shell/connectivity.ts",
+        "frontend/src/shell/connectivity.test.ts",
+        "frontend/src/shell/pulse.ts",
+        "frontend/src/shell/pulse.test.tsx",
+        "frontend/src/api/client.ts",
+        "frontend/src/api/client.test.ts",
+        "frontend/src/app/queryClient.ts",
+        "frontend/src/app/FailureBoundary.tsx",
+        "frontend/src/app/FailureBoundary.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t07-connectivity-pulse-and-failure-routing.md"
+    },
+    {
+      "id": "T8",
+      "title": "Apply the theme before first paint, follow System, sync tabs and switch once to the account theme",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-180",
+        "AC-181"
+      ],
+      "dod": "Vitest proves the first-paint script and theme.ts apply the remembered theme (System via matchMedia), follow device mode and other tabs live, and switch exactly once when getMe.theme differs.",
+      "files_hint": [
+        "frontend/index.html",
+        "frontend/src/shell/theme.ts",
+        "frontend/src/shell/theme.test.ts",
+        "frontend/src/api/account.ts",
+        "frontend/src/api/account.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t08-theme-runtime.md"
+    },
+    {
+      "id": "T9",
+      "title": "Build ThemeSwitch (segmented and menu), the Toast action prop and the Appearance card on SCR-64",
+      "layer": "ui",
+      "deps": [
+        "T8"
+      ],
+      "acs": [
+        "AC-179",
+        "AC-182"
+      ],
+      "dod": "Vitest proves ThemeSwitch (segmented and menu) applies a choice before the save resolves, reverts theme and device memory on 400 or no answer with an error Toast whose Try again re-sends, and that the Appearance card renders on SCR-64.",
+      "files_hint": [
+        "frontend/src/components/ThemeSwitch/",
+        "frontend/src/components/Toast/Toast.tsx",
+        "frontend/src/api/preferences.ts",
+        "frontend/src/pages/profile-security/AppearanceCard.tsx",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.tsx",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t09-theme-switch-and-appearance-card.md"
+    },
+    {
+      "id": "T10",
+      "title": "Port AppShell (C-01) from the section registry: side menu, phone bottom bar, More sheet and Sign out",
+      "layer": "ui",
+      "deps": [
+        "T9"
+      ],
+      "acs": [
+        "AC-170",
+        "AC-43",
+        "AC-07b",
+        "AC-172"
+      ],
+      "dod": "Vitest proves AppShell renders the seven sections in app-map order on desktop, Inbox/Chats/Assistants/Tasks/More on phone with Overview/Runs/Settings in the More sheet, marks the current section by aria-current, bar and bold label, and signs out to SCR-01; PageFrame is deleted.",
+      "files_hint": [
+        "frontend/src/shell/AppShell/",
+        "frontend/src/shell/sections.ts",
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/app/layouts.test.tsx",
+        "frontend/src/components/PageFrame/",
+        "frontend/src/components/Icon/Icon.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t10-appshell-port-and-section-registry.md"
+    },
+    {
+      "id": "T11",
+      "title": "Route every section lazily, with the Coming soon page (SCR-94) and the Settings page (SCR-69)",
+      "layer": "ui",
+      "deps": [
+        "T10"
+      ],
+      "acs": [
+        "AC-171",
+        "AC-172"
+      ],
+      "dod": "Vitest proves each unbuilt section renders SCR-94 with its name, sentence and Go to Inbox while marked current, Settings (SCR-69) lists Profile and security linking to /profile, and a failed chunk shows section-load-failed with Try again.",
+      "files_hint": [
+        "frontend/src/app/AppRoutes.tsx",
+        "frontend/src/pages/coming-soon/",
+        "frontend/src/pages/settings/",
+        "frontend/src/shell/sections.ts",
+        "frontend/src/App.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t11-section-routes-coming-soon-and-settings.md"
+    },
+    {
+      "id": "T12",
+      "title": "Show the live Inbox counter in the shell from the pulse (none at 0, 99+ above 99)",
+      "layer": "ui",
+      "deps": [
+        "T7",
+        "T10"
+      ],
+      "acs": [
+        "AC-174",
+        "AC-175"
+      ],
+      "dod": "Vitest proves the Inbox item shows no number at 0 or before the first pulse, the count for 1–99, 99+ above 99, updates without remount, and announces each change once.",
+      "files_hint": [
+        "frontend/src/shell/AppShell/",
+        "frontend/src/shell/InboxCounter.tsx",
+        "frontend/src/shell/InboxCounter.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t12-live-inbox-counter.md"
+    },
+    {
+      "id": "T13",
+      "title": "Port StatusBanner (C-04) with the condition catalog, Try again, still-down and N more",
+      "layer": "ui",
+      "deps": [
+        "T7",
+        "T10"
+      ],
+      "acs": [
+        "AC-176",
+        "AC-177",
+        "AC-178"
+      ],
+      "dod": "Vitest proves the StatusBanner shows offline / not-responding with icon, words and Try again and no close control, shows the still-down text after a failed retry, orders several conditions by the fixed importance with +N more, ignores unknown codes and disappears on recovery.",
+      "files_hint": [
+        "frontend/src/shell/StatusBanner/",
+        "frontend/src/shell/conditions.ts",
+        "frontend/src/shell/conditions.test.ts",
+        "frontend/src/shell/AppShell/"
+      ],
+      "file": "docs/features/app-shell/tasks/t13-status-banner-and-condition-catalog.md"
+    },
+    {
+      "id": "T14",
+      "title": "Save the device timezone on first open and show SCR-64 dates in the Owner's timezone",
+      "layer": "ui",
+      "deps": [
+        "T9",
+        "T10"
+      ],
+      "acs": [
+        "AC-183"
+      ],
+      "dod": "Vitest proves the SPA sends the device zone (or null when unreadable) once when getMe.timeZone is null and never when one is saved, and that SCR-64 Passkey and Session dates render through formatInstant in the Owner's zone.",
+      "files_hint": [
+        "frontend/src/shell/time.ts",
+        "frontend/src/shell/time.test.ts",
+        "frontend/src/api/preferences.ts",
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/pages/profile-security/relativeTime.ts",
+        "frontend/src/pages/profile-security/PasskeysCard.tsx",
+        "frontend/src/pages/profile-security/SessionsCard.tsx",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t14-dates-in-owner-time-zone.md"
+    },
+    {
+      "id": "T15",
+      "title": "Build the Time zone card with the fallback hint and the searchable TimeZonePicker on SCR-64",
+      "layer": "ui",
+      "deps": [
+        "T14"
+      ],
+      "acs": [
+        "AC-183",
+        "AC-184",
+        "AC-185",
+        "AC-186"
+      ],
+      "dod": "Vitest proves the Time zone card shows the zone and the fallback hint only with timeZoneIsFallback, the picker finds zones by city or region, shows the no-match text, offers no empty choice, and handles save success, 400 refusal and no answer as SCR-64 draws them.",
+      "files_hint": [
+        "frontend/src/components/TimeZonePicker/",
+        "frontend/src/pages/profile-security/TimeZoneCard.tsx",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.tsx",
+        "frontend/src/pages/profile-security/ProfileSecurityPage.test.tsx",
+        "frontend/src/api/preferences.ts"
+      ],
+      "file": "docs/features/app-shell/tasks/t15-time-zone-card-and-picker.md"
+    },
+    {
+      "id": "T16",
+      "title": "Land a brand-new account on the remembered section after the passkey step",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-173"
+      ],
+      "dod": "Vitest proves a brand-new account goes to the passkey step with the remembered section intact and SCR-09 then lands on it (or /inbox) on create, Not now, unsupported and no-flag, while existing accounts land straight on it.",
+      "files_hint": [
+        "frontend/src/app/landing.ts",
+        "frontend/src/app/landing.test.ts",
+        "frontend/src/pages/create-passkey/CreatePasskeyPage.tsx",
+        "frontend/src/pages/create-passkey/CreatePasskeyPage.test.tsx"
+      ],
+      "file": "docs/features/app-shell/tasks/t16-return-after-sign-in-for-new-accounts.md"
+    },
+    {
+      "id": "T17",
+      "title": "e2e: navigation on both widths, return after sign-in, and the axe / width / target / load sweep",
+      "layer": "tests",
+      "deps": [
+        "T5",
+        "T6",
+        "T11",
+        "T13",
+        "T16"
+      ],
+      "acs": [
+        "AC-170",
+        "AC-43",
+        "AC-07b",
+        "AC-171",
+        "AC-172",
+        "AC-173"
+      ],
+      "dod": "Playwright specs under both phone and desktop projects, against the e2e profile, pass for AC-170/43/171/172/173 navigation and for the sweep: zero axe violations and no sideways scroll on every shell screen in both themes, bottom-bar targets ≥ 44 × 44, and Inbox usable ≤ 2.5 s on fast 4G.",
+      "files_hint": [
+        "e2e/tests/shell-navigation.spec.ts",
+        "e2e/tests/shell-sweep.spec.ts",
+        "e2e/tests/touch-targets.spec.ts",
+        "e2e/support/shell.ts",
+        "e2e/playwright.config.ts",
+        "compose.e2e.yaml",
+        ".github/workflows/ci.yml"
+      ],
+      "file": "docs/features/app-shell/tasks/t17-e2e-navigation-and-shell-sweep.md"
+    },
+    {
+      "id": "T18",
+      "title": "e2e: live Inbox counter and Status Banners, with timing, and the narrowed AC-102",
+      "layer": "tests",
+      "deps": [
+        "T6",
+        "T12",
+        "T13",
+        "T17"
+      ],
+      "acs": [
+        "AC-174",
+        "AC-175",
+        "AC-176",
+        "AC-177",
+        "AC-178"
+      ],
+      "dod": "Playwright specs under both projects prove the counter follows fixture changes within 5 s (none at 0, 99+), never shows another Owner's count, the offline and not-responding banners appear and clear within 5 s, Try again shows still-down without clearing content, several conditions show +N more, and system-pages.spec reflects the narrowed AC-102.",
+      "files_hint": [
+        "e2e/tests/live-signals.spec.ts",
+        "e2e/tests/system-pages.spec.ts",
+        "e2e/support/shell.ts"
+      ],
+      "file": "docs/features/app-shell/tasks/t18-e2e-counter-and-banners.md"
+    },
+    {
+      "id": "T19",
+      "title": "e2e: theme choice, System follow, cross-device first paint, save failure, and the timezone flows",
+      "layer": "tests",
+      "deps": [
+        "T5",
+        "T15",
+        "T17"
+      ],
+      "acs": [
+        "AC-179",
+        "AC-180",
+        "AC-181",
+        "AC-182",
+        "AC-183",
+        "AC-184",
+        "AC-185",
+        "AC-186"
+      ],
+      "dod": "Playwright specs under both projects prove the theme applies within 200 ms without reload, follows System, shows correctly at first paint across two contexts with at most one switch, reverts with a Try again toast on a failed save, and that the timezone is detected once, changed from the picker, refused when empty and unchanged on no match.",
+      "files_hint": [
+        "e2e/tests/preferences.spec.ts",
+        "e2e/support/shell.ts"
+      ],
+      "file": "docs/features/app-shell/tasks/t19-e2e-theme-and-time-zone.md"
+    }
+  ]
+}
