@@ -2,6 +2,7 @@ package telex.agents
 
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import telex.agents.internal.profile.ProfileCommands
 import telex.agents.internal.profile.ProfileQueries
 import telex.identity.OwnerId
 import telex.shared.DomainProblem
@@ -16,6 +17,7 @@ class AiNotConfigured : DomainProblem(HttpStatus.CONFLICT, "ai-not-configured", 
 @Service
 class ModelProfiles(
     private val queries: ProfileQueries,
+    private val commands: ProfileCommands,
 ) {
     fun catalog(): ModelCatalogView = queries.catalogView()
 
@@ -30,4 +32,28 @@ class ModelProfiles(
         owner: OwnerId,
         from: ProfileRef?,
     ): DraftView = queries.draft(owner, from)
+
+    fun create(
+        owner: OwnerId,
+        name: String,
+        slots: Map<ModelSlotKind, List<String>>,
+        duplicatedFrom: ProfileRef? = null,
+    ): ModelProfileView = commands.create(owner, name, slots, duplicatedFrom)
+
+    fun update(
+        owner: OwnerId,
+        ref: ProfileRef,
+        name: String,
+        slots: Map<ModelSlotKind, List<String>>,
+    ): ModelProfileView = commands.update(owner, ref, name, slots)
+
+    fun delete(
+        owner: OwnerId,
+        ref: ProfileRef,
+    ): ProfileDeletion = commands.delete(owner, ref)
+
+    fun setDefault(
+        owner: OwnerId,
+        ref: ProfileRef,
+    ): ProfileRef = commands.setDefault(owner, ref)
 }

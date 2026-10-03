@@ -16,7 +16,7 @@
 | T9 | Build the three system profiles from settings and validate the Operator's slot overrides | app | Anton Husiev | S | T4, T8 | done |
 | T10 | Persist custom profiles, their chains and the default profile, always scoped by Owner | infra | Anton Husiev | M | T1, T7 | done |
 | T11 | Serve the catalog view, the profile list with picker data, one profile and a new-profile draft | app | Anton Husiev | M | T3, T9, T10 | done |
-| T12 | Create, update and delete custom profiles and choose the default, each in one transaction | app | Anton Husiev | M | T11 | todo |
+| T12 | Create, update and delete custom profiles and choose the default, each in one transaction | app | Anton Husiev | M | T11 | done |
 | T13 | Answer profile slot calls through ProfileCalls and record every call without content | app | Anton Husiev | M | T6, T11 | todo |
 | T14 | Expose the read endpoints: catalog, profile list, one profile and the draft | ports | Anton Husiev | M | T11 | todo |
 | T15 | Expose the write endpoints for profiles and the default profile with their problem codes | ports | Anton Husiev | M | T12, T14 | todo |
