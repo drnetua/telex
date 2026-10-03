@@ -158,6 +158,8 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
     await vi.waitFor(() =>
       expect(fetchMock.mock.calls.filter(([u]) => u === "/api/v1/me").length).toBeGreaterThan(1),
     );
+    // teleX is back before the Owner retries; a /me still failing afterwards would be a new failure.
+    meUp = true;
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await vi.waitFor(() =>
       expect(
