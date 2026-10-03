@@ -1,8 +1,10 @@
 package telex.llm
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Test
 import telex.llm.internal.openrouter.ModelListParser
+import java.time.Duration
 
 class ModelListParserTest {
     private val fixture =
@@ -211,5 +213,22 @@ class ModelListParserTest {
         val r = ModelListParser.parse(body)
         assertThat(r.skipped.map { it.id }).containsExactly("acme/edge")
         assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+    }
+
+    @Test
+    fun `a price with an extreme exponent is read as unknown without exhausting the parser`() {
+        // Rescaling 1e-999999999 or 1e999999999 to scale 6 would build a power of ten with ~10^9 digits.
+        for (price in listOf("1e-999999999", "1e999999999")) {
+            val m =
+                assertTimeoutPreemptively<CatalogModel>(Duration.ofSeconds(2)) {
+                    ModelListParser
+                        .parse(
+                            one(pricing = """{"prompt":"$price","completion":"$price"}"""),
+                        ).models
+                        .single()
+                }
+            assertThat(m.inputPerMtok).isNull()
+            assertThat(m.outputPerMtok).isNull()
+        }
     }
 }

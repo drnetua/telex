@@ -32,6 +32,9 @@ object ModelListParser {
     private const val PER_MILLION = 6
     private const val PRICE_SCALE = 6
     private val MAX_PRICE = BigDecimal.TEN.pow(8)
+
+    /** Rescaling a far larger scale or exponent builds a huge power of ten; such prices are unknown. */
+    private const val MAX_PARSED_SCALE = 30
     private val log = LoggerFactory.getLogger(ModelListParser::class.java)
     private val mapper = JsonMapper.builder().build()
 
@@ -142,7 +145,7 @@ object ModelListParser {
             .takeIf { it.isString }
             ?.asString()
             ?.toBigDecimalOrNull()
-            ?.takeIf { it.signum() >= 0 }
+            ?.takeIf { it.scale() in -MAX_PARSED_SCALE..MAX_PARSED_SCALE && it.signum() >= 0 }
             ?.movePointRight(PER_MILLION)
 
     private val KNOWN = mapOf("text" to Modality.TEXT, "image" to Modality.IMAGE)
