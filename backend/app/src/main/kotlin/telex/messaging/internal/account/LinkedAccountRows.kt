@@ -38,6 +38,21 @@ class LinkedAccountRows(
             ).update()
     }
 
+    /** Sign in again: the new session and sealed key replace the old, the account is Connected and re-syncs. */
+    fun swapSession(
+        id: LinkedAccountId,
+        sessionId: TelegramSessionId,
+        tdlibKeySealed: ByteArray,
+        displayName: String,
+    ) {
+        jdbc
+            .sql(
+                "UPDATE linked_account SET telegram_session_id = ?, tdlib_key_sealed = ?, display_name = ?, " +
+                    "state = 'connected', chat_sync_completed_at = NULL WHERE id = ?",
+            ).params(sessionId.value, tdlibKeySealed, displayName, id.value)
+            .update()
+    }
+
     fun listMine(owner: OwnerId): List<LinkedAccountWithChats> =
         jdbc
             .sql(

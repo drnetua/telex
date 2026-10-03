@@ -75,7 +75,11 @@ class LinkingStepsIT {
     }
 
     @AfterEach
-    fun cleanUp() = linking.cancel(owner)
+    fun cleanUp() {
+        linking.cancel(owner)
+        // an authorized attempt now persists its account, and the next test reuses the same test phones
+        jdbc.update("DELETE FROM linked_account WHERE owner_id = ?", owner.value)
+    }
 
     private fun step() = linking.get(owner).step
 
@@ -170,7 +174,7 @@ class LinkingStepsIT {
         restart()
         toCodeStep(PLAIN)
         assertThat(linking.submitCode(owner, session, FakeTelegram.CODE))
-            .isInstanceOf(LinkingProgress.Authorized::class.java)
+            .isInstanceOf(LinkingProgress.Completed::class.java)
     }
 
     @Test
@@ -195,7 +199,7 @@ class LinkingStepsIT {
         linking.submitCode(owner, session, FakeTelegram.CODE)
 
         assertThat(linking.submitPassword(owner, session, FakeTelegram.PASSWORD))
-            .isInstanceOf(LinkingProgress.Authorized::class.java)
+            .isInstanceOf(LinkingProgress.Completed::class.java)
     }
 
     @Test

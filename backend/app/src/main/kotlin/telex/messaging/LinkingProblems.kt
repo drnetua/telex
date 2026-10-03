@@ -32,6 +32,18 @@ class LinkedAccountNotFound : DomainProblem(HttpStatus.NOT_FOUND, "not-found", "
 class TelegramAccountAlreadyLinked :
     DomainProblem(HttpStatus.CONFLICT, "telegram-account-already-linked", "This Telegram account is already linked.")
 
+/** AC-04: the Telegram account is another Owner's Linked Account; the sign-in just made was ended. */
+class TelegramAccountOwnedByAnotherOwner :
+    DomainProblem(
+        HttpStatus.CONFLICT,
+        "telegram-account-owned-by-another-owner",
+        "This Telegram account is linked to another teleX account.",
+    )
+
+/** AC-117: "Sign in again" signed in to a different Telegram account; the sign-in was ended. */
+class TelegramAccountMismatch :
+    DomainProblem(HttpStatus.CONFLICT, "telegram-account-mismatch", "You signed in to a different Telegram account.")
+
 /** AC-109 / AC-110: no open attempt (cancelled, expired, session ended, or teleX restarted). */
 class LinkingAttemptNotFound :
     DomainProblem(HttpStatus.NOT_FOUND, "linking-attempt-not-found", "This linking attempt ended.")

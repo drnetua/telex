@@ -39,6 +39,7 @@ class FakeTelegram(
 
     private val sessions = ConcurrentHashMap<TelegramSessionId, Session>()
     private val endedWhileStopped = ConcurrentHashMap.newKeySet<TelegramSessionId>()
+    private val loggedOut = ConcurrentHashMap.newKeySet<TelegramSessionId>()
 
     override fun configured() = configured
 
@@ -152,6 +153,7 @@ class FakeTelegram(
             return false
         }
         session.authorized = false
+        loggedOut.add(id)
         publishState(id, session, SessionState.Closed)
         return true
     }
@@ -174,6 +176,9 @@ class FakeTelegram(
     fun endWhileStopped(id: TelegramSessionId) {
         endedWhileStopped.add(id)
     }
+
+    /** Test hook: true once Telegram confirmed a log out of [id], so no device of it remains in the account. */
+    fun wasLoggedOut(id: TelegramSessionId) = loggedOut.contains(id)
 
     /** Test hook: true while a client is open for [id]. */
     fun isOpen(id: TelegramSessionId) = sessions.containsKey(id)

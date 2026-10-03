@@ -3,20 +3,24 @@ package telex.messaging
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import telex.identity.OwnerId
 import telex.identity.OwnerKeys
 import telex.identity.SignInSessionId
 import telex.identity.SignInSessions
+import telex.messaging.internal.account.Completion
+import telex.messaging.internal.account.LinkCompletion
+import telex.messaging.internal.account.LinkRefusal
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.internal.attempt.LinkingAttempt
 import telex.messaging.internal.attempt.LinkingAttempts
 import telex.messaging.internal.config.AccountLimit
+import telex.shared.DomainProblem
 import telex.telegram.SignInOutcome
 import telex.telegram.TelegramSessions
 import telex.telegram.TelegramUnavailable
-import telex.telegram.TelegramUser
 import java.security.SecureRandom
 import java.time.Clock
 import java.time.Duration
@@ -41,14 +45,20 @@ data class StartedLinking(
     val resumed: Boolean,
 )
 
+/** How an authorized attempt ended well: a new Linked Account, or a Session lost one signed in again. */
+enum class LinkingOutcome { LINKED, SIGNED_IN_AGAIN }
+
 /** The answer to a wizard step: the attempt moved (or stayed) at a step, or Telegram authorized the account. */
 sealed interface LinkingProgress {
     data class Step(
         val attempt: LinkingAttemptView,
     ) : LinkingProgress
 
-    data class Authorized(
-        val user: TelegramUser,
+    /** Telegram authorized the attempt and teleX accepted it; the attempt is gone. */
+    data class Completed(
+        val outcome: LinkingOutcome,
+        val linkedAccountId: LinkedAccountId,
+        val origin: LinkingOrigin,
     ) : LinkingProgress
 }
 
@@ -65,6 +75,7 @@ class Linking(
     private val signInSessions: SignInSessions,
     private val rows: LinkedAccountRows,
     private val limit: AccountLimit,
+    private val completion: LinkCompletion,
     private val clock: Clock,
     private val meters: MeterRegistry,
 ) {
@@ -139,7 +150,7 @@ class Linking(
                 }
 
                 is SignInOutcome.Authorized -> {
-                    authorized(outcome)
+                    authorized(owner, attempt, sessions, outcome)
                 }
 
                 SignInOutcome.CodeWrong -> {
@@ -164,7 +175,7 @@ class Linking(
     ): LinkingProgress =
         step(owner, by, LinkingStep.PASSWORD) { attempt, sessions ->
             when (val outcome = sessions.checkPassword(attempt.sessionId, password)) {
-                is SignInOutcome.Authorized -> authorized(outcome)
+                is SignInOutcome.Authorized -> authorized(owner, attempt, sessions, outcome)
                 is SignInOutcome.PasswordWrong -> throw TelegramPasswordWrong(outcome.hint)
                 else -> refuseOrFail(owner, outcome)
             }
@@ -224,9 +235,63 @@ class Linking(
             }
         }
 
-    /** TODO(T10): complete the authorized attempt (link, sign in again, or refuse and log out). */
-    private fun authorized(outcome: SignInOutcome.Authorized): LinkingProgress =
-        LinkingProgress.Authorized(outcome.user)
+    /**
+     * Telegram authorized the attempt: it becomes a Linked Account (or signs one in again), or is logged out and
+     * destroyed in the same call so no teleX device is left behind (AC-04, AC-108, AC-115, AC-117).
+     */
+    private fun authorized(
+        owner: OwnerId,
+        attempt: LinkingAttempt,
+        sessions: TelegramSessions,
+        outcome: SignInOutcome.Authorized,
+    ): LinkingProgress {
+        val result =
+            try {
+                completion.complete(owner, attempt.target, attempt.sessionId, attempt.dbKey, outcome.user)
+            } catch (_: DuplicateKeyException) {
+                completion.afterRace(owner, outcome.user)
+            }
+        return when (result) {
+            is Completion.Refused -> {
+                sessions.logOut(attempt.sessionId, LOG_OUT_TIMEOUT)
+                discard(owner, "refused_" + result.reason.name.lowercase())
+                throw refusal(result.reason)
+            }
+
+            is Completion.Linked -> {
+                finish(owner, attempt, "linked")
+                LinkingProgress.Completed(LinkingOutcome.LINKED, result.id, attempt.origin)
+            }
+
+            is Completion.SignedInAgain -> {
+                finish(owner, attempt, "signed_in_again")
+                result.replaced?.let {
+                    sessions.close(it)
+                    sessions.destroy(it)
+                }
+                LinkingProgress.Completed(LinkingOutcome.SIGNED_IN_AGAIN, result.id, attempt.origin)
+            }
+        }
+    }
+
+    /** The attempt succeeded: it is forgotten and its key wiped, but its Telegram session lives on. */
+    private fun finish(
+        owner: OwnerId,
+        attempt: LinkingAttempt,
+        outcome: String,
+    ) {
+        attempts.remove(owner)
+        attempt.wipeKey()
+        meters.counter("telex.linking.attempts", "outcome", outcome).increment()
+    }
+
+    private fun refusal(reason: LinkRefusal): DomainProblem =
+        when (reason) {
+            LinkRefusal.OTHER_OWNER -> TelegramAccountOwnedByAnotherOwner()
+            LinkRefusal.ALREADY_LINKED -> TelegramAccountAlreadyLinked()
+            LinkRefusal.LIMIT -> LinkedAccountLimitReached(limit.maxPerOwner)
+            LinkRefusal.MISMATCH -> TelegramAccountMismatch()
+        }
 
     /** A wait ends the attempt and tells the Owner when to come back; anything else is a port bug. */
     private fun refuseOrFail(
@@ -297,6 +362,7 @@ class Linking(
     private companion object {
         const val KEY_BYTES = 32
         const val SWEEP_MILLIS = 60_000L
+        val LOG_OUT_TIMEOUT: Duration = Duration.ofSeconds(10)
         val IDLE_LIMIT: Duration = Duration.ofMinutes(15)
     }
 }
