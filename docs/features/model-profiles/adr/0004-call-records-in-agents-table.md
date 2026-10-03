@@ -25,7 +25,7 @@ AC-229 requires each model call made through a profile to be recorded without an
 
 ## Considered options
 
-1. **Own append-only table in `agents`.** The profile call service writes one `model_call` row (with its attempts) right after `llm` returns or fails, then publishes a `ModelCallFinished` event for anyone else.
+1. **Own append-only table in `agents`.** The profile call service writes one `model_call` row (with its attempts) right after `llm` returns or fails, or with reason `no-model-available` when the slot has no usable model, then publishes a `ModelCallFinished` event for anyone else.
 2. **The `audit` module, through an event.** The caller publishes an event, and `audit` stores it asynchronously through the Modulith event publication registry.
 
 ## Decision outcome

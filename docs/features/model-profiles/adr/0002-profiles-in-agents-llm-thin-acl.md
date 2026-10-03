@@ -26,7 +26,7 @@ The architecture map gives `llm` "OpenRouter, Model Profiles, cost, Budget". But
 
 ## Considered options
 
-1. **Profiles in `agents`, `llm` a thin ACL.** `llm` owns the Model Catalog (fetch, snapshot, capabilities, prices) and the model call over an ordered list of model ids. `agents` owns Model Profiles, the default profile, slot rules, profile resolution, price estimates and call records.
+1. **Profiles in `agents`, `llm` a thin ACL.** `llm` owns the Model Catalog (fetch, snapshot, capabilities, prices) and the model call over an ordered list of model ids. `agents` owns Model Profiles, the default profile, slot rules, profile resolution, price estimates and call records, and exposes the catalog to `web` in its own types, so `llm` types never reach `web`.
 2. **A new core module `models`** between `web` and `llm`, which `agents` would later depend on.
 3. **Everything in `llm`.** This moves `OwnerId` to `shared` and allows `web` → `llm`.
 
