@@ -218,31 +218,123 @@ C4Container
 
 ## 6. Runtime view
 
-<!-- 🎯 Why: the RUNTIME FLOW of 1–2 critical scenarios — who talks to whom, when, in what order.
-     Without §6, §5 is just boxes with no life.
-     📋 Write: a Mermaid sequenceDiagram. Participants are names from §5 (don't invent new ones).
-     Messages are semantic («saves a draft»), NO HTTP verbs / paths / status codes — endpoint-level
-     sequences arrive at the `api` stage.
-     📌 e.g. «author → web: composes draft → web → content API: save». Seed the primary flow(s) here;
-     the `sequences` stage then covers every §5 AC (no cap). Never N/A for M+; XS/S keeps ≥1 happy-path flow. -->
+Design seeds the three flows that carry the strategic choices. `/sdd:sequences` then adds a flow or branch for every remaining AC, including the wizard errors (AC-02, AC-106, AC-107), cancel and expiry (AC-109, AC-110), "Sign in again" (AC-117), the limit (AC-115) and authorization (AC-03). Messages are semantic, and endpoints arrive with `/sdd:api`.
 
-**Critical flow 1: <flow name>**
+**Critical flow 1: link a new account with two-step verification (AC-01, AC-04, AC-108, AC-115, AC-116)**
 
 ```mermaid
 sequenceDiagram
-    actor Actor
-    participant Web
-    participant Service
-    participant Store
-    Actor->>Web: <action>
-    Web->>Service: <call>
-    Service->>Store: <write>
-    Store-->>Service: ok
-    Service-->>Web: result
-    Web-->>Actor: confirmation
+    actor Owner
+    participant SPA
+    participant Web as web
+    participant Msg as messaging
+    participant Id as identity
+    participant Tg as telegram
+    participant TG as Telegram
+
+    Owner->>SPA: Connect Telegram
+    SPA->>Web: start linking
+    Web->>Msg: start or resume attempt for Owner
+    Msg->>Msg: check set up and below limit
+    Msg->>Tg: open new session with a fresh TDLib key
+    Msg-->>SPA: attempt at phone step
+    Owner->>SPA: phone number
+    SPA->>Web: submit phone
+    Web->>Msg: submit phone
+    Msg->>Tg: send phone
+    Tg->>TG: request login code
+    TG-->>Tg: code sent to other devices
+    Msg-->>SPA: attempt at code step
+    Owner->>SPA: code from the Telegram app
+    SPA->>Web: submit code
+    Web->>Msg: submit code
+    Msg->>Tg: check code
+    Tg->>TG: sign in
+    TG-->>Tg: password needed, with hint
+    Msg-->>SPA: attempt at password step
+    Owner->>SPA: password
+    SPA->>Web: submit password
+    Web->>Msg: submit password
+    Msg->>Tg: check password
+    Tg->>TG: confirm password
+    TG-->>Tg: authorized as Telegram user U
+    Tg-->>Msg: authorized, user U, name, phone
+    alt U is another Owner's account, or already this Owner's and connected, or the limit is now full
+        Msg->>Tg: log out and destroy the session
+        Msg-->>SPA: refusal (one Owner per account, already linked, or limit)
+    else new account within the limit
+        Msg->>Id: seal TDLib key for the new Linked Account
+        Msg->>Msg: insert Linked Account Connected with masked phone, record AccountLinked
+        Msg-->>SPA: linked, return to where the attempt started
+        Tg->>TG: load main and archived chat lists
+        Tg-->>Msg: chats changed with batch and total
+        Msg->>Msg: upsert chat-list rows, record sync progress
+        Msg-->>Web: sync progressed
+        Web-->>SPA: hint linked-accounts
+        SPA->>Web: refetch accounts
+    end
 ```
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+**Critical flow 2: unlink, including Telegram unreachable (AC-111, AC-112, AC-113)**
+
+```mermaid
+sequenceDiagram
+    actor Owner
+    participant SPA
+    participant Web as web
+    participant Msg as messaging
+    participant Tg as telegram
+    participant TG as Telegram
+
+    Owner->>SPA: Unlink and confirm in the dialog
+    SPA->>Web: unlink account
+    Web->>Msg: unlink my account A
+    Msg->>Tg: log out session, wait up to 10 s
+    alt Telegram confirms the sign-out
+        TG-->>Tg: session terminated
+        Tg-->>Msg: confirmed
+    else unreachable, timed out or session already lost
+        Tg-->>Msg: not confirmed
+    end
+    Msg->>Msg: one transaction deletes the account, its sealed key and its chat list, records AccountUnlinked
+    Msg->>Tg: close and destroy the session directory
+    Msg-->>SPA: unlinked, with the check-active-sessions warning if not confirmed
+    Note over Msg: AccountUnlinked stays in the event registry until every listener has run, also across a restart
+    Msg-->>Web: AccountUnlinked
+    Web-->>SPA: hint linked-accounts on every open tab
+```
+
+**Critical flow 3: restart, reconnect and lost-session detection (AC-36, AC-118, AC-122)**
+
+```mermaid
+sequenceDiagram
+    participant Msg as messaging
+    participant Id as identity
+    participant Tg as telegram
+    participant TG as Telegram
+    participant Web as web
+
+    Note over Tg: startup sweep deletes session directories no Linked Account references
+    Msg->>Msg: load every Linked Account that is not Session lost
+    loop each account, in parallel
+        Msg->>Id: open its sealed TDLib key
+        Msg->>Tg: open existing session with the key
+        Tg->>TG: connect with the stored session
+        alt session still valid
+            TG-->>Tg: authorization ready
+            Tg-->>Msg: state Ready
+            Msg->>Msg: Connected, resume sync where it stopped
+        else Telegram unreachable
+            Tg-->>Msg: state Connecting
+            Msg->>Msg: Reconnecting, TDLib keeps retrying
+        else session ended while teleX was stopped
+            TG-->>Tg: authorization closed
+            Tg-->>Msg: state Closed
+            Msg->>Msg: Session lost, keep the account and its chat list
+        end
+        Msg-->>Web: LinkedAccountStateChanged
+    end
+```
 
 ## 7. Deployment view
 
