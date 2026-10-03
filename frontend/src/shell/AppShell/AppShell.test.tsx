@@ -28,7 +28,7 @@ function stubWidth(phone: boolean) {
   };
 }
 
-function setup(path = "/inbox", props: { inboxCount?: number } = {}) {
+function setup(path = "/inbox") {
   const client = createAppQueryClient();
   render(
     <QueryClientProvider client={client}>
@@ -38,7 +38,7 @@ function setup(path = "/inbox", props: { inboxCount?: number } = {}) {
           <Route
             path="*"
             element={
-              <AppShell email="me@example.com" {...props}>
+              <AppShell email="me@example.com">
                 <p>page body</p>
               </AppShell>
             }
@@ -99,9 +99,14 @@ describe("AppShell (AC-170, AC-43, AC-172)", () => {
     expect(within(nav).getByRole("link", { name: "Inbox" })).not.toHaveAttribute("aria-current");
   });
 
-  it("AC-43: phone bar is Inbox, Chats, Assistants, Tasks and More, with the Inbox counter", () => {
+  it("AC-43, AC-174: phone bar is Inbox, Chats, Assistants, Tasks and More, with the pulse's Inbox counter", async () => {
     stubWidth(true);
-    setup("/inbox", { inboxCount: 4 });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ inboxCount: 4, conditions: [] })),
+    );
+    setup("/inbox");
+    await waitFor(() => expect(screen.getByRole("link", { name: /Inbox/ })).toHaveTextContent("4"));
     const nav = screen.getByRole("navigation", { name: "Main" });
     expect(
       within(nav)
@@ -154,12 +159,18 @@ describe("AppShell (AC-170, AC-43, AC-172)", () => {
 
   it("AC-172: Sign out from the desktop footer posts and lands on sign-in", async () => {
     stubWidth(false);
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchMock = vi.fn((url: string) =>
+      Promise.resolve(
+        url === "/api/v1/pulse"
+          ? Response.json({ inboxCount: 0, conditions: [] })
+          : new Response(null, { status: 204 }),
+      ),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const client = setup("/inbox");
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("heading", { name: "Sign in page" })).toBeInTheDocument();
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/sign-out");
+    expect(fetchMock.mock.calls.map(([u]) => u)).toContain("/api/v1/sign-out");
     expect(client.getQueryCache().getAll()).toHaveLength(0);
   });
 

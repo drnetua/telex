@@ -62,16 +62,24 @@ describe("SCR-10 Inbox", () => {
   });
 
   it("AC-95: Sign out posts, clears cached Owner data and lands on sign-in", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(json(200, me))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const fetchMock = vi.fn((url: string) =>
+      Promise.resolve(
+        url === "/api/v1/pulse"
+          ? json(200, { inboxCount: 0, conditions: [] })
+          : url === "/api/v1/sign-out"
+            ? new Response(null, { status: 204 })
+            : json(200, me),
+      ),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const client = setup();
     await screen.findByRole("heading", { level: 1, name: "Inbox" });
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("heading", { name: "Sign in page" })).toBeInTheDocument();
-    const [url, init] = fetchMock.mock.calls[1] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls.find(([u]) => u === "/api/v1/sign-out") as unknown as [
+      string,
+      RequestInit,
+    ];
     expect(url).toBe("/api/v1/sign-out");
     expect(init.method).toBe("POST");
     expect(client.getQueryCache().getAll()).toHaveLength(0);

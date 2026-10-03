@@ -5,6 +5,8 @@ import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { ThemeSwitch } from "../../components/ThemeSwitch/ThemeSwitch";
 import { messages } from "../../messages";
+import { InboxAnnouncement, InboxPill } from "../InboxCounter";
+import { usePulse } from "../pulse";
 import { currentSection, sections, type Section } from "../sections";
 
 const m = messages.shell;
@@ -26,8 +28,6 @@ function usePhone() {
 
 interface AppShellProps {
   email: string;
-  /** Inbox counter (T12). */
-  inboxCount?: number;
   /** Slot at the top of the main column (T13). */
   banner?: ReactNode;
   children: ReactNode;
@@ -46,9 +46,7 @@ function SectionLabel({
     <>
       <Icon name={section.icon} size={20} />
       <span className={current ? "fw-bold" : undefined}>{m.sections[section.id]}</span>
-      {section.id === "inbox" && count ? (
-        <span className="badge bg-primary ms-1">{count}</span>
-      ) : null}
+      {section.id === "inbox" ? <InboxPill count={count} /> : null}
     </>
   );
 }
@@ -215,7 +213,9 @@ function PhoneBar({
 }
 
 /** Signed-in frame (C-01): side menu at 768 px and up, header + bottom bar + More sheet below it. */
-export function AppShell({ email, inboxCount, banner, children }: AppShellProps) {
+export function AppShell({ email, banner, children }: AppShellProps) {
+  // The one pulse consumer: undefined until the first answer; the last known count stays through failures.
+  const inboxCount = usePulse().data?.inboxCount;
   const phone = usePhone();
   const location = useLocation();
   const active = currentSection(location.pathname);
@@ -231,6 +231,7 @@ export function AppShell({ email, inboxCount, banner, children }: AppShellProps)
 
   return (
     <div className="page flex-row">
+      <InboxAnnouncement count={inboxCount} />
       {phone ? null : <SideMenu email={email} inboxCount={inboxCount} active={active} />}
       <div className="telex-main flex-grow-1 d-flex flex-column">
         {phone ? (

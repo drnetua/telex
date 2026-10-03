@@ -85,6 +85,12 @@ export const messages = {
     close: "Close",
     signOut: "Sign out",
     signingOut: "Signing out",
+    inboxCounter: {
+      max: "99+",
+      label: (n: number) => (n === 1 ? "1 item needs you" : `${n} items need you`),
+      labelMax: "More than 99 items need you",
+      none: "No items need you",
+    },
     sections: {
       overview: "Overview",
       inbox: "Inbox",
