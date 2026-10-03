@@ -24,5 +24,13 @@
 | T17 | e2e: navigation on both widths, return after sign-in, and the axe / width / target / load sweep | tests | Anton Husiev | M | T5, T6, T11, T13, T16 | done |
 | T18 | e2e: live Inbox counter and Status Banners, with timing, and the narrowed AC-102 | tests | Anton Husiev | M | T6, T12, T13, T17 | done |
 | T19 | e2e: theme choice, System follow, cross-device first paint, save failure, and the timezone flows | tests | Anton Husiev | M | T5, T15, T17 | done |
+| T20 | Make the preferences and pulse endpoints honour the contract: nullable timeZone, refused unknown keys, applied condition pattern, one-query /me | ports | Anton Husiev | S | — | todo |
+| T21 | Keep one shared theme state: applied choice, save sequence, pending, revert and the failed-save toast, and route 401/5xx preference-save failures | ui | Anton Husiev | M | — | todo |
+| T22 | Make the theme switches keyboard-correct: one radio group per switch and a real menu keyboard pattern | ui | Anton Husiev | S | T21 | todo |
+| T23 | Remember the section on Session ended, clear the previous Owner's cache on sign-in, and keep a pulse 5xx on the banner | ui | Anton Husiev | S | — | todo |
+| T24 | Fix More sheet focus (no re-steal, trapped Tab), announce the first Status Banner, and keep sticky toasts off the phone bar | ui | Anton Husiev | S | T21 | todo |
+| T25 | Build the Time zone card's tz-not-yet state, return focus after a pick, and replace the tautological me test | ui | Anton Husiev | S | T21 | todo |
+| T26 | e2e: tighten the shell and preference proofs: stable narrowed AC-102, fresh data after recovery, another browser, A/B in one browser, any-section counter, theme/zone reload checks, in-page load timing | tests | Anton Husiev | M | T20, T22, T23, T24, T25 | todo |
+| T27 | Bring the docs in line: ux-flows platform decision, Coming soon copy and settled open questions, inventory line refs, raw-UUID deviation | docs | Anton Husiev | S | T20, T22, T24, T25 | todo |
 
-**Total:** 19 tasks, ~13 person-days (S ≈ 0.5 d, M ≈ 0.75 d, L ≈ 1 d).
+**Total:** 27 tasks (T20–T27 are review follow-ups from `_review/review-2026-10-03.md`), ~18 person-days (S ≈ 0.5 d, M ≈ 0.75 d, L ≈ 1 d).
