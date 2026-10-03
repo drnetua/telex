@@ -37,6 +37,7 @@ class FakeTelegram(
     }
 
     private val sessions = ConcurrentHashMap<TelegramSessionId, Session>()
+    private val endedWhileStopped = ConcurrentHashMap.newKeySet<TelegramSessionId>()
 
     override fun configured() = configured
 
@@ -51,8 +52,14 @@ class FakeTelegram(
         id: TelegramSessionId,
         dbKey: ByteArray,
     ) {
-        sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
+        val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
         directories.create(id)
+        if (endedWhileStopped.remove(id)) {
+            session.authorized = false
+            publishState(id, session, SessionState.Closed)
+        } else if (session.authorized) {
+            publishState(id, session, SessionState.Ready)
+        }
     }
 
     override fun sendPhone(
@@ -129,7 +136,9 @@ class FakeTelegram(
         return true
     }
 
-    override fun close(id: TelegramSessionId) = Unit
+    override fun close(id: TelegramSessionId) {
+        sessions.remove(id)
+    }
 
     override fun destroy(id: TelegramSessionId) {
         sessions.remove(id)
@@ -137,6 +146,17 @@ class FakeTelegram(
     }
 
     override fun sweepOrphans(referenced: Set<TelegramSessionId>) = directories.sweepOrphans(referenced)
+
+    /** Test hook: teleX stops. Every client is gone; the session directories stay. */
+    fun simulateStop() = sessions.clear()
+
+    /** Test hook: Telegram ended this session while teleX was stopped; the next `reopen` finds it closed. */
+    fun endWhileStopped(id: TelegramSessionId) {
+        endedWhileStopped.add(id)
+    }
+
+    /** Test hook: true while a client is open for [id]. */
+    fun isOpen(id: TelegramSessionId) = sessions.containsKey(id)
 
     /** Test hook: Telegram becomes unreachable. Emits Connecting, never Closed (AC-122). */
     fun dropConnectivity(id: TelegramSessionId) {

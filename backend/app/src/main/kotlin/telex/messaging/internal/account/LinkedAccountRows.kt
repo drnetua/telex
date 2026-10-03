@@ -14,6 +14,7 @@ import java.util.UUID
 
 /** Linked Account persistence. Every query that knows the Owner filters on `owner_id` (AC-03). */
 @Repository
+@Suppress("TooManyFunctions") // one repository, one query per function
 class LinkedAccountRows(
     private val jdbc: JdbcClient,
 ) {
@@ -88,6 +89,56 @@ class LinkedAccountRows(
             .sql("SELECT telegram_session_id FROM linked_account WHERE telegram_session_id IS NOT NULL")
             .query { rs, _ -> TelegramSessionId(rs.getObject(1, UUID::class.java)) }
             .set()
+
+    /** The sealed TDLib key of an account, or null when it has none (Session lost after a master-key reset). */
+    fun sealedKey(id: LinkedAccountId): ByteArray? =
+        jdbc
+            .sql("SELECT tdlib_key_sealed FROM linked_account WHERE id = ?")
+            .param(id.value)
+            .query { rs, _ -> rs.getBytes(1) }
+            .optional()
+            .orElse(null)
+
+    /**
+     * Moves the account that holds [sessionId] to [to], unless it is already there or Session lost (only the
+     * sign-in-again flow leaves Session lost). Returns the account when the stored state really changed.
+     */
+    fun transitionBySession(
+        sessionId: TelegramSessionId,
+        to: LinkedAccountState,
+    ): Pair<LinkedAccountId, OwnerId>? =
+        jdbc
+            .sql(
+                "UPDATE linked_account SET state = ? WHERE telegram_session_id = ? " +
+                    "AND state NOT IN (?, 'session_lost') RETURNING id, owner_id",
+            ).params(to.wire, sessionId.value, to.wire)
+            .query { rs, _ ->
+                LinkedAccountId(rs.getObject(1, UUID::class.java)) to OwnerId(rs.getObject(2, UUID::class.java))
+            }.optional()
+            .orElse(null)
+
+    /** Master-key reset: every account that is not yet Session lost becomes so; all lose session and key. */
+    fun resetAll(): List<Pair<LinkedAccountId, OwnerId>> {
+        val changed =
+            jdbc
+                .sql("SELECT id, owner_id FROM linked_account WHERE state <> 'session_lost' ORDER BY created_at, id")
+                .query { rs, _ ->
+                    LinkedAccountId(rs.getObject(1, UUID::class.java)) to OwnerId(rs.getObject(2, UUID::class.java))
+                }.list()
+        jdbc
+            .sql(
+                "UPDATE linked_account SET state = 'session_lost', telegram_session_id = NULL, " +
+                    "tdlib_key_sealed = NULL",
+            ).update()
+        return changed
+    }
+
+    fun countByState(state: LinkedAccountState): Int =
+        jdbc
+            .sql("SELECT count(*) FROM linked_account WHERE state = ?")
+            .param(state.wire)
+            .query(Int::class.java)
+            .single()
 
     private fun find(
         where: String,
