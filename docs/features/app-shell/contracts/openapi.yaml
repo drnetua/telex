@@ -180,6 +180,7 @@ paths:
           description: |
             Refused, nothing changed (Flow 8). `time-zone-required`: `timeZone` was `null` or empty (AC-186).
             `unknown-time-zone`: not on the known list. `unknown-theme`: not light, dark or system.
+            `unknown-property`: the body names a property other than `theme` or `timeZone`.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -217,6 +218,17 @@ paths:
                       - field: "theme"
                         code: "unknown-theme"
                         message: "Choose light, dark or system."
+                unknownProperty:
+                  value:
+                    type: "urn:telex:error:validation-failed"
+                    title: "Bad Request"
+                    status: 400
+                    detail: "Only theme and timeZone can be changed."
+                    code: "validation-failed"
+                    errors:
+                      - field: "colour"
+                        code: "unknown-property"
+                        message: "Only theme and timeZone can be changed."
         "401": { $ref: "#/components/responses/NotSignedIn" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
@@ -442,7 +454,8 @@ components:
           pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           description: |
             Field-level code, same label rule. New in app-shell: `time-zone-required`, `unknown-time-zone`
-            (sad §8), `unknown-theme`.
+            (sad §8), `unknown-theme`, `unknown-property` (a body property the operation doesn't know), and
+            `pattern` (e2e pulse fixture only: a condition code that isn't a label of at most 63 characters).
         message: { type: string }
     Problem:
       type: object

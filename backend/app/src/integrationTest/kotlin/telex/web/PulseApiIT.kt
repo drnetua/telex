@@ -196,6 +196,16 @@ class PulseFixtureApiIT(
     }
 
     @Test
+    fun `a condition code longer than 63 characters is 400 validation-failed`() {
+        val s = start("anton@mail.com")
+
+        val r = fixture(s.key, "{\"inboxCount\":1,\"conditions\":[\"${"a".repeat(64)}\"]}")
+
+        assertThat(r.statusCode()).isEqualTo(400)
+        assertThat(r.body()).contains("\"code\":\"validation-failed\"")
+    }
+
+    @Test
     fun `the fixture endpoint without a session is 401`() {
         val r = call("PUT", "/api/v1/e2e-fixtures/pulse", null, "{\"inboxCount\":1,\"conditions\":[]}")
 

@@ -42,7 +42,8 @@ class PulseFixtures :
     override fun activeConditions(ownerId: UUID): Set<String> = conditions[ownerId] ?: emptySet()
 }
 
-private val conditionCode = Regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+/** A kebab-case label of at most 63 characters, as `StatusConditionCode` in the contract. */
+private val conditionCode = Regex("^(?=.{1,63}$)[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 
 /** Sets the calling Owner's fixture values; it cannot name another Owner. */
 @Profile("e2e")

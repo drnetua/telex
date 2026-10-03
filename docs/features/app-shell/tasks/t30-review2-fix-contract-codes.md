@@ -8,7 +8,7 @@ files_hint: ["docs/features/app-shell/contracts/openapi.yaml", "backend/app/src/
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-2 (R2-8, R2-9)"
-status: "todo"
+status: "done"
 ---
 
 # T30 — List the new field codes in the contract and cap fixture condition codes at 63 characters
