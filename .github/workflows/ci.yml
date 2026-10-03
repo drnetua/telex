@@ -68,7 +68,12 @@ jobs:
           node-version: "24"
           cache: pnpm
 
-      - name: Start the stack (app with the e2e profile, Postgres, Mailpit, fake OpenRouter)
+      - name: Start the stack (app with the e2e profile and the fake Telegram adapter, Postgres, Mailpit, fake OpenRouter)
+        env:
+          TELEX_TELEGRAM_ADAPTER: fake
+          TELEX_TELEGRAM_API_ID: "1"
+          TELEX_TELEGRAM_API_HASH: ci-fake-hash
+          TELEX_MASTER_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
         run: docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait
 
       - name: Install dependencies and Chromium

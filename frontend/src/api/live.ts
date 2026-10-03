@@ -1,5 +1,5 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { markBackgroundTick } from "./account";
 import { linkedAccountsKey } from "./linkedAccounts";
 
@@ -43,11 +43,18 @@ export function openLiveUpdates(
   return () => source.close();
 }
 
-/** Mount once, in App. */
+/**
+ * Mount once, in App. The stream needs a Sign-in Session: a stream opened while signed out is answered 401 and an
+ * EventSource never retries that, so it opens once a signed-in screen has loaded the Owner's accounts and closes when the Owner signs out.
+ */
 export function useLiveUpdates(): void {
   const client = useQueryClient();
+  const signedIn = useSyncExternalStore(
+    (notify) => client.getQueryCache().subscribe(notify),
+    () => client.getQueryData(linkedAccountsKey) !== undefined,
+  );
   useEffect(() => {
-    if (typeof EventSource === "undefined") return undefined;
+    if (!signedIn || typeof EventSource === "undefined") return undefined;
     return openLiveUpdates(client);
-  }, [client]);
+  }, [client, signedIn]);
 }

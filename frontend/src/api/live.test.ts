@@ -1,7 +1,10 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, act } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isBackground } from "./account";
-import { openLiveUpdates } from "./live";
+import { linkedAccountsKey } from "./linkedAccounts";
+import { openLiveUpdates, useLiveUpdates } from "./live";
 
 class FakeSource {
   closed = false;
@@ -65,5 +68,30 @@ describe("openLiveUpdates (AC-116, AC-121, AC-122)", () => {
     const { source, close } = setup();
     close();
     expect(source.closed).toBe(true);
+  });
+});
+
+describe("useLiveUpdates (AC-117, AC-122)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("opens the stream only once the Owner is signed in, and closes it on sign-out", () => {
+    const sources: FakeSource[] = [];
+    vi.stubGlobal("EventSource", function Source(url: string) {
+      const source = new FakeSource(url);
+      sources.push(source);
+      return source;
+    });
+    const client = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+    renderHook(() => useLiveUpdates(), { wrapper });
+    expect(sources).toHaveLength(0);
+
+    act(() => client.setQueryData(linkedAccountsKey, []));
+    expect(sources).toHaveLength(1);
+    expect(sources[0]!.closed).toBe(false);
+
+    act(() => client.clear());
+    expect(sources[0]!.closed).toBe(true);
   });
 });

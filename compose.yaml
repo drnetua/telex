@@ -14,6 +14,8 @@ services:
       TELEX_MAIL_PORT: "1025"
       TELEX_PUBLIC_URL: ${TELEX_PUBLIC_URL:-http://localhost:8080}
       # Telegram linking stays "not set up" until the Operator gives these (README, "Telegram setup").
+      # `fake` replaces Telegram with an in-memory stand-in (the e2e suite); never for real use.
+      TELEX_TELEGRAM_ADAPTER: ${TELEX_TELEGRAM_ADAPTER:-tdlight}
       TELEX_TELEGRAM_API_ID: ${TELEX_TELEGRAM_API_ID:-}
       TELEX_TELEGRAM_API_HASH: ${TELEX_TELEGRAM_API_HASH:-}
       TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER: ${TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER:-3}

@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicLong
  * In-memory Telegram scripted by test phone numbers in Telegram's test shape `99966XYYYY`:
  * X picks the behaviour (0 plain, 1 two-step with hint, 2 two-step without hint, 3 banned, 4 unregistered,
  * 5 flood wait on the phone, 6 flood wait on the code, 8 two-step with hint and flood wait on the password,
- * 7 terminate right after link); YYYY is the number of chats (and makes the account unique).
+ * 7 terminate right after link, 9 terminate a moment after link, once the Linked Account exists);
+ * YYYY is the number of chats (and makes the account unique).
  */
 @Suppress("TooManyFunctions") // a port implementation plus its test hooks
 class FakeTelegram(
@@ -204,6 +205,16 @@ class FakeTelegram(
         publishState(id, session, SessionState.Closed)
     }
 
+    /** Ends the session after the sign-in has been completed, as Telegram does when the Owner ends it elsewhere. */
+    private fun terminateLater(id: TelegramSessionId) {
+        Thread
+            .ofVirtual()
+            .start {
+                Thread.sleep(TERMINATE_LATER_DELAY_MILLIS)
+                if (sessions.containsKey(id)) terminate(id)
+            }
+    }
+
     private fun session(id: TelegramSessionId) = checkNotNull(sessions[id]) { "Unknown session $id" }
 
     private fun reachable(id: TelegramSessionId): Session {
@@ -227,7 +238,10 @@ class FakeTelegram(
         publishState(id, session, SessionState.Ready)
         val total = phone.takeLast(CHATS_DIGITS).toInt()
         publishChats(id, total)
-        if (scenarioOf(phone) == TERMINATE) terminate(id)
+        when (scenarioOf(phone)) {
+            TERMINATE -> terminate(id)
+            TERMINATE_LATER -> terminateLater(id)
+        }
         return SignInOutcome.Authorized(
             TelegramUser(
                 telegramUserId = phone.toLong(),
@@ -289,5 +303,7 @@ class FakeTelegram(
         private const val TERMINATE = '7'
         private const val FLOOD_CODE = '6'
         private const val FLOOD_PASSWORD = '8'
+        private const val TERMINATE_LATER = '9'
+        private const val TERMINATE_LATER_DELAY_MILLIS = 1_500L
     }
 }

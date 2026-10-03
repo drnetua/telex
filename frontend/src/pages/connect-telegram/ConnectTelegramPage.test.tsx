@@ -111,7 +111,7 @@ describe("SCR-02 phone step", () => {
   it("advances to the code step on next (AC-01)", async () => {
     const calls = mockApi({
       [A]: [json(200, attempt())],
-      [PHONE]: [json(200, { outcome: "next", attempt: attempt({ step: "code", codeLength: 5 }) })],
+      [PHONE]: [json(200, attempt({ step: "code", codeLength: 5 }))],
     });
     setup();
     await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");

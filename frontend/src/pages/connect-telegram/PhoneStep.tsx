@@ -3,7 +3,7 @@ import { submitLinkingPhone } from "../../api/linking";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
-import { dispatchResult, isValidation, refusalText, type StepProps } from "./steps";
+import { isValidation, refusalText, type StepProps } from "./steps";
 import { CancelButton } from "./CancelButton";
 
 export function PhoneStep(props: StepProps) {
@@ -30,7 +30,7 @@ export function PhoneStep(props: StepProps) {
     setError(null);
     setSubmitting(true);
     try {
-      dispatchResult(await submitLinkingPhone(value), props);
+      props.onNext(await submitLinkingPhone(value));
     } catch (e) {
       setSubmitting(false);
       const refused = refusalText(e);

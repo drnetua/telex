@@ -81,6 +81,37 @@
   color: var(--telex-danger-text);
 }
 
+/* The banner action sits on that tint too (axe color-contrast): danger-text, not Tabler's brighter red. */
+.alert-danger .btn-outline-danger {
+  --tblr-btn-color: var(--telex-danger-text);
+  --tblr-btn-border-color: var(--telex-danger-text);
+  --tblr-btn-hover-bg: var(--telex-danger-text);
+  --tblr-btn-hover-border-color: var(--telex-danger-text);
+  --tblr-btn-hover-color: var(--tblr-bg-surface);
+  --tblr-btn-active-bg: var(--telex-danger-text);
+  --tblr-btn-active-border-color: var(--telex-danger-text);
+  --tblr-btn-active-color: var(--tblr-bg-surface);
+}
+
+/* Destructive confirmations: white on Tabler's red is 4.2:1; the danger-text red is above 4.5:1 (axe color-contrast). */
+.btn-danger {
+  --tblr-btn-bg: var(--telex-danger-text);
+  --tblr-btn-border-color: var(--telex-danger-text);
+  --tblr-btn-hover-bg: var(--telex-danger-text);
+  --tblr-btn-hover-border-color: var(--telex-danger-text);
+  --tblr-btn-active-bg: var(--telex-danger-text);
+  --tblr-btn-active-border-color: var(--telex-danger-text);
+  --tblr-btn-disabled-bg: var(--telex-danger-text);
+  --tblr-btn-disabled-border-color: var(--telex-danger-text);
+}
+
+[data-bs-theme="dark"] .btn-danger {
+  --tblr-btn-color: var(--tblr-bg-surface);
+  --tblr-btn-hover-color: var(--tblr-bg-surface);
+  --tblr-btn-active-color: var(--tblr-bg-surface);
+  --tblr-btn-disabled-color: var(--tblr-bg-surface);
+}
+
 /* AppShell (C-01): side menu 240 px, phone bottom bar, current-section bar and bold label. */
 .telex-sidemenu {
   width: 240px;

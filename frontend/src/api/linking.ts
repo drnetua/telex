@@ -43,7 +43,7 @@ export const startMyLinkingAttempt = (request: StartLinkingRequest) =>
 export const cancelMyLinkingAttempt = () => apiFetch<void>(BASE, { method: "DELETE" });
 
 export const submitLinkingPhone = (phoneNumber: string) =>
-  post<LinkingStepResult>(`${BASE}/phone`, { phoneNumber });
+  post<LinkingAttempt>(`${BASE}/phone`, { phoneNumber });
 
 export const submitLinkingCode = (code: string) =>
   post<LinkingStepResult>(`${BASE}/code`, { code });

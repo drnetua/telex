@@ -12,7 +12,7 @@ import java.time.Clock
 import java.time.Duration
 
 class FakeTelegramTest {
-    private val events = mutableListOf<Any>()
+    private val events = java.util.concurrent.CopyOnWriteArrayList<Any>()
     private val root: Path = Files.createTempDirectory("telegram-fake")
     private val directories = SessionDirectories(root, Clock.systemUTC())
     private val fake = FakeTelegram(ApplicationEventPublisher { events += it }, configured = true, directories)
@@ -150,6 +150,18 @@ class FakeTelegramTest {
     @Test
     fun `the terminate-after-link number closes the session right after authorization`() {
         link("9996677705")
+
+        assertThat(states().map { it.state }).containsExactly(SessionState.Ready, SessionState.Closed)
+        assertThat(states().map { it.sequence }).isSorted().doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun `the terminate-later number stays Ready after authorization and is closed a moment later`() {
+        link("9996690005")
+        assertThat(states().map { it.state }).containsExactly(SessionState.Ready)
+
+        val deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos()
+        while (states().none { it.state == SessionState.Closed } && System.nanoTime() < deadline) Thread.sleep(50)
 
         assertThat(states().map { it.state }).containsExactly(SessionState.Ready, SessionState.Closed)
         assertThat(states().map { it.sequence }).isSorted().doesNotHaveDuplicates()
