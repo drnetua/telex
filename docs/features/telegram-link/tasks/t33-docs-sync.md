@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/sad.md", "docs/features/telegram-link/
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-03 — findings Q11 (tags part), Q13, Q17"
-status: "todo"
+status: "done"
 ---
 
 # T33 — Bring sad §6/§7, the api-sync open questions and the screens.md registry in line with the code

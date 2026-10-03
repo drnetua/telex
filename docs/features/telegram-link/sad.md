@@ -399,7 +399,12 @@ sequenceDiagram
     Note over O,S: Precondition: the Owner's open attempt is at the phone step
     O->>U: type the phone number
     U->>S: submit phone
-    S->>S: check the attempt is this Owner's and its Sign-in Session is live, record the step time
+    S->>S: check the attempt is this Owner's and its Sign-in Session is live
+    alt the attempt is at another step (another tab moved it on)
+        S-->>U: refusal linking step mismatch, with the current step, nothing changed
+        U-->>O: show the wizard at the current step
+    end
+    S->>S: record the step time
     S->>X: send the phone number and ask for a login code
     alt the number isn't valid
         X-->>S: phone invalid
@@ -407,6 +412,7 @@ sequenceDiagram
         U-->>O: say the number isn't valid
     else no Telegram account has this number
         X-->>S: phone unregistered
+        S->>S: replace the attempt's Telegram session, because Telegram closes the client of an unregistered number
         S-->>U: refusal phone unregistered, attempt stays at the phone step
         U-->>O: say to create the account in the Telegram app first
     else Telegram has banned the number
@@ -418,11 +424,16 @@ sequenceDiagram
         S->>S: discard the attempt and destroy its Telegram session
         S-->>U: refusal wait required, with the retry time
         U-->>O: end the attempt and count down to the retry time
+    else Telegram doesn't answer within the 8 s step timeout
+        S-->>U: refusal telegram unavailable, attempt stays at the phone step
+        U-->>O: say Telegram isn't answering and offer to try again
     else code sent
         X-->>S: code sent to the Owner's other devices
         S-->>U: attempt at the code step
         U-->>O: show the code step
     end
+    Note over S: the same unregistered-number refusal at the code step, when Telegram reports it there, ends the attempt (outcome refused_phone), because its client is closed
+    Note over S,X: every wizard step waits at most 8 s for Telegram (`TdlightTelegramSessions`), then the refusal is telegram unavailable; if Telegram had already authorized the account, the attempt is ended and its session logged out (outcome failed)
     Note over O,S: Postcondition: teleX never creates a Telegram account, sends no code while Telegram's wait runs, and stores nothing about the number
 ```
 
@@ -446,7 +457,12 @@ sequenceDiagram
     end
     O->>U: type the code
     U->>S: submit code
-    S->>S: check the attempt is this Owner's and its Sign-in Session is live, record the step time
+    S->>S: check the attempt is this Owner's and its Sign-in Session is live
+    alt the attempt is at another step (another tab moved it on)
+        S-->>U: refusal linking step mismatch, with the current step, nothing changed
+        U-->>O: show the wizard at the current step
+    end
+    S->>S: record the step time
     S->>X: check the code
     alt the code is wrong
         X-->>S: code invalid
@@ -461,6 +477,9 @@ sequenceDiagram
         S->>S: discard the attempt and destroy its Telegram session
         S-->>U: refusal wait required, with the retry time
         U-->>O: end the attempt and count down to the retry time
+    else Telegram doesn't answer within the 8 s step timeout
+        S-->>U: refusal telegram unavailable, attempt stays at the code step
+        U-->>O: say Telegram isn't answering and offer to try again
     else the code is right
         X-->>S: password needed, or authorized
         S-->>U: attempt at the password step, or the outcome of flow 1
@@ -481,7 +500,12 @@ sequenceDiagram
     Note over O,S: Precondition: the Owner's open attempt is at the password step, holding the hint Telegram gave with it
     O->>U: type the two-step verification password
     U->>S: submit password
-    S->>S: check the attempt is this Owner's and its Sign-in Session is live, record the step time
+    S->>S: check the attempt is this Owner's and its Sign-in Session is live
+    alt the attempt is at another step (another tab moved it on)
+        S-->>U: refusal linking step mismatch, with the current step, nothing changed
+        U-->>O: show the wizard at the current step
+    end
+    S->>S: record the step time
     S->>X: check the password
     alt the password is wrong
         X-->>S: password invalid
@@ -492,6 +516,9 @@ sequenceDiagram
         S->>S: discard the attempt and destroy its Telegram session
         S-->>U: refusal wait required, with the retry time
         U-->>O: end the attempt and count down to the retry time
+    else Telegram doesn't answer within the 8 s step timeout
+        S-->>U: refusal telegram unavailable, attempt stays at the password step
+        U-->>O: say Telegram isn't answering and offer to try again
     else the password is right
         X-->>S: authorized as a Telegram user
         S-->>U: the outcome of flow 1 (linked, signed in again, or refused)
@@ -536,7 +563,7 @@ sequenceDiagram
         S->>S: the open attempt's Sign-in Session isn't live, discard it
         S-->>U: a new attempt at the phone step (flow 4)
     end
-    S->>S: close and destroy the discarded attempt's Telegram session and its directory
+    S->>S: log out the discarded attempt's Telegram session if it was authorized but unfinished, then close and destroy it and its directory
     Note over S,X: the session never signed in, so Telegram lists no teleX device for it
     Note over S: a failed directory deletion is retried every minute
     alt the deletion keeps failing until a restart
@@ -815,11 +842,11 @@ sequenceDiagram
 **Monitoring:**
 - Metrics (Micrometer, with no phone numbers, names or Telegram ids in tags):
   - `telex.telegram.sessions.active{state=ready|connecting|closed}`;
-  - `telex.linking.attempts{outcome=linked|cancelled|expired|refused_other_owner|refused_duplicate|refused_limit|flood_wait}`;
+  - `telex.linking.attempts{outcome=linked|signed_in_again|cancelled|expired|refused_other_owner|refused_already_linked|refused_limit|refused_mismatch|refused_phone|flood_wait|failed}` (`refused_phone` is an attempt ended by an unregistered or banned number or a client that could not be opened; `failed` is an attempt ended by an error after Telegram authorized it);
   - `telex.linking.step.duration{step=phone|code|password}` (the p95 ≤ 3 s target);
   - `telex.linked_accounts.reconnect.duration`;
   - `telex.unlink{signout=confirmed|unconfirmed}`;
-  - `telex.chat_sync.duration`.
+  - `telex.chat_sync.duration`, recorded once per account, when its first chat-list load completes.
 - KPIs (spec §7): link completion and time to link come from the `telex.linking.*` metrics, restart survival from `telex.linked_accounts.reconnect.*`, and unlink completeness from the recorded dump. There is no analytics pipeline.
 - Health: `/actuator/health` stays green when Telegram is unreachable, because a Telegram outage is an account state, not an app failure. Incomplete `AccountUnlinked` publications are visible in `event_publication`.
 - Alerts and tracing: none in E02 (no SLO). OpenTelemetry arrives with the agent epics.

@@ -125,7 +125,7 @@ Every field has an origin. The one `low` row (`Problem.step`) belongs to a seque
 
 ## D. Open questions raised by this run
 
-- [ ] **Step mismatch across tabs** (§B 4, gap 1): add the branch "the attempt is at another step → refusal with the current step" to Flows 5–7 in sad §6. — owner: `sequences`, due: before the contract is finalized (before `/sdd:tasks telegram-link`)
-- [ ] **Telegram not answering a wizard step** (§B 4, gap 2): add the branch and its timeout to Flows 5–7. Contract default: 503 `telegram-unavailable`, attempt kept at its step. — owner: `sequences`, due: before the contract is finalized (before `/sdd:tasks telegram-link`)
+- [x] **Step mismatch across tabs** (§B 4, gap 1): add the branch "the attempt is at another step → refusal with the current step" to Flows 5–7 in sad §6. — owner: `sequences`, due: before the contract is finalized (before `/sdd:tasks telegram-link`)
+- [x] **Telegram not answering a wizard step** (§B 4, gap 2): add the branch and its timeout to Flows 5–7. Contract default: 503 `telegram-unavailable`, attempt kept at its step. — owner: `sequences`, due: before the contract is finalized (before `/sdd:tasks telegram-link`)
 
 Next stage: `/sdd:screens telegram-link`.
