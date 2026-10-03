@@ -334,17 +334,16 @@ Repo conventions are inherited unchanged unless the row says otherwise.
 
 ## 9. Architecture decisions
 
-<!-- 🎯 Why: the REVERSE INDEX onto the adr/ folder. `ls adr/` gives the files; §9 gives the
-     semantics — why they exist, which SAD section they attach to, what status.
-     📋 Write: a 4-column table, one row per ADR. Mixed status is fine.
-     📌 e.g. «0001 | Store content as a table of typed blocks | Accepted | §4». -->
-
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use a sliding-window counter for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate the worker in the API process"> | Accepted | §<N> |
+| 0001 | Show "Coming soon" sections, ship "offline" as the first Status Banner, and move the adaptive panel to E14 (from `specify`) | Accepted | §1 (scope) |
+| 0002 | Poll one background pulse every 3 seconds for live signals | Accepted | §4 |
+| 0003 | Aggregate the Inbox count from sources in a new `inbox` module | Accepted | §4, §5 |
+| 0004 | Detect offline from pulse failures and the browser's network state | Accepted | §4, §8 |
+| 0005 | Store theme and timezone as columns on the `owner` row | Accepted | §4, §5 |
+| 0006 | Extend the shell through a client section registry and server-reported Status Banner conditions | Accepted | §4, §5 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/app-shell/adr/NNNN-<title>.md`. Foundation decisions this feature relies on: [ADR-0001](../../adr/0001-kotlin-spring-modulith-postgres-react-stack.md) (SPA served by Spring) and [ADR-0002](../../adr/0002-single-app-with-isolated-tdlib-subproject.md) (one app process), plus platform-skeleton [ADR-0005](../platform-skeleton/adr/0005-count-session-activity-only-from-requests-the-spa-does-not-mark-as-background.md) (background marker).
 
 ## 10. Quality requirements
 
