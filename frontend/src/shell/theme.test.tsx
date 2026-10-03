@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { renderHook } from "@testing-library/react";
+import { render, renderHook } from "@testing-library/react";
+import { useLayoutEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   THEME_KEY,
   applyTheme,
   currentChoice,
   rememberTheme,
+  resetThemeMemory,
   startThemeRuntime,
   useAccountTheme,
   type ThemeChoice,
@@ -36,6 +38,7 @@ function stubMatchMedia(initialDark: boolean) {
 const attr = () => document.documentElement.getAttribute("data-bs-theme");
 
 beforeEach(() => {
+  resetThemeMemory();
   localStorage.clear();
   document.documentElement.removeAttribute("data-bs-theme");
 });
@@ -107,6 +110,34 @@ describe("theme.ts", () => {
     expect(() => rememberTheme("dark")).not.toThrow();
   });
 
+  it("keeps a choice that could not be written even when reads still work, until a write succeeds", () => {
+    localStorage.setItem(THEME_KEY, "light");
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota");
+    });
+    rememberTheme("dark");
+    expect(currentChoice()).toBe("dark");
+    write.mockRestore();
+    rememberTheme("system");
+    expect(currentChoice()).toBe("system");
+    localStorage.setItem(THEME_KEY, "light");
+    expect(currentChoice()).toBe("light");
+  });
+
+  it("a choice saved in another tab replaces the one kept in memory", () => {
+    stubMatchMedia(false);
+    const stop = startThemeRuntime();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new Error("quota");
+    });
+    rememberTheme("dark");
+    localStorage.setItem(THEME_KEY, "light");
+    window.dispatchEvent(new StorageEvent("storage", { key: THEME_KEY, newValue: "light" }));
+    expect(currentChoice()).toBe("light");
+    expect(attr()).toBe("light");
+    stop();
+  });
+
   it("follows the device mode live while on System, not otherwise (AC-180)", () => {
     const media = stubMatchMedia(false);
     const stop = startThemeRuntime();
@@ -160,6 +191,30 @@ describe("useAccountTheme (AC-181)", () => {
     rerender({ m: me("dark") });
     rerender({ m: me("dark") });
     expect(set.mock.calls.filter(([k]) => k === "data-bs-theme")).toHaveLength(1);
+  });
+
+  it("applies the account theme before the signed-in screen paints", () => {
+    stubMatchMedia(false);
+    applyTheme("system");
+    const seen: (string | null)[] = [];
+    function Account() {
+      useAccountTheme(me("dark"));
+      return null;
+    }
+    function Screen() {
+      // Layout effects run in tree order before paint; this one sees what the first paint will show.
+      useLayoutEffect(() => {
+        seen.push(attr());
+      }, []);
+      return null;
+    }
+    render(
+      <>
+        <Account />
+        <Screen />
+      </>,
+    );
+    expect(seen).toEqual(["dark"]);
   });
 
   it("does not switch when stored equals account", () => {

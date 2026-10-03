@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
 
 export type ThemeChoice = "light" | "dark" | "system";
 
@@ -12,7 +12,7 @@ const isChoice = (value: unknown): value is ThemeChoice =>
 
 const deviceIsDark = () => window.matchMedia(DARK_QUERY).matches;
 
-/** The choice remembered while storage is blocked, so it lasts as long as this page does. */
+/** The choice kept while storage can't be written (blocked or full), so it lasts as long as this page does. */
 let blockedStorageChoice: ThemeChoice | null = null;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((listener) => listener());
@@ -22,26 +22,33 @@ const subscribe = (listener: () => void) => {
 };
 
 /**
- * The theme last used on this device; System when nothing valid is stored. With blocked storage it is the
- * choice kept in memory for this page (System until one is made).
+ * The theme last used on this device; System when nothing valid is stored. When the last choice couldn't be
+ * written (blocked or full storage) it is the choice kept in memory for this page.
  */
 export function currentChoice(): ThemeChoice {
+  if (blockedStorageChoice !== null) return blockedStorageChoice;
   try {
     const stored = localStorage.getItem(THEME_KEY);
     return isChoice(stored) ? stored : "system";
   } catch {
-    return blockedStorageChoice ?? "system";
+    return "system";
   }
 }
 
 export function rememberTheme(choice: ThemeChoice): void {
   try {
     localStorage.setItem(THEME_KEY, choice);
+    blockedStorageChoice = null;
   } catch {
-    // Blocked storage: keep it for this page; the account theme still applies on every load.
+    // Blocked or full storage: keep it for this page; the account theme still applies on every load.
     blockedStorageChoice = choice;
   }
   notify();
+}
+
+/** Test helper: forget the choice kept in memory for this page. */
+export function resetThemeMemory(): void {
+  blockedStorageChoice = null;
 }
 
 /** The choice applied on this device, shared by every theme control and kept current across tabs. */
@@ -63,6 +70,8 @@ export function startThemeRuntime(): () => void {
   };
   const onStorage = (event: StorageEvent) => {
     if (event.key !== THEME_KEY) return;
+    // Another tab saved a newer choice; it replaces the one this page kept in memory.
+    blockedStorageChoice = null;
     applyTheme(currentChoice());
     notify();
   };
@@ -74,11 +83,14 @@ export function startThemeRuntime(): () => void {
   };
 }
 
-/** Switches once to the account's theme when it differs from the one applied at first paint. */
+/**
+ * Switches once to the account's theme when it differs from the one applied at first paint. A layout effect, so
+ * the first signed-in paint already shows the account's theme (AC-181).
+ */
 export function useAccountTheme(me: { theme: ThemeChoice } | undefined): void {
   const done = useRef(false);
   const theme = me?.theme;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!theme || done.current) return;
     done.current = true;
     if (theme !== currentChoice()) {
