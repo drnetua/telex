@@ -137,4 +137,44 @@ class ModelListParserTest {
         assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
         assertThat(r.skipped).hasSize(1)
     }
+
+    @Test
+    fun `name longer than 200 characters is skipped and the others stay`() {
+        val long = "N".repeat(201)
+        val json =
+            """{"data":[{"id":"acme/long","name":"$long",
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}},
+            {"id":"acme/ok","name":"Ok",
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}]}"""
+        val r = ModelListParser.parse(json)
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/long")
+        assertThat(ModelListParser.parse(one().replace("\"M\"", "\"${"N".repeat(200)}\"")).models).hasSize(1)
+    }
+
+    @Test
+    fun `provider longer than 100 characters is skipped`() {
+        val r = ModelListParser.parse(one(id = "p".repeat(101) + "/m"))
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped).hasSize(1)
+        assertThat(ModelListParser.parse(one(id = "p".repeat(100) + "/m")).models).hasSize(1)
+    }
+
+    @Test
+    fun `an id without a slash longer than 100 characters is skipped as its own provider`() {
+        val r = ModelListParser.parse(one(id = "x".repeat(150)))
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped).hasSize(1)
+    }
+
+    @Test
+    fun `a repeated id keeps the first and reports the rest`() {
+        val entry = { name: String ->
+            """{"id":"acme/dup","name":"$name",
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}"""
+        }
+        val r = ModelListParser.parse("""{"data":[${entry("First")},${entry("Second")}]}""")
+        assertThat(r.models.map { it.name }).containsExactly("First")
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/dup")
+    }
 }

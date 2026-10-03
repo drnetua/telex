@@ -26,6 +26,8 @@ data class ParsedCatalog(
  */
 object ModelListParser {
     private const val MAX_ID_LENGTH = 200
+    private const val MAX_NAME_LENGTH = 200
+    private const val MAX_PROVIDER_LENGTH = 100
     private const val PER_MILLION = 6
     private val log = LoggerFactory.getLogger(ModelListParser::class.java)
     private val mapper = JsonMapper.builder().build()
@@ -33,37 +35,69 @@ object ModelListParser {
     fun parse(json: String): ParsedCatalog {
         val models = mutableListOf<CatalogModel>()
         val skipped = mutableListOf<SkippedModel>()
+        val seen = hashSetOf<String>()
         for (node in mapper.readTree(json).path("data")) {
             when (val r = parseOne(node)) {
-                is CatalogModel -> models += r
-                is SkippedModel -> skipped += r.also { log.warn("Skipped model {}: {}", it.id, it.reason) }
+                is CatalogModel -> {
+                    if (seen.add(r.modelId.value)) {
+                        models += r
+                    } else {
+                        skipped += SkippedModel(r.modelId.value, "duplicate id").also { logSkipped(it) }
+                    }
+                }
+
+                is SkippedModel -> {
+                    skipped += r.also { logSkipped(it) }
+                }
             }
         }
         return ParsedCatalog(models, skipped)
     }
 
+    private fun logSkipped(it: SkippedModel) = log.warn("Skipped model {}: {}", it.id, it.reason)
+
     private fun parseOne(node: JsonNode): Any {
         val id = node.path("id").takeIf { it.isString }?.asString()
         val takes = modalities(node.path("architecture").path("input_modalities"))
         val produces = modalities(node.path("architecture").path("output_modalities"), ignoreUnused = false)
+        val name =
+            node
+                .path("name")
+                .takeIf { it.isString }
+                ?.asString()
+                ?.ifBlank { null } ?: id
         val reason =
             when {
-                id.isNullOrBlank() -> "missing id"
-                id.length > MAX_ID_LENGTH -> "id longer than $MAX_ID_LENGTH characters"
-                takes == null || produces == null -> "unknown or missing modalities"
-                else -> null
+                id.isNullOrBlank() -> {
+                    "missing id"
+                }
+
+                id.length > MAX_ID_LENGTH -> {
+                    "id longer than $MAX_ID_LENGTH characters"
+                }
+
+                name!!.length > MAX_NAME_LENGTH -> {
+                    "name longer than $MAX_NAME_LENGTH characters"
+                }
+
+                id.substringBefore('/').length > MAX_PROVIDER_LENGTH -> {
+                    "provider longer than $MAX_PROVIDER_LENGTH characters"
+                }
+
+                takes == null || produces == null -> {
+                    "unknown or missing modalities"
+                }
+
+                else -> {
+                    null
+                }
             }
         if (reason != null) return SkippedModel(id, reason)
         val pricing = node.path("pricing")
         val model =
             CatalogModel(
                 modelId = ModelId(id!!),
-                name =
-                    node
-                        .path("name")
-                        .takeIf { it.isString }
-                        ?.asString()
-                        ?.ifBlank { null } ?: id,
+                name = name!!,
                 provider = id.substringBefore('/'),
                 takes = takes!!,
                 produces = produces!!,

@@ -84,7 +84,12 @@ class CatalogRefresher(
                 if (models.isEmpty()) {
                     error("provider returned no usable models")
                 }
-                store.replace(models, now) { events.publishEvent(ModelCatalogRefreshed(now, models.size)) }
+                store.replace(models, now) {
+                    // the holder must hold the new snapshot before the event can be consumed; the read joins this
+                    // transaction, and the load after the try restores the committed state if it rolls back
+                    holder.load()
+                    events.publishEvent(ModelCatalogRefreshed(now, models.size))
+                }
                 log.info("Model catalog refreshed: {} models", models.size)
                 true
             } catch (
