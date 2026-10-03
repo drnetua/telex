@@ -523,7 +523,7 @@ One page at each unbuilt section's own address: `/overview`, `/chats`, `/assista
 
 | State | Trigger / condition | Components (from the inventory) | Source-ref |
 |---|---|---|---|
-| default | The section is chosen in the navigation or under More, or its link is opened (AC-171) | Inside `AppShell`, with that section current: h1 = section name, `Badge tone="neutral" icon="clock"` "Coming soon", `EmptyState kind="none"` with the section's icon, one sentence (below; **draft, see §Open questions**), and action "Go to Inbox" → SCR-10 | W-94 |
+| default | The section is chosen in the navigation or under More, or its link is opened (AC-171) | Inside `AppShell`, with that section current: h1 = section name, `Badge tone="neutral" icon="clock"` "Coming soon", `EmptyState kind="none"` with the section's icon, one sentence (below; accepted 2026-10-03, see §Open questions), and action "Go to Inbox" → SCR-10 | W-94 |
 | loading | N/A: static content; the lazily loaded chunk uses the shell's `section-loading` | — | — |
 | empty | N/A: the page *is* the stand-in; it has no collection | — | — |
 | error | Shell `section-load-failed`; otherwise N/A (no request) | — | — |
@@ -595,7 +595,7 @@ W-95  SCR-95 open over SCR-10 (360)
 
 ## Open questions
 
-- [ ] **Coming soon sentences** (SCR-94, five sections). They are a draft and need PM / product review of what each section will hold before `implement` writes them into `messages.ts`. — owner: Anton Husiev (PM), due: before `/sdd:implement app-shell`
+- [x] **Coming soon sentences** (SCR-94, five sections). Accepted as shipped in `frontend/src/messages.ts` (`comingSoon.sentences`); the owning epic rewrites its sentence when it replaces the page. — owner: Anton Husiev (PM), settled 2026-10-03 (review E2)
 
 ## Noted gaps
 

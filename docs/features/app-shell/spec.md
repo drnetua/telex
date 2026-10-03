@@ -235,9 +235,9 @@ The Operator has no story here. E06 changes nothing the Operator does (installat
 
 ## 8. Open questions
 
-- [ ] Which four sections sit in the phone bottom bar next to "More"? Default now: Inbox, Chats, Assistants, Tasks in the bar; Overview, Runs, Settings under "More". — owner: Anton Husiev, due: before `/sdd:screens app-shell`
+- [x] Which four sections sit in the phone bottom bar next to "More"? Settled 2026-10-03 (screens.md): Inbox, Chats, Assistants, Tasks in the bar; Overview, Runs, Settings under "More". — owner: Anton Husiev, due: before `/sdd:screens app-shell`
 - [ ] When does the telegram-link spec gain its "Telegram account disconnected" Status Banner AC, built on this mechanism? Default now: in its clarify pass. — owner: Anton Husiev, due: before `/sdd:tasks telegram-link` (the E02 card now lists it as feature 7; the telegram-link spec still needs the AC)
-- [ ] What's the importance order of all Status Banner conditions from C-04? Default now: offline > account disconnected > bot blocked > consent needed > budget exhausted > all assistants paused > triage deferred. — owner: Anton Husiev, due: before `/sdd:screens app-shell`
+- [x] What's the importance order of all Status Banner conditions from C-04? Settled 2026-10-03 (screens.md): offline / not responding > account disconnected > bot blocked > consent needed > budget exhausted > all assistants paused > triage deferred. — owner: Anton Husiev, due: before `/sdd:screens app-shell`
 - [ ] Does the E14 (agent-runtime) spec pick up the adaptive panel and the "side panels open full screen on a phone" half of AC-07b? Default now: yes, with SCR-41 as the first screen. — owner: Anton Husiev, due: before `/sdd:specify agent-runtime`
 - [ ] Do the specs of E04 (Chats), E09 (Assistants), E14 (Runs), E22 (Tasks) and E29 (Overview) each replace their "Coming soon" page? Default now: yes, as an AC in each, checked at its `/sdd:review`. — owner: Anton Husiev, due: at each epic's `/sdd:specify`
 - [ ] Does the E11 (keyword-triggers) spec make its Inbox Notes count toward the Inbox counter, and say when a Note stops waiting? Default now: yes, a Note waits until the Owner opens or dismisses it. — owner: Anton Husiev, due: before `/sdd:specify keyword-triggers`

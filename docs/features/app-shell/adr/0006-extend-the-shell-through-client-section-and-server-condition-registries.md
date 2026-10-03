@@ -38,6 +38,9 @@ Later epics replace their "Coming soon" page (E04, E09, E14, E22, E29) and add S
 **Positive**
 - A later epic adds a condition by implementing `StatusConditionSource` in its module and adding one entry (code, text, action, importance) to the SPA's condition catalog. The shell's banner code doesn't change.
 - A later epic adds its section page by swapping its registry entry from Coming soon to its page. Navigation, phone bar and "More" are generated from the registry.
+
+**Accepted deviation from foundation ADR-0003 (review D3)**
+- `StatusConditionSource.activeConditions` takes a raw `UUID` owner id, not a typed `OwnerId`. `OwnerId` lives in `identity`, which `shared` can't depend on, and moving it into `shared` is out of scope.
 - The importance order lives in one place, the SPA condition catalog, with offline and not-responding first. The spec §8 order is a list there.
 
 **Negative**

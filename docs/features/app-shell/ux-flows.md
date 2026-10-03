@@ -20,7 +20,7 @@ updated_at: "2026-10-03"
 - **Unbuilt sections share one page.** Overview, Chats, Assistants, Runs and Tasks each open SCR-94 "Coming soon" at their own address, named for that section, until their epic (E29, E04, E09, E14, E22) replaces it with SCR-80, SCR-20, SCR-30, SCR-40 or SCR-50 ([ADR-0001](./adr/0001-shell-scope-moves-offline-banner-coming-soon-panel.md)).
 - **"More" is a phone-only navigation step** (SCR-95), not a section. The bar contents follow the §8 OQ default: Inbox, Chats, Assistants, Tasks, More, with Overview, Runs and Settings under "More". The Inbox never moves under "More".
 - **The Status Banner is a strip inside the shell, not a screen.** It never replaces the page and never takes the Owner elsewhere. Only "teleX answered an action with a failure" still replaces the page with SCR-93 (narrowed from E01 AC-102, AC-176).
-- **Theme and timezone are edited in place on SCR-64.** No separate page or dialog. A theme choice applies before it's saved and is rolled back if the save fails (AC-179, AC-182).
+- **Theme lives in the shell; timezone is edited on SCR-64.** The theme switch is also in the sidebar footer and under More, and still on Profile and security (AC-179); the timezone picker opens in a dialog from SCR-64 (decided 2026-10-03, screens.md noted gap 2). A theme choice applies before it's saved and is rolled back if the save fails (AC-179, AC-182).
 - **Screen ids:** product-spec ids are kept (SCR-01, SCR-07, SCR-08, SCR-09, SCR-10, SCR-64, SCR-92, SCR-93 from E01). Three ids are new and need adding to `docs/docs/03-product-spec.md`: SCR-69 Settings (the free slot after the SCR-60…68 settings pages), SCR-94 Coming soon (next free member of the SCR-90 system-page family) and SCR-95 More.
 - **Design input (not decided here):** how the Inbox counter and the theme/timezone reach an already open tab (live push vs polling, AC-174's ≤ 5 s), how the shell tells "no network" from "teleX not answering" (AC-176), and how the deep-link destination survives sign-in (inherited from E01) — all for `design`.
 
@@ -146,10 +146,10 @@ On any shell screen, if the device loses its network a Status Banner appears und
 
 ```mermaid
 flowchart TD
-    S64(["SCR-64 Profile and security, current theme shown"]) -->|"chooses Light, Dark or System"| APPLY["Every open screen switches at once, no reload"]
+    S64(["Any shell screen: SCR-64, sidebar footer or More, current theme shown"]) -->|"chooses Light, Dark or System"| APPLY["Every open screen switches at once, no reload"]
     APPLY --> SAVE{"Saved to the account?"}
-    SAVE -->|"yes"| DONE["SCR-64 shows the new theme as the saved choice"]
-    SAVE -->|"no, for example offline"| REVERT["Theme returns to the previous choice, SCR-64 says it wasn't saved and offers Try again"]
+    SAVE -->|"yes"| DONE["The theme shows as the saved choice"]
+    SAVE -->|"no, for example offline"| REVERT["Theme returns to the previous choice, a toast says it wasn't saved and offers Try again"]
     REVERT -->|"Try again"| APPLY
     DONE --> SYS{"Chose System?"}
     SYS -->|"yes, device switches light or dark"| FOLLOW["teleX follows the device, no reload"]
@@ -162,7 +162,7 @@ flowchart TD
     CHG -->|"no"| STAY["No switch"]
 ```
 
-On Profile and security (SCR-64) the Owner chooses Light, Dark or System. Every open teleX screen switches to it at once, without a reload, and the choice is saved to their account. If the save fails, for example offline, the theme returns to the previous choice and SCR-64 says the change wasn't saved and offers to try again. With System chosen, teleX follows the device whenever it switches between light and dark, again without a reload. When the Owner opens teleX on a device, a first sign-in there shows the account's theme from the first signed-in screen. A device they've used before first shows the theme last used there, then switches once to the account's theme only if it changed elsewhere in the meantime. A device that was already open picks up a change made elsewhere the next time teleX is opened or reloaded there.
+On Profile and security (SCR-64), in the sidebar footer or under More, the Owner chooses Light, Dark or System. Every open teleX screen switches to it at once, without a reload, and the choice is saved to their account. If the save fails, for example offline, the theme returns to the previous choice and a toast says the change wasn't saved and offers to try again. With System chosen, teleX follows the device whenever it switches between light and dark, again without a reload. When the Owner opens teleX on a device, a first sign-in there shows the account's theme from the first signed-in screen. A device they've used before first shows the theme last used there, then switches once to the account's theme only if it changed elsewhere in the meantime. A device that was already open picks up a change made elsewhere the next time teleX is opened or reloaded there.
 
 ### Flow: US-74 — See times in my timezone
 

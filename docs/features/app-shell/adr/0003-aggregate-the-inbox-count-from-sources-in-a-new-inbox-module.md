@@ -41,6 +41,9 @@ The Inbox counter shows how many items wait for the Owner (CONTEXT "Inbox"). E06
 - AC-175 holds by construction: every source is called with the current Owner's id and filters by `owner_id`.
 - The Inbox screen's tabs (SCR-10) can follow the same source split later.
 
+**Accepted deviation from foundation ADR-0003 (review D3)**
+- `InboxSource.countWaiting` takes a raw `UUID` owner id, not a typed `OwnerId`. `OwnerId` lives in `identity`, which `inbox` and the source-implementing modules can't reach, and moving it into `shared` is out of scope. Implementations must still filter on that id only (AC-175).
+
 **Negative**
 - The count costs one query per source per pulse (ADR-0002). Each source must be a cheap, indexed count.
 - Producers in integration modules can't implement a core module's interface. Today none is planned, and if one appears it publishes an event that a core module turns into a source.
