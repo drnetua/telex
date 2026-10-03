@@ -79,7 +79,7 @@ Route `/settings/models`, tab in the URL: `?tab=profiles` (default) | `?tab=cata
 | State | Trigger / condition | Components (from the inventory) | Source-ref |
 |---|---|---|---|
 | loading | `getModelCatalog` pending | `LoadState` (6 rows) | — |
-| default | `state = current` (AC-211, AC-225). A small "Updated <relative time>" line (absolute time in the tooltip) above the table. Columns: Model (name + provider), Takes, Produces, Price (input / output per 1M tokens, or per image), Context. Ordered by name, no pagination, no CSV export. Under 600 px the rows become label/value cards (DataTable's own behaviour) | `FilterBar` (C-28, ported: search + one "Slot" filter Any / Text / Vision / Image, state in the URL, "Reset all"), `DataTable` (C-29, ported, without pagination or export), `Cost` | W-66e |
+| default | `state = current` (AC-211, AC-225). A small "Updated <relative time>" line (absolute time in the tooltip) above the table. Columns: Model (name + provider), Takes, Produces, Price (input / output per 1M tokens), Context. Ordered by name, no pagination, no CSV export. Under 600 px the rows become label/value cards (DataTable's own behaviour) | `FilterBar` (C-28, ported: search + one "Slot" filter Any / Text / Vision / Image, state in the URL, "Reset all"), `DataTable` (C-29, ported, without pagination or export), `Cost` | W-66e |
 | filtered | Search by name and/or a slot filter, in the browser over the loaded list (sad §6). Vision shows only models that take images and answer in text (AC-211) | `FilterBar`, `DataTable` | W-66e |
 | filtered empty | No model matches: `EmptyState kind="none"` "No models match your search." + action "Reset all" | `EmptyState` | — |
 | update failed | `state = update-failed` (AC-212): the list as `default`, with a Tabler `alert` (warning-subtle, `alert-triangle`) above it: "The model list couldn't be updated. It's from <date, time>." Profiles keep working | Tabler `alert` | W-66f |
@@ -155,7 +155,7 @@ Updated 3 hours ago
 | Test vision model B  · test | Text, images | Text     | $2.50 in · $10.00 out  | 200,000 |
 |                             |              |          | per 1M tokens          |         |
 +-----------------------------+--------------+----------+------------------------+---------+
- (image models: "Price $0.04 per image", Context "—")
+ (image models: "$0.30 in · $30.00 out per 1M tokens", Context "—")
 
 W-66f  catalog notes
 | (!) The model list couldn't be updated. It's from 2 Oct, 06:00.           |   update-failed

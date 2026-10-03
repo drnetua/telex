@@ -21,7 +21,7 @@ Two modules own tables, and neither reads the other's. `llm` owns the Model Cata
 - Constraints: NOT NULL / UNIQUE / FK, plus light named `CHECK`s on enum-like values, ranges and "exactly one of" pairs, the same as E01. The rules are still enforced and tested in Kotlin. The DB checks are a backstop.
 - Constraint names: `<table>_<what>_{ck|fk|uq|idx}`.
 - Strings: `VARCHAR(N)`. A profile name is 40 (AC-214). A model id is 200: OpenRouter ids such as `openai/gpt-4o-mini:free` are well under 100, so 200 leaves headroom. The adapter skips and logs a longer one (sad §11 defensive parsing).
-- Money: `NUMERIC(14, 6)` USD (Kotlin `BigDecimal`, sad §8), stored **per million tokens** and **per image**, the units the catalog shows (AC-211). The adapter converts OpenRouter's per-token decimal strings by shifting the decimal point, with no rounding.
+- Money: `NUMERIC(14, 6)` USD (Kotlin `BigDecimal`, sad §8), stored **per million tokens**, the unit the catalog shows (AC-211); `price_per_image` is reserved (NULL in E10). The adapter converts OpenRouter's per-token decimal strings by shifting the decimal point, with no rounding.
 
 **User decisions taken in this stage (2026-10-03):**
 1. **`ProfileRef` = two columns**, `system_profile_key VARCHAR(16)` + `custom_profile_id UUID`, with exactly one set (`CHECK num_nonnulls(…) = 1`). E09's agent table copies this pair. Where the reference must stay inside the Owner's own profiles, it gets the composite FK `(owner_id, custom_profile_id) → model_profile(owner_id, id)`. Resolves feature ADR-0005's open encoding.

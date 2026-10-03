@@ -416,6 +416,29 @@ describe("SCR-66 Profiles tab", () => {
     expect(screen.getByTestId("where").textContent).toBe("/settings/models");
   });
 
+  it("H1: a limit toast does not come back when the Owner returns to the URL it was raised on", async () => {
+    stubApi({
+      list: list(),
+      draft: () =>
+        json(409, {
+          type: "urn:telex:error:profile-limit-reached",
+          code: "profile-limit-reached",
+          errors: [],
+        }),
+    });
+    setup();
+    await picker();
+    await userEvent.click(screen.getByRole("button", { name: "Create profile" }));
+    const limit = "You can have up to 20 custom profiles. Delete one to make room.";
+    expect(await screen.findByText(limit)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Model catalog" }));
+    expect(screen.queryByText(limit)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Profiles" }));
+    await picker();
+    expect(screen.getByTestId("where").textContent).toBe("/settings/models");
+    expect(screen.queryByText(limit)).not.toBeInTheDocument();
+  });
+
   it("delete: a danger confirm 'Delete Cheap vision?' with 'This can't be undone.' and Delete profile / Cancel; Cancel sends nothing", async () => {
     const calls = stubApi({ list: list() });
     setup();

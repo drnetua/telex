@@ -850,6 +850,23 @@ describe("SCR-34 loading, background refetches and result notices (review-2026-1
     expect(where()).toBe("/settings/models");
   });
 
+  it("H2: saving a new profile leaves no reusable cached draft (the suggested name is used up)", async () => {
+    stubApi();
+    const user = userEvent.setup();
+    const client = open("/settings/models/profiles/new");
+    const d = await dialog();
+    expect(client.getQueryState(["models", "profile-draft", null])?.data).toBeDefined();
+    await user.type(within(d).getByLabelText("Name"), "Fresh");
+    await add(user, d, "Text", "Test text model A");
+    await save(user, d);
+    expect(await screen.findByText("Profile saved")).toBeInTheDocument();
+    await waitFor(() => {
+      const state = client.getQueryState(["models", "profile-draft", null]);
+      // Gone, or marked stale so the next mount refetches instead of reusing it within the 5 s window.
+      expect(state === undefined || state.isInvalidated).toBe(true);
+    });
+  });
+
   it("F3: a limit notice from a refused opening shows once and is cleared from the history entry", async () => {
     stubApi({ draft: () => problem(409, "profile-limit-reached") });
     open("/settings/models/profiles/new");

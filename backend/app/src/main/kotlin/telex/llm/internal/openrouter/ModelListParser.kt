@@ -7,6 +7,7 @@ import telex.llm.ModelId
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 data class SkippedModel(
     val id: String?,
@@ -29,6 +30,7 @@ object ModelListParser {
     private const val MAX_NAME_LENGTH = 200
     private const val MAX_PROVIDER_LENGTH = 100
     private const val PER_MILLION = 6
+    private const val PRICE_SCALE = 6
     private val MAX_PRICE = BigDecimal.TEN.pow(8)
     private val log = LoggerFactory.getLogger(ModelListParser::class.java)
     private val mapper = JsonMapper.builder().build()
@@ -131,8 +133,9 @@ object ModelListParser {
         return if (valid) names.mapNotNullTo(linkedSetOf()) { KNOWN[it] } else null
     }
 
-    /** `NUMERIC(14,6)` holds below 10^8; a larger price would fail the whole refresh's insert. */
-    private fun fitsColumn(price: BigDecimal?) = price == null || price < MAX_PRICE
+    /** `NUMERIC(14,6)` holds below 10^8 once rounded to scale 6; a larger price would fail the whole refresh. */
+    private fun fitsColumn(price: BigDecimal?) =
+        price == null || price.setScale(PRICE_SCALE, RoundingMode.HALF_UP) < MAX_PRICE
 
     private fun perMtok(node: JsonNode): BigDecimal? =
         node

@@ -199,4 +199,17 @@ class ModelListParserTest {
                 .single()
         assertThat(m.inputPerMtok).isEqualByComparingTo("99999999")
     }
+
+    @Test
+    fun `a price that rounds to 10^8 at scale 6 is skipped, not left to overflow the insert`() {
+        // 99.99999999999999 per token -> 99999999.99999999 per million, which Postgres rounds to 100000000.000000.
+        val body =
+            """{"data":[
+            ${one(id = "acme/edge", pricing = """{"prompt":"99.99999999999999","completion":"0.000002"}""")
+                .removePrefix("{\"data\":[").removeSuffix("]}")},
+            ${one(id = "acme/ok").removePrefix("{\"data\":[").removeSuffix("]}")}]}"""
+        val r = ModelListParser.parse(body)
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/edge")
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+    }
 }

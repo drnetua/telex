@@ -108,9 +108,9 @@ paths:
                         takes: [text]
                         produces: [image]
                         slots: [image]
-                        inputPricePerMillionTokens: null
-                        outputPricePerMillionTokens: null
-                        pricePerImage: "0.040000"
+                        inputPricePerMillionTokens: "0.300000"
+                        outputPricePerMillionTokens: "30.000000"
+                        pricePerImage: null
                         contextLength: null
                 updateFailed:
                   value:
@@ -813,7 +813,7 @@ components:
           description: model_catalog_entry.output_price_per_mtok; null = unknown
         pricePerImage:
           oneOf: [{ $ref: "#/components/schemas/UsdAmount" }, { type: "null" }]
-          description: model_catalog_entry.price_per_image, for image models
+          description: Reserved; always null in E10 (OpenRouter publishes no per-image price, image models show per-1M-token prices, AC-211)
         contextLength:
           type: [integer, "null"]
           minimum: 1

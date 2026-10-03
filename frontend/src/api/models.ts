@@ -133,7 +133,8 @@ export function useModelProfile(key: string | undefined) {
   });
 }
 
-const draftKey = (from?: string) => ["models", "profile-draft", from ?? null] as const;
+const draftsKey = ["models", "profile-draft"] as const;
+const draftKey = (from?: string) => [...draftsKey, from ?? null] as const;
 const fetchDraft = (from?: string) =>
   apiFetch<ModelProfileDraft>(
     `${base}/profile-draft${from ? `?from=${encodeURIComponent(from)}` : ""}`,
@@ -177,17 +178,22 @@ const json = (method: string, body: unknown) => ({
   body: JSON.stringify(body),
 });
 
-function useProfileMutation<V, R>(fn: (variables: V) => Promise<R>) {
+function useProfileMutation<V, R>(fn: (variables: V) => Promise<R>, dropsDrafts = false) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSettled: () => client.invalidateQueries({ queryKey: modelProfilesKey }),
+    onSettled: () => {
+      // A new or deleted profile changes the suggested name/limit: a cached draft must not be reused on the next open.
+      if (dropsDrafts) client.removeQueries({ queryKey: draftsKey });
+      return client.invalidateQueries({ queryKey: modelProfilesKey });
+    },
   });
 }
 
 export function useCreateModelProfile() {
-  return useProfileMutation((body: ModelProfileCreate) =>
-    apiFetch<ModelProfile>(`${base}/profiles`, json("POST", body)),
+  return useProfileMutation(
+    (body: ModelProfileCreate) => apiFetch<ModelProfile>(`${base}/profiles`, json("POST", body)),
+    true,
   );
 }
 
@@ -198,10 +204,12 @@ export function useUpdateModelProfile() {
 }
 
 export function useDeleteModelProfile() {
-  return useProfileMutation((id: string) =>
-    apiFetch<ModelProfileDeletion>(`${base}/profiles/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    }),
+  return useProfileMutation(
+    (id: string) =>
+      apiFetch<ModelProfileDeletion>(`${base}/profiles/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      }),
+    true,
   );
 }
 

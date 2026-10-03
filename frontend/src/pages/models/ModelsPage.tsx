@@ -44,6 +44,8 @@ export function ModelsPage() {
   useEffect(() => {
     if (incoming) void navigate(url, { replace: true, state: null });
   }, [incoming, url, navigate]);
+  // Navigating on drops the notice for good, so returning to its URL doesn't bring it back.
+  if (entry && entry.url !== url) setEntry(null);
   const notice = entry && entry.url === url ? entry.notice : null;
   const clear = useCallback(() => setEntry(null), []);
   const notices = useMemo(
