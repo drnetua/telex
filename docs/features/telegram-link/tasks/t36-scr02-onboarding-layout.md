@@ -9,7 +9,7 @@ files_hint: ["frontend/src/app/AppRoutes.tsx", "frontend/src/pages/connect-teleg
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-03 — findings S10"
-status: "todo"
+status: "done"
 ---
 
 # T36 — Render SCR-02 in the confirmed onboarding card layout

@@ -236,11 +236,6 @@ function startRefusal(error: ApiFailure): string | undefined {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="container-tight py-4">
-      <div className="card card-md">
-        <div className="card-body">{children}</div>
-      </div>
-    </div>
-  );
+  // The card itself comes from OnboardingLayout.
+  return <>{children}</>;
 }
