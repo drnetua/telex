@@ -5,7 +5,7 @@ import { apiFetch } from "./client";
 export const SYSTEM_KEYS: string[] = ["fast", "balanced", "careful"];
 export type SystemProfileKey = "fast" | "balanced" | "careful";
 export type ProfileRef = { kind: "system"; key: SystemProfileKey } | { kind: "custom"; id: string };
-export type Modality = "text" | "images";
+export type Modality = "text" | "image";
 export type SlotKind = "text" | "vision" | "image";
 
 export type CatalogState = "current" | "update-failed" | "not-loaded" | "not-configured";

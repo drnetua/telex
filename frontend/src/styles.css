@@ -69,6 +69,16 @@
   --tblr-alert-bg: var(--telex-danger-subtle);
 }
 
+/* Text-style buttons: Tabler lightens the link colour on .btn-link (4.0:1 on white); the design-system primary is 5.0:1. */
+.btn.btn-link {
+  color: var(--tblr-primary);
+}
+
+/* Outline-danger label: danger-text (5.9:1) instead of the danger fill colour, which falls under 4.5:1 on tinted surfaces. */
+.btn.btn-outline-danger:not(:hover):not(:active):not(:disabled) {
+  color: var(--telex-danger-text);
+}
+
 /* AppShell (C-01): side menu 240 px, phone bottom bar, current-section bar and bold label. */
 .telex-sidemenu {
   width: 240px;

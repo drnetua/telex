@@ -23,7 +23,7 @@
 | T16 | Add the models API hooks, the Models route and link, and the Model catalog tab | ui | Anton Husiev | M | — | done |
 | T17 | Build the Profiles tab: the profile picker, profile cards, delete and the AI-not-set-up alert | ui | Anton Husiev | M | T16 | done |
 | T18 | Build the profile editor modal with the chain editor and the model chooser | ui | Anton Husiev | M | T17 | done |
-| T19 | Add Playwright end-to-end tests for the Models page at 360 px and 1280 px with axe and a 500-model load timing | tests | Anton Husiev | M | T15, T18 | todo |
+| T19 | Add Playwright end-to-end tests for the Models page at 360 px and 1280 px with axe and a 500-model load timing | tests | Anton Husiev | M | T15, T18 | done |
 | T20 | Document the AI settings in the README and add the real-call smoke check per slot | docs | Anton Husiev | S | T9, T13 | done |
 
 **Total:** 20 tasks, ~18 person-days.
@@ -38,3 +38,4 @@
 - **T14 — fixture fixed + contract validation added.** `ModelsReadApiIT`'s Balanced fixture contradicted its own comment (main model was in the catalog yet `fallback` was expected); the fixture now matches the comment. `ContractValidator` takes a spec path, and the models ITs validate every response against this feature's `openapi.yaml`. The validator mis-parses the `oneOf`-typed `from` query param as JSON, so that one request-side key is ignored in this IT only.
 - **T15 — test expectation fixed.** `ModelsWriteApiIT` expected `model-not-capable` at `slots.vision[1]` for a repeated model; the rules report one code per index and a repeat is `model-duplicate` (pinned by `ProfileRulesTest`, AC-217). The contract's 409 `profile-limit-reached` on `PUT /profiles/{key}` is unreachable (an update never adds a profile). Unknown JSON properties are refused per request DTO (`StrictBody`), not by a global mapper change.
 - **T18 — ChainEditor/ModelChooser unit tests were written after the code** (the editor modal's 38 RED tests drove the implementation; the 16 component tests are supplementary, never seen red). Chooser rows use `aria-disabled` so keyboard users can focus a row and hear its reason; Cancel/Esc/Close discard silently (screens.md has no unsaved-changes prompt).
+- **T19 — the e2e run found two production bugs, fixed here.** (1) The frontend `Modality` type used `images` while the API sends `image`, so the Model catalog tab crashed against the real backend (Vitest fixtures had the same wrong value); now contract-aligned. (2) `.btn-link` and `.btn-outline-danger` failed axe colour-contrast; fixed with tokens in `styles.css`. AC-211's "per image" price isn't asserted (see T2). The e2e stack uses `compose.e2e.yaml` (WireMock as OpenRouter, 500 models); under heavy host load the suite needed `--workers=2`.

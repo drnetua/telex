@@ -26,8 +26,8 @@ const cat = (modelId: string, name: string, slots: string[], over = {}) => ({
   modelId,
   name,
   provider: "Test",
-  takes: slots.includes("vision") ? ["text", "images"] : ["text"],
-  produces: slots.includes("image") ? ["images"] : ["text"],
+  takes: slots.includes("vision") ? ["text", "image"] : ["text"],
+  produces: slots.includes("image") ? ["image"] : ["text"],
   slots,
   inputPricePerMillionTokens: "1",
   outputPricePerMillionTokens: "2",
@@ -45,7 +45,7 @@ const catalog = {
     cat("test/c", "Test text model C", ["text"]),
     cat("test/d", "Test text model D", ["text"]),
     cat("test/v", "Test vision model", ["text", "vision"]),
-    cat("test/img", "Test image model", ["image"], { takes: ["text"], produces: ["images"] }),
+    cat("test/img", "Test image model", ["image"], { takes: ["text"], produces: ["image"] }),
   ],
 };
 

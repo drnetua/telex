@@ -43,9 +43,7 @@ function Price({ model }: { model: CatalogModel }) {
 const modalities = (values: string[]) =>
   values
     .map((v, i) =>
-      i === 0
-        ? m.modality[v as "text" | "images"]
-        : m.modality[v as "text" | "images"].toLowerCase(),
+      i === 0 ? m.modality[v as "text" | "image"] : m.modality[v as "text" | "image"].toLowerCase(),
     )
     .join(", ");
 

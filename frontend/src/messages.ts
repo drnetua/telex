@@ -241,7 +241,7 @@ export const messages = {
       price: "Price",
       context: "Context",
     },
-    modality: { text: "Text", images: "Images" },
+    modality: { text: "Text", image: "Images" },
     priceIn: "in",
     priceOut: "out",
     perMillion: "per 1M tokens",

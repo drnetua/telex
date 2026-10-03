@@ -1,0 +1,4 @@
+{
+  "request": { "method": "GET", "urlPath": "/api/v1/models" },
+  "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "bodyFileName": "models.json" }
+}
