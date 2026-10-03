@@ -23,6 +23,6 @@
 | T16 | Land a brand-new account on the remembered section after the passkey step | ui | Anton Husiev | S | — | done |
 | T17 | e2e: navigation on both widths, return after sign-in, and the axe / width / target / load sweep | tests | Anton Husiev | M | T5, T6, T11, T13, T16 | done |
 | T18 | e2e: live Inbox counter and Status Banners, with timing, and the narrowed AC-102 | tests | Anton Husiev | M | T6, T12, T13, T17 | done |
-| T19 | e2e: theme choice, System follow, cross-device first paint, save failure, and the timezone flows | tests | Anton Husiev | M | T5, T15, T17 | todo |
+| T19 | e2e: theme choice, System follow, cross-device first paint, save failure, and the timezone flows | tests | Anton Husiev | M | T5, T15, T17 | done |
 
 **Total:** 19 tasks, ~13 person-days (S ≈ 0.5 d, M ≈ 0.75 d, L ≈ 1 d).

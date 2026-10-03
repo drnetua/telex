@@ -1,4 +1,11 @@
-import { expect, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type BrowserContextOptions,
+  type Page,
+} from "@playwright/test";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -121,4 +128,60 @@ export async function openProfile(page: Page): Promise<void> {
   }
   await page.getByRole("link", { name: /Profile and security/ }).click();
   await expect(page).toHaveURL(/\/profile$/);
+}
+
+/** A second browser context standing in for another device, at the same width as `like`. */
+export async function newDevice(
+  browser: Browser,
+  like: Page,
+  options: BrowserContextOptions = {},
+): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext({
+    viewport: like.viewportSize() ?? undefined,
+    baseURL: test.info().project.use.baseURL,
+    ...options,
+  });
+  return { context, page: await context.newPage() };
+}
+
+/** Calls the API from inside the page with the session cookie and the CSRF header; returns status and JSON body. */
+export async function apiCall(
+  page: Page,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<{ status: number; body: Record<string, unknown> | null }> {
+  return page.evaluate(
+    async ({ method, path, body }) => {
+      const token =
+        document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/)?.[1] ?? "";
+      const res = await fetch(path, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          "X-XSRF-TOKEN": decodeURIComponent(token),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const text = await res.text();
+      return {
+        status: res.status,
+        body: text ? (JSON.parse(text) as Record<string, unknown>) : null,
+      };
+    },
+    { method, path, body },
+  );
+}
+
+/** The signed-in Owner as the server reports it. */
+export async function getMe(
+  page: Page,
+): Promise<{
+  theme: Theme;
+  timeZone: string | null;
+  timeZoneIsFallback: boolean;
+}> {
+  const res = await apiCall(page, "GET", "/api/v1/me");
+  expect(res.status, "getMe answered 200").toBe(200);
+  return res.body as never;
 }
