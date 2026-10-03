@@ -75,8 +75,15 @@ class ProblemHandler : ResponseEntityExceptionHandler() {
     ): String =
         when (constraint) {
             "NotBlank", "NotNull", "NotEmpty" -> "required"
-            "Pattern", "Email" -> if (field.contains("code", ignoreCase = true)) "code-format" else "email-incomplete"
+            "Pattern", "Email" -> patternCode(field)
             else -> constraint?.replace(Regex("([a-z])([A-Z])"), "$1-$2")?.lowercase() ?: "invalid"
+        }
+
+    private fun patternCode(field: String): String =
+        when {
+            field.contains("code", ignoreCase = true) -> "code-format"
+            field.contains("email", ignoreCase = true) -> "email-incomplete"
+            else -> "invalid"
         }
 
     companion object {

@@ -1,5 +1,6 @@
 package telex.messaging
 
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import telex.shared.DomainProblem
 import java.time.Instant
@@ -93,6 +94,7 @@ class TelegramPasswordWrong(
 /** AC-02: Telegram limits the attempts; the attempt ended and the Owner can try again at [retryAt]. */
 class TelegramWaitRequired(
     retryAt: Instant,
+    waitSeconds: Long,
 ) : DomainProblem(
         HttpStatus.TOO_MANY_REQUESTS,
         "telegram-wait-required",
@@ -100,6 +102,7 @@ class TelegramWaitRequired(
     ) {
     init {
         body.setProperty("retryAt", retryAt.toString())
+        headers.set(HttpHeaders.RETRY_AFTER, waitSeconds.coerceAtLeast(0).toString())
     }
 }
 

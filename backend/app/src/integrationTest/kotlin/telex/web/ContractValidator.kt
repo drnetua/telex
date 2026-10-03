@@ -8,11 +8,12 @@ import java.io.File
 import java.net.http.HttpResponse
 import java.util.concurrent.ConcurrentHashMap
 
-/** Checks real HTTP exchanges against `contracts/openapi.yaml`, so contract drift fails a test (test-plan.md). */
+/** Checks real HTTP exchanges against a feature's `contracts/openapi.yaml`, so contract drift fails a test. */
 object ContractValidator {
     const val SKELETON_SPEC = "docs/features/platform-skeleton/contracts/openapi.yaml"
     const val APP_SHELL_SPEC = "docs/features/app-shell/contracts/openapi.yaml"
     const val MODEL_PROFILES_SPEC = "docs/features/model-profiles/contracts/openapi.yaml"
+    const val TELEGRAM_LINK_SPEC = "docs/features/telegram-link/contracts/openapi.yaml"
     private val REFUSED_REQUEST = setOf(400, 403)
 
     private val validators = ConcurrentHashMap<String, OpenApiInteractionValidator>()

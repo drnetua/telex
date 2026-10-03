@@ -311,7 +311,7 @@ class Linking(
         check(outcome is SignInOutcome.WaitRequired) { "Unexpected sign-in outcome ${outcome::class.simpleName}" }
         val retryAt = clock.instant().plusSeconds(outcome.seconds.toLong())
         discard(owner, "flood_wait")
-        throw TelegramWaitRequired(retryAt)
+        throw TelegramWaitRequired(retryAt, outcome.seconds.toLong())
     }
 
     private fun open(
