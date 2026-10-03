@@ -27,7 +27,7 @@ Step ids 1–29 are the epic numbers of `docs/docs/02-epics.md` (E01–E29); 0 i
 | 3 | AI consent — Owner grants, sees and revokes consent before any text reaches AI | `docs/docs/02-epics.md` §E03 · ai-consent | S | idea |
 | 4 | Chat reading — chat list with folders, history with media, live updates in the web | `docs/docs/02-epics.md` §E04 · chat-reading | M | idea |
 | 5 | Chat sending — reply, quote-reply and forward from the web with delivery status | `docs/docs/02-epics.md` §E05 · chat-sending | S | idea |
-| 6 | App shell — responsive navigation, global status bands, design system, phone + desktop Playwright profiles ([`app-shell`](features/app-shell/)) | `docs/docs/02-epics.md` §E06 · app-shell-responsive | M | spec'd |
+| 6 | App shell — responsive navigation, global status bands, design system, phone + desktop Playwright profiles ([`app-shell`](features/app-shell/)) | `docs/docs/02-epics.md` §E06 · app-shell-responsive | M | shipped |
 | 7 | Semantic search — find a message by meaning, with filters | `docs/docs/02-epics.md` §E07 · semantic-search | S | idea |
 | 8 | Channel scope — Channel Sets (manual + from folders) and the private zone | `docs/docs/02-epics.md` §E08 · channel-scope | S | idea |
 | 9 | Agent builder — create an agent from a template, pause / clone / delete / export / import | `docs/docs/02-epics.md` §E09 · agent-builder | M | idea |
@@ -170,3 +170,4 @@ Zones: `telex/<m>` = `backend/app/src/main/kotlin/telex/<m>/`, `pages/<x>` = `fr
 |---|---|---|
 | 0 | 2026-10-02 | PR `scaffold/skeleton` → `master` (shipped together with step 1; no separate changelog) |
 | 1 | 2026-10-02 | [changelog](features/platform-skeleton/_ship/changelog.md) · PR `scaffold/skeleton` → `master` |
+| 6 | 2026-10-03 | [changelog](features/app-shell/_ship/changelog.md) · [PR #3](https://github.com/drnetua/telex/pull/3) `app-shell` → `master` |
