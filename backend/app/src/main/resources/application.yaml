@@ -36,3 +36,11 @@ telex:
   public-url: ${TELEX_PUBLIC_URL:http://localhost:8080}
   mail:
     from: ${TELEX_MAIL_FROM:teleX <no-reply@localhost>}
+  llm:
+    attempt-timeout: 60s
+    openrouter:
+      api-key: ${TELEX_OPENROUTER_API_KEY:}
+      base-url: https://openrouter.ai/api/v1
+    catalog:
+      refresh-interval: 24h
+      retry-interval: 5m

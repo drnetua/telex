@@ -8,7 +8,7 @@
 | T1 | Promote the four staged model-profiles migrations into the live Flyway tree | migration | Anton Husiev | S | — | done |
 | T2 | Define the llm catalog value types, the slot-fit rule and the OpenRouter model-list parser | domain | Anton Husiev | M | — | done |
 | T3 | Store the catalog snapshot in Postgres, load it at start and hold it in memory | infra | Anton Husiev | M | T1, T2 | done |
-| T4 | Refresh the catalog from OpenRouter at start, every 24 h and every 5 min after a failure | app | Anton Husiev | M | T3 | todo |
+| T4 | Refresh the catalog from OpenRouter at start, every 24 h and every 5 min after a failure | app | Anton Husiev | M | T3 | done |
 | T5 | Build the in-call fallback loop in llm with one attempt per model, a per-attempt timeout and outcome classification | app | Anton Husiev | M | T2 | done |
 | T6 | Call OpenRouter for text, vision and image through the provider port and classify its errors | infra | Anton Husiev | M | T4, T5 | todo |
 | T7 | Model the custom profile aggregate, ProfileRef and the profile rules in plain Kotlin | domain | Anton Husiev | M | T2 | done |

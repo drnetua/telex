@@ -18,10 +18,12 @@ import java.time.ZoneOffset
 class CatalogSnapshotStore(
     private val jdbc: JdbcClient,
 ) {
+    /** [inTransaction] runs after the write, before commit — the place to publish what the replace means. */
     @Transactional
     fun replace(
         models: List<CatalogModel>,
         refreshedAt: Instant,
+        inTransaction: () -> Unit = {},
     ) {
         jdbc.sql("DELETE FROM model_catalog_entry").update()
         models.forEach(::insert)
@@ -33,6 +35,7 @@ class CatalogSnapshotStore(
                 """.trimIndent(),
             ).param("at", utc(refreshedAt))
             .update()
+        inTransaction()
     }
 
     @Transactional

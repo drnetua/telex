@@ -19,6 +19,8 @@ detektifier = "0.2.0"
 spotless = "8.10.3"
 # https://mvnrepository.com/artifact/com.atlassian.oai/swagger-request-validator-core
 swagger-request-validator = "3.0.0"
+# https://mvnrepository.com/artifact/org.wiremock/wiremock-standalone
+wiremock = "3.13.1"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -54,3 +56,4 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 swagger-request-validator-core = { module = "com.atlassian.oai:swagger-request-validator-core", version.ref = "swagger-request-validator" }
+wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
