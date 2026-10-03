@@ -128,15 +128,22 @@ export function useModelProfile(key: string | undefined) {
   });
 }
 
+const draftKey = (from?: string) => ["models", "profile-draft", from ?? null] as const;
+const fetchDraft = (from?: string) =>
+  apiFetch<ModelProfileDraft>(
+    `${base}/profile-draft${from ? `?from=${encodeURIComponent(from)}` : ""}`,
+    { background: isBackground() },
+  );
+
 export function useModelProfileDraft(from?: string) {
-  return useQuery({
-    queryKey: ["models", "profile-draft", from ?? null],
-    queryFn: () =>
-      apiFetch<ModelProfileDraft>(
-        `${base}/profile-draft${from ? `?from=${encodeURIComponent(from)}` : ""}`,
-        { background: isBackground() },
-      ),
-  });
+  return useQuery({ queryKey: draftKey(from), queryFn: () => fetchDraft(from) });
+}
+
+/** On-demand draft fetch for "Create profile" / "Duplicate": always asks the server, caches under the hook's key. */
+export function useLoadModelProfileDraft() {
+  const client = useQueryClient();
+  return (from?: string) =>
+    client.fetchQuery({ queryKey: draftKey(from), queryFn: () => fetchDraft(from), staleTime: 0 });
 }
 
 const json = (method: string, body: unknown) => ({

@@ -1,7 +1,9 @@
 import { useSearchParams } from "react-router";
 import { useModelCatalog, useModelProfiles } from "../../api/models";
+import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
 import { CatalogTab } from "./CatalogTab";
+import { ProfilesTab } from "./ProfilesTab";
 
 const m = messages.models;
 
@@ -10,7 +12,7 @@ export function ModelsPage() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") === "catalog" ? "catalog" : "profiles";
   // Both lists are requested when the page opens; each tab renders from its own query.
-  useModelProfiles();
+  const profiles = useModelProfiles();
   useModelCatalog();
 
   function select(next: "profiles" | "catalog") {
@@ -33,6 +35,12 @@ export function ModelsPage() {
   return (
     <>
       <h1 className="page-title mb-3">{m.title}</h1>
+      {tab === "profiles" && profiles.data?.aiConfigured === false ? (
+        <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
+          <Icon name="alert-triangle" size={20} />
+          {m.notConfiguredAlert}
+        </div>
+      ) : null}
       <ul className="nav nav-tabs mb-3" role="tablist" aria-label={m.tabsLabel}>
         {tabs.map((t) => (
           <li className="nav-item" role="presentation" key={t.id}>
@@ -48,7 +56,11 @@ export function ModelsPage() {
           </li>
         ))}
       </ul>
-      {tab === "catalog" ? <CatalogTab onGoToProfiles={() => select("profiles")} /> : null}
+      {tab === "catalog" ? (
+        <CatalogTab onGoToProfiles={() => select("profiles")} />
+      ) : (
+        <ProfilesTab />
+      )}
     </>
   );
 }
