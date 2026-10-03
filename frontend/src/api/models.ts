@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isBackground } from "./account";
 import { apiFetch } from "./client";
 
+export const SYSTEM_KEYS: string[] = ["fast", "balanced", "careful"];
 export type SystemProfileKey = "fast" | "balanced" | "careful";
 export type ProfileRef = { kind: "system"; key: SystemProfileKey } | { kind: "custom"; id: string };
 export type Modality = "text" | "images";
@@ -135,8 +136,8 @@ const fetchDraft = (from?: string) =>
     { background: isBackground() },
   );
 
-export function useModelProfileDraft(from?: string) {
-  return useQuery({ queryKey: draftKey(from), queryFn: () => fetchDraft(from) });
+export function useModelProfileDraft(from?: string, enabled = true) {
+  return useQuery({ queryKey: draftKey(from), queryFn: () => fetchDraft(from), enabled });
 }
 
 /** On-demand draft fetch for "Create profile" / "Duplicate": always asks the server, caches under the hook's key. */

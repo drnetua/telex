@@ -1,6 +1,8 @@
 import {
   IconActivity,
   IconAlertCircle,
+  IconArrowDown,
+  IconArrowUp,
   IconAlertTriangle,
   IconBan,
   IconBrandTelegram,
@@ -50,6 +52,8 @@ const icons = {
   trash: IconTrash,
   check: IconCheck,
   "circle-off": IconCircleOff,
+  "arrow-up": IconArrowUp,
+  "arrow-down": IconArrowDown,
   sun: IconSun,
   moon: IconMoon,
   "device-desktop": IconDeviceDesktop,

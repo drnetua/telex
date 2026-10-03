@@ -1,8 +1,12 @@
-import { useSearchParams } from "react-router";
-import { useModelCatalog, useModelProfiles } from "../../api/models";
+import { useCallback, useState } from "react";
+import { Navigate, useLocation, useParams, useSearchParams } from "react-router";
+import { SYSTEM_KEYS, useModelCatalog, useModelProfiles } from "../../api/models";
 import { Icon } from "../../components/Icon/Icon";
+import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
 import { CatalogTab } from "./CatalogTab";
+import { NotFoundPage } from "../system/NotFoundPage";
+import { ProfileEditorModal, type EditorNotice } from "./ProfileEditorModal";
 import { ProfilesTab } from "./ProfilesTab";
 
 const m = messages.models;
@@ -10,6 +14,14 @@ const m = messages.models;
 /** SCR-66. The tab lives in the URL: `?tab=catalog`, anything else is Profiles. */
 export function ModelsPage() {
   const [params, setParams] = useSearchParams();
+  const { id } = useParams();
+  const location = useLocation();
+  const url = location.pathname + location.search;
+  const [goneAt, setGoneAt] = useState<string | null>(null);
+  const onGone = useCallback(() => setGoneAt(url), [url]);
+  const [dismissed, setDismissed] = useState<unknown>(null);
+  const incoming = (location.state as { notice?: EditorNotice } | null)?.notice;
+  const editing = id !== undefined || location.pathname.endsWith("/profiles/new");
   const tab = params.get("tab") === "catalog" ? "catalog" : "profiles";
   // Both lists are requested when the page opens; each tab renders from its own query.
   const profiles = useModelProfiles();
@@ -26,6 +38,10 @@ export function ModelsPage() {
       { replace: false },
     );
   }
+
+  if (goneAt === url) return <NotFoundPage />;
+  if (id !== undefined && SYSTEM_KEYS.includes(id))
+    return <Navigate to="/settings/models" replace />;
 
   const tabs = [
     { id: "profiles", label: m.profilesTab },
@@ -61,6 +77,22 @@ export function ModelsPage() {
       ) : (
         <ProfilesTab />
       )}
+      {incoming && incoming !== dismissed ? (
+        <Toast
+          tone={incoming.tone}
+          message={incoming.message}
+          dismissLabel={m.dismiss}
+          onDismiss={() => setDismissed(incoming)}
+        />
+      ) : null}
+      {editing ? (
+        <ProfileEditorModal
+          key={url}
+          profileId={id}
+          from={params.get("from") ?? undefined}
+          onGone={onGone}
+        />
+      ) : null}
     </>
   );
 }
