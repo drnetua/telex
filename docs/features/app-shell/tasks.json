@@ -658,6 +658,124 @@
         "E3",
         "D3"
       ]
+    },
+    {
+      "id": "T28",
+      "title": "Guard the remembered destination against blocked storage, revert a failed theme save only over its own choice, and cover the review-1 test gaps",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-173",
+        "AC-175",
+        "AC-181",
+        "AC-182"
+      ],
+      "dod": "destination.ts reads and writes localStorage inside try/catch, and FailureBoundary clears the cache and navigates even when remembering throws (Vitest with a throwing localStorage: the cache is empty and /sign-in or /session-ended is reached); a failed theme save reverts only while currentChoice() still equals the failed choice, otherwise it just clears pending (Vitest: another tab picks System via a storage event, then the Dark save fails, and both stay on System with no revert written to storage); a Vitest where me.theme differs from the applied theme proves a failed save reverts to the applied theme (A4b); a Vitest proves the session-ended route clears the query cache.",
+      "files_hint": [
+        "frontend/src/api/destination.ts",
+        "frontend/src/app/FailureBoundary.tsx",
+        "frontend/src/app/FailureBoundary.test.tsx",
+        "frontend/src/api/preferences.ts",
+        "frontend/src/components/ThemeSwitch/ThemeSwitch.test.tsx"
+      ],
+      "findings": [
+        "R2-1",
+        "R2-2",
+        "R2-5",
+        "R2-6"
+      ],
+      "file": "docs/features/app-shell/tasks/t28-review2-fix-storage-revert-tests.md",
+      "source": "review-2026-10-03-2"
+    },
+    {
+      "id": "T29",
+      "title": "Close the theme menu on Tab and focus-out, with a roving tabindex on its items",
+      "layer": "ui",
+      "deps": [
+        "T28"
+      ],
+      "acs": [
+        "AC-179"
+      ],
+      "dod": "menuitemradio buttons have tabIndex=-1; Tab or Shift+Tab from an item closes the menu, and so does focus leaving the menu root; Vitest proves Tab from an item closes the menu and the items are not tab stops.",
+      "files_hint": [
+        "frontend/src/components/ThemeSwitch/ThemeSwitch.tsx",
+        "frontend/src/components/ThemeSwitch/ThemeSwitch.test.tsx"
+      ],
+      "findings": [
+        "R2-7"
+      ],
+      "file": "docs/features/app-shell/tasks/t29-review2-fix-theme-menu-tab.md",
+      "source": "review-2026-10-03-2"
+    },
+    {
+      "id": "T30",
+      "title": "List the new field codes in the contract and cap fixture condition codes at 63 characters",
+      "layer": "ports",
+      "deps": [],
+      "acs": [
+        "AC-178"
+      ],
+      "dod": "openapi.yaml FieldProblem.code lists unknown-property (and the PATCH /me/preferences 400 description gives an example), and the fixture's ValidationFailed lists pattern; PulseFixtures refuses a code longer than 63 characters with 400 validation-failed (PulseApiIT case for a 64-character code).",
+      "files_hint": [
+        "docs/features/app-shell/contracts/openapi.yaml",
+        "backend/app/src/main/kotlin/telex/web/e2e/PulseFixtures.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PulseApiIT.kt"
+      ],
+      "findings": [
+        "R2-8",
+        "R2-9"
+      ],
+      "file": "docs/features/app-shell/tasks/t30-review2-fix-contract-codes.md",
+      "source": "review-2026-10-03-2"
+    },
+    {
+      "id": "T31",
+      "title": "e2e: make the narrowed AC-102 test outlast the action's 10 s timeout",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-176",
+        "AC-102"
+      ],
+      "dod": "system-pages.spec.ts waits for the client's own abort of /api/v1/passkeys (requestfailed, timeout 15 s), then asserts the banner is visible, no 'teleX is unavailable' heading, and the URL is still /profile.",
+      "files_hint": [
+        "e2e/tests/system-pages.spec.ts"
+      ],
+      "findings": [
+        "R2-3"
+      ],
+      "file": "docs/features/app-shell/tasks/t31-review2-fix-ac102-e2e.md",
+      "source": "review-2026-10-03-2"
+    },
+    {
+      "id": "T32",
+      "title": "Bring the docs in line after review 2: ADR-0006 deviation heading, draft labels, inventory line refs, applied-theme wording, deferred visual tier, load-test sample deviation",
+      "layer": "docs",
+      "deps": [
+        "T29",
+        "T30",
+        "T31"
+      ],
+      "acs": [
+        "AC-179",
+        "AC-181",
+        "AC-171"
+      ],
+      "dod": "ADR-0006 deviation heading sits after the last Positive bullet, just before Negative; screens.md:531 drops 'draft' and gaps 2 and 6 read as done; docs/design-system.md Toast and FailureBoundary rows point at the current lines; screens.md:82 says the menu marks the theme applied on this device; test-plan.md marks the visual-regression level and its CI line deferred to spec §8; test-plan.md §NFR validation records 5 in-page samples per PR as a deliberate deviation from 20 on a schedule.",
+      "files_hint": [
+        "docs/features/app-shell/adr/0006-extend-the-shell-through-client-section-and-server-condition-registries.md",
+        "docs/features/app-shell/screens.md",
+        "docs/design-system.md",
+        "docs/features/app-shell/test-plan.md"
+      ],
+      "findings": [
+        "R2-10",
+        "R2-11",
+        "R2-12"
+      ],
+      "file": "docs/features/app-shell/tasks/t32-review2-fix-docs.md",
+      "source": "review-2026-10-03-2"
     }
   ]
 }
