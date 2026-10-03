@@ -5,6 +5,7 @@
     displayName = "Web",
     allowedDependencies = {
         "identity",
+        "inbox",
         "messaging",
         "triage",
         "agents",

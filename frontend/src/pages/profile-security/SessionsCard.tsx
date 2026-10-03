@@ -1,4 +1,4 @@
-import { useEndOtherSessions, useEndSession, useSessions } from "../../api/account";
+import { useEndOtherSessions, useEndSession, useMe, useSessions } from "../../api/account";
 import { Badge } from "../../components/Badge/Badge";
 import { Button } from "../../components/Button/Button";
 import { LoadState } from "../../components/LoadState/LoadState";
@@ -9,6 +9,7 @@ const m = messages.profileSecurity;
 
 export function SessionsCard() {
   const sessions = useSessions();
+  const timeZone = useMe().data?.timeZone ?? null;
   const end = useEndSession();
   const endOthers = useEndOtherSessions();
 
@@ -35,7 +36,7 @@ export function SessionsCard() {
               <div>
                 <div className="h4 mb-1">{s.userAgentLabel}</div>
                 <small className="text-secondary">
-                  {`${m.device[s.deviceType]} · ${m.active(formatWhen(s.lastActivityAt))}`}
+                  {`${m.device[s.deviceType]} · ${m.active(formatWhen(s.lastActivityAt, timeZone))}`}
                 </small>
               </div>
               {s.current ? (

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openProfile } from "../support/shell";
 import {
   addVirtualAuthenticator,
   expectNoA11yViolations,
@@ -20,7 +21,7 @@ test("AC-93: ending the phone's session from the laptop lands the phone on Sessi
   await signInByLink(phone, address, 2);
   await expect(phone).toHaveURL(/\/inbox$/);
 
-  await laptop.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(laptop);
   await expect(
     laptop.getByRole("heading", { name: "Sign-in sessions" }),
   ).toBeVisible();
@@ -40,7 +41,8 @@ test("AC-93: ending the phone's session from the laptop lands the phone on Sessi
     .click();
   await expect(rows).toHaveCount(1);
 
-  await phone.getByRole("button", { name: "Profile and security" }).click();
+  // the shell's pulse may drop the stopped tab before its owner acts; either way it lands on Session ended
+  await openProfile(phone).catch(() => undefined);
   await expect(phone).toHaveURL(/\/session-ended$/);
   await expect(
     phone.getByRole("heading", { name: "Session ended" }),
@@ -65,7 +67,7 @@ test("AC-89: create a passkey, see it in Profile, sign in with it without typing
   await page.getByRole("button", { name: "Create a passkey" }).click();
   await expect(page).toHaveURL(/\/inbox$/);
 
-  await page.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(page);
   const passkeys = page.getByRole("region", { name: "Passkeys" });
   await expect(passkeys.getByText(/Chrome/)).toBeVisible();
   await expect(passkeys.getByText(/Created /)).toBeVisible();
@@ -76,7 +78,7 @@ test("AC-89: create a passkey, see it in Profile, sign in with it without typing
   await page.getByRole("button", { name: "Sign in with a passkey" }).click();
   await expect(page).toHaveURL(/\/inbox$/);
 
-  await page.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(page);
   await expect(passkeys.getByText(/Last used /)).toBeVisible();
   await expect(passkeys.getByText("Never used")).toHaveCount(0);
 });
@@ -96,7 +98,7 @@ test("AC-92: a removed passkey is refused at sign-in; the email sign-in is still
   await page.getByRole("button", { name: "Create a passkey" }).click();
   await expect(page).toHaveURL(/\/inbox$/);
 
-  await page.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(page);
   const passkeys = page.getByRole("region", { name: "Passkeys" });
   await expect(passkeys.getByText("Never used")).toBeVisible();
   await passkeys.getByRole("button", { name: "Remove" }).click();
@@ -107,7 +109,9 @@ test("AC-92: a removed passkey is refused at sign-in; the email sign-in is still
   await signOut(page);
   await page.getByRole("button", { name: "Sign in with a passkey" }).click();
   await expect(
-    page.getByText("That passkey didn't work. Sign in with your email instead."),
+    page.getByText(
+      "That passkey didn't work. Sign in with your email instead.",
+    ),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(page.getByLabel("Email")).toBeVisible();

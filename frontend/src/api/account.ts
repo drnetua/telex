@@ -6,12 +6,16 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import type { ThemeChoice } from "../shell/theme";
 import { ApiFailure, apiFetch } from "./client";
 
 export interface Me {
   ownerId: string;
   email: string;
   linkedAccountCount: number;
+  theme: ThemeChoice;
+  timeZone: string | null;
+  timeZoneIsFallback: boolean;
 }
 
 export const meKey = ["me"] as const;

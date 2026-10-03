@@ -14,14 +14,14 @@ export function createAppQueryClient(): QueryClient {
     defaultOptions: { queries: { retry: false } },
     queryCache: new QueryCache({
       onError: (error, query) => {
-        if (error instanceof ApiFailure && error.route) {
+        if (error instanceof ApiFailure && error.route && error.route !== "connectivity") {
           failureBus.handler(error, () => query.fetch(), "query");
         }
       },
     }),
     mutationCache: new MutationCache({
       onError: (error, variables, _ctx, mutation) => {
-        if (error instanceof ApiFailure && error.route) {
+        if (error instanceof ApiFailure && error.route && error.route !== "connectivity") {
           failureBus.handler(error, () => mutation.execute(variables));
         }
       },

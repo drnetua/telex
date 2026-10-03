@@ -1,13 +1,44 @@
+import type { ComponentType } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { CheckEmailPage } from "../pages/check-email/CheckEmailPage";
 import { CreatePasskeyPage } from "../pages/create-passkey/CreatePasskeyPage";
 import { ConfirmLinkPage } from "../pages/confirm-link/ConfirmLinkPage";
-import { InboxPage } from "../pages/inbox/InboxPage";
-import { ProfileSecurityPage } from "../pages/profile-security/ProfileSecurityPage";
+import { messages } from "../messages";
 import { SignInPage } from "../pages/sign-in/SignInPage";
 import { NotFoundPage } from "../pages/system/NotFoundPage";
 import { SessionEndedPage } from "../pages/system/SessionEndedPage";
+import { sections, type SectionId } from "../shell/sections";
 import { AppLayout, AuthLayout, BareSystemLayout } from "./layouts";
+import { SectionRoute } from "./SectionRoute";
+
+type Loader = () => Promise<{ default: ComponentType }>;
+
+const comingSoon =
+  (id: keyof typeof messages.comingSoon.sentences): Loader =>
+  () =>
+    import("../pages/coming-soon/ComingSoonPage").then((m) => ({
+      default: () => <m.ComingSoonPage section={id} />,
+    }));
+
+const built: Partial<Record<SectionId, Loader>> = {
+  inbox: () => import("../pages/inbox/InboxPage").then((m) => ({ default: m.InboxPage })),
+  settings: () =>
+    import("../pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+};
+
+const profile: Loader = () =>
+  import("../pages/profile-security/ProfileSecurityPage").then((m) => ({
+    default: m.ProfileSecurityPage,
+  }));
+
+/** One stable loader per section, generated from the registry. */
+const sectionLoaders = sections.map((s) => ({
+  section: s,
+  load:
+    s.page === "page"
+      ? built[s.id]!
+      : comingSoon(s.id as keyof typeof messages.comingSoon.sentences),
+}));
 
 export function AppRoutes() {
   return (
@@ -20,8 +51,14 @@ export function AppRoutes() {
       </Route>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
-        <Route path="/inbox" element={<InboxPage />} />
-        <Route path="/profile" element={<ProfileSecurityPage />} />
+        {sectionLoaders.map(({ section, load }) => (
+          <Route
+            key={section.id}
+            path={section.path}
+            element={<SectionRoute key={section.id} load={load} />}
+          />
+        ))}
+        <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
       </Route>
       <Route element={<BareSystemLayout />}>
         <Route path="/session-ended" element={<SessionEndedPage />} />

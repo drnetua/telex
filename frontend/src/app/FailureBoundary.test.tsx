@@ -5,6 +5,8 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "./AppRoutes";
 import { FailureBoundary } from "./FailureBoundary";
+import { connectivity, resetConnectivity, setShellActive } from "../shell/connectivity";
+import { PULSE_KEY } from "../shell/pulse";
 import { createAppQueryClient } from "./queryClient";
 
 const json = (status: number, body: unknown) =>
@@ -12,9 +14,12 @@ const json = (status: number, body: unknown) =>
 
 const down = () => json(503, { code: "unavailable" });
 
-function setup(entry: string | { pathname: string; state: unknown }) {
+function setup(
+  entry: string | { pathname: string; state: unknown },
+  client = createAppQueryClient(),
+) {
   render(
-    <QueryClientProvider client={createAppQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[entry]}>
         <FailureBoundary>
           <AppRoutes />
@@ -31,7 +36,33 @@ async function sendFromSignIn() {
   await userEvent.click(screen.getByRole("button", { name: "Email me a sign-in link" }));
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  localStorage.clear();
+  vi.unstubAllGlobals();
+  resetConnectivity();
+});
+
+describe("failure routing inside the shell (AC-176)", () => {
+  it("a 503 on an action keeps the screen and reports not-responding", async () => {
+    setShellActive(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(down()));
+    setup("/sign-in");
+    await sendFromSignIn();
+    await vi.waitFor(() => expect(connectivity.get()).toBe("not-responding"));
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeVisible();
+  });
+
+  it("a 500 on an action still shows SCR-93", async () => {
+    setShellActive(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(500, { code: "internal-error" })));
+    setup("/sign-in");
+    await sendFromSignIn();
+    await unavailable();
+    expect(connectivity.get()).toBe("online");
+  });
+});
 
 describe("SCR-93 Retry carries the page action's outcome (AC-102, AC-103)", () => {
   it("503 on Send, then Retry, lands on Check your email", async () => {
@@ -90,6 +121,9 @@ describe("SCR-93 Retry carries the page action's outcome (AC-102, AC-103)", () =
 });
 
 describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () => {
+  // Inside the shell a 503 is the Status Banner's business; SCR-93 comes from an answered failure.
+  const broken = () => json(500, { code: "internal-error" });
+
   function routeFetch(state: { signOut: Response[]; me: () => Response }) {
     return vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/v1/sign-out" && init?.method === "POST") {
@@ -113,8 +147,8 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
   it("a failing focus refetch under SCR-93 does not replace the saved Retry", async () => {
     let meUp = true;
     const fetchMock = routeFetch({
-      signOut: [down(), new Response(null, { status: 204 })],
-      me: () => (meUp ? json(200, { ownerId: "o1", email: "me@example.com" }) : down()),
+      signOut: [broken(), new Response(null, { status: 204 })],
+      me: () => (meUp ? json(200, { ownerId: "o1", email: "me@example.com" }) : broken()),
     });
     vi.stubGlobal("fetch", fetchMock);
     setup("/profile");
@@ -125,6 +159,8 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
     await vi.waitFor(() =>
       expect(fetchMock.mock.calls.filter(([u]) => u === "/api/v1/me").length).toBeGreaterThan(1),
     );
+    // teleX is back before the Owner retries; a /me still failing afterwards would be a new failure.
+    meUp = true;
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await vi.waitFor(() =>
       expect(
@@ -145,11 +181,11 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/v1/sign-out" && init?.method === "POST") {
         return fetchMock.mock.calls.filter(([u]) => u === "/api/v1/sign-out").length === 1
-          ? Promise.resolve(down())
+          ? Promise.resolve(broken())
           : slow;
       }
       if (url === "/api/v1/me") {
-        return Promise.resolve(meUp ? json(200, { ownerId: "o1", email: "m@e.com" }) : down());
+        return Promise.resolve(meUp ? json(200, { ownerId: "o1", email: "m@e.com" }) : broken());
       }
       return Promise.resolve(json(200, { items: [] }));
     });
@@ -162,5 +198,67 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
     await blink();
     await act(async () => finish(new Response(null, { status: 204 })));
     expect(screen.queryByText("Still no answer.")).not.toBeInTheDocument();
+  });
+});
+
+describe("auth failures leave the shell cleanly (AC-173, AC-175)", () => {
+  const refuse = (code: string) => vi.fn().mockResolvedValue(json(401, { code }));
+
+  it("session-ended remembers the section before SCR-92 (AC-173)", async () => {
+    vi.stubGlobal("fetch", refuse("session-ended"));
+    setup("/profile");
+    await screen.findByRole("heading", { level: 1, name: /session/i });
+    expect(localStorage.getItem("telex.destination")).toBe("/profile");
+  });
+
+  it("session-ended keeps the first refusal (AC-173)", async () => {
+    localStorage.setItem("telex.destination", "/runs");
+    vi.stubGlobal("fetch", refuse("session-ended"));
+    setup("/profile");
+    await screen.findByRole("heading", { level: 1, name: /session/i });
+    expect(localStorage.getItem("telex.destination")).toBe("/runs");
+  });
+
+  it("session-ended clears the query cache (AC-175)", async () => {
+    const client = createAppQueryClient();
+    client.setQueryData(PULSE_KEY, { inboxCount: 7, conditions: [] });
+    client.setQueryData(["me"], { ownerId: "o1", email: "old@example.com" });
+    vi.stubGlobal("fetch", refuse("session-ended"));
+    setup("/profile", client);
+    await screen.findByRole("heading", { level: 1, name: /session/i });
+    expect(client.getQueryData(PULSE_KEY)).toBeUndefined();
+    expect(client.getQueryData(["me"])).toBeUndefined();
+  });
+
+  it.each([
+    ["unauthenticated", () => screen.findByLabelText("Email")],
+    ["session-ended", () => screen.findByRole("heading", { level: 1, name: /session/i })],
+  ])(
+    "%s with blocked storage still clears the cache and leaves the shell (AC-175)",
+    async (code, landed) => {
+      const blocked = () => {
+        throw new DOMException("blocked", "SecurityError");
+      };
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(blocked);
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(blocked);
+      vi.spyOn(Storage.prototype, "removeItem").mockImplementation(blocked);
+      const client = createAppQueryClient();
+      client.setQueryData(["me"], { ownerId: "o1", email: "old@example.com" });
+      vi.stubGlobal("fetch", refuse(code));
+      setup("/profile", client);
+      await landed();
+      expect(client.getQueryData(["me"])).toBeUndefined();
+    },
+  );
+
+  it("a sign-in failure clears the query cache (AC-175)", async () => {
+    const client = createAppQueryClient();
+    client.setQueryData(PULSE_KEY, { inboxCount: 7, conditions: [] });
+    client.setQueryData(["me"], { ownerId: "o1", email: "old@example.com" });
+    vi.stubGlobal("fetch", refuse("unauthenticated"));
+    setup("/profile", client);
+    await screen.findByLabelText("Email");
+    expect(client.getQueryData(PULSE_KEY)).toBeUndefined();
+    expect(client.getQueryData(["me"])).toBeUndefined();
   });
 });

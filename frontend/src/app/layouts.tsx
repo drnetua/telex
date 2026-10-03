@@ -1,8 +1,13 @@
 import type { ReactNode } from "react";
 import { Outlet } from "react-router";
 import logo from "../assets/telex-logo-192.png";
-import { PageFrame } from "../components/PageFrame/PageFrame";
+import { useMe } from "../api/account";
+import { LoadState } from "../components/LoadState/LoadState";
+import { ThemeSaveToast } from "../components/ThemeSwitch/ThemeSwitch";
 import { messages } from "../messages";
+import { AppShell } from "../shell/AppShell/AppShell";
+import { useAccountTheme } from "../shell/theme";
+import { useSaveDetectedTimeZone } from "../shell/time";
 
 /** Bare frame for SCR-91/92/93: text wordmark, no session dependency. */
 export function BareSystemFrame({ children }: { children: ReactNode }) {
@@ -44,9 +49,16 @@ export function AuthLayout() {
 }
 
 export function AppLayout() {
+  const me = useMe();
+  useAccountTheme(me.data);
+  useSaveDetectedTimeZone(me.data);
+  if (!me.data) return <LoadState state="loading" rows={3} />;
   return (
-    <PageFrame>
-      <Outlet />
-    </PageFrame>
+    <>
+      <AppShell email={me.data.email}>
+        <Outlet />
+      </AppShell>
+      <ThemeSaveToast />
+    </>
   );
 }

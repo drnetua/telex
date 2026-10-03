@@ -5,8 +5,9 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiFailure } from "../../api/client";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
-import { createAppQueryClient } from "../../app/queryClient";
-import { PageFrame } from "../../components/PageFrame/PageFrame";
+import { createAppQueryClient, failureBus } from "../../app/queryClient";
+import { AppShell } from "../../shell/AppShell/AppShell";
+import { rememberTheme } from "../../shell/theme";
 import { ProfileSecurityPage } from "./ProfileSecurityPage";
 
 vi.mock("../../api/webauthn", async (orig) => ({
@@ -17,7 +18,14 @@ vi.mock("../../api/webauthn", async (orig) => ({
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
+const me = {
+  ownerId: "o1",
+  email: "me@example.com",
+  linkedAccountCount: 0,
+  theme: "light",
+  timeZone: null,
+  timeZoneIsFallback: false,
+};
 const passkey = {
   id: "p1",
   label: "Safari on iPhone",
@@ -76,9 +84,9 @@ function setup(entry = "/profile") {
           <Route
             path="/profile"
             element={
-              <PageFrame>
+              <AppShell email="me@example.com">
                 <ProfileSecurityPage />
-              </PageFrame>
+              </AppShell>
             }
           />
         </Routes>
@@ -88,6 +96,7 @@ function setup(entry = "/profile") {
 }
 
 afterEach(() => {
+  localStorage.clear();
   vi.unstubAllGlobals();
   vi.mocked(canCreatePasskey).mockResolvedValue(true);
   vi.mocked(createPasskey).mockResolvedValue(undefined);
@@ -96,6 +105,19 @@ afterEach(() => {
 const pending = () => new Promise<Response>(() => undefined);
 
 describe("SCR-64 Profile and security", () => {
+  it("shows Passkey and Session dates in the Owner's time zone", async () => {
+    const calls = stubApi({
+      passkeys: [{ ...passkey, createdAt: "2026-10-02T03:00:00Z" }],
+      onCall: (method, url) =>
+        url === "/api/v1/me" && method === "GET"
+          ? json(200, { ...me, timeZone: "America/Los_Angeles" })
+          : undefined,
+    });
+    setup();
+    expect(await screen.findByText(/Created 1 Oct 2026/)).toBeInTheDocument();
+    expect(calls.some(([, url]) => url.includes("detected-time-zone"))).toBe(false);
+  });
+
   it("shows heading and signed-in email", async () => {
     stubApi({});
     setup();
@@ -103,6 +125,20 @@ describe("SCR-64 Profile and security", () => {
       await screen.findByRole("heading", { level: 1, name: "Profile and security" }),
     ).toBeInTheDocument();
     expect(await screen.findByText("Signed in as me@example.com")).toBeInTheDocument();
+  });
+
+  it("AC-179: shows the Appearance card with the saved theme and the System hint", async () => {
+    stubApi({});
+    // The app layout's useAccountTheme has applied the saved theme on this device by the time SCR-64 shows.
+    rememberTheme("light");
+    setup();
+    const group = await screen.findByRole("radiogroup", { name: "Theme" });
+    await waitFor(() => expect(within(group).getByRole("radio", { name: "Light" })).toBeChecked());
+    expect(within(group).getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getByRole("heading", { level: 2, name: "Appearance" })).toBeInTheDocument();
+    expect(
+      screen.getByText("System follows your device's light or dark mode."),
+    ).toBeInTheDocument();
   });
 
   it("AC-89: lists passkey with label and Never used", async () => {
@@ -277,5 +313,207 @@ describe("SCR-64 passkey states (AC-89, AC-91, AC-97)", () => {
     await screen.findByText("This device");
     await waitFor(() => expect(scroll).toHaveBeenCalled());
     expect(document.getElementById("sessions")).not.toBeNull();
+  });
+});
+
+describe("SCR-64 Time zone card", () => {
+  const meWith = (extra: object) => (m: string, u: string) =>
+    u === "/api/v1/me" && m === "GET" ? json(200, { ...me, ...extra }) : undefined;
+  const zoneList = { items: ["Europe/Berlin", "Europe/Kyiv", "UTC"] };
+  const isPatch = ([m, u]: [string, string]) => m === "PATCH" && u === "/api/v1/me/preferences";
+  const pickerName = { name: "Choose your time zone" };
+
+  it("AC-183: shows the zone with its offset and no hint when it was detected", async () => {
+    stubApi({ onCall: meWith({ timeZone: "Europe/Kyiv" }) });
+    setup();
+    expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+    expect(screen.getByText(/^Europe\/Kyiv \u00b7 UTC[+-]\d\d:\d\d$/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Dates and times in teleX use this time zone on all your devices."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't read your device's time zone/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change time zone" })).toBeInTheDocument();
+  });
+
+  it("AC-183: shows a one-row LoadState, no UTC and no Change button while the zone is not yet saved", async () => {
+    stubApi({ onCall: meWith({ timeZone: null }) });
+    setup();
+    const card = (await screen.findByRole("heading", { name: "Time zone" })).closest("section");
+    await waitFor(() => expect(card?.querySelector('[aria-busy="true"]')).not.toBeNull());
+    expect(card?.querySelectorAll(".placeholder")).toHaveLength(1);
+    expect(within(card as HTMLElement).queryByText(/UTC/)).toBeNull();
+    expect(within(card as HTMLElement).queryByRole("button", { name: /time zone/i })).toBeNull();
+  });
+
+  it("AC-184: focus lands on the Change time zone button once the save settles", async () => {
+    let saved = false;
+    stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH") {
+          saved = true;
+          return json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
+        }
+        return meWith({ timeZone: saved ? "Europe/Kyiv" : "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    const dialog = await screen.findByRole("dialog", pickerName);
+    await userEvent.click(await within(dialog).findByRole("option", { name: /Kyiv/ }));
+    await screen.findByText("Time zone saved.");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Change time zone" })).toHaveFocus(),
+    );
+  });
+
+  it("AC-183: shows UTC and the hint with Choose yours only when the zone is a fallback", async () => {
+    stubApi({
+      onCall: (m, u) =>
+        u === "/api/v1/time-zones"
+          ? json(200, zoneList)
+          : meWith({ timeZone: "UTC", timeZoneIsFallback: true })(m, u),
+    });
+    setup();
+    expect(
+      await screen.findByText("We couldn't read your device's time zone, so teleX uses UTC."),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Choose yours" }));
+    expect(await screen.findByRole("dialog", pickerName)).toBeInTheDocument();
+  });
+
+  it("AC-184: fetches the list only on open, searches, saves, toasts and clears the hint", async () => {
+    let saved = false;
+    const calls = stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH") {
+          saved = true;
+          return json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
+        }
+        return meWith(
+          saved ? { timeZone: "Europe/Kyiv" } : { timeZone: "UTC", timeZoneIsFallback: true },
+        )(m, u);
+      },
+    });
+    setup();
+    await screen.findByText(/couldn't read your device's time zone/);
+    expect(calls.some(([, u]) => u === "/api/v1/time-zones")).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Change time zone" }));
+    const dialog = await screen.findByRole("dialog", pickerName);
+    await userEvent.type(within(dialog).getByRole("combobox"), "kyiv");
+    await userEvent.click(await within(dialog).findByRole("option", { name: /Kyiv/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog", pickerName)).toBeNull());
+    expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+    expect(await screen.findByText("Time zone saved.")).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't read your device's time zone/)).not.toBeInTheDocument();
+    expect(calls.filter(isPatch)).toHaveLength(1);
+  });
+
+  it("AC-185: no match says so and keeps the current zone", async () => {
+    const calls = stubApi({
+      onCall: (m, u) =>
+        u === "/api/v1/time-zones"
+          ? json(200, zoneList)
+          : meWith({ timeZone: "Europe/Berlin" })(m, u),
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    const dialog = await screen.findByRole("dialog", pickerName);
+    await userEvent.type(await within(dialog).findByRole("combobox"), "Atlantis");
+    expect(within(dialog).getByText(/No time zone matches/)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog", pickerName)).toBeNull();
+    expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+    expect(calls.some(isPatch)).toBe(false);
+  });
+
+  it("AC-186: a server refusal keeps the zone and says to choose from the list", async () => {
+    stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH")
+          return json(400, {
+            code: "validation-failed",
+            errors: [{ field: "timeZone", code: "unknown-time-zone" }],
+          });
+        return meWith({ timeZone: "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+    expect(await screen.findByText("Choose a time zone from the list.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+    expect(screen.queryByText("Time zone saved.")).not.toBeInTheDocument();
+  });
+
+  it("no answer keeps the zone, shows an error toast and Try again re-sends", async () => {
+    let attempts = 0;
+    const calls = stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH") {
+          attempts += 1;
+          return attempts === 1
+            ? Promise.reject(new TypeError("offline"))
+            : json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
+        }
+        return meWith({ timeZone: "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+    const toast = (await screen.findByText("Your time zone wasn't saved.")).closest(".toast");
+    if (!(toast instanceof HTMLElement)) throw new Error("no toast");
+    expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+    await userEvent.click(within(toast).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(calls.filter(isPatch)).toHaveLength(2));
+    expect(await screen.findByRole("heading", { level: 4, name: "Kyiv" })).toBeInTheDocument();
+  });
+
+  it.each([
+    [401, "unauthenticated", "sign-in"],
+    [401, "session-ended", "session-ended"],
+    [500, "internal-error", "unavailable"],
+  ])(
+    "AC-173/176: a time zone save answered %i %s keeps the zone and goes to the failure routing (%s), no toast",
+    async (status, code, route) => {
+      const handler = vi.spyOn(failureBus, "handler").mockImplementation(() => undefined);
+      stubApi({
+        onCall: (m, u) => {
+          if (u === "/api/v1/time-zones") return json(200, zoneList);
+          if (u === "/api/v1/me/preferences" && m === "PATCH") return json(status, { code });
+          return meWith({ timeZone: "Europe/Berlin" })(m, u);
+        },
+      });
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+      await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+      await waitFor(() => expect(handler).toHaveBeenCalledTimes(1));
+      expect(handler.mock.calls[0]?.[0]).toMatchObject({ status, route });
+      expect(screen.getByRole("heading", { level: 4, name: "Berlin" })).toBeInTheDocument();
+      expect(screen.queryByText("Your time zone wasn't saved.")).not.toBeInTheDocument();
+      handler.mockRestore();
+    },
+  );
+
+  it("a time zone save answered 403 keeps the error toast and stays out of the failure routing", async () => {
+    const handler = vi.spyOn(failureBus, "handler").mockImplementation(() => undefined);
+    stubApi({
+      onCall: (m, u) => {
+        if (u === "/api/v1/time-zones") return json(200, zoneList);
+        if (u === "/api/v1/me/preferences" && m === "PATCH")
+          return json(403, { code: "forbidden" });
+        return meWith({ timeZone: "Europe/Berlin" })(m, u);
+      },
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Change time zone" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Kyiv/ }));
+    expect(await screen.findByText("Your time zone wasn't saved.")).toBeInTheDocument();
+    expect(handler).not.toHaveBeenCalled();
+    handler.mockRestore();
   });
 });

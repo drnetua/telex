@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.TELEX_BASE_URL ?? "http://localhost:8080";
 
-// The suite runs against `docker compose up` (app :8080, Mailpit :8025); it does not start the stack.
+// The suite runs against `docker compose -f compose.yaml -f compose.e2e.yaml up` (app :8080, Mailpit :8025, `e2e` Spring
+// profile on); it does not start the stack.
 export default defineConfig({
   testDir: "./tests",
   timeout: 60_000,
@@ -10,7 +11,7 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
-  use: { baseURL, trace: "retain-on-failure" },
+  use: { baseURL, actionTimeout: 15_000, trace: "retain-on-failure" },
   projects: [
     {
       name: "phone",

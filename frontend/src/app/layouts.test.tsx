@@ -2,9 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { readFileSync, statSync } from "node:fs";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it } from "vitest";
-import { PageFrame } from "../components/PageFrame/PageFrame";
-import { AuthLayout } from "./layouts";
+import { describe, expect, it, vi } from "vitest";
+import { AppLayout, AuthLayout } from "./layouts";
 
 describe("layouts (AC-83, AC-100)", () => {
   it("C2: the auth layout shows the 96 px logo asset", () => {
@@ -44,18 +43,32 @@ describe("layouts (AC-83, AC-100)", () => {
     expect(readFileSync(canonical).readUInt32BE(16)).toBe(1254);
   });
 
-  it("C6: PageFrame icon buttons carry the 44 px touch-target class", () => {
+  it("starting: AppLayout shows no navigation while getMe is in flight, then the shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ ownerId: "o1", email: "me@example.com", theme: "system" }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        ),
+    );
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter>
-          <PageFrame>
-            <p>content</p>
-          </PageFrame>
+        <MemoryRouter initialEntries={["/inbox"]}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/inbox" element={<p>content</p>} />
+            </Route>
+          </Routes>
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    for (const name of ["Profile and security", "Sign out"]) {
-      expect(screen.getByRole("button", { name })).toHaveClass("touch-target");
-    }
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(await screen.findByRole("navigation", { name: "Main" })).toBeInTheDocument();
+    expect(screen.getByText("content")).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });

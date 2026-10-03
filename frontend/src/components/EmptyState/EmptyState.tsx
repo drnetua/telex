@@ -6,7 +6,7 @@ interface EmptyStateProps {
   icon: IconName;
   /** Omit when the sentence below is the whole message (SCR-10). */
   title?: string;
-  children: ReactNode;
+  children?: ReactNode;
   action?: ReactNode;
   headingLevel?: 1 | 2;
 }
@@ -26,7 +26,7 @@ export function EmptyState({
         <Icon name={icon} size={40} />
       </div>
       {title ? <Heading className="empty-title">{title}</Heading> : null}
-      <p className="empty-subtitle text-secondary">{children}</p>
+      {children ? <p className="empty-subtitle text-secondary">{children}</p> : null}
       {action ? <div className="empty-action">{action}</div> : null}
     </div>
   );

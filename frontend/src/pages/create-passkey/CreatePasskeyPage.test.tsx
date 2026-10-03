@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CreatePasskeyPage } from "./CreatePasskeyPage";
@@ -12,15 +13,16 @@ function Where() {
   return <div data-testid="where">{pathname}</div>;
 }
 
-function setup(state: unknown = { createdAccount: true }) {
-  render(
+function setup(state: unknown = { createdAccount: true }, strict = false) {
+  const app = (
     <MemoryRouter initialEntries={[{ pathname: "/welcome/passkey", state }]}>
       <Routes>
         <Route path="/welcome/passkey" element={<CreatePasskeyPage />} />
         <Route path="*" element={<Where />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+  render(strict ? <StrictMode>{app}</StrictMode> : app);
 }
 
 const credential = {
@@ -45,7 +47,10 @@ function stubCapable(create: () => Promise<unknown>) {
   Object.defineProperty(navigator, "credentials", { value: { create }, configurable: true });
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 describe("SCR-09 Create a passkey", () => {
   it("default state offers Create a passkey and Not now", async () => {
@@ -150,5 +155,55 @@ describe("SCR-09 Create a passkey", () => {
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Not now" }));
     expect((await screen.findByTestId("where")).textContent).toBe("/inbox");
+  });
+
+  describe("AC-173: lands on the remembered section", () => {
+    it("Not now goes to the remembered section and clears it", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      stubCapable(() => Promise.resolve(credential));
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Not now" }));
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+      expect(localStorage.getItem("telex.destination")).toBeNull();
+    });
+
+    it("creating a passkey goes to the remembered section", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValueOnce(json(200, options))
+          .mockResolvedValueOnce(json(200, { success: true })),
+      );
+      stubCapable(() => Promise.resolve(credential));
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Create a passkey" }));
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+    });
+
+    it("unsupported Continue goes to the remembered section", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      vi.stubGlobal("PublicKeyCredential", undefined);
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Continue" }));
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+    });
+
+    it("no-flag goes to the remembered section", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      setup(null);
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+      expect(localStorage.getItem("telex.destination")).toBeNull();
+    });
+
+    it("no-flag reads the remembered section once under Strict Mode", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      const read = vi.spyOn(Storage.prototype, "getItem");
+      setup(null, true);
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+      expect(read.mock.calls.filter(([key]) => key === "telex.destination")).toHaveLength(1);
+      read.mockRestore();
+    });
   });
 });

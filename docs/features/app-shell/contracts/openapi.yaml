@@ -1,0 +1,586 @@
+# Derived contract for app-shell (/sdd:api, 2026-10-03).
+#   fields + constraints  ← data-model.md (owner.theme, owner.time_zone, owner.time_zone_is_fallback)
+#   error responses       ← sad.md §6 alt-branches (seed flows 1–3, Flows 4–8)
+#   endpoint list + shape ← spec.md §4 / §5 (US-70…US-74, AC-170…AC-186), sad.md §5 (web/api controllers)
+# Scope: only the operations this feature adds or changes. Every other /api/v1 operation stays as in
+# docs/features/platform-skeleton/contracts/openapi.yaml; shared components are repeated here so this file lints alone.
+# Deviations from the sdd defaults (inherited from platform-skeleton, recorded in api-sync-report.md §C):
+#   - auth: opaque session cookie `telex_session` + CSRF header, not BearerAuth (platform-skeleton ADR-0001);
+#   - errors: RFC 9457 problem+json with teleX `code` / `errors[]` extensions, not {code, message, details?};
+#     `code` is a lowercase kebab-case DNS-1123 label;
+#   - lists are returned whole, without cursor pagination; no Idempotency-Key (every write here is idempotent).
+openapi: 3.1.0
+
+info:
+  title: teleX app shell API
+  version: 0.1.0
+  contact:
+    name: teleX backend (web / identity / inbox modules)
+    url: https://github.com/drnetua/telex
+  description: |
+    The signed-in frame every teleX screen lives in. Each open tab sends a small background pulse every 3 seconds,
+    and its answer keeps the Inbox counter and the Status Banners live without a reload. The same pulse doubles as
+    the connectivity heartbeat (ADR-0002, ADR-0004). The Owner's theme (light, dark or system) and timezone are
+    saved on their account so they follow the Owner to every device. The timezone is first taken from the device
+    and can then be changed to any zone on the known list (ADR-0005).
+
+    Conventions for every operation (unchanged from platform-skeleton):
+    - JSON property names are camelCase.
+    - Every state-changing request (POST, PATCH) carries `X-XSRF-TOKEN` echoing the `XSRF-TOKEN` cookie. A missing
+      or wrong token answers `403 forbidden`.
+    - A request the SPA sends on its own carries `X-Telex-Background: 1` and does not count as session activity
+      (platform-skeleton ADR-0005). The pulse and the detected-timezone save always carry it.
+    - Every response carries `Cache-Control: no-store`.
+    - Errors are RFC 9457 `application/problem+json`: `type = urn:telex:error:<code>`, the `code` extension and,
+      for field errors, `errors[]`.
+    - Instants are UTC ISO 8601. The SPA formats every date in the Owner's `timeZone`.
+    - In production Cloudflare answers `502`/`503`/`504` itself when the app is down. Those responses come from the
+      proxy, not from this contract. Inside the shell the SPA reads every 502/503/504, whatever its body, like no
+      answer or a network error, as "teleX isn't responding" (ADR-0004, AC-176). Outside the shell, e.g. the first
+      `GET /api/v1/me` before the shell mounts, a 502/503/504 still opens "teleX is unavailable" (SCR-93).
+
+servers:
+  - url: http://localhost:8080
+    description: Local (one-command install; TELEX_PUBLIC_URL default)
+  - url: https://telex.example.test
+    description: Production behind Cloudflare (TELEX_PUBLIC_URL)
+
+# Global default — every operation needs a live Sign-in Session.
+security:
+  - SessionCookie: []
+
+tags:
+  - name: shell
+    description: Live signals for the shell — Inbox counter and Status Banner conditions (US-71, US-72)
+  - name: account
+    description: The signed-in Owner and their preferences — theme and timezone (US-73, US-74)
+  - name: e2e-fixtures
+    description: |
+      Test-only. Exists only when the `e2e` Spring profile is active (never in `compose.yaml` or production,
+      sad §7, §11). Lets e2e prepare Inbox and Status Banner values before any producer epic exists (AC-174, AC-178).
+
+paths:
+  /api/v1/pulse:
+    get:
+      tags: [shell]
+      summary: Pulse — Inbox count and active Status Banner conditions
+      description: |
+        Sent by each visible tab every 3 seconds, and at once when the tab becomes visible, with a 2-second client
+        timeout. It is always background, so it never extends the Sign-in Session (seed flow 1, ADR-0002).
+        `inboxCount` is the sum of every `InboxSource` for the signed-in Owner only (AC-175). `conditions` are the
+        codes every `StatusConditionSource` reports for that Owner. Neither has a producer in E06 outside the `e2e`
+        profile, so production answers `0` and `[]` until E02/E11 (AC-174).
+        Later epics add fields to this answer instead of opening new channels (ADR-0002). Clients ignore fields
+        they don't know.
+        A failed pulse routes like any call: `unauthenticated` → SCR-01, `session-ended` → SCR-92, and the shell is
+        dropped at once (AC-173, sad §11). No answer within 2 s, or a network error → the "teleX isn't responding"
+        banner (AC-176).
+      operationId: getPulse
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: Live signals for the signed-in Owner
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pulse" }
+              examples:
+                quiet:
+                  summary: E06 in production — nothing waits, no condition holds
+                  value:
+                    inboxCount: 0
+                    conditions: []
+                busy:
+                  summary: Items wait and a producer reports a condition (e2e fixtures, later E02)
+                  value:
+                    inboxCount: 104
+                    conditions: ["account-disconnected"]
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/me:
+    get:
+      tags: [account]
+      summary: Who am I — now with theme and timezone
+      description: |
+        Changed by app-shell. `Me` gains `theme`, `timeZone` and `timeZoneIsFallback` (ADR-0005), and every other
+        field is unchanged from platform-skeleton. The shell renders only after this answers. It switches once to
+        `theme` if that differs from the theme last used on this device (AC-181, Flow 6). When `timeZone` is `null`,
+        it saves the device's timezone through `saveDetectedTimeZone` (AC-183, Flow 7).
+      operationId: getMe
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: The signed-in Owner
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+              examples:
+                saved:
+                  summary: Timezone saved from the device
+                  value:
+                    ownerId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60"
+                    email: "test.user+work@example.test"
+                    linkedAccountCount: 0
+                    theme: "dark"
+                    timeZone: "Europe/Kyiv"
+                    timeZoneIsFallback: false
+                notYetSaved:
+                  summary: First open after this change — no timezone saved yet
+                  value:
+                    ownerId: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e60"
+                    email: "test.user+work@example.test"
+                    linkedAccountCount: 0
+                    theme: "system"
+                    timeZone: null
+                    timeZoneIsFallback: false
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/me/preferences:
+    patch:
+      tags: [account]
+      summary: Change my theme or timezone
+      description: |
+        Changes the signed-in Owner's theme, timezone, or both. A property left out stays as it is, and an empty
+        body changes nothing and answers the current preferences. The SPA applies a theme before this answers and
+        reverts it if the request fails or gets no answer (AC-179, AC-182, seed flow 3). Picking a timezone clears
+        `timeZoneIsFallback` (AC-184).
+        The timezone can never be cleared (AC-186): `null` or `""` is refused with field code `time-zone-required`,
+        and a zone not on `listTimeZones` with `unknown-time-zone` (spec §6.1 tampered value). Either way the saved
+        value stays. A theme outside `light`, `dark`, `system` is refused with field code `unknown-theme`.
+        Repeating the same request is safe, so there's no Idempotency-Key. Other open devices pick up the change on
+        their next open or reload (AC-181, AC-184).
+      operationId: changeMyPreferences
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PreferencesChange" }
+            examples:
+              theme:
+                summary: Choose Dark (AC-179)
+                value:
+                  theme: "dark"
+              timeZone:
+                summary: Pick another timezone (AC-184)
+                value:
+                  timeZone: "America/Argentina/Buenos_Aires"
+      responses:
+        "200":
+          description: Saved; the Owner's preferences after the change
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Preferences" }
+              example:
+                theme: "dark"
+                timeZone: "America/Argentina/Buenos_Aires"
+                timeZoneIsFallback: false
+        "400":
+          description: |
+            Refused, nothing changed (Flow 8). `time-zone-required`: `timeZone` was `null` or empty (AC-186).
+            `unknown-time-zone`: not on the known list. `unknown-theme`: not light, dark or system.
+            `unknown-property`: the body names a property other than `theme` or `timeZone`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                timeZoneRequired:
+                  value:
+                    type: "urn:telex:error:validation-failed"
+                    title: "Bad Request"
+                    status: 400
+                    detail: "Some fields are invalid."
+                    code: "validation-failed"
+                    errors:
+                      - field: "timeZone"
+                        code: "time-zone-required"
+                        message: "Choose a timezone from the list."
+                unknownTimeZone:
+                  value:
+                    type: "urn:telex:error:validation-failed"
+                    title: "Bad Request"
+                    status: 400
+                    detail: "Some fields are invalid."
+                    code: "validation-failed"
+                    errors:
+                      - field: "timeZone"
+                        code: "unknown-time-zone"
+                        message: "Choose a timezone from the list."
+                unknownTheme:
+                  value:
+                    type: "urn:telex:error:validation-failed"
+                    title: "Bad Request"
+                    status: 400
+                    detail: "Some fields are invalid."
+                    code: "validation-failed"
+                    errors:
+                      - field: "theme"
+                        code: "unknown-theme"
+                        message: "Choose light, dark or system."
+                unknownProperty:
+                  value:
+                    type: "urn:telex:error:validation-failed"
+                    title: "Bad Request"
+                    status: 400
+                    detail: "Only theme and timeZone can be changed."
+                    code: "validation-failed"
+                    errors:
+                      - field: "colour"
+                        code: "unknown-property"
+                        message: "Only theme and timeZone can be changed."
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/v1/me/preferences/detected-time-zone:
+    post:
+      tags: [account]
+      summary: Save the device's timezone, only if none is saved yet
+      description: |
+        Sent by the SPA on its own when `getMe` answers `timeZone: null` (AC-183, Flow 7). The server keeps the sent
+        zone if it is on the known list. Otherwise, when it is missing, `null` or unknown, it saves `UTC` with
+        `timeZoneIsFallback: true`. It never refuses a value.
+        The write happens only while the Owner has no timezone saved, so racing tabs and a device that saved first
+        are never overwritten. The answer is the Owner's preferences after the call, whoever saved them. Repeating
+        it is safe. A request that gets no answer shows the Status Banner, and the next open sends it again (Flow 7).
+      operationId: saveDetectedTimeZone
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+        - $ref: "#/components/parameters/Background"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DetectedTimeZone" }
+            examples:
+              readable:
+                summary: The device reports a zone on the list
+                value:
+                  timeZone: "Europe/Kyiv"
+              unreadable:
+                summary: The device's zone can't be read
+                value:
+                  timeZone: null
+      responses:
+        "200":
+          description: The Owner's preferences after the call (saved now, or saved earlier by another device)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Preferences" }
+              examples:
+                saved:
+                  value:
+                    theme: "system"
+                    timeZone: "Europe/Kyiv"
+                    timeZoneIsFallback: false
+                fallback:
+                  summary: Unreadable or unknown zone — UTC, and SCR-64 shows the "pick your own" hint
+                  value:
+                    theme: "system"
+                    timeZone: "UTC"
+                    timeZoneIsFallback: true
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/v1/time-zones:
+    get:
+      tags: [account]
+      summary: The known timezone list
+      description: |
+        Every zone the Owner may pick: `java.time.ZoneId` ids in `Area/City` form plus `UTC` (sad §8), sorted by id
+        and returned whole, without pagination. The SPA searches it on the device by city or region, using the
+        parts of the id, and says so when nothing matches (AC-185, Flow 8). It is the same list
+        `changeMyPreferences` and `saveDetectedTimeZone` check against.
+      operationId: listTimeZones
+      responses:
+        "200":
+          description: The known timezones
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimeZoneList" }
+              example:
+                items:
+                  - "America/Argentina/Buenos_Aires"
+                  - "Europe/Kyiv"
+                  - "Pacific/Auckland"
+                  - "UTC"
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/e2e-fixtures/pulse:
+    put:
+      tags: [e2e-fixtures]
+      summary: Set the calling Owner's fixture Inbox count and conditions (e2e profile only)
+      description: |
+        Exists only under the `e2e` Spring profile. Without it the path answers `404 not-found` like any unknown
+        path. It replaces what the fixture `InboxSource` and fixture `StatusConditionSource` report for the calling
+        Owner only. It can't name another Owner (sad §11). The values are held in memory and never stored.
+      operationId: setPulseFixture
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Pulse" }
+            example:
+              inboxCount: 3
+              conditions: ["account-disconnected", "budget-exhausted"]
+      responses:
+        "204":
+          description: Fixture values set; the next pulse reports them
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: telex_session
+      description: |
+        Opaque Sign-in Session key set by the sign-in operations (platform-skeleton contract). Only its SHA-256 is
+        stored. Liveness is enforced server-side (platform-skeleton ADR-0001).
+
+  parameters:
+    XsrfToken:
+      in: header
+      name: X-XSRF-TOKEN
+      required: true
+      description: Echo of the `XSRF-TOKEN` cookie; required on every state-changing request.
+      schema: { type: string }
+    Background:
+      in: header
+      name: X-Telex-Background
+      required: false
+      description: "`1` on requests the SPA sends on its own; such requests don't count as session activity (platform-skeleton ADR-0005)."
+      schema: { type: string, enum: ["1"] }
+
+  responses:
+    NotSignedIn:
+      description: |
+        No live Sign-in Session. `unauthenticated`: never signed in or signed out, so the SPA shows SCR-01 and
+        remembers the section (AC-173). `session-ended`: ran out or was revoked, so the SPA shows SCR-92. Either way
+        nothing of the shell stays on screen.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            unauthenticated:
+              value:
+                type: "urn:telex:error:unauthenticated"
+                title: "Unauthorized"
+                status: 401
+                detail: "Sign in to continue."
+                code: "unauthenticated"
+            sessionEnded:
+              value:
+                type: "urn:telex:error:session-ended"
+                title: "Unauthorized"
+                status: 401
+                detail: "Your session has ended."
+                code: "session-ended"
+    NotFound:
+      description: No such path (the e2e fixture endpoint outside the `e2e` profile)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:not-found"
+            title: "Not Found"
+            status: 404
+            detail: "Not found."
+            code: "not-found"
+    ValidationFailed:
+      description: The request body is missing a required field or breaks a declared bound
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:validation-failed"
+            title: "Bad Request"
+            status: 400
+            detail: "Some fields are invalid."
+            code: "validation-failed"
+            errors:
+              - field: "inboxCount"
+                code: "min"
+                message: "Must be 0 or more."
+    Forbidden:
+      description: Missing or wrong CSRF token
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:forbidden"
+            title: "Forbidden"
+            status: 403
+            detail: "The request was refused."
+            code: "forbidden"
+
+  schemas:
+    # ---- Errors (RFC 9457 + teleX extensions; telex.shared.problemDetail) — unchanged from platform-skeleton
+    ErrorCode:
+      description: |
+        Stable machine code; keys `frontend/src/messages.ts`. Lowercase kebab-case DNS-1123 label. app-shell adds no
+        top-level code; its refusals are `validation-failed` with field codes.
+      type: string
+      maxLength: 63
+      pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      enum:
+        - validation-failed
+        - unauthenticated
+        - session-ended
+        - sign-in-link-expired
+        - sign-in-link-used
+        - sign-in-grant-void
+        - sign-in-code-wrong
+        - passkey-registration-failed
+        - passkey-rejected
+        - not-found
+        - forbidden
+        - mail-unavailable
+        - internal-error
+    FieldProblem:
+      type: object
+      required: [field, code, message]
+      additionalProperties: false
+      properties:
+        field: { type: string, description: "Request property name, e.g. `timeZone`" }
+        code:
+          type: string
+          maxLength: 63
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          description: |
+            Field-level code, same label rule. New in app-shell: `time-zone-required`, `unknown-time-zone`
+            (sad §8), `unknown-theme`, `unknown-property` (a body property the operation doesn't know), and
+            `pattern` (e2e pulse fixture only: a condition code that isn't a label of at most 63 characters).
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+          pattern: "^urn:telex:error:[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string, description: "Human-readable; the SPA shows its own copy keyed by `code`" }
+        instance: { type: string, format: uri-reference }
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldProblem" }
+
+    # ---- Ids and shared types
+    OwnerId: { type: string, format: uuid, description: "UUIDv7 (owner.id)" }
+    EmailAddress:
+      type: string
+      maxLength: 254
+      description: owner.email, as typed when the account was created
+    Theme:
+      type: string
+      enum: [light, dark, system]
+      description: owner.theme (CHECK owner_theme_ck). `system` follows the device's light or dark mode (AC-180)
+    TimeZoneId:
+      type: string
+      minLength: 1
+      maxLength: 64
+      description: |
+        owner.time_zone — an IANA id in `Area/City` form, or `UTC`. The authority is `listTimeZones`, so a
+        well-formed id that isn't on it is still refused (`unknown-time-zone`).
+      examples: ["Europe/Kyiv", "UTC"]
+
+    # ---- Shell
+    StatusConditionCode:
+      type: string
+      maxLength: 63
+      pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      description: |
+        A Status Banner condition reported by a server-side `StatusConditionSource` (ADR-0006). It is an open set:
+        each producer epic adds its code, e.g. `account-disconnected` (E02). The SPA catalog maps a code to its text,
+        action and fixed importance, and logs and ignores one it doesn't know. `offline` and `not-responding` are
+        client-side only and never appear here.
+      examples: ["account-disconnected", "budget-exhausted"]
+    Pulse:
+      type: object
+      required: [inboxCount, conditions]
+      properties:
+        inboxCount:
+          type: integer
+          minimum: 0
+          description: |
+            Waiting Inbox items of the signed-in Owner, summed over every `InboxSource` (ADR-0003). Uncapped. The SPA
+            shows no number at 0 and "99+" above 99 (AC-174).
+        conditions:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/StatusConditionCode" }
+          description: Conditions that hold now for this Owner, in no particular order. The SPA orders them by importance (AC-178)
+
+    # ---- Account
+    Me:
+      type: object
+      required: [ownerId, email, linkedAccountCount, theme, timeZone, timeZoneIsFallback]
+      additionalProperties: false
+      properties:
+        ownerId: { $ref: "#/components/schemas/OwnerId" }
+        email: { $ref: "#/components/schemas/EmailAddress" }
+        linkedAccountCount:
+          type: integer
+          minimum: 0
+          description: Number of Linked Accounts; always 0 before E02 (platform-skeleton AC-100)
+        theme: { $ref: "#/components/schemas/Theme" }
+        timeZone:
+          oneOf:
+            - { $ref: "#/components/schemas/TimeZoneId" }
+            - { type: "null" }
+          description: owner.time_zone; `null` only until the first save from the device (AC-183)
+        timeZoneIsFallback:
+          type: boolean
+          description: owner.time_zone_is_fallback — true only with `UTC` saved as a fallback; drives the "pick your own" hint on SCR-64
+    Preferences:
+      type: object
+      required: [theme, timeZone, timeZoneIsFallback]
+      additionalProperties: false
+      properties:
+        theme: { $ref: "#/components/schemas/Theme" }
+        timeZone:
+          description: Null until the Owner's first save, as in `Me`.
+          oneOf:
+            - { $ref: "#/components/schemas/TimeZoneId" }
+            - { type: "null" }
+        timeZoneIsFallback: { type: boolean, description: owner.time_zone_is_fallback }
+    PreferencesChange:
+      type: object
+      additionalProperties: false
+      description: Every property is optional; one left out stays as it is.
+      properties:
+        theme: { $ref: "#/components/schemas/Theme" }
+        timeZone:
+          description: Never clearable. `null` or `""` is refused with `time-zone-required` (AC-186)
+          oneOf:
+            - { $ref: "#/components/schemas/TimeZoneId" }
+            - { type: "null" }
+    DetectedTimeZone:
+      type: object
+      required: [timeZone]
+      additionalProperties: false
+      properties:
+        timeZone:
+          description: The device's zone (`Intl.DateTimeFormat().resolvedOptions().timeZone`), or `null` when unreadable. Unknown or `null` saves `UTC` as the fallback
+          oneOf:
+            - { type: string, maxLength: 64 }
+            - { type: "null" }
+    TimeZoneList:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/TimeZoneId" }

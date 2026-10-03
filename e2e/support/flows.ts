@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type CDPSession, type Page } from "@playwright/test";
 import { codeOf, linkOf, uniqueAddress, waitForMail } from "./mailpit";
+import { signOutFromShell } from "./shell";
 
 export const SIGN_IN_SUBJECT = "Sign in to teleX";
 export const NEW_SIGN_IN_SUBJECT = "New sign-in to teleX";
@@ -64,8 +65,7 @@ export async function signUp(
 }
 
 export async function signOut(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await signOutFromShell(page);
 }
 
 export { codeOf, linkOf };

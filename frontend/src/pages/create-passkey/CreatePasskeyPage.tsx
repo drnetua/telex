@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
+import { takeRememberedDestination } from "../../api/destination";
 import { routeFailure } from "../auth/failure";
 
 type Step = "checking" | "default" | "unsupported" | "waiting" | "failed";
@@ -26,9 +27,17 @@ export function CreatePasskeyPage() {
     };
   }, [flagged]);
 
-  if (!flagged) return <Navigate to="/inbox" replace />;
+  // Reloaded or opened directly: consume the remembered section once, in an effect (render must stay pure, and
+  // a render React discards would otherwise lose it).
+  const reloaded = useRef(false);
+  useEffect(() => {
+    if (flagged || reloaded.current) return;
+    reloaded.current = true;
+    void navigate(takeRememberedDestination(), { replace: true });
+  }, [flagged, navigate]);
+  if (!flagged) return null;
 
-  const leave = () => void navigate("/inbox", { replace: true });
+  const leave = () => void navigate(takeRememberedDestination(), { replace: true });
 
   async function create() {
     setStep("waiting");

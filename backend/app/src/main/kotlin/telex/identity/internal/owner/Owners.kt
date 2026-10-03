@@ -3,6 +3,8 @@ package telex.identity.internal.owner
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import telex.identity.OwnerId
+import telex.identity.Preferences
+import telex.identity.Theme
 import telex.shared.Uuid7
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -42,4 +44,49 @@ class Owners(
             .query(String::class.java)
             .optional()
             .orElse(null)
+
+    fun preferencesOf(id: OwnerId): Preferences? = emailAndPreferencesOf(id)?.second
+
+    /** The address and the preferences in one `SELECT`, for `GET /me`. */
+    fun emailAndPreferencesOf(id: OwnerId): Pair<String, Preferences>? =
+        jdbc
+            .sql("SELECT email, theme, time_zone, time_zone_is_fallback FROM owner WHERE id = ?")
+            .param(id.value)
+            .query { rs, _ ->
+                rs.getString("email") to
+                    Preferences(
+                        checkNotNull(Theme.fromWire(rs.getString("theme"))),
+                        rs.getString("time_zone"),
+                        rs.getBoolean("time_zone_is_fallback"),
+                    )
+            }.optional()
+            .orElse(null)
+
+    fun updateTheme(
+        id: OwnerId,
+        theme: String,
+    ) {
+        jdbc.sql("UPDATE owner SET theme = ? WHERE id = ?").params(theme, id.value).update()
+    }
+
+    fun updateTimeZone(
+        id: OwnerId,
+        zone: String,
+    ) {
+        jdbc
+            .sql("UPDATE owner SET time_zone = ?, time_zone_is_fallback = false WHERE id = ?")
+            .params(zone, id.value)
+            .update()
+    }
+
+    /** Returns rows affected; zero means a zone was already saved. */
+    fun saveTimeZoneIfUnset(
+        id: OwnerId,
+        zone: String,
+        isFallback: Boolean,
+    ): Int =
+        jdbc
+            .sql("UPDATE owner SET time_zone = ?, time_zone_is_fallback = ? WHERE id = ? AND time_zone IS NULL")
+            .params(zone, isFallback, id.value)
+            .update()
 }
