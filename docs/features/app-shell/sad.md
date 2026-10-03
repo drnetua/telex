@@ -387,13 +387,20 @@ Each top-3 goal from §1 expanded into scenarios. Numbers are quoted from spec �
 
 ## 12. Glossary
 
-<!-- 🎯 Why: ⭐ the DOMAIN GLOSSARY that ends arguments a year later («checkpoint — weekly or
-     biweekly? quarter — calendar or fiscal?»).
-     📋 Write: a term / meaning table. Business + technical terms mixed.
-     📌 e.g. «Lesson | a unit inside a course made of blocks (text, video)». -->
+Canonical definitions live in [CONTEXT.md](../../../CONTEXT.md). Terms marked *new* aren't there yet. Run `/sdd:glossary app-shell` to add them.
 
 | Term | Meaning |
 |---|---|
-| <e.g. domain object A> | <its meaning in this domain> |
-| <e.g. domain object B> | <its meaning> |
-| <e.g. domain invariant name> | <the rule, in plain language> |
+| Owner | A person with a teleX account. The only actor of this feature (CONTEXT) |
+| Inbox | The one place where everything that waits for the Owner lands. The number of waiting items is the Inbox counter, the only counter in the navigation (CONTEXT) |
+| Status Banner | A strip under the header that reports a condition affecting the Owner's whole teleX and offers one action. It stays until its cause is gone, and when several apply the most important shows with "N more" (CONTEXT) |
+| Sign-in Session | The signed-in state of one Owner in one browser. The pulse never extends it (CONTEXT; platform-skeleton ADR-0005) |
+| Section | *new* — one of the seven top-level parts of teleX in the app-map order: Overview, Inbox, Chats, Assistants, Runs, Tasks, Settings. Each has its own address |
+| Coming soon page | *new* — the visible stand-in page for a section whose epic hasn't shipped. It names the section, says what it will hold, and links to the Inbox (ADR-0001) |
+| Theme | *new* — the Owner's choice of light, dark or system, saved on their account. System follows the device |
+| Timezone | *new* — the one named region (for example Europe/Kyiv) the Owner's dates and times are shown in. Once saved it can't be empty, only replaced by another from the known list |
+| Pulse | *technical* — the small background request each visible tab sends every 3 s. Its answer carries the Inbox count and the active Status Banner conditions, and it doubles as the connectivity heartbeat (ADR-0002) |
+| Inbox source | *technical* — a module's contribution to the Inbox count: how many of its items wait for a given Owner (ADR-0003) |
+| Status Banner condition | *technical* — a code for one cause of a Status Banner (for example `offline`, `account-disconnected`), with fixed text, action and importance in the SPA catalog (ADR-0006) |
+| "A banner lives exactly as long as its cause" | Domain invariant (AC-178): no Status Banner can be dismissed while its condition holds |
+| "An Owner always has exactly one timezone" | Domain invariant (AC-186): once saved, the timezone can be changed to another on the list but never cleared |
