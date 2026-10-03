@@ -10,7 +10,7 @@
 | T3 | Store the catalog snapshot in Postgres, load it at start and hold it in memory | infra | Anton Husiev | M | T1, T2 | done |
 | T4 | Refresh the catalog from OpenRouter at start, every 24 h and every 5 min after a failure | app | Anton Husiev | M | T3 | done |
 | T5 | Build the in-call fallback loop in llm with one attempt per model, a per-attempt timeout and outcome classification | app | Anton Husiev | M | T2 | done |
-| T6 | Call OpenRouter for text, vision and image through the provider port and classify its errors | infra | Anton Husiev | M | T4, T5 | todo |
+| T6 | Call OpenRouter for text, vision and image through the provider port and classify its errors | infra | Anton Husiev | M | T4, T5 | done |
 | T7 | Model the custom profile aggregate, ProfileRef and the profile rules in plain Kotlin | domain | Anton Husiev | M | T2 | done |
 | T8 | Resolve slots against the current catalog and estimate the price per 100 runs | domain | Anton Husiev | S | T2, T7 | done |
 | T9 | Build the three system profiles from settings and validate the Operator's slot overrides | app | Anton Husiev | S | T4, T8 | todo |
@@ -32,3 +32,4 @@
 
 - **T2 — `pricePerImage` is always null.** OpenRouter's `pricing.image_output` is a price per output image *token*, not per image; neither spec, data-model nor sad names a per-image source. Image-slot prices show "Price unknown" until one is chosen (T2 edge-case table: no identifiable per-image price → null). Models whose output modalities include audio are skipped as unfit.
 - **T10 — race test fixed (test bug, not weakened).** The AC-218 race test placed a 2-party barrier *after* the advisory lock, so the holder waited for a thread blocked on that lock (deadlock). The barrier now comes before the lock, and a 300 ms window after the count keeps a lock-less implementation failing.
+- **T6 — no Spring AI starter; JDK `HttpClient`.** One hand-built `/chat/completions` path serves text, vision and image (sad §11 already needed a separate image client). `RestClient` debug-logged the request body (prompt) and the JDK HTTP stack the auth header under DEBUG, so the adapter uses `java.net.http.HttpClient`, which logs neither. Error table: 429 rate-limited · 408 timeout · 413 too-large · 404 unavailable · 422 invalid-request · 403 content-refused · 400 by body (context length/too long → too-large; moderation/content policy/flagged → content-refused; else invalid-request) · 502/503 "no endpoints"/"no allowed providers" → unavailable, else provider-error · 401/402 and anything else → provider-error · 200 with `finish_reason: content_filter` → content-refused.

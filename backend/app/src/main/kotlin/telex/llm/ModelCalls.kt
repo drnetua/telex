@@ -10,10 +10,21 @@ sealed interface SlotRequest {
         val messages: List<ChatMessage>,
     ) : SlotRequest
 
+    data class Vision(
+        val messages: List<ChatMessage>,
+        val images: List<ImageInput>,
+    ) : SlotRequest
+
     data class Image(
         val prompt: String,
     ) : SlotRequest
 }
+
+/** RED stub: shape guessed from public-api.md (ImageInput is not defined there). */
+class ImageInput(
+    val bytes: ByteArray,
+    val mediaType: String,
+)
 
 sealed interface SlotAnswer {
     data class Text(
