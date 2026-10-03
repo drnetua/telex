@@ -232,7 +232,230 @@ sequenceDiagram
     end
 ```
 
-The `sequences` stage adds the remaining flows (profile save with its checks, duplicate, delete of the default, the picker with price states).
+Flows 3–6 below are UI-driven and use generic participants: `<user>` is the Owner, `<ui>` the Models page (SCR-66) with the profile editor (SCR-34), `<service>` the backend (the `web` → `agents` → `llm` path of §5, with the catalog snapshot already in its memory), and `<data-store>` the database.
+
+### Critical flow 3: open the Models page (AC-211, AC-212, AC-10, AC-223, AC-225, AC-226)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt;
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt;
+    participant D as #lt;data-store#gt;
+    Note over U,S: Precondition: the Owner has a live Sign-in Session, the catalog snapshot was loaded at start (flow 2)
+    U->>UI: opens the Models page (SCR-66)
+    UI->>S: asks for the catalog and the Owner's profiles
+    S->>D: reads the Owner's custom profiles and default profile by owner
+    D-->>S: custom profiles with their chains, the default or none (none means Balanced)
+    S->>S: builds the system profiles from settings, shipped models or the Operator's overrides
+    S->>S: resolves every slot against the current catalog
+    S->>S: estimates the price per 100 runs from each text slot's current model
+    S-->>UI: catalog with its state and last-updated time, profiles with slot states, prices and the default
+    UI-->>U: shows the profiles with the picker, and the catalog with its last-updated time
+    alt latest refresh failed
+        UI-->>U: shows the last known list with a note that it couldn't be updated and the time it is from
+    else catalog never loaded
+        UI-->>U: shows The model list isn't available yet, and every slot without a model
+    else no provider key configured
+        UI-->>U: shows the banner that AI models aren't set up, system profiles without a model, editing disabled
+    end
+    U->>UI: searches by name and filters by the vision slot
+    UI->>UI: filters the loaded catalog
+    UI-->>U: shows only models that take images and answer in text, with provider, inputs, outputs, price and context size
+    alt main model left the catalog and a later model is in it
+        UI-->>U: shows Main model unavailable. Using model B for now. on the profile and slot, price from model B
+    else no model of a slot is left in the catalog
+        UI-->>U: shows no model available, with pick another model (custom) or choose another profile (system)
+        Note over U,UI: text slot, so the picker shows No model available for text, and a current default gets a warning
+    else vision or image slot empty
+        UI-->>U: shows Not used
+    end
+    Note over U,S: Postcondition: nothing written, nothing sent to the provider, a returning main model clears the warning on the next load
+```
+
+### Critical flow 4: choose the default profile (AC-51, AC-210, AC-222, AC-223)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt;
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt;
+    participant D as #lt;data-store#gt;
+    Note over U,S: Precondition: the Models page is loaded (flow 3), a new Owner's default is Balanced
+    U->>UI: opens the profile picker
+    UI-->>U: lists the system and own profiles, each with its price per 100 runs
+    alt text slot's current model has a price
+        UI-->>U: shows the estimate in whole cents, or less than one cent
+    else price is zero
+        UI-->>U: shows Free
+    else catalog has no price for it
+        UI-->>U: shows Price unknown, still choosable
+    else no model available for text
+        UI-->>U: shows No model available for text with no price, not choosable
+    end
+    U->>UI: picks Careful
+    UI->>S: sets the default profile to Careful
+    S->>S: resolves the profile reference among system profiles and the Owner's own
+    alt profile found and its text slot has a model in the catalog
+        S->>D: stores the Owner's default profile
+        Note over S,D: persists the default profile, one per Owner, looked up by owner
+        D-->>S: stored
+        S-->>UI: the new default
+        UI-->>U: confirms that Careful is now the default
+    else custom profile of another Owner, or no such profile
+        S-->>UI: fails with profile not found
+        UI-->>U: shows the same not found message as for a profile that doesn't exist
+    else no model available for text
+        S-->>UI: fails with no text model
+        UI-->>U: says the profile can't be the default while it has no text model
+    end
+    Note over U,S: Postcondition: E09 will use this default for new agents
+```
+
+### Critical flow 5: create, duplicate or edit a custom profile and save it (AC-213…AC-219, AC-221, AC-222, AC-226)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt;
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt;
+    participant D as #lt;data-store#gt;
+    Note over U,S: Precondition: signed-in Owner on the Models page, provider key configured
+    alt create, or duplicate Balanced
+        U->>UI: chooses Create profile, or Duplicate on Balanced
+        UI->>S: asks for a new profile draft, empty or a copy of Balanced
+        S->>D: counts the Owner's custom profiles and reads their names
+        D-->>S: count and names
+        alt the Owner already has 20 custom profiles
+            S-->>UI: fails with profile limit reached
+            UI-->>U: says the limit is 20 and deleting one makes room, the editor doesn't open
+        else room left
+            S-->>UI: draft named Balanced copy, or Balanced copy 2 if taken, with models not in the catalog marked
+            UI-->>U: opens the profile editor (SCR-34)
+        end
+    else edit an own profile
+        U->>UI: chooses Edit on Cheap vision, or opens its link
+        UI->>S: asks for the profile by id
+        S->>D: reads the profile by owner and id
+        alt not one of the Owner's profiles
+            S-->>UI: fails with profile not found
+            UI-->>U: shows Page not found (SCR-91)
+        else found
+            S-->>UI: the profile with its chains and their catalog states
+            UI-->>U: opens the profile editor (SCR-34)
+        end
+    else edit a system profile
+        U->>UI: chooses Edit on Balanced
+        UI-->>U: says system profiles can't be changed and offers Duplicate
+    end
+    U->>UI: adds a model to a slot
+    alt model can't do the slot's job, slot holds three, or model already in it
+        UI-->>U: says why the model can't be added
+    else model fits
+        UI-->>U: adds it at the end of the chain
+    end
+    U->>UI: renames, moves the second text model up, saves
+    UI->>S: saves the profile with its name and three chains
+    S->>S: checks name rules, text slot filled, slot capability, at most three models each once
+    S->>S: checks that models not in the stored profile or the duplicated source are in the catalog
+    alt all rules hold
+        S->>D: writes the profile and its chains, re-checking the limit and the name in one transaction
+        Note over S,D: persists the custom profile and its slot chains (name unique per Owner ignoring case, count per Owner)
+        D-->>S: saved
+        S-->>UI: saved profile with slot states and price per 100 runs
+        UI-->>U: shows Profile saved on the Models page, empty image slot as Not used
+    else name, text slot, capability or chain rule broken
+        S-->>UI: fails with validation failed, naming each broken rule
+        UI-->>U: keeps the editor open and names the rule
+    else a newly added model left the catalog
+        S-->>UI: fails with validation failed, naming the model that is no longer available
+        UI-->>U: keeps the editor open, older missing models stay marked Not in the catalog
+    else limit reached or name taken meanwhile
+        D-->>S: rejects the write
+        S-->>UI: fails with profile limit reached, or name taken
+        UI-->>U: keeps the editor open and says which
+    else system profile, or not one of the Owner's profiles
+        S-->>UI: fails with system profile read only, or profile not found
+        UI-->>U: says system profiles can't be changed, or shows not found
+    else no provider key configured
+        S-->>UI: fails with AI not configured
+        UI-->>U: says AI models aren't set up on this installation
+    end
+    Note over U,S: Postcondition: the profile is stored with the chosen order, a missing older model is kept for when it returns
+```
+
+### Critical flow 6: delete a custom profile (AC-219, AC-220, AC-222)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt;
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt;
+    participant D as #lt;data-store#gt;
+    Note over U,S: Precondition: the Owner's default profile is their custom profile Cheap vision
+    U->>UI: chooses Delete on Cheap vision
+    UI-->>U: asks to confirm
+    U->>UI: confirms
+    UI->>S: deletes the profile by id
+    S->>D: deletes the profile by owner and id, and clears the default if it pointed there, in one transaction
+    Note over S,D: removes the custom profile with its chains and resets the Owner's default profile
+    alt deleted and it was the default
+        D-->>S: deleted, default cleared
+        S->>S: publishes the profile deleted event for E09
+        S-->>UI: deleted, the default is Balanced again
+        UI-->>U: removes it from the list and says Balanced is now the default
+    else deleted, not the default
+        D-->>S: deleted
+        S->>S: publishes the profile deleted event for E09
+        S-->>UI: deleted
+        UI-->>U: removes it from the list
+    else not one of the Owner's profiles
+        D-->>S: nothing deleted
+        S-->>UI: fails with profile not found
+        UI-->>U: shows the same not found message as for a profile that doesn't exist
+    else system profile
+        S-->>UI: fails with system profile read only
+        UI-->>U: says system profiles can't be changed and offers Duplicate
+    end
+    Note over U,S: Postcondition: the profile is gone, and the Owner's default is never a deleted profile
+```
+
+**AC coverage of §6:**
+
+| AC | Shown by |
+|---|---|
+| AC-51 | Flow 4, happy path |
+| AC-210 | Flow 4, price-state branches |
+| AC-211 | Flow 3, search and vision filter |
+| AC-212 | Flow 2, provider down and restart load, and Flow 3, failed refresh and never loaded branches |
+| AC-213 | Flow 5, duplicate draft, reorder, save |
+| AC-214, AC-215 | Flow 5, broken rule branch |
+| AC-216, AC-217 | Flow 5, add-model branch in the editor, re-checked on save |
+| AC-218 | Flow 5, limit branch on open, and the race branch on save |
+| AC-219 | Flow 5, system profile edit, and Flow 6, system profile branch |
+| AC-220 | Flow 6, deleted default branch |
+| AC-221 | Flow 5, newly added model left the catalog branch |
+| AC-222 | Flow 4, Flow 5 and Flow 6, not found branches |
+| AC-10 | Flow 1, missing model skipped, and Flow 3, main model unavailable branch |
+| AC-223 | Flow 1, no model available branch, Flow 3, no model left and Not used branches, and Flow 4, no text model branch |
+| AC-224 | Flow 1, move-on branch |
+| AC-228 | Flow 1, stop branch and failure with attempts |
+| AC-229 | Flow 1, call record in both branches |
+| AC-225 | Flow 2, refresh, and Flow 3, system profiles from settings |
+| AC-226 | Flow 2, no key branch, Flow 3, banner branch, and Flow 5, AI not configured branch |
+| AC-227 | Flow 2, override re-validation, and Flow 3, fallback warning |
+
+**Flags from `sequences` (for later stages, no ADR written):**
+
+- Flows 1 and 2 come from `design` and name concrete participants (`agents module`, `OpenRouter`, `PostgreSQL`). They are kept as written. Flows 3 to 6 use the generic vocabulary.
+- Flow 2 is a scheduled job without a dead-letter branch. Refresh replaces the whole snapshot, so it is idempotent, and it retries every 5 minutes with no limit (AC-212). That is intended, and there is no message to park.
+- For `api`: Create and Duplicate first ask for an unsaved draft. The draft request checks the 20-profile limit and picks the copy name. The profile is created only on Save, with the duplicated source named, so a cancelled duplicate leaves nothing behind. Search and the slot filter run in the browser over one catalog response, so QG-4 has to confirm the 500-model payload stays inside p95 ≤ 1 s.
+- For `data-model`: one default profile per Owner, looked up by owner. Custom profiles are looked up by `(owner_id, id)`, with names unique per Owner ignoring case and counted per Owner. Deleting a profile removes its chains and clears a default that points to it, in the same transaction. Call records keep their profile reference after a delete, so they must not cascade from the profile.
+- `ModelProfileDeleted` is published in the delete transaction through the event registry. E10 has no listener for it.
 
 ## 7. Deployment view
 

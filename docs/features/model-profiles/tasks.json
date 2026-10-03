@@ -1,0 +1,482 @@
+{
+  "slug": "model-profiles",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Promote the four staged model-profiles migrations into the live Flyway tree",
+      "layer": "migration",
+      "deps": [],
+      "acs": [
+        "AC-212",
+        "AC-217",
+        "AC-220",
+        "AC-229"
+      ],
+      "dod": "The four staged pairs are promoted to db/migration V…__*.sql + db/rollback U…__*.sql, MigrationRollbackIT applies up → down → up for all of them, and a schema IT pins the slot, chain, default and call-record constraints.",
+      "files_hint": [
+        "docs/features/model-profiles/migrations/01_create_model_catalog.up.sql",
+        "docs/features/model-profiles/migrations/01_create_model_catalog.down.sql",
+        "docs/features/model-profiles/migrations/02_create_model_profile.up.sql",
+        "docs/features/model-profiles/migrations/02_create_model_profile.down.sql",
+        "docs/features/model-profiles/migrations/03_create_default_model_profile.up.sql",
+        "docs/features/model-profiles/migrations/03_create_default_model_profile.down.sql",
+        "docs/features/model-profiles/migrations/04_create_model_call.up.sql",
+        "docs/features/model-profiles/migrations/04_create_model_call.down.sql"
+      ],
+      "file": "docs/features/model-profiles/tasks/t01-promote-model-profiles-migrations.md"
+    },
+    {
+      "id": "T2",
+      "title": "Define the llm catalog value types, the slot-fit rule and the OpenRouter model-list parser",
+      "layer": "domain",
+      "deps": [],
+      "acs": [
+        "AC-211"
+      ],
+      "dod": "Unit tests pass for the slot-fit rule (text, vision, image) and for the parser over a fixture copied from a real OpenRouter /models response, including per-token → per-million price conversion without rounding and the skip-and-log cases.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/ModelId.kt",
+        "backend/app/src/main/kotlin/telex/llm/ModelSlotKind.kt",
+        "backend/app/src/main/kotlin/telex/llm/CatalogModel.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/ModelListParser.kt",
+        "backend/app/src/test/kotlin/telex/llm/",
+        "backend/app/src/test/resources/openrouter/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t02-llm-catalog-types-and-parser.md"
+    },
+    {
+      "id": "T3",
+      "title": "Store the catalog snapshot in Postgres, load it at start and hold it in memory",
+      "layer": "infra",
+      "deps": [
+        "T1",
+        "T2"
+      ],
+      "acs": [
+        "AC-212"
+      ],
+      "dod": "An integration test replaces the snapshot in one transaction, restarts the context and reads back the same models and refresh times from memory, and the catalog state (current, update-failed, not-loaded) is derived as the contract defines.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/ModelCatalog.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/catalog/",
+        "backend/app/src/integrationTest/kotlin/telex/llm/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t03-catalog-snapshot-store.md"
+    },
+    {
+      "id": "T4",
+      "title": "Refresh the catalog from OpenRouter at start, every 24 h and every 5 min after a failure",
+      "layer": "app",
+      "deps": [
+        "T3"
+      ],
+      "acs": [
+        "AC-212",
+        "AC-225",
+        "AC-226"
+      ],
+      "dod": "Integration tests with a controlled Clock and a WireMock /models fake assert the start refresh, the 24 h refresh, the 5 min retry after a failure, the snapshot surviving a restart with the fake down, the ModelCatalogRefreshed event and the startup WARN when no key is set.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/internal/catalog/",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterProperties.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterModelsClient.kt",
+        "backend/app/src/main/kotlin/telex/llm/ModelCatalogRefreshed.kt",
+        "backend/app/src/main/resources/application.yaml",
+        "gradle/libs.versions.toml",
+        "backend/app/build.gradle.kts",
+        "backend/app/src/integrationTest/kotlin/telex/llm/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t04-catalog-refresher.md"
+    },
+    {
+      "id": "T5",
+      "title": "Build the in-call fallback loop in llm with one attempt per model, a per-attempt timeout and outcome classification",
+      "layer": "app",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-224",
+        "AC-228"
+      ],
+      "dod": "Unit tests over a fake ModelProvider show: a missing model is skipped as MISSING with no call, each move-on outcome tries the next model with the same request, CONTENT_REFUSED and INVALID_REQUEST stop at once, a stall past the attempt timeout counts as TIMEOUT, and the result carries every attempt in order.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/ModelCalls.kt",
+        "backend/app/src/main/kotlin/telex/llm/Attempt.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/call/",
+        "backend/app/src/main/kotlin/telex/llm/internal/call/ModelProvider.kt",
+        "backend/app/src/test/kotlin/telex/llm/call/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t05-fallback-loop.md"
+    },
+    {
+      "id": "T6",
+      "title": "Call OpenRouter for text, vision and image through the provider port and classify its errors",
+      "layer": "infra",
+      "deps": [
+        "T4",
+        "T5"
+      ],
+      "acs": [
+        "AC-224",
+        "AC-228"
+      ],
+      "dod": "Integration tests against WireMock chat and image endpoints show a text answer, a vision answer, an image answer, and each provider error mapped to its AttemptOutcome, with the fallback loop moving to the next model on a 429, a 5xx and a stall, and stopping on a content refusal.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/",
+        "backend/app/src/main/kotlin/telex/llm/internal/call/ModelProvider.kt",
+        "gradle/libs.versions.toml",
+        "backend/app/build.gradle.kts",
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/integrationTest/kotlin/telex/llm/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t06-openrouter-call-adapter.md"
+    },
+    {
+      "id": "T7",
+      "title": "Model the custom profile aggregate, ProfileRef and the profile rules in plain Kotlin",
+      "layer": "domain",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-213",
+        "AC-214",
+        "AC-215",
+        "AC-216",
+        "AC-217",
+        "AC-218",
+        "AC-219",
+        "AC-221"
+      ],
+      "dod": "Unit tests without Spring cover every name rule, the text-slot rule, slot capability, at most three models each once, the 20-profile limit, system read-only, the 'Balanced copy N' naming and the newly-added-model-left-the-catalog rule, each reporting its field code.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/ModelProfileId.kt",
+        "backend/app/src/main/kotlin/telex/agents/ProfileRef.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelSlotKind.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ModelProfile.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileRules.kt",
+        "backend/app/src/test/kotlin/telex/agents/profile/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t07-profile-aggregate-and-rules.md"
+    },
+    {
+      "id": "T8",
+      "title": "Resolve slots against the current catalog and estimate the price per 100 runs",
+      "layer": "domain",
+      "deps": [
+        "T2",
+        "T7"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-210",
+        "AC-223"
+      ],
+      "dod": "Unit tests cover every slot state (main-model, fallback, no-model-available, not-used), every chain-model availability, and every price state with the rounding edges, including the estimate following model B when model A left the catalog.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/SlotResolution.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/PriceEstimate.kt",
+        "backend/app/src/test/kotlin/telex/agents/profile/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t08-slot-resolution-and-price-estimate.md"
+    },
+    {
+      "id": "T9",
+      "title": "Build the three system profiles from settings and validate the Operator's slot overrides",
+      "layer": "app",
+      "deps": [
+        "T4",
+        "T8"
+      ],
+      "acs": [
+        "AC-225",
+        "AC-227"
+      ],
+      "dod": "Tests show the shipped models where nothing is overridden, exactly the Operator's models in an overridden slot, and one WARN naming profile, slot and model for each missing, unfit or beyond-third model at startup and after ModelCatalogRefreshed, with the app still running.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/SystemProfiles.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/SystemProfileProperties.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/OverrideValidator.kt",
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/test/kotlin/telex/agents/profile/",
+        "backend/app/src/integrationTest/kotlin/telex/agents/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t09-system-profiles-and-overrides.md"
+    },
+    {
+      "id": "T10",
+      "title": "Persist custom profiles, their chains and the default profile, always scoped by Owner",
+      "layer": "infra",
+      "deps": [
+        "T1",
+        "T7"
+      ],
+      "acs": [
+        "AC-218",
+        "AC-220",
+        "AC-222"
+      ],
+      "dod": "Integration tests show every query filters on owner_id, a save replaces the chains in one transaction, the advisory lock serializes two parallel 20th/21st creates so one fails, and deleting the default custom profile clears the default and reports it.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileRepository.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/DefaultProfileRepository.kt",
+        "backend/app/src/integrationTest/kotlin/telex/agents/profile/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t10-profile-repositories.md"
+    },
+    {
+      "id": "T11",
+      "title": "Serve the catalog view, the profile list with picker data, one profile and a new-profile draft",
+      "layer": "app",
+      "deps": [
+        "T3",
+        "T9",
+        "T10"
+      ],
+      "acs": [
+        "AC-211",
+        "AC-212",
+        "AC-213",
+        "AC-218",
+        "AC-222",
+        "AC-225",
+        "AC-226"
+      ],
+      "dod": "An @ApplicationModuleTest shows the list (3 system profiles then own ones by creation, default Balanced when none stored, slot states and prices from the current catalog), one profile only among the caller's own, the draft named '<name> copy N' with missing models kept, the draft refused at 20 profiles or without a key, and the catalog view with its state.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/ModelProfiles.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelCatalogView.kt",
+        "backend/app/src/main/kotlin/telex/agents/ProfileViews.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileQueries.kt",
+        "backend/app/src/integrationTest/kotlin/telex/agents/profile/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t11-profile-read-service.md"
+    },
+    {
+      "id": "T12",
+      "title": "Create, update and delete custom profiles and choose the default, each in one transaction",
+      "layer": "app",
+      "deps": [
+        "T11"
+      ],
+      "acs": [
+        "AC-51",
+        "AC-213",
+        "AC-218",
+        "AC-219",
+        "AC-220",
+        "AC-221",
+        "AC-223",
+        "AC-226"
+      ],
+      "dod": "An @ApplicationModuleTest shows create (fresh and duplicate), update with reorder, the limit re-checked under the lock, system profiles refused, delete resetting a default with ModelProfileDeleted published, and set-default refusing a profile with no text model while keeping an existing default.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/ModelProfiles.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelProfileDeleted.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileCommands.kt",
+        "backend/app/src/integrationTest/kotlin/telex/agents/profile/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t12-profile-write-service.md"
+    },
+    {
+      "id": "T13",
+      "title": "Answer profile slot calls through ProfileCalls and record every call without content",
+      "layer": "app",
+      "deps": [
+        "T6",
+        "T11"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-223",
+        "AC-224",
+        "AC-228",
+        "AC-229"
+      ],
+      "dod": "Integration tests with the WireMock provider show the answer naming the model and the fallback flag, the typed failures (no model available with no provider call, no model answered with every attempt, AI not configured, profile not found), one content-free model_call row with its attempts per call, and ModelCallFinished after the write.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/ProfileCalls.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelCallId.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelCallFinished.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/call/",
+        "backend/app/src/integrationTest/kotlin/telex/agents/call/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t13-profile-calls-and-call-records.md"
+    },
+    {
+      "id": "T14",
+      "title": "Expose the read endpoints: catalog, profile list, one profile and the draft",
+      "layer": "ports",
+      "deps": [
+        "T11"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-211",
+        "AC-212",
+        "AC-218",
+        "AC-222",
+        "AC-226"
+      ],
+      "dod": "MockMvc/RestClient integration tests return each documented 200 shape (camelCase, money as decimal strings, ProfileRef as a tagged object), 404 not-found identically for another Owner's and a missing profile, 409 on the draft at the limit or without a key, and 401 without a session.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/ModelsController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/ModelsDtos.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t14-models-read-endpoints.md"
+    },
+    {
+      "id": "T15",
+      "title": "Expose the write endpoints for profiles and the default profile with their problem codes",
+      "layer": "ports",
+      "deps": [
+        "T12",
+        "T14"
+      ],
+      "acs": [
+        "AC-51",
+        "AC-213",
+        "AC-214",
+        "AC-215",
+        "AC-216",
+        "AC-217",
+        "AC-219",
+        "AC-220",
+        "AC-221",
+        "AC-223"
+      ],
+      "dod": "Integration tests return 201 with Location for create, 200 for update, delete and default, 400 validation-failed with every field code at its errors[].field, 409 for system-profile-read-only, profile-limit-reached, ai-not-configured and no-text-model, 404 not-found for another Owner's profile, and 403 without the XSRF token.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/ModelsController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/ModelsDtos.kt",
+        "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t15-models-write-endpoints.md"
+    },
+    {
+      "id": "T16",
+      "title": "Add the models API hooks, the Models route and link, and the Model catalog tab",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-211",
+        "AC-212",
+        "AC-226"
+      ],
+      "dod": "Vitest tests render SCR-66's Model catalog tab in its loading, default, filtered, filtered-empty, update-failed, not-loaded and not-configured states from mocked getModelCatalog responses, with the tab in the URL and the Models link in PageFrame; pnpm run check is clean.",
+      "files_hint": [
+        "frontend/src/api/models.ts",
+        "frontend/src/app/AppRoutes.tsx",
+        "frontend/src/components/PageFrame/",
+        "frontend/src/pages/models/ModelsPage.tsx",
+        "frontend/src/pages/models/CatalogTab.tsx",
+        "frontend/src/components/Cost/",
+        "frontend/src/components/FilterBar/",
+        "frontend/src/components/DataTable/",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/model-profiles/tasks/t16-ui-models-page-and-catalog-tab.md"
+    },
+    {
+      "id": "T17",
+      "title": "Build the Profiles tab: the profile picker, profile cards, delete and the AI-not-set-up alert",
+      "layer": "ui",
+      "deps": [
+        "T16"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-51",
+        "AC-210",
+        "AC-218",
+        "AC-219",
+        "AC-220",
+        "AC-223",
+        "AC-226"
+      ],
+      "dod": "Vitest tests render every SCR-66 Profiles-tab state from mocked responses — price states, choosing and chosen, choose refused, fallback warning, no model available, no text model, not used, not in the catalog, system card, empty, limit reached, delete confirm and deleted, AI not set up — and pnpm run check is clean.",
+      "files_hint": [
+        "frontend/src/pages/models/ProfilesTab.tsx",
+        "frontend/src/components/ModelProfilePicker/",
+        "frontend/src/components/ModelProfileCard/",
+        "frontend/src/messages.ts",
+        "frontend/src/api/models.ts"
+      ],
+      "file": "docs/features/model-profiles/tasks/t17-ui-profiles-tab-and-picker.md"
+    },
+    {
+      "id": "T18",
+      "title": "Build the profile editor modal with the chain editor and the model chooser",
+      "layer": "ui",
+      "deps": [
+        "T17"
+      ],
+      "acs": [
+        "AC-213",
+        "AC-214",
+        "AC-215",
+        "AC-216",
+        "AC-217",
+        "AC-221",
+        "AC-222"
+      ],
+      "dod": "Vitest tests render SCR-34 in every state — loading, default, duplicate, empty slot, reorder with the polite announcement, choosing model with disabled-with-reason rows, slot full, saving, validation with focus on the first error, save refused, not found (SCR-91), limit/AI on open and cancel — and pnpm run check is clean.",
+      "files_hint": [
+        "frontend/src/pages/models/ProfileEditorModal.tsx",
+        "frontend/src/components/ChainEditor/",
+        "frontend/src/components/ModelChooser/",
+        "frontend/src/app/AppRoutes.tsx",
+        "frontend/src/messages.ts",
+        "frontend/src/api/models.ts"
+      ],
+      "file": "docs/features/model-profiles/tasks/t18-ui-profile-editor.md"
+    },
+    {
+      "id": "T19",
+      "title": "Add Playwright end-to-end tests for the Models page at 360 px and 1280 px with axe and a 500-model load timing",
+      "layer": "tests",
+      "deps": [
+        "T15",
+        "T18"
+      ],
+      "acs": [
+        "AC-51",
+        "AC-211",
+        "AC-213",
+        "AC-220"
+      ],
+      "dod": "Playwright runs the browse-catalog, choose-default, duplicate-and-save and delete-default journeys at both widths against the compose stack with a WireMock OpenRouter fake serving 500 models, axe reports 0 violations on SCR-66 and SCR-34, and the Models page load stays within p95 ≤ 1 s.",
+      "files_hint": [
+        "e2e/tests/models.spec.ts",
+        "e2e/support/",
+        "compose.yaml",
+        ".github/workflows/ci.yml"
+      ],
+      "file": "docs/features/model-profiles/tasks/t19-e2e-models-page.md"
+    },
+    {
+      "id": "T20",
+      "title": "Document the AI settings in the README and add the real-call smoke check per slot",
+      "layer": "docs",
+      "deps": [
+        "T9",
+        "T13"
+      ],
+      "acs": [
+        "AC-225",
+        "AC-226"
+      ],
+      "dod": "The README lists every new setting with its default, a missing key is described as a warning not a failure, and RealProviderSmokeIT (skipped without TELEX_OPENROUTER_API_KEY) answers a text, a vision and an image call through a system profile, with its output recorded in the PR.",
+      "files_hint": [
+        "README.md",
+        "backend/app/src/integrationTest/kotlin/telex/agents/RealProviderSmokeIT.kt",
+        "docs/docs/03-product-spec.md"
+      ],
+      "file": "docs/features/model-profiles/tasks/t20-readme-and-real-call-smoke.md"
+    }
+  ]
+}
