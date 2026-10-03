@@ -5,10 +5,10 @@ import { landAfterSignIn } from "./landing";
 beforeEach(() => localStorage.clear());
 
 describe("landing after sign-in", () => {
-  it("AC-34: a created account goes to the passkey offer, discarding the remembered page", () => {
+  it("AC-173: a created account goes to the passkey offer, keeping the remembered page", () => {
     rememberDestination("/profile#sessions");
     expect(landAfterSignIn(true)).toBe("/welcome/passkey");
-    expect(localStorage.getItem("telex.destination")).toBeNull();
+    expect(localStorage.getItem("telex.destination")).toBe("/profile#sessions");
   });
 
   it("AC-101: an existing account lands on the remembered teleX page", () => {

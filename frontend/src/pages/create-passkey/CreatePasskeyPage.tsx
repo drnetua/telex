@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
+import { takeRememberedDestination } from "../../api/destination";
 import { routeFailure } from "../auth/failure";
 
 type Step = "checking" | "default" | "unsupported" | "waiting" | "failed";
@@ -26,9 +27,13 @@ export function CreatePasskeyPage() {
     };
   }, [flagged]);
 
-  if (!flagged) return <Navigate to="/inbox" replace />;
+  const reloaded = useRef<string | null>(null);
+  if (!flagged) {
+    reloaded.current ??= takeRememberedDestination();
+    return <Navigate to={reloaded.current} replace />;
+  }
 
-  const leave = () => void navigate("/inbox", { replace: true });
+  const leave = () => void navigate(takeRememberedDestination(), { replace: true });
 
   async function create() {
     setStep("waiting");

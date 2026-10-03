@@ -45,7 +45,10 @@ function stubCapable(create: () => Promise<unknown>) {
   Object.defineProperty(navigator, "credentials", { value: { create }, configurable: true });
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 describe("SCR-09 Create a passkey", () => {
   it("default state offers Create a passkey and Not now", async () => {
@@ -150,5 +153,46 @@ describe("SCR-09 Create a passkey", () => {
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Not now" }));
     expect((await screen.findByTestId("where")).textContent).toBe("/inbox");
+  });
+
+  describe("AC-173: lands on the remembered section", () => {
+    it("Not now goes to the remembered section and clears it", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      stubCapable(() => Promise.resolve(credential));
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Not now" }));
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+      expect(localStorage.getItem("telex.destination")).toBeNull();
+    });
+
+    it("creating a passkey goes to the remembered section", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValueOnce(json(200, options))
+          .mockResolvedValueOnce(json(200, { success: true })),
+      );
+      stubCapable(() => Promise.resolve(credential));
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Create a passkey" }));
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+    });
+
+    it("unsupported Continue goes to the remembered section", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      vi.stubGlobal("PublicKeyCredential", undefined);
+      setup();
+      await userEvent.click(await screen.findByRole("button", { name: "Continue" }));
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+    });
+
+    it("no-flag goes to the remembered section", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      setup(null);
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+      expect(localStorage.getItem("telex.destination")).toBeNull();
+    });
   });
 });
