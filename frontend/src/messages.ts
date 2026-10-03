@@ -155,7 +155,6 @@ export const messages = {
     title: "Inbox",
     empty: "Connect your Telegram account to start.",
     connect: "Connect Telegram",
-    note: "Telegram linking is coming next.",
   },
   theme: {
     label: "Theme",

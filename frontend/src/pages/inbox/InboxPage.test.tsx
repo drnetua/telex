@@ -9,6 +9,14 @@ import { InboxPage } from "./InboxPage";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+const account = (id: string, displayName: string) => ({
+  id,
+  displayName,
+  phone: { countryCode: "380", lastDigits: "42" },
+  state: "connected",
+  chatSync: { chatsSynced: 3, chatsTotal: 3, completedAt: "2026-01-01T00:00:00Z" },
+  linkedAt: "2026-01-01T00:00:00Z",
+});
 const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
 
 function setup() {
@@ -25,6 +33,7 @@ function setup() {
               </AppShell>
             }
           />
+          <Route path="/connect-telegram" element={<h1>Wizard page</h1>} />
           <Route path="/sign-in" element={<h1>Sign in page</h1>} />
         </Routes>
       </MemoryRouter>
@@ -36,11 +45,21 @@ function setup() {
 afterEach(() => vi.unstubAllGlobals());
 
 /** Answers by URL: the shell also reads the pulse and linked accounts for its banners. */
-function routed(handlers: { signOut: () => Response }) {
+function routed(handlers: {
+  signOut: () => Response;
+  start?: () => Response;
+  accounts?: unknown[];
+}) {
   const fetchMock = vi.fn().mockImplementation((url: string) => {
     if (url === "/api/v1/sign-out") return Promise.resolve(handlers.signOut());
-    if (url === "/api/v1/linked-accounts") return Promise.resolve(json(200, { items: [] }));
     if (url === "/api/v1/pulse") return Promise.resolve(json(200, { inboxCount: 0, conditions: [] }));
+    if (url === "/api/v1/linked-accounts")
+      return Promise.resolve(json(200, { items: handlers.accounts ?? [] }));
+    if (url === "/api/v1/linking-attempt")
+      return Promise.resolve(
+        handlers.start?.() ??
+          json(201, { step: "phone", origin: "inbox", targetLinkedAccountId: null }),
+      );
     return Promise.resolve(json(200, me));
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -49,28 +68,63 @@ function routed(handlers: { signOut: () => Response }) {
 
 describe("SCR-10 Inbox", () => {
   it("AC-100: empty Inbox offers the single step Connect Telegram", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(200, me)));
+    routed({ signOut: () => new Response(null, { status: 204 }) });
     setup();
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
-    expect(screen.getByText("Connect your Telegram account to start.")).toBeInTheDocument();
+    expect(await screen.findByText("Connect your Telegram account to start.")).toBeInTheDocument();
     // C5: screens.md SCR-10 has the h1 and the sentence only, no extra heading.
     expect(screen.getAllByRole("heading")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 
-  it("Connect Telegram shows the info toast, and shows it afresh on a second choice", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(200, me)));
+  it("AC-01: Connect Telegram starts linking from the inbox and opens the wizard", async () => {
+    const fetchMock = routed({ signOut: () => new Response(null, { status: 204 }) });
     setup();
-    const connect = await screen.findByRole("button", { name: "Connect Telegram" });
-    await userEvent.click(connect);
-    const first = await screen.findByText("Telegram linking is coming next.");
-    await userEvent.click(connect);
-    // The toast is dropped and shown again, so the second choice gets a full display time.
-    await waitFor(() => {
-      const second = screen.getByText("Telegram linking is coming next.");
-      expect(second).not.toBe(first);
-      expect(first.isConnected).toBe(false);
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Telegram" }));
+    expect(await screen.findByRole("heading", { name: "Wizard page" })).toBeInTheDocument();
+    const call = fetchMock.mock.calls.find((c) => c[0] === "/api/v1/linking-attempt") as [
+      string,
+      RequestInit,
+    ];
+    expect(call[1].method).toBe("POST");
+    expect(JSON.parse(call[1].body as string)).toEqual({ origin: "inbox" });
+    expect(screen.queryByText("Telegram linking is coming next.")).not.toBeInTheDocument();
+  });
+
+  it("AC-119: a refused start shows the not-set-up toast and does not open the wizard", async () => {
+    routed({
+      signOut: () => new Response(null, { status: 204 }),
+      start: () => json(503, { code: "telegram-linking-not-set-up" }),
     });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Telegram" }));
+    expect(
+      await screen.findByText(
+        "Telegram linking isn't set up on this installation yet. The person who runs teleX has to finish the setup.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
+  });
+
+  it("AC-01: with accounts the Inbox lists one line per account and no Connect step", async () => {
+    routed({
+      signOut: () => new Response(null, { status: 204 }),
+      accounts: [account("a1", "Ann"), account("a2", "Bob")],
+    });
+    setup();
+    expect(await screen.findByText("Ann")).toBeInTheDocument();
+    expect(screen.getByText("Bob")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Ann|Bob/ })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: /Ann/ })[0]).toHaveAttribute("href", "/accounts");
+    expect(screen.queryByRole("button", { name: "Connect Telegram" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("+380 ••• ••42")).toHaveLength(2);
+  });
+
+  it("shows loading while linked accounts load", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+    setup();
+    expect(await screen.findByRole("status")).toHaveAttribute("aria-busy", "true");
   });
 
   it("AC-95: Sign out posts, clears cached Owner data and lands on sign-in", async () => {
