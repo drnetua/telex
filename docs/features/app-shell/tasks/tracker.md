@@ -11,7 +11,7 @@
 | T4 | Create the inbox module (InboxSource + sum) and the shared StatusConditionSource contract | wiring | Anton Husiev | S | — | done |
 | T5 | Serve me with preferences, PATCH /me/preferences, the detected-timezone save and GET /time-zones | ports | Anton Husiev | M | T3 | todo |
 | T6 | Serve GET /api/v1/pulse and the e2e-profile fixture Inbox and condition sources | ports | Anton Husiev | M | T4 | todo |
-| T7 | Add the connectivity state and the 3 s pulse query, and narrow fetch-client failure routing | ui | Anton Husiev | M | — | todo |
+| T7 | Add the connectivity state and the 3 s pulse query, and narrow fetch-client failure routing | ui | Anton Husiev | M | — | done |
 | T8 | Apply the theme before first paint, follow System, sync tabs and switch once to the account theme | ui | Anton Husiev | S | — | done |
 | T9 | Build ThemeSwitch (segmented and menu), the Toast action prop and the Appearance card on SCR-64 | ui | Anton Husiev | M | T8 | todo |
 | T10 | Port AppShell (C-01) from the section registry: side menu, phone bottom bar, More sheet and Sign out | ui | Anton Husiev | L | T9 | todo |

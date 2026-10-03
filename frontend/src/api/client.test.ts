@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { connectivity, resetConnectivity, setShellActive } from "../shell/connectivity";
 import { apiFetch, ApiFailure } from "./client";
 
 const problem = (status: number, code: string) =>
@@ -13,6 +14,7 @@ describe("apiFetch (AC-101, AC-102, AC-96, AC-93)", () => {
     document.cookie = "XSRF-TOKEN=tok123";
   });
   afterEach(() => {
+    resetConnectivity();
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
@@ -70,5 +72,68 @@ describe("apiFetch (AC-101, AC-102, AC-96, AC-93)", () => {
     const assertion = expect(p).rejects.toMatchObject({ route: "unavailable" });
     await vi.advanceTimersByTimeAsync(10_000);
     await assertion;
+  });
+
+  it("outside the shell a network error still routes to unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network")));
+    await expect(apiFetch("/api/v1/me")).rejects.toMatchObject({ route: "unavailable" });
+    expect(connectivity.get()).toBe("online");
+  });
+
+  describe("inside the shell (AC-176, AC-177)", () => {
+    const hang = (_u: string, init: RequestInit) =>
+      new Promise((_, reject) =>
+        init.signal?.addEventListener("abort", () => reject(new DOMException("a", "AbortError"))),
+      );
+
+    beforeEach(() => {
+      resetConnectivity();
+      setShellActive(true);
+    });
+
+    it.each([502, 503, 504])("routes %i, whatever its body, to connectivity", async (status) => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(status, "mail-unavailable")));
+      await expect(apiFetch("/api/v1/me")).rejects.toMatchObject({ route: "connectivity" });
+      expect(connectivity.get()).toBe("not-responding");
+    });
+
+    it("routes a network error to connectivity", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network")));
+      await expect(apiFetch("/api/v1/me")).rejects.toMatchObject({ route: "connectivity" });
+      expect(connectivity.get()).toBe("not-responding");
+    });
+
+    it("routes no answer within 10 s to connectivity", async () => {
+      vi.stubGlobal("fetch", vi.fn(hang));
+      const assertion = expect(apiFetch("/api/v1/me")).rejects.toMatchObject({
+        route: "connectivity",
+      });
+      await vi.advanceTimersByTimeAsync(10_000);
+      await assertion;
+      expect(connectivity.get()).toBe("not-responding");
+    });
+
+    it("honours a per-call timeoutMs", async () => {
+      vi.stubGlobal("fetch", vi.fn(hang));
+      const assertion = expect(
+        apiFetch("/api/v1/pulse", { timeoutMs: 2000 }),
+      ).rejects.toMatchObject({ route: "connectivity" });
+      await vi.advanceTimersByTimeAsync(2000);
+      await assertion;
+    });
+
+    it.each([
+      [500, "internal-error"],
+      [403, "forbidden"],
+    ])("still routes %i %s to unavailable and leaves connectivity alone", async (status, code) => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(status, code)));
+      await expect(apiFetch("/api/v1/me")).rejects.toMatchObject({ route: "unavailable" });
+      expect(connectivity.get()).toBe("online");
+    });
+
+    it("keeps 401 routes", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(problem(401, "unauthenticated")));
+      await expect(apiFetch("/api/v1/me")).rejects.toMatchObject({ route: "sign-in" });
+    });
   });
 });

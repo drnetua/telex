@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "./AppRoutes";
 import { FailureBoundary } from "./FailureBoundary";
+import { connectivity, resetConnectivity, setShellActive } from "../shell/connectivity";
 import { createAppQueryClient } from "./queryClient";
 
 const json = (status: number, body: unknown) =>
@@ -31,7 +32,31 @@ async function sendFromSignIn() {
   await userEvent.click(screen.getByRole("button", { name: "Email me a sign-in link" }));
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetConnectivity();
+});
+
+describe("failure routing inside the shell (AC-176)", () => {
+  it("a 503 on an action keeps the screen and reports not-responding", async () => {
+    setShellActive(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(down()));
+    setup("/sign-in");
+    await sendFromSignIn();
+    await vi.waitFor(() => expect(connectivity.get()).toBe("not-responding"));
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeVisible();
+  });
+
+  it("a 500 on an action still shows SCR-93", async () => {
+    setShellActive(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(500, { code: "internal-error" })));
+    setup("/sign-in");
+    await sendFromSignIn();
+    await unavailable();
+    expect(connectivity.get()).toBe("online");
+  });
+});
 
 describe("SCR-93 Retry carries the page action's outcome (AC-102, AC-103)", () => {
   it("503 on Send, then Retry, lands on Check your email", async () => {

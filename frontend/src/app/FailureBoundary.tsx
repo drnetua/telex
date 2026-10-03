@@ -19,7 +19,10 @@ export function FailureBoundary({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     failureBus.handler = (failure, retry, source) => {
-      if (failure.route === "sign-in") {
+      if (failure.route === "connectivity") {
+        // Inside the shell the Status Banner owns this (already reported to connectivity); the screen stays.
+        return;
+      } else if (failure.route === "sign-in") {
         saved.current = null;
         setPending(null);
         rememberDestination(location.pathname + location.search + location.hash);
