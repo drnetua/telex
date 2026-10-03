@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { useChangeTheme } from "../../api/preferences";
 import { messages } from "../../messages";
 import type { ThemeChoice } from "../../shell/theme";
@@ -50,13 +56,14 @@ interface PartProps {
 }
 
 function Segmented({ shown, onChoose }: PartProps) {
+  const group = useId();
   return (
     <div className="form-selectgroup" role="radiogroup" aria-label={m.label}>
       {options.map((o) => (
         <label key={o.value} className="form-selectgroup-item">
           <input
             type="radio"
-            name="theme"
+            name={group}
             className="form-selectgroup-input"
             value={o.value}
             checked={shown === o.value}
@@ -77,6 +84,33 @@ function Menu({ shown, onChoose }: PartProps) {
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const current = options.find((o) => o.value === shown) ?? options[2];
+
+  // Roving focus: the checked item takes focus on open, arrows/Home/End move it within the menu.
+  useEffect(() => {
+    if (!open) return;
+    const items = root.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"]');
+    const checked = Array.from(items ?? []).find(
+      (el) => el.getAttribute("aria-checked") === "true",
+    );
+    (checked ?? items?.[0])?.focus();
+  }, [open]);
+
+  const onMenuKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitemradio"]'),
+    );
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    const target: Record<string, number> = {
+      ArrowDown: (at + 1) % items.length,
+      ArrowUp: (at - 1 + items.length) % items.length,
+      Home: 0,
+      End: items.length - 1,
+    };
+    const next = target[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    items[next]?.focus();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -110,7 +144,7 @@ function Menu({ shown, onChoose }: PartProps) {
         {m.label}
       </button>
       {open ? (
-        <div className="dropdown-menu show" role="menu" aria-label={m.label}>
+        <div className="dropdown-menu show" role="menu" aria-label={m.label} onKeyDown={onMenuKey}>
           {options.map((o) => (
             <button
               key={o.value}

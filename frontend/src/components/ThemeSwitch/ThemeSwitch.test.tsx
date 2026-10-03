@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
@@ -174,6 +174,59 @@ describe("ThemeSwitch menu", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(attr()).toBe("dark");
     expect(patches).toHaveLength(2);
+  });
+});
+
+describe("ThemeSwitch keyboard (review C2, C6)", () => {
+  it("AC-43: two segmented switches have distinct radio group names and arrows never cross into the other", async () => {
+    render(
+      <QueryClientProvider client={client}>
+        <div data-testid="a">
+          <ThemeSwitch variant="segmented" />
+        </div>
+        <div data-testid="b">
+          <ThemeSwitch variant="segmented" />
+        </div>
+      </QueryClientProvider>,
+    );
+    const a = within(screen.getByTestId("a")).getAllByRole("radio");
+    const b = within(screen.getByTestId("b")).getAllByRole("radio");
+    expect(a[0]?.getAttribute("name")).not.toBe(b[0]?.getAttribute("name"));
+    expect(new Set(a.map((r) => r.getAttribute("name"))).size).toBe(1);
+    a[2]?.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(b).not.toContain(document.activeElement);
+    expect(b.some((r) => (r as HTMLInputElement).checked && r !== b[0])).toBe(false);
+    expect(a).toContain(document.activeElement);
+  });
+
+  it("the menu focuses the checked item on open and ArrowUp/ArrowDown/Home/End move focus", async () => {
+    setup("menu");
+    const trigger = screen.getByRole("button", { name: "Theme" });
+    await userEvent.click(trigger);
+    const items = screen.getAllByRole("menuitemradio");
+    expect(items[0]).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(items[1]).toHaveFocus();
+    await userEvent.keyboard("{End}");
+    expect(items[2]).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(items[0]).toHaveFocus();
+    await userEvent.keyboard("{ArrowUp}");
+    expect(items[2]).toHaveFocus();
+    await userEvent.keyboard("{Home}");
+    expect(items[0]).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("the menu opens with focus on a non-first checked item", async () => {
+    client.setQueryData(meKey, { ...me, theme: "dark" });
+    localStorage.setItem(THEME_KEY, "dark");
+    setup("menu");
+    await userEvent.click(screen.getByRole("button", { name: "Theme" }));
+    expect(screen.getByRole("menuitemradio", { name: "Dark" })).toHaveFocus();
   });
 });
 
