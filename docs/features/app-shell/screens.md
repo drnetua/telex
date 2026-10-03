@@ -162,7 +162,7 @@ W-S5  section-load-failed (content area; navigation and banner stay)
 W-S6  theme-menu-open (desktop sidebar footer)
 | +----------------------+ |
 | | (sun)     Light      | |   dropdown-menu, menuitemradio
-| | (moon)    Dark     ✓ | |   ✓ + aria-checked on the saved one
+| | (moon)    Dark     ✓ | |   ✓ + aria-checked on the one applied here
 | | (desktop) System     | |
 | +----------------------+ |
 | [(moon) Theme ▴]         |
@@ -352,7 +352,7 @@ W-09c  failed
 
 | State | Trigger / condition | Components (from the inventory) | Source-ref |
 |---|---|---|---|
-| loading | The Inbox page's data (`getMe` for `linkedAccountCount`) has no cached answer yet: a client-side navigation into the Inbox right after sign-in, or a refetch after recovery with nothing cached | Inside `AppShell` with Inbox current: h1 "Inbox" + `LoadState state="loading"` (`rows=3`) in the content. The navigation and counter stay | W-10b |
+| loading | N/A: `AppLayout` renders the shell only once `getMe` has answered, so the Inbox never mounts without `me`. The shell's W-S0 "starting" state covers that moment, and drawing the shell earlier would break AC-173 (nothing of the shell until a live session). `InboxPage` keeps its `LoadState` branch only as a guard (review 2026-10-03-3, R3-1) | — | — |
 | default (empty) | Start screen without another destination (AC-170). `linkedAccountCount = 0` and no Inbox source exists before E11 (AC-174, AC-100) | Inside `AppShell` with Inbox current: h1 "Inbox", `EmptyState kind="first"` (icon `brand-telegram`) "Connect your Telegram account to start." + "Connect Telegram" | W-10a |
 | note | "Connect Telegram" chosen (platform-skeleton §8 OQ default) | `Toast` info "Telegram linking is coming next." (dismisses itself; choosing again shows it again) | W-10a (toast) |
 | with-items | N/A before E11: no feature puts items in the Inbox. The counter alone is tested through the e2e fixture source (AC-174) | — | — |
@@ -387,7 +387,7 @@ Platform-skeleton's Passkeys and Sign-in sessions cards and all their states are
 | State | Trigger / condition | Components (from the inventory) | Source-ref |
 |---|---|---|---|
 | default | Loaded | h1 "Profile and security", `text-secondary` "Signed in as {email}", then the cards Appearance, Time zone, Passkeys, Sign-in sessions | W-64a |
-| theme-default | `Me.theme` | Card "Appearance": `ThemeSwitch variant="segmented"` (Tabler `form-selectgroup`, radio, `aria-label` "Theme"): `sun` "Light", `moon` "Dark", `device-desktop` "System", with the saved one checked. `small` "System follows your device's light or dark mode." | W-64a |
+| theme-default | `Me.theme` | Card "Appearance": `ThemeSwitch variant="segmented"` (Tabler `form-selectgroup`, radio, `aria-label` "Theme"): `sun` "Light", `moon` "Dark", `device-desktop` "System", with the theme applied on this device checked. `small` "System follows your device's light or dark mode." | W-64a |
 | theme-applied | An option chosen (AC-179, seed flow 3) | `data-bs-theme` changes on every screen at once (≤ 200 ms, no reload). The choice is remembered on this device, the `ThemeSwitch` in the shell shows it too, and `changeMyPreferences {theme}` is sent. The radios stay enabled, and a newer choice supersedes the one in flight | W-64a |
 | theme-saved | `200` | No message: the checked option already shows the saved choice | — |
 | theme-save-failed | `400 unknown-theme`, `403`, or no answer (AC-182) | The theme reverts to the previous choice everywhere and the device memory reverts. Error `Toast` "Your theme wasn't saved." with action **"Try again"**, which re-applies and re-sends the failed choice. With no answer, the shell banner also shows | W-64a (toast) |
@@ -603,7 +603,7 @@ The pipeline should close these. Each has a default that `implement` follows unt
 
 1. **No desktop header bar in E06.** The reference AppShell's header holds only the account switcher and Stop all, and neither exists yet (spec §3). Default: no header bar on desktop, and the banner sits at the top of the main column; E02/E04 or E23 add the bar with its first item. Owner: Designer, at E02's `/sdd:screens`.
 2. **Theme in the shell and the picker as a dialog differ from `ux-flows.md`**, whose platform decisions say "Theme and timezone are edited in place on SCR-64. No separate page or dialog." Decided here (user, 2026-10-03): theme also in the sidebar footer and under More, and the timezone picker in a dialog. AC-179 ("on Profile and security") still holds. Done: `ux-flows.md` §Platform decisions and Flow US-73 were updated (T27).
-3. **Every 502/503/504 inside the shell goes to the banner, whatever its body** (user decision 2026-10-03). `sad.md` §8 Failure routing, ADR-0004 and `contracts/openapi.yaml` `info.description` say "from the proxy". Their wording should drop that qualifier. Owner: Architect, before `/sdd:tasks`.
+3. **Every 502/503/504 inside the shell goes to the banner, whatever its body** (user decision 2026-10-03). `sad.md` §8 Failure routing, ADR-0004 and `contracts/openapi.yaml` `info.description` said "from the proxy". Done: their wording no longer says "from the proxy" (T34).
 4. **A failed timezone save has no AC** (ux-flows ledger 3, sad §6 flags). Default: drawn like AC-182 (`tz-save-failed` with Try again, `tz-refused`). Owner: PM, at the next `clarify` pass.
-5. **Three new SCR ids** (SCR-69, SCR-94, SCR-95) still need adding to `docs/docs/03-product-spec.md`. Owner: PM.
+5. **Three new SCR ids** (SCR-69, SCR-94, SCR-95) still need adding to `docs/docs/03-product-spec.md`. Owner: PM, due before `/sdd:ship app-shell`.
 6. **Spec §8 OQs settled here** (phone bar sections, banner importance order). Done: `spec.md` §8 ticks both, dated 2026-10-03 (T27).

@@ -8,7 +8,7 @@ files_hint: ["docs/features/app-shell/screens.md", "docs/features/app-shell/sad.
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-3 (R3-1, R3-4, R3-5)"
-status: "todo"
+status: "done"
 ---
 
 # T34 — Bring the docs in line after review 3: SCR-10 loading N/A, proxy wording, settled risks, applied-theme wording, gap 5 due date, both-projects check deviation

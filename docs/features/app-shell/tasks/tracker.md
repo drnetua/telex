@@ -38,6 +38,6 @@
 | T31 | e2e: make the narrowed AC-102 test outlast the action's 10 s timeout | tests | Anton Husiev | S | — | done |
 | T32 | Bring the docs in line after review 2: ADR-0006 deviation heading, draft labels, inventory line refs, applied-theme wording, deferred visual tier, load-test sample deviation | docs | Anton Husiev | S | T29, T30, T31 | done |
 | T33 | Keep a superseded theme save off SCR-93's Retry | ui | Anton Husiev | S | — | done |
-| T34 | Bring the docs in line after review 3: SCR-10 loading N/A, proxy wording, settled risks, applied-theme wording, gap 5 due date, both-projects check deviation | docs | Anton Husiev | S | T33 | todo |
+| T34 | Bring the docs in line after review 3: SCR-10 loading N/A, proxy wording, settled risks, applied-theme wording, gap 5 due date, both-projects check deviation | docs | Anton Husiev | S | T33 | done |
 
 **Total:** 34 tasks (T20–T27 are review follow-ups from `_review/review-2026-10-03.md`, T28–T32 from `_review/review-2026-10-03-2.md`, T33–T34 from `_review/review-2026-10-03-3.md`), ~21.5 person-days (S ≈ 0.5 d, M ≈ 0.75 d, L ≈ 1 d).
