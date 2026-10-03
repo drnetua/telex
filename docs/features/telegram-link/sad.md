@@ -369,21 +369,27 @@ sequenceDiagram
 
 ## 8. Crosscutting concepts
 
-<!-- 🎯 Why: CROSS-CUTTING PATTERNS spanning several modules: logging, errors, authorization, ID
-     strategy, events, caching. ⭐ The second-densest section. A pattern inside one module is NOT
-     here; a project-wide convention belongs in the convention file.
-     📋 Write: a table — concept / convention / where defined. One row per concept.
-     📌 e.g. «sortable time-based IDs generated in the app layer» as a default from the convention file. -->
+Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.md` §Conventions, platform-skeleton SAD §8). The rows below are those conventions plus what this feature adds.
 
 | Concept | Convention | Where defined |
 |---|---|---|
-| Logging | <e.g. structured, fields `module=<name>`> | <convention file §X or here> |
-| Authentication | <e.g. token-based via middleware> | <convention file §X> |
-| Error handling | <e.g. domain sentinel → ports error mapping → JSON> | <convention file §X> |
-| ID strategy | <e.g. sortable time-based ID in the app layer> | <convention file §X> |
-| Internationalisation | <e.g. N/A, single language> | — |
-| Observability | <e.g. tracing on the request boundary> | — |
-| Events | <module-specific patterns, if any> | <here> |
+| Logging | Spring Boot default logging with module loggers. **Never logged:** phone numbers, login codes, passwords, password hints, TDLib keys, Telegram names, chat titles, raw TDLib objects. Accounts appear in logs only as `LinkedAccountId` or `TelegramSessionId`. TDLib's own log goes to the app log at verbosity 1 (errors only) | here |
+| Authentication | Unchanged E01 filter chain. Every account, wizard and stream endpoint needs a live Sign-in Session | platform-skeleton ADR-0001 |
+| Authorization | Owner-scoped by construction. `messaging` takes the `OwnerId` from the caller and filters every Linked Account and Channel query on `owner_id`. Another Owner's account behaves as missing, with the same `not-found` problem, for list, get, re-sign-in, unlink and chats (AC-03). The Operator has no endpoint that reads Linked Accounts (AC-120) | here |
+| One Owner per Telegram account | Unique index on `linked_account.telegram_user_id` across the installation. The check runs after Telegram reports who signed in, not on the phone number (AC-04, AC-108). Two Owners finishing at the same moment are settled by the index: the loser's session is logged out | ADR-0002 |
+| Account limit | Checked when an attempt starts and again, inside the insert transaction, when it finishes (AC-115). Session-lost accounts count, re-sign-in takes no new place, and a lowered limit never unlinks. The final count runs under a row lock on the Owner's accounts, so two parallel finishes can't both take the last place | here |
+| Linking attempt | At most one per Owner, held in memory by `messaging`. It holds the open Telegram session, the step, where it started (SCR-10 or SCR-60), the target account for "Sign in again", the Sign-in Session that last stepped it and the last-step time. It is discarded on cancel, after 15 min without a step (a one-minute sweep), when the Sign-in Session that last stepped it is no longer live (AC-110), or on restart. Discarding always closes and destroys its Telegram session. An attempt never authorizes without immediately becoming a Linked Account or being logged out, so no teleX device is left behind (AC-109) | here |
+| Telegram wait (flood wait) | Not stored by teleX. Telegram itself refuses the same number again before the wait ends, and the wizard shows the remaining time from Telegram's answer as a countdown (AC-02). teleX adds no retries | here |
+| Secrets | Login code and password go from the request straight to TDLib and are never stored or echoed. TDLib keys are generated with `SecureRandom` (32 bytes) and stored only sealed. The master key comes only from config | ADR-0003 |
+| Personal data minimisation | Stored per Linked Account: Telegram user id, display name, **masked** phone (country code and last two digits only; the full number is never stored), state, sealed key, sync counts. Chat-list rows: Telegram chat id, type, title, folder ids, archived flag, unread count, order | here |
+| Error handling | RFC 9457 via `ProblemHandler`. New codes, each keying a `messages.ts` entry: `telegram-linking-not-set-up`, `linked-account-limit-reached`, `linking-attempt-not-found` (expired, cancelled or session ended), `telegram-phone-invalid`, `telegram-phone-unregistered`, `telegram-phone-banned`, `telegram-code-wrong`, `telegram-code-expired`, `telegram-wait-required` (with the retry time), `telegram-password-wrong` (with the hint), `telegram-account-owned-by-another-owner`, `telegram-account-already-linked`, `telegram-account-mismatch` (Sign in again with a different account), plus `not-found`. Exact statuses are settled by `/sdd:api` | `CLAUDE.md` §Errors + here |
+| ID strategy | UUIDv7 typed ids: `LinkedAccountId`, `ChannelId` (messaging) and `TelegramSessionId` (telegram). Telegram's own user and chat ids are stored as `bigint` attributes, never as keys of our aggregates | foundation ADR-0003 |
+| Events | Modulith JDBC registry. `messaging` publishes `AccountLinked`, `AccountUnlinked` (durable, survives restart, NFR-06), `LinkedAccountStateChanged` and `LinkedAccountSyncProgressed` (throttled to one per second per account). `telegram` publishes `TelegramSessionStateChanged` and `TelegramChatsChanged`. Payloads carry ids and states only, with no names, phones or titles | ADR-0002 |
+| Live updates | One SSE stream per tab, carrying invalidation hints only (`linked-accounts`). It counts as background, so it never bumps session activity. A heartbeat runs every 25 s, and the SPA refetches everything after a reconnect | ADR-0005 |
+| Concurrency | Telegram callbacks arrive on TDLib's threads. The adapter hands each one to a virtual thread, and `messaging` applies state changes per account in order (state changes carry TDLib's sequence, and stale ones are dropped). Attempt steps are serialized per Owner | here |
+| Time | The injectable `java.time.Clock` bean drives the 15-min attempt expiry, the sweeps and the countdown base. The integration tests use a fixed clock with the `fake` adapter (AC-109, AC-117 within 5 min) | platform-skeleton §8 |
+| Internationalisation | English only. Copy in `frontend/src/messages.ts`, sentence case, no emoji. Telegram's own error texts are never shown raw; each maps to a code above | design-system README |
+| Observability | Micrometer metrics listed in §7 | §7 |
 
 ## 9. Architecture decisions
 
