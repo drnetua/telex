@@ -338,25 +338,34 @@ sequenceDiagram
 
 ## 7. Deployment view
 
-<!-- 🎯 Why: the TOPOLOGY DevOps must know without reading the deploy charts — how many replicas,
-     where the background worker lives, AT WHAT NUMBERS we scale.
-     📋 Write: 2–3 sentences on topology + monitoring + concrete threshold numbers.
-     📌 e.g. «500 authors → partition by quarter» (not «we'll think about scale later»).
-     🎯 N/A allowed for XS/S that reuses an existing deployment unit with no change.
-     Deployment-diagram scaffold → templates/deployment.md. -->
+**Topology.** One app instance plus one Postgres (foundation ADR-0001; spec §6 availability N/A). This feature makes "one instance" a hard rule. TDLib clients live in the app process and own their session directories, so two instances would run two clients on the same session.
+- **Image.** The existing multi-stage `Dockerfile` is unchanged in shape. The TDLight natives come in through Gradle inside the boot jar (ADR-0004), so there is no C++ stage. The runtime base stays `eclipse-temurin:25-jre` (Ubuntu, glibc). The spike confirms the native classifier matches it.
+- **Session files.** A new named volume `telex-tdlib` is mounted at `/var/lib/telex/tdlib` (`TELEX_TELEGRAM_SESSIONS_DIR`), with one directory per `TelegramSessionId`. It is backed up together with Postgres or not at all. A session directory without its sealed key in Postgres is unreadable, and Postgres without the directories means every account goes to Session lost.
+- **Operator config (README step, US-53).**
+  - `TELEX_TELEGRAM_API_ID` and `TELEX_TELEGRAM_API_HASH`, from my.telegram.org.
+  - `TELEX_MASTER_KEY`: 32 random bytes, base64. The README shows `openssl rand -base64 32` and warns that losing it loses every session (ADR-0003).
+  - `TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER`, default 3 (spec §8 OQ-1 default).
 
-<Topology in 2–3 sentences. Where it runs, replicas, scaling thresholds.>
+  When the API credentials or the master key are missing, linking reports "isn't set up" (AC-119). The app still starts.
+- **Local and CI.** `compose.yaml` gains the volume and passes the variables. Integration tests and Playwright run `telex.telegram.adapter=fake`. `bootRun --spring.profiles.active=local` uses `fake` unless real credentials are set. Real-Telegram checks (spec §6 manual rows) run against Telegram's test servers or a test account, as the spec states.
+- **Boot order.** The app starts, Flyway migrates, the session sweeper runs, then `messaging` reopens every non-lost Linked Account in parallel on virtual threads. Readiness doesn't wait for the reconnects. The spec's "≤ 60 s after teleX is ready" counts from there.
 
 **Monitoring:**
-- <Metrics — e.g. `<metric_name>`>
-- <Alerts — e.g. «worker lag > 10 min → page on-call»>
-- <Tracing — e.g. spans on the request boundary>
+- Metrics (Micrometer, with no phone numbers, names or Telegram ids in tags):
+  - `telex.telegram.sessions.active{state=ready|connecting|closed}`;
+  - `telex.linking.attempts{outcome=linked|cancelled|expired|refused_other_owner|refused_duplicate|refused_limit|flood_wait}`;
+  - `telex.linking.step.duration{step=phone|code|password}` (the p95 ≤ 3 s target);
+  - `telex.linked_accounts.reconnect.duration`;
+  - `telex.unlink{signout=confirmed|unconfirmed}`;
+  - `telex.chat_sync.duration`.
+- KPIs (spec §7): link completion and time to link come from the `telex.linking.*` metrics, restart survival from `telex.linked_accounts.reconnect.*`, and unlink completeness from the recorded dump. There is no analytics pipeline.
+- Health: `/actuator/health` stays green when Telegram is unreachable, because a Telegram outage is an account state, not an app failure. Incomplete `AccountUnlinked` publications are visible in `event_publication`.
+- Alerts and tracing: none in E02 (no SLO). OpenTelemetry arrives with the agent epics.
 
 **Scaling thresholds:**
-- <e.g. comfortable in one table up to N rows/year>
-- <e.g. partition by quarter above N rows/year>
-
-<!-- For XS/S with no deployment change: <!-- N/A: reuses existing deployment unit, no infra change --> -->
+- Target ≥ 50 connected Linked Accounts on 4 vCPU / 8 GB (spec §6, tech-spec NFR-04). Budget: about 30–60 MB of native memory per TDLib client, measured in the spike and in the 50-account load run, so the JVM heap is capped to leave room. Above roughly 100 accounts per instance, revisit TDLib's chat and message database options before adding instances.
+- A second app instance needs sharding of Linked Accounts across instances and a shared SSE fan-out (ADR-0005). That is out of scope until an installation needs more than one instance.
+- The `channel` table holds about 500 rows per account in the typical case. No partitioning is needed in E02; E04 revisits this when message history arrives.
 
 ## 8. Crosscutting concepts
 
