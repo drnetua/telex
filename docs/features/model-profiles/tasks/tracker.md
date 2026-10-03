@@ -30,11 +30,12 @@
 | T23 | Record the fallback flag on failed calls, publish ModelCallFinished with the record, and type ModelCallId | app | Anton Husiev | S | — | done |
 | T24 | Refuse only system display names, serialize default against delete, cap request sizes, and prove saves during an outage | app | Anton Husiev | S | — | done |
 | T25 | Show the editor loading state, keep edits across background refetches, and show result notices once | ui | Anton Husiev | S | — | done |
-| T26 | Bare not-found page, honest default errors, the AI-not-set-up alert above the tabs, and the remaining manifest and a11y details | ui | Anton Husiev | S | T25 | todo |
-| T27 | Amend AC-211 to per-1M-token prices for image models and register the new components in the design-system inventory | docs | Anton Husiev | S | T26 | todo |
-| T28 | Make agents events survive the publication registry, and tighten the T21–T24 tests and build wiring | app | Anton Husiev | S | — | todo |
+| T26 | Bare not-found page, honest default errors, the AI-not-set-up alert above the tabs, and the remaining manifest and a11y details | ui | Anton Husiev | S | T25 | done |
+| T27 | Amend AC-211 to per-1M-token prices for image models and register the new components in the design-system inventory | docs | Anton Husiev | S | T26 | done |
+| T28 | Make agents events survive the publication registry, and tighten the T21–T24 tests and build wiring | app | Anton Husiev | S | — | done |
+| T29 | Drop notices for good on navigation, refresh the draft after a save, round prices before the range check, and align the AC-211 docs | ui | Anton Husiev | S | T26, T27, T28 | todo |
 
-**Total:** 28 tasks (T21–T28: follow-ups from review 2026-10-03), ~20 person-days.
+**Total:** 29 tasks (T21–T29: follow-ups from review 2026-10-03), ~20 person-days.
 
 ## Deviations
 
@@ -53,3 +54,6 @@
 - **T24 — contract change:** `ChainInput` slot arrays get `maxItems: 10` in `openapi.yaml` (transport cap; the domain still answers `slot-full` above 3). `-Xemit-jvm-type-annotations` was added so `List<@Size String>` constraints apply (moved to a convention plugin by T28). `setDefault` and `delete` take the Owner advisory lock. New request-limit tests live in `ModelsWriteLimitsApiIT` (detekt LargeClass on `ModelsWriteApiIT`).
 - **T25 — draft query** `refetchOnMount: "always"`, profile/draft queries don't refetch on focus, and the form renders only from data fetched after mount; the editor notice is cleared from history state after it is shown. Review follow-ups folded into T26.
 - **T21–T25 ran in parallel worktrees** (dynamic workflow); the worktrees started from `master`, so each agent reset its branch to `198442c` first. Commits were cherry-picked in task order.
+- **T26 — models routes moved out of `AppLayout`** so SCR-91 renders in `BareSystemFrame`; `ModelsPage` wraps itself in `PageFrame`. One shared toast region via `pages/models/notice.ts` (URL-scoped notices). Draft query: `staleTime` 5 s + `usable` latch → one request on the card path; a stale cached draft with a failing opening refetch returns to the list.
+- **T27 — AC-211 amended** (spec §1 deviation + §5 wording): image models show per-1M-token prices; `price_per_image` reserved (NULL in E10). Dead per-image UI branches and the `perImage` message removed. Seven components registered in `docs/design-system.md`.
+- **T28 — `ProfileRef` carries Jackson type info** (`{kind: system, key}` / `{kind: custom, id}`, events.md shape; `SystemProfileKey.wire` is the `@JsonValue`). `spring-modulith-events-core` added for ITs only. `-Xemit-jvm-type-annotations` moved to `spring.kotlin.conventions`. Parser skips models whose per-1M price is ≥ 10^8. Delete-side lock and the T21–T24 test tightenings passed on the first run (existing behaviour, NON-red).

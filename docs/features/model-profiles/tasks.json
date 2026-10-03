@@ -651,6 +651,36 @@
         "docs/features/model-profiles/contracts/openapi.yaml"
       ],
       "file": "docs/features/model-profiles/tasks/t28-fix-events-and-test-tightening.md"
+    },
+    {
+      "id": "T29",
+      "title": "Drop notices for good on navigation, refresh the draft after a save, round prices before the range check, and align the AC-211 docs",
+      "layer": "ui",
+      "deps": [
+        "T26",
+        "T27",
+        "T28"
+      ],
+      "acs": [
+        "AC-213",
+        "AC-218",
+        "AC-212",
+        "AC-211"
+      ],
+      "dod": "A notice never reappears when the Owner returns to the URL it was raised on; after creating a profile, re-opening Create asks the server for a fresh draft; a per-token price that rounds to 10^8 or more at scale 6 is skipped; screens.md, data-model.md, openapi.yaml and the design-system inventory agree with the amended AC-211 and the built components.",
+      "files_hint": [
+        "frontend/src/pages/models/ModelsPage.tsx",
+        "frontend/src/pages/models/notice.ts",
+        "frontend/src/pages/models/",
+        "frontend/src/api/models.ts",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/ModelListParser.kt",
+        "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt",
+        "docs/features/model-profiles/screens.md",
+        "docs/features/model-profiles/data-model.md",
+        "docs/features/model-profiles/contracts/openapi.yaml",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/model-profiles/tasks/t29-fix-notice-draft-rounding-docs.md"
     }
   ]
 }
