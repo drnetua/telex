@@ -141,6 +141,23 @@ class ModelListParserTest {
     }
 
     @Test
+    fun `an out-of-range context length reads as unknown and the model stays (R3)`() {
+        val r = ModelListParser.parse(one(context = "10000000000"))
+        assertThat(r.models.single().contextLength).isNull()
+        assertThat(r.skipped).isEmpty()
+    }
+
+    @Test
+    fun `a non-string modality skips only that model and the others stay (R3)`() {
+        val json = """{"data":[
+            {"id":"acme/bad","name":"B","architecture":{"input_modalities":[{}],"output_modalities":["text"]},"pricing":{}},
+            {"id":"acme/ok","name":"Ok","architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}]}"""
+        val r = ModelListParser.parse(json)
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/bad")
+    }
+
+    @Test
     fun `name longer than 200 characters is skipped and the others stay`() {
         val long = "N".repeat(201)
         val json =

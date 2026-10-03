@@ -54,4 +54,12 @@ class ModelCallFinishedSerializationIT {
         val json = serializer.serialize(event(ProfileRef.System(SystemProfileKey.BALANCED))).toString()
         assertThat(json.replace(" ", "")).contains("\"profile\":{\"kind\":\"system\",\"key\":\"balanced\"}")
     }
+
+    @Test
+    fun `slot and outcome use the events md wire values and round-trip (AC-229)`() {
+        val e = event(ProfileRef.System(SystemProfileKey.BALANCED)).copy(outcome = ModelCallOutcome.NO_MODEL_ANSWERED)
+        val json = serializer.serialize(e).toString().replace(" ", "")
+        assertThat(json).contains("\"slot\":\"text\"").contains("\"outcome\":\"no-model-answered\"")
+        assertThat(serializer.deserialize(serializer.serialize(e), ModelCallFinished::class.java)).isEqualTo(e)
+    }
 }

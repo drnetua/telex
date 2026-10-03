@@ -867,6 +867,37 @@ describe("SCR-34 loading, background refetches and result notices (review-2026-1
     });
   });
 
+  it.each([
+    [
+      "409 profile-limit-reached",
+      () => problem(409, "profile-limit-reached"),
+      /up to 20 custom profiles/,
+    ],
+    ["409 ai-not-configured", () => problem(409, "ai-not-configured"), /AI models aren't set up/],
+    ["non-field 400", () => problem(400, "validation-failed"), /couldn't be saved/],
+  ])(
+    "R1: a refused create (%s) keeps the dialog, the typed name and sends no extra draft request",
+    async (_label, post, text) => {
+      const calls = stubApi({ post });
+      const user = userEvent.setup();
+      open("/settings/models/profiles/new");
+      const d = await dialog();
+      await user.type(within(d).getByLabelText("Name"), "Typed name");
+      await add(user, d, "Text", "Test text model A");
+      const draftGets = () =>
+        calls.filter((c) => c.url.startsWith("/api/v1/models/profile-draft")).length;
+      const before = draftGets();
+      await save(user, d);
+      const alerts = await screen.findAllByRole("alert");
+      expect(alerts.some((a) => text.test(a.textContent ?? ""))).toBe(true);
+      expect(screen.getByRole("dialog", { name: "Create profile" })).toBeInTheDocument();
+      expect(screen.getByLabelText("Name")).toHaveValue("Typed name");
+      expect(rowNames(section(screen.getByRole("dialog"), "Text"))).toHaveLength(1);
+      expect(where()).toBe("/settings/models/profiles/new");
+      expect(draftGets()).toBe(before);
+    },
+  );
+
   it("F3: a limit notice from a refused opening shows once and is cleared from the history entry", async () => {
     stubApi({ draft: () => problem(409, "profile-limit-reached") });
     open("/settings/models/profiles/new");

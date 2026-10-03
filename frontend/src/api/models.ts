@@ -159,10 +159,10 @@ export function useModelProfileDraft(from?: string, enabled = true) {
   const usableNow =
     query.data !== undefined &&
     (freshAtMount || (query.isFetchedAfterMount && query.dataUpdatedAt > query.errorUpdatedAt));
-  // Once the form has its data, a later failing background refetch must not take it away.
-  const [latched, setLatched] = useState(false);
-  if (usableNow && !latched) setLatched(true);
-  return { ...query, usable: latched || usableNow };
+  // Once the form has its data, a later failing or dropped refetch must not take it away.
+  const [kept, setKept] = useState<ModelProfileDraft>();
+  if (usableNow && kept === undefined) setKept(query.data);
+  return { ...query, data: query.data ?? kept, usable: kept !== undefined || usableNow };
 }
 
 /** On-demand draft fetch for "Create profile" / "Duplicate": always asks the server, caches under the hook's key. */
@@ -182,11 +182,12 @@ function useProfileMutation<V, R>(fn: (variables: V) => Promise<R>, dropsDrafts 
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSettled: () => {
+    onSuccess: () => {
       // A new or deleted profile changes the suggested name/limit: a cached draft must not be reused on the next open.
-      if (dropsDrafts) client.removeQueries({ queryKey: draftsKey });
-      return client.invalidateQueries({ queryKey: modelProfilesKey });
+      // Marked stale, not removed: an open editor keeps its data (a refused save leaves nothing to drop anyway).
+      if (dropsDrafts) void client.invalidateQueries({ queryKey: draftsKey, refetchType: "none" });
     },
+    onSettled: () => client.invalidateQueries({ queryKey: modelProfilesKey }),
   });
 }
 

@@ -1,7 +1,9 @@
 package telex.agents
 
+import com.fasterxml.jackson.annotation.JsonValue
+
 enum class ModelSlotKind(
-    val wire: String,
+    @get:JsonValue val wire: String,
 ) {
     TEXT("text"),
     VISION("vision"),

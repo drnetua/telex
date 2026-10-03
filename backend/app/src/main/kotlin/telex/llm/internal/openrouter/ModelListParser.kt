@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import telex.llm.CatalogModel
 import telex.llm.Modality
 import telex.llm.ModelId
+import tools.jackson.core.JacksonException
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import java.math.BigDecimal
@@ -43,7 +44,7 @@ object ModelListParser {
         val skipped = mutableListOf<SkippedModel>()
         val seen = hashSetOf<String>()
         for (node in mapper.readTree(json).path("data")) {
-            when (val r = parseOne(node)) {
+            when (val r = parseOneSafely(node)) {
                 is CatalogModel -> {
                     if (seen.add(r.modelId.value)) {
                         models += r
@@ -61,6 +62,21 @@ object ModelListParser {
     }
 
     private fun logSkipped(it: SkippedModel) = log.warn("Skipped model {}: {}", it.id, it.reason)
+
+    /** One unreadable entry (a value the reader can't convert) is skipped, never failing the whole refresh. */
+    private fun parseOneSafely(node: JsonNode): Any =
+        try {
+            parseOne(node)
+        } catch (e: JacksonException) {
+            SkippedModel(
+                node
+                    .path("id")
+                    .takeIf { it.isString }
+                    ?.asString()
+                    .orEmpty(),
+                "unreadable entry",
+            ).also { log.debug("Unreadable entry: {}", e.javaClass.simpleName) }
+        }
 
     private fun parseOne(node: JsonNode): Any {
         val id = node.path("id").takeIf { it.isString }?.asString()
@@ -119,7 +135,7 @@ object ModelListParser {
                 contextLength =
                     node
                         .path("context_length")
-                        .takeIf { it.isIntegralNumber }
+                        .takeIf { it.isIntegralNumber && it.canConvertToInt() }
                         ?.asInt()
                         ?.takeIf { it > 0 },
             )
@@ -131,7 +147,14 @@ object ModelListParser {
         node: JsonNode,
         ignoreUnused: Boolean = true,
     ): Set<Modality>? {
-        val names = if (node.isArray) node.values().map { it.asString() } else emptyList()
+        val names =
+            if (node.isArray) {
+                node.values().map {
+                    if (it.isString) it.asString() else return null
+                }
+            } else {
+                emptyList()
+            }
         val valid = names.isNotEmpty() && names.all { it in KNOWN || (ignoreUnused && it in IGNORED) }
         return if (valid) names.mapNotNullTo(linkedSetOf()) { KNOWN[it] } else null
     }

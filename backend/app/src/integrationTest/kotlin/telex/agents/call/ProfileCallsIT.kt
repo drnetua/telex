@@ -150,6 +150,7 @@ class ProfileCallsIT {
     private val request = SlotRequest.Text(listOf(ChatMessage("user", promptText)))
     private val logs = ListAppender<ILoggingEvent>()
     private val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
+    private var rootLevel: Level? = null
     private val balanced = ProfileRef.System(SystemProfileKey.BALANCED)
 
     private fun model(
@@ -175,12 +176,14 @@ class ProfileCallsIT {
             )
         logs.start()
         root.addAppender(logs)
+        rootLevel = root.level
         root.level = Level.DEBUG
     }
 
     @AfterEach
     fun tearDown() {
         root.detachAppender(logs)
+        root.level = rootLevel
         jdbc.execute("DROP TRIGGER IF EXISTS it_fail_call ON model_call")
         jdbc.execute("DROP FUNCTION IF EXISTS it_fail_call()")
     }

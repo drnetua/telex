@@ -71,6 +71,8 @@ class ProfileCallService(
             answered?.fallback
                 ?: (result.attempts.size > 1 || result.attempts.firstOrNull()?.outcome == AttemptOutcome.MISSING)
         record(slot, Duration.between(startedAt, finishedAt), outcome, fallback, result.attempts)
+        // A thread interrupted during the call (FallbackLoop restores the flag) would fail the insert's blocking I/O.
+        val wasInterrupted = Thread.interrupted()
         runCatching {
             records.insert(
                 CallRecord(
@@ -78,7 +80,7 @@ class ProfileCallService(
                     ownerId,
                     profile,
                     slot,
-                    outcome.wire(),
+                    outcome.wire,
                     answered?.answeredBy,
                     fallback,
                     startedAt,
@@ -91,6 +93,7 @@ class ProfileCallService(
                 )
             }
         }.onFailure { log.warn("Call record {} was not written: {}", id.value, it.javaClass.simpleName) }
+        if (wasInterrupted) Thread.currentThread().interrupt()
         return when (result) {
             is ModelCallResult.Answered -> {
                 ProfileCallResult.Answered(id, result.answer, result.answeredBy, result.fallback, result.attempts)
@@ -130,8 +133,6 @@ class ProfileCallService(
             ModelCallOutcome.NO_MODEL_AVAILABLE -> SlotFailure.NO_MODEL_AVAILABLE
             else -> SlotFailure.NO_MODEL_ANSWERED
         }
-
-    private fun ModelCallOutcome.wire(): String = name.lowercase().replace('_', '-')
 
     private fun record(
         slot: ModelSlotKind,

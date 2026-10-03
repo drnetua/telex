@@ -8,7 +8,7 @@ files_hint: ["frontend/src/api/models.ts", "frontend/src/pages/models/ProfileEdi
 owner: "Anton Husiev"
 estimate: "S"
 origin: "re-review 2026-10-03 round 2"
-status: "todo"
+status: "done"
 ---
 
 # T30 — Keep the editor on a refused create, record calls after an interrupt, skip unreadable catalog entries, and match the event wire values

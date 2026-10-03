@@ -42,6 +42,7 @@ import telex.shared.Uuid7
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 /** A stalled first model through ProfileCalls (AC-224, sad QG-1): timeout, then the backup answers. */
 @SpringBootTest(
@@ -89,6 +90,8 @@ class ProfileCallsStalledIT {
     companion object {
         private const val CONTEXT_LENGTH = 128_000
         private const val STALL_MILLIS = 5_000
+        private const val INTERRUPT_AFTER_MILLIS = 200L
+        private const val JOIN_MILLIS = 10_000L
         private val wm = WireMockServer(options().dynamicPort())
 
         @BeforeAll
@@ -164,5 +167,50 @@ class ProfileCallsStalledIT {
             mapOf("model_id" to "it/a", "outcome" to "timeout"),
             mapOf("model_id" to "it/b", "outcome" to "answered"),
         )
+    }
+
+    @Test
+    fun `a call interrupted on a virtual thread still records its timeout attempt and keeps the flag (AC-229)`() {
+        val id = UUID.randomUUID()
+        jdbc.update("INSERT INTO owner VALUES (?, ?, ?, now())", id, "$id@mail.com", "$id@mail.com")
+        val owner = OwnerId(id)
+        val chains =
+            mapOf(
+                ModelSlotKind.TEXT to listOf(ModelId("it/a")),
+                ModelSlotKind.VISION to emptyList(),
+                ModelSlotKind.IMAGE to emptyList(),
+            )
+        val profile = ModelProfile(ModelProfileId(Uuid7.next()), "interrupted", chains)
+        profiles.insert(owner, profile, Instant.now())
+        wm.stubFor(
+            post(urlEqualTo("/chat/completions"))
+                .withRequestBody(containing("\"it/a\""))
+                .willReturn(aResponse().withStatus(200).withFixedDelay(STALL_MILLIS).withBody("{}")),
+        )
+        val result = AtomicReference<ProfileCallResult>()
+        val flagOnReturn = AtomicReference<Boolean>()
+        val thread =
+            Thread.ofVirtual().start {
+                result.set(
+                    calls.call(
+                        owner,
+                        ProfileRef.Custom(profile.id),
+                        ModelSlotKind.TEXT,
+                        SlotRequest.Text(listOf(ChatMessage("user", "hello"))),
+                    ),
+                )
+                flagOnReturn.set(Thread.currentThread().isInterrupted)
+            }
+        Thread.sleep(INTERRUPT_AFTER_MILLIS)
+        thread.interrupt()
+        thread.join(JOIN_MILLIS)
+        val r = result.get() as ProfileCallResult.Failed
+        assertThat(flagOnReturn.get()).isTrue()
+        assertThat(
+            jdbc.queryForList(
+                "SELECT model_id, outcome FROM model_call_attempt WHERE model_call_id = ? ORDER BY position",
+                r.callId.value,
+            ),
+        ).containsExactly(mapOf("model_id" to "it/a", "outcome" to "timeout"))
     }
 }
