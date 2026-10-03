@@ -24,6 +24,13 @@ export function refusalText(error: unknown): string | null {
   return typeof text === "string" ? text : null;
 }
 
+/** At the code step Telegram can still refuse the number; the server has then ended the attempt (AC-107). */
+export function endsAttempt(error: unknown): boolean {
+  return (
+    error instanceof ApiFailure && error.status === 422 && error.code.startsWith("telegram-phone-")
+  );
+}
+
 export function isValidation(error: unknown): boolean {
   return error instanceof ApiFailure && error.status === 400;
 }

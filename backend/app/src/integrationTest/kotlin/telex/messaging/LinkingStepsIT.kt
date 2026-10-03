@@ -37,6 +37,7 @@ private const val HINT = "9996610005"
 private const val NO_HINT = "9996620005"
 private const val BANNED = "9996630005"
 private const val UNREGISTERED = "9996640005"
+private const val UNREGISTERED_AFTER_CODE = "9996500005"
 private const val FLOOD_PHONE = "9996650005"
 private const val FLOOD_CODE = "9996660005"
 private const val FLOOD_PASSWORD = "9996680005"
@@ -123,11 +124,34 @@ class LinkingStepsIT {
     }
 
     @Test
-    fun `AC-107 a number without a Telegram account or a banned one is refused and the attempt stays`() {
-        assertThat(refusal { toCodeStep(UNREGISTERED) }).containsEntry(CODE, "telegram-phone-unregistered")
+    fun `AC-107 a banned number is refused and the attempt stays at the phone step`() {
         assertThat(refusal { toCodeStep(BANNED) }).containsEntry(CODE, "telegram-phone-banned")
         assertThat(step()).isEqualTo(LinkingStep.PHONE)
         assertThat(toCodeStep()).isInstanceOf(LinkingProgress.Step::class.java)
+    }
+
+    @Test
+    fun `AC-107 an unregistered number is refused, the attempt stays at the phone step on a fresh session`() {
+        val before = attempts.find(owner)!!.sessionId
+
+        assertThat(refusal { toCodeStep(UNREGISTERED) }).containsEntry(CODE, "telegram-phone-unregistered")
+
+        assertThat(step()).isEqualTo(LinkingStep.PHONE)
+        assertThat(attempts.find(owner)!!.sessionId).isNotEqualTo(before)
+        assertThat((telegram as FakeTelegram).isOpen(before)).isFalse()
+        assertThat(toCodeStep()).isInstanceOf(LinkingProgress.Step::class.java)
+        assertThat(step()).isEqualTo(LinkingStep.CODE)
+    }
+
+    @Test
+    fun `AC-107 an unregistered number found at the code step is refused and ends the attempt`() {
+        toCodeStep(UNREGISTERED_AFTER_CODE)
+
+        assertThat(refusal { linking.submitCode(owner, session, FakeTelegram.CODE) })
+            .containsEntry(CODE, "telegram-phone-unregistered")
+            .containsEntry("status", 422)
+        assertThat(refusal { linking.get(owner) }).containsEntry(CODE, "linking-attempt-not-found")
+        assertThat(attempts.find(owner)).isNull()
     }
 
     @Test
@@ -170,6 +194,7 @@ class LinkingStepsIT {
         val next = linking.submitCode(owner, session, FakeTelegram.CODE) as LinkingProgress.Step
         assertThat(next.attempt.step).isEqualTo(LinkingStep.PASSWORD)
         assertThat(next.attempt.passwordHint).isEqualTo(FakeTelegram.PASSWORD_HINT)
+        assertThat(next.attempt.codeLength).isNull()
 
         restart()
         toCodeStep(PLAIN)

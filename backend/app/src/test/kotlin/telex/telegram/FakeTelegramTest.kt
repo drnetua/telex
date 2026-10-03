@@ -83,9 +83,23 @@ class FakeTelegramTest {
     @Test
     fun `scripted refusals by the X digit`() {
         assertThat(fake.sendPhone(id, "9996633333")).isEqualTo(SignInOutcome.PhoneBanned)
-        assertThat(fake.sendPhone(id, "9996644444")).isEqualTo(SignInOutcome.PhoneUnregistered)
         assertThat(fake.sendPhone(id, "9996655555"))
             .isEqualTo(SignInOutcome.WaitRequired(FakeTelegram.FLOOD_WAIT_SECONDS))
+        assertThat(fake.sendPhone(id, "9996644444")).isEqualTo(SignInOutcome.PhoneUnregistered)
+    }
+
+    @Test
+    fun `an unregistered number closes the client like TDLib does`() {
+        fake.sendPhone(id, "9996644444")
+
+        assertThat(fake.isOpen(id)).isFalse()
+    }
+
+    @Test
+    fun `a number in the 99965 shape is unregistered once its code is checked, and closes the client`() {
+        assertThat(fake.sendPhone(id, "9996500005")).isEqualTo(SignInOutcome.CodeSent(FakeTelegram.CODE.length))
+        assertThat(fake.checkCode(id, FakeTelegram.CODE)).isEqualTo(SignInOutcome.PhoneUnregistered)
+        assertThat(fake.isOpen(id)).isFalse()
     }
 
     @Test

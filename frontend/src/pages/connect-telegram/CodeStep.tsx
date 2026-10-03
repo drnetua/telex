@@ -5,7 +5,7 @@ import { Button } from "../../components/Button/Button";
 import { CodeInput } from "../../components/CodeInput/CodeInput";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
-import { dispatchResult, isValidation, refusalText, type StepProps } from "./steps";
+import { dispatchResult, endsAttempt, isValidation, refusalText, type StepProps } from "./steps";
 import { CancelButton } from "./CancelButton";
 
 const DEFAULT_CODE_LENGTH = 5;
@@ -37,7 +37,8 @@ export function CodeStep(props: StepProps) {
     } catch (e) {
       setSubmitting(false);
       const refused = refusalText(e);
-      if (refused) {
+      if (endsAttempt(e)) props.onCommonFailure(e, () => void submit());
+      else if (refused) {
         setExpired(e instanceof ApiFailure && e.code === "telegram-code-expired");
         reject(refused, true);
       } else if (isValidation(e)) reject(t.codeIncomplete(length), false);

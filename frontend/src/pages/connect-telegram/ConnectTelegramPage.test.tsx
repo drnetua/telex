@@ -251,6 +251,19 @@ describe("SCR-02 code step", () => {
     expect(screen.getByRole("button", { name: "Send a new code" })).toBeEnabled();
   });
 
+  it("an unregistered number found at the code step ends the attempt (AC-107)", async () => {
+    mockApi({
+      [A]: [json(200, codeAttempt)],
+      [CODE]: [problem(422, "telegram-phone-unregistered")],
+    });
+    setup();
+    await screen.findByText(/Telegram sent the code/);
+    await typeCode("12345");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Start again" })).toBeVisible();
+  });
+
   it("an expired code makes Send a new code primary (AC-02)", async () => {
     mockApi({ [A]: [json(200, codeAttempt)], [CODE]: [problem(422, "telegram-code-expired")] });
     setup();

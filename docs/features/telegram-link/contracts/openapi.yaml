@@ -217,7 +217,29 @@ paths:
               examples:
                 limitReached: { $ref: "#/components/examples/LimitReached" }
                 alreadyLinked: { $ref: "#/components/examples/AlreadyLinked" }
-        "503": { $ref: "#/components/responses/LinkingNotSetUp" }
+        "503":
+          description: |
+            Linking isn't set up on this installation (`telegram-linking-not-set-up`, AC-119), or Telegram didn't
+            answer while the attempt's session opened (`telegram-unavailable`); no attempt is left open and the
+            Owner can retry.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notSetUp:
+                  value:
+                    type: "urn:telex:error:telegram-linking-not-set-up"
+                    title: "Service Unavailable"
+                    status: 503
+                    detail: "Telegram linking isn't set up on this installation yet."
+                    code: "telegram-linking-not-set-up"
+                unavailable:
+                  value:
+                    type: "urn:telex:error:telegram-unavailable"
+                    title: "Service Unavailable"
+                    status: 503
+                    detail: "Telegram can't be reached right now."
+                    code: "telegram-unavailable"
     delete:
       tags: [linking]
       summary: Cancel my linking attempt
@@ -305,7 +327,8 @@ paths:
       summary: Submit the login code
       description: |
         Checks the code with Telegram (Flow 6). A wrong or expired code keeps the attempt at the code step
-        (AC-02). A right code either moves to the password step (two-step verification on) or completes the
+        (AC-02). Telegram can still report at this step that no account uses the number
+        (`telegram-phone-unregistered`, `422`); that ends the attempt (AC-107). A right code either moves to the password step (two-step verification on) or completes the
         sign-in, and the answer is then the outcome of Critical flow 1 — linked, signed in again, or refused
         (see `LinkingCompleted` and the `409` refusals).
       operationId: submitLinkingCode
@@ -326,7 +349,9 @@ paths:
         "404": { $ref: "#/components/responses/LinkingAttemptNotFound" }
         "409": { $ref: "#/components/responses/LinkingRefusedOrStepMismatch" }
         "422":
-          description: The code is wrong or expired; the attempt stays at the code step (AC-02)
+          description: |
+            The code is wrong or expired and the attempt stays at the code step (AC-02); or Telegram reports the
+            number as unregistered and the attempt has ended (AC-107)
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -345,6 +370,13 @@ paths:
                     status: 422
                     detail: "The code has expired."
                     code: "telegram-code-expired"
+                unregistered:
+                  value:
+                    type: "urn:telex:error:telegram-phone-unregistered"
+                    title: "Unprocessable Content"
+                    status: 422
+                    detail: "No Telegram account uses this number."
+                    code: "telegram-phone-unregistered"
         "429": { $ref: "#/components/responses/TelegramWaitRequired" }
         "503": { $ref: "#/components/responses/TelegramUnavailable" }
 

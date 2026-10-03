@@ -26,7 +26,7 @@ import { PasswordStep } from "./PasswordStep";
 import { PhoneStep } from "./PhoneStep";
 import { AttemptEndedState, RefusedState, WaitState } from "./Outcomes";
 import { REFUSAL_CODES, type Outcome, type RefusalCode } from "./outcome";
-import type { FinishedResult } from "./steps";
+import { endsAttempt, type FinishedResult } from "./steps";
 
 interface Notice {
   message: string;
@@ -123,6 +123,8 @@ export function ConnectTelegramPage() {
       setOutcome({ kind: "wait", retryAt: error.extras.retryAt });
     } else if (error.status === 409 && REFUSAL_CODES.includes(error.code)) {
       setOutcome({ kind: "refused", code: error.code as RefusalCode, limit: error.extras.limit });
+    } else if (endsAttempt(error)) {
+      setOutcome({ kind: "ended" });
     } else if (error.status === 404 && error.code === "linking-attempt-not-found") {
       setOutcome({ kind: "ended" });
     } else return false;

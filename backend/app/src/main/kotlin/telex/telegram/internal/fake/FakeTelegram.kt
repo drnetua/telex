@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicLong
  * X picks the behaviour (0 plain, 1 two-step with hint, 2 two-step without hint, 3 banned, 4 unregistered,
  * 5 flood wait on the phone, 6 flood wait on the code, 8 two-step with hint and flood wait on the password,
  * 7 terminate right after link, 9 terminate a moment after link, once the Linked Account exists);
- * YYYY is the number of chats (and makes the account unique).
+ * YYYY is the number of chats (and makes the account unique). A number in the shape `99965XYYYY` is unregistered
+ * only once its code is checked (Telegram's WaitRegistration), whatever X is.
+ * Like TDLib, an unregistered number closes the client.
  */
 @Suppress("TooManyFunctions") // a port implementation plus its test hooks
 class FakeTelegram(
@@ -43,9 +45,13 @@ class FakeTelegram(
     private val endedWhileStopped = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val loggedOut = ConcurrentHashMap.newKeySet<TelegramSessionId>()
 
+    /** Test hook: while true, [open] fails as if Telegram never reached the phone step. */
+    @Volatile var openUnavailable = false
+
     override fun configured() = configured
 
     override fun open(dbKey: ByteArray): TelegramSessionId {
+        if (openUnavailable) throw TelegramUnavailable()
         val id = TelegramSessionId(Uuid7.next())
         sessions[id] = Session()
         Files.createFile(directories.create(id).resolve(MARKER_FILE))
@@ -92,6 +98,7 @@ class FakeTelegram(
             }
 
             UNREGISTERED -> {
+                sessions.remove(id)
                 SignInOutcome.PhoneUnregistered
             }
 
@@ -119,6 +126,11 @@ class FakeTelegram(
         val session = reachable(id)
         val phone = checkNotNull(session.phone) { "No phone sent" }
         return when {
+            scenarioOf(phone) == UNREGISTERED_AFTER_CODE -> {
+                sessions.remove(id)
+                SignInOutcome.PhoneUnregistered
+            }
+
             scenarioOf(phone) == FLOOD_CODE -> {
                 SignInOutcome.WaitRequired(FLOOD_WAIT_SECONDS)
             }
@@ -240,9 +252,14 @@ class FakeTelegram(
 
     private fun scenarioOf(digits: String): Char? =
         digits
-            .takeIf {
-                it.length == PHONE_LENGTH && it.all(Char::isDigit) && it.startsWith(PHONE_PREFIX)
-            }?.get(PHONE_PREFIX.length)
+            .takeIf { it.length == PHONE_LENGTH && it.all(Char::isDigit) }
+            ?.let {
+                when {
+                    it.startsWith(PHONE_PREFIX) -> it[PHONE_PREFIX.length]
+                    it.startsWith(UNREGISTERED_AFTER_CODE_PREFIX) -> UNREGISTERED_AFTER_CODE
+                    else -> null
+                }
+            }
 
     private fun authorize(
         session: Session,
@@ -300,6 +317,8 @@ class FakeTelegram(
         const val MARKER_FILE = "fake-session"
 
         private const val PHONE_PREFIX = "99966"
+        private const val UNREGISTERED_AFTER_CODE_PREFIX = "99965"
+        private const val UNREGISTERED_AFTER_CODE = 'u'
         private const val PHONE_LENGTH = 10
         private const val CHATS_DIGITS = 4
         private const val COUNTRY_CODE_DIGITS = 2

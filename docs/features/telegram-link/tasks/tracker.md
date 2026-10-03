@@ -33,7 +33,7 @@
 | T26 | Publish sync progress inside a transaction, write the sync time from the Clock, time the sync once | app | Anton Husiev | S | — | done |
 | T27 | Start chat sync only after the Linked Account is committed, report Telegram's real total, drop chats left meanwhile | app | Anton Husiev | M | T26 | done |
 | T28 | Unlink: report an unconfirmed sign-out for Session lost, and sign out the session the delete actually removed | app | Anton Husiev | S | T27 | done |
-| T29 | Linking refusals: end the attempt on an unregistered number, 503 when Telegram does not answer at start, clear codeLength, whitespace phone is 422 | app | Anton Husiev | M | T28, T34 | todo |
+| T29 | Linking refusals: end the attempt on an unregistered number, 503 when Telegram does not answer at start, clear codeLength, whitespace phone is 422 | app | Anton Husiev | M | T28, T34 | done |
 | T30 | Log out sign-ins Telegram authorized but teleX did not finish, and never hang on a failed client open | infra | Anton Husiev | M | T29 | todo |
 | T31 | Make the SSE emitter registry add and remove atomic per Owner | ports | Anton Husiev | S | — | done |
 | T32 | Cover the remaining contract responses over HTTP, run completions concurrently, and restart the app for real | tests | Anton Husiev | M | T30, T31 | todo |

@@ -95,7 +95,13 @@ class Linking(
             if (open != null) {
                 StartedLinking(open.view(), resumed = true)
             } else {
-                StartedLinking(open(sessions, owner, signInSession, origin, target).view(), resumed = false)
+                val opened =
+                    try {
+                        open(sessions, owner, signInSession, origin, target)
+                    } catch (_: TelegramUnavailable) {
+                        throw TelegramUnavailableProblem()
+                    }
+                StartedLinking(opened.view(), resumed = false)
             }
         }
 
@@ -133,7 +139,9 @@ class Linking(
         step(owner, by, LinkingStep.PHONE) { attempt, sessions ->
             val digits = phone.filter(Char::isDigit)
             if (digits.isEmpty()) throw TelegramPhoneInvalid()
-            codeSent(owner, attempt, sessions.sendPhone(attempt.sessionId, digits))
+            codeSent(owner, attempt, sessions.sendPhone(attempt.sessionId, digits)) {
+                replaceSession(owner, attempt, sessions)
+            }
         }
 
     /** Asks Telegram for a new code; the attempt stays at the code step. */
@@ -142,7 +150,7 @@ class Linking(
         by: SignInSessionId,
     ): LinkingProgress =
         step(owner, by, LinkingStep.CODE) { attempt, sessions ->
-            codeSent(owner, attempt, sessions.resendCode(attempt.sessionId))
+            codeSent(owner, attempt, sessions.resendCode(attempt.sessionId)) { discard(owner, "refused_phone") }
         }
 
     /** The code goes straight to Telegram; it is never stored or echoed. */
@@ -155,6 +163,7 @@ class Linking(
             when (val outcome = sessions.checkCode(attempt.sessionId, code)) {
                 is SignInOutcome.PasswordNeeded -> {
                     attempt.step = LinkingStep.PASSWORD
+                    attempt.codeLength = null
                     attempt.passwordHint = outcome.hint
                     LinkingProgress.Step(attempt.view())
                 }
@@ -169,6 +178,11 @@ class Linking(
 
                 SignInOutcome.CodeExpired -> {
                     throw TelegramCodeExpired()
+                }
+
+                SignInOutcome.PhoneUnregistered, SignInOutcome.PhoneInvalid, SignInOutcome.PhoneBanned -> {
+                    discard(owner, "refused_phone")
+                    throw phoneRefusal(outcome)
                 }
 
                 else -> {
@@ -220,6 +234,7 @@ class Linking(
         owner: OwnerId,
         attempt: LinkingAttempt,
         outcome: SignInOutcome,
+        onUnregistered: () -> Unit,
     ): LinkingProgress =
         when (outcome) {
             is SignInOutcome.CodeSent -> {
@@ -233,6 +248,7 @@ class Linking(
             }
 
             SignInOutcome.PhoneUnregistered -> {
+                onUnregistered()
                 throw TelegramPhoneUnregistered()
             }
 
@@ -244,6 +260,38 @@ class Linking(
                 refuseOrFail(owner, outcome)
             }
         }
+
+    private fun phoneRefusal(outcome: SignInOutcome): DomainProblem =
+        when (outcome) {
+            SignInOutcome.PhoneBanned -> TelegramPhoneBanned()
+            SignInOutcome.PhoneUnregistered -> TelegramPhoneUnregistered()
+            else -> TelegramPhoneInvalid()
+        }
+
+    /**
+     * Telegram closes the client of an unregistered number, so the attempt, which stays at the phone step, gets a
+     * fresh session; when none can be opened the attempt ends rather than stay on a dead client.
+     */
+    private fun replaceSession(
+        owner: OwnerId,
+        attempt: LinkingAttempt,
+        sessions: TelegramSessions,
+    ) {
+        val dead = attempt.sessionId
+        try {
+            sessions.close(dead)
+        } finally {
+            sessions.destroy(dead)
+        }
+        try {
+            attempt.sessionId = sessions.open(attempt.dbKey)
+        } catch (e: TelegramUnavailable) {
+            attempts.remove(owner)
+            attempt.wipeKey()
+            meters.counter("telex.linking.attempts", "outcome", "refused_phone").increment()
+            throw e
+        }
+    }
 
     /**
      * Telegram authorized the attempt: it becomes a Linked Account (or signs one in again), or is logged out and

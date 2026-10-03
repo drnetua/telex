@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/Linking.kt", "backend/
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings S5, Q2, Q9, Q12"
-status: "todo"
+status: "done"
 ---
 
 # T29 — Linking refusals: end the attempt on an unregistered number, 503 when Telegram does not answer at start, clear codeLength, whitespace phone is 422

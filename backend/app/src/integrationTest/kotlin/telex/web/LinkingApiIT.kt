@@ -22,6 +22,7 @@ import telex.identity.MutableClock
 import telex.identity.OwnerId
 import telex.identity.SignInSessions
 import telex.identity.StartedSession
+import telex.telegram.TelegramSessions
 import telex.telegram.internal.fake.FakeTelegram
 import java.net.URI
 import java.net.http.HttpClient
@@ -94,6 +95,10 @@ class LinkingApiIT(
     @Autowired lateinit var jdbc: JdbcTemplate
 
     @Autowired lateinit var clock: MutableClock
+
+    @Autowired lateinit var telegram: TelegramSessions
+
+    private val fake get() = telegram as FakeTelegram
 
     private val api = Api(port)
     private val owners = mutableListOf<OwnerId>()
@@ -225,6 +230,7 @@ class LinkingApiIT(
         val next = code(s.key)
         assertThat(next.statusCode()).isEqualTo(200)
         assertThat(next.body()).contains("\"outcome\":\"next\"", "\"step\":\"password\"", PASSWORD_HINT)
+        assertThat(next.body()).contains("\"codeLength\":null")
         val wrong = password(s.key, "nope")
         assertThat(wrong.statusCode()).isEqualTo(422)
         assertThat(wrong.body()).contains("${CODE}telegram-password-wrong\"", PASSWORD_HINT)
@@ -255,6 +261,46 @@ class LinkingApiIT(
         assertThat(code(s.key).statusCode()).isEqualTo(404)
         assertThat(password(s.key, "x").statusCode()).isEqualTo(404)
         assertThat(api.call("POST", "$BASE/code/resend", s.key).statusCode()).isEqualTo(404)
+    }
+
+    @Test
+    fun `AC-107 a phone of only whitespace is 422 telegram-phone-invalid and the attempt stays`() {
+        val (_, s) = session()
+        api.call("POST", BASE, s.key, INBOX)
+
+        val r = phone(s.key, "   ")
+
+        assertThat(r.statusCode()).isEqualTo(422)
+        assertThat(r.body()).contains("${CODE}telegram-phone-invalid\"")
+        assertThat(api.call("GET", BASE, s.key).body()).contains("\"step\":\"phone\"")
+    }
+
+    @Test
+    fun `AC-107 an unregistered number found at the code step is 422 and the attempt has ended`() {
+        val (_, s) = session()
+        api.call("POST", BASE, s.key, INBOX)
+        assertThat(phone(s.key, "9996500005").statusCode()).isEqualTo(200)
+
+        val r = code(s.key)
+
+        assertThat(r.statusCode()).isEqualTo(422)
+        assertThat(r.body()).contains("${CODE}telegram-phone-unregistered\"")
+        assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
+    }
+
+    @Test
+    fun `a start Telegram does not answer is 503 telegram-unavailable and opens no attempt`() {
+        val (_, s) = session()
+        fake.openUnavailable = true
+        try {
+            val r = api.call("POST", BASE, s.key, INBOX)
+
+            assertThat(r.statusCode()).isEqualTo(503)
+            assertThat(r.body()).contains("${CODE}telegram-unavailable\"")
+        } finally {
+            fake.openUnavailable = false
+        }
+        assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
     }
 
     @Test

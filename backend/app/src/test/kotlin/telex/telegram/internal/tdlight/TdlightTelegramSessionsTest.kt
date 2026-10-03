@@ -109,6 +109,35 @@ class TdlightTelegramSessionsTest {
             }
         }
 
+    private fun codeStep(
+        client: ScriptedTdlib.Client,
+        code: String,
+    ): TdlibResponse =
+        when (code) {
+            "11111" -> {
+                TdlibResponse.Failure(400, "PHONE_CODE_INVALID")
+            }
+
+            "22222" -> {
+                TdlibResponse.Failure(400, "PHONE_CODE_EXPIRED")
+            }
+
+            "33333" -> {
+                client.emit(auth("authorizationStateWaitPassword", hint = "first pet"))
+                TdlibResponse.Ok("ok")
+            }
+
+            "44444" -> {
+                client.emit(auth("authorizationStateWaitRegistration"))
+                TdlibResponse.Ok("ok")
+            }
+
+            else -> {
+                client.emit(auth("authorizationStateReady"))
+                TdlibResponse.Ok("ok")
+            }
+        }
+
     private fun scriptSignIn() {
         tdlib.respond = { client, request ->
             when (request) {
@@ -117,25 +146,7 @@ class TdlightTelegramSessionsTest {
                 }
 
                 is TdlibRequest.CheckCode -> {
-                    when (request.code) {
-                        "11111" -> {
-                            TdlibResponse.Failure(400, "PHONE_CODE_INVALID")
-                        }
-
-                        "22222" -> {
-                            TdlibResponse.Failure(400, "PHONE_CODE_EXPIRED")
-                        }
-
-                        "33333" -> {
-                            client.emit(auth("authorizationStateWaitPassword", hint = "first pet"))
-                            TdlibResponse.Ok("ok")
-                        }
-
-                        else -> {
-                            client.emit(auth("authorizationStateReady"))
-                            TdlibResponse.Ok("ok")
-                        }
-                    }
+                    codeStep(client, request.code)
                 }
 
                 is TdlibRequest.CheckPassword -> {
@@ -212,6 +223,17 @@ class TdlightTelegramSessionsTest {
         assertThat(sessions.sendPhone(id, "380501234563")).isEqualTo(SignInOutcome.PhoneUnregistered)
         assertThat(tdlib.clients.single().closeCalled).isTrue()
         assertThat(states()).isEmpty()
+    }
+
+    @Test
+    fun `WaitRegistration after the code maps to PhoneUnregistered and closes the client`() {
+        scriptSignIn()
+        val sessions = create()
+        val id = sessions.open(key)
+        sessions.sendPhone(id, "380501234564")
+
+        assertThat(sessions.checkCode(id, "44444")).isEqualTo(SignInOutcome.PhoneUnregistered)
+        assertThat(tdlib.clients.single().closeCalled).isTrue()
     }
 
     @Test

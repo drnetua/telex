@@ -34,7 +34,7 @@ data class StartLinkingRequest(
 
 /** Handed to Telegram as typed; never stored, echoed or logged, so [toString] hides it. */
 data class LinkingPhoneRequest(
-    @field:NotBlank @field:Size(max = PHONE_MAX) val phoneNumber: String?,
+    @field:NotEmpty @field:Size(max = PHONE_MAX) val phoneNumber: String?,
 ) {
     override fun toString() = "LinkingPhoneRequest"
 }

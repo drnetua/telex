@@ -12,7 +12,7 @@ import java.time.Instant
  * account is created and is never persisted; a discarded attempt has its key wiped.
  */
 class LinkingAttempt(
-    val sessionId: TelegramSessionId,
+    @Volatile var sessionId: TelegramSessionId,
     val dbKey: ByteArray,
     val origin: LinkingOrigin,
     val target: LinkedAccountId?,
