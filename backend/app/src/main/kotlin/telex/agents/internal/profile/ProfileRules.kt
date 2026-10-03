@@ -45,18 +45,9 @@ object ProfileRules {
         val code =
             when {
                 name.isEmpty() -> "name-required"
-
                 name.length > MAX_NAME -> "name-too-long"
-
-                SystemProfileKey.entries.any {
-                    name.equals(
-                        it.displayName,
-                        true,
-                    ) || name.equals(it.wire, true)
-                } -> "name-reserved"
-
+                SystemProfileKey.entries.any { name.equals(it.displayName, true) } -> "name-reserved"
                 ownNames.any { it.trim().lowercase() == name.lowercase() } -> "name-taken"
-
                 else -> return emptyList()
             }
         return listOf(FieldError("name", code))

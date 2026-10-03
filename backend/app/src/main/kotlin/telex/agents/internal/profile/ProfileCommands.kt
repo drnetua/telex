@@ -85,6 +85,7 @@ class ProfileCommands(
         ref: ProfileRef,
     ): ProfileDeletion {
         val id = customId(ref)
+        profiles.lockOwner(owner)
         val wasDefault = defaults.clearIfCustom(owner, id)
         if (!profiles.delete(owner, id)) throw ProfileNotFound()
         events.publishEvent(ModelProfileDeleted(owner, id, wasDefault))
@@ -96,6 +97,7 @@ class ProfileCommands(
         owner: OwnerId,
         ref: ProfileRef,
     ): ProfileRef {
+        profiles.lockOwner(owner)
         val slots = source(owner, ref)
         val text =
             SlotResolution.resolve(

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonInclude
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import telex.agents.CatalogModelView
 import telex.agents.ChainModelView
 import telex.agents.DraftView
@@ -117,19 +118,33 @@ abstract class StrictBody {
     ): Unit = throw IllegalArgumentException("Unknown property '$name' (${value?.javaClass?.simpleName})")
 }
 
+/** Request bounds of `openapi.yaml`; the slot cap is generous so the domain still reports `slot-full` (AC-217). */
+private const val MAX_NAME_INPUT = 200
+private const val MAX_MODEL_ID = 200
+private const val MAX_SLOT_INPUT = 10
+
 /** A missing slot is an empty slot; the rules (and their codes) live in `agents`. */
 data class ChainInputBody(
-    val text: List<String> = emptyList(),
-    val vision: List<String> = emptyList(),
-    val image: List<String> = emptyList(),
+    @field:Size(max = MAX_SLOT_INPUT) val text: List<
+        @Size(max = MAX_MODEL_ID)
+        String,
+    > = emptyList(),
+    @field:Size(max = MAX_SLOT_INPUT) val vision: List<
+        @Size(max = MAX_MODEL_ID)
+        String,
+    > = emptyList(),
+    @field:Size(max = MAX_SLOT_INPUT) val image: List<
+        @Size(max = MAX_MODEL_ID)
+        String,
+    > = emptyList(),
 ) : StrictBody() {
     fun toSlots(): Map<ModelSlotKind, List<String>> =
         mapOf(ModelSlotKind.TEXT to text, ModelSlotKind.VISION to vision, ModelSlotKind.IMAGE to image)
 }
 
 data class ProfileWriteBody(
-    val name: String = "",
-    val slots: ChainInputBody = ChainInputBody(),
+    @field:Size(max = MAX_NAME_INPUT) val name: String = "",
+    @field:Valid val slots: ChainInputBody = ChainInputBody(),
     val duplicatedFrom: ProfileRefBody? = null,
 ) : StrictBody()
 

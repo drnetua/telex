@@ -44,7 +44,7 @@ class ModelsController(
     @PostMapping("/profiles")
     fun create(
         @AuthenticationPrincipal principal: SignedInOwner,
-        @RequestBody body: ProfileWriteBody,
+        @Valid @RequestBody body: ProfileWriteBody,
     ): ResponseEntity<ModelProfileBody> {
         val from = body.duplicatedFrom?.toRef()
         val created = models.create(principal.ownerId, body.name, body.slots.toSlots(), from).toBody()
@@ -55,7 +55,7 @@ class ModelsController(
     fun update(
         @AuthenticationPrincipal principal: SignedInOwner,
         @PathVariable profileKey: String,
-        @RequestBody body: ProfileWriteBody,
+        @Valid @RequestBody body: ProfileWriteBody,
     ): ModelProfileBody =
         models
             .update(principal.ownerId, parseProfileKey(profileKey), body.name, body.slots.toSlots())

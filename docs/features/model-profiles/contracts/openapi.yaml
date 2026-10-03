@@ -940,12 +940,15 @@ components:
       properties:
         text:
           type: array
+          maxItems: 10
           items: { $ref: "#/components/schemas/ModelId" }
         vision:
           type: array
+          maxItems: 10
           items: { $ref: "#/components/schemas/ModelId" }
         image:
           type: array
+          maxItems: 10
           items: { $ref: "#/components/schemas/ModelId" }
     ModelProfileUpdate:
       type: object
