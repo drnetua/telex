@@ -11,7 +11,7 @@
 | T4 | Define the TelegramSessions port, its in-process events and the fake Telegram adapter | infra | Anton Husiev | M | — | done |
 | T5 | Manage Telegram session directories: per-session dir, destroy with one-minute retry, startup orphan sweep | infra | Anton Husiev | S | T4 | done |
 | T6 | Implement the tdlight adapter: TDLib auth states, errors and chat list mapped to the port | infra | Anton Husiev | M | T1, T5 | todo |
-| T7 | Build the LinkedAccount aggregate: rules, states, masked phone, repository, events and the account limit | domain | Anton Husiev | M | T2 | todo |
+| T7 | Build the LinkedAccount aggregate: rules, states, masked phone, repository, events and the account limit | domain | Anton Husiev | M | T2 | done |
 | T8 | Start, resume, cancel and expire the in-memory linking attempt (one per Owner) | app | Anton Husiev | M | T3, T4, T7 | todo |
 | T9 | Run the phone, code, resend and password steps with Telegram's refusals and waits | app | Anton Husiev | M | T8 | todo |
 | T10 | Complete an authorized attempt: link a new account, sign in again, or refuse and log out | app | Anton Husiev | M | T5, T9 | todo |
