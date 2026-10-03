@@ -221,6 +221,27 @@ describe("ThemeSwitch keyboard (review C2, C6)", () => {
     expect(trigger).toHaveFocus();
   });
 
+  it("the menu items are not tab stops, and Tab from an item closes the menu", async () => {
+    setup("menu");
+    await userEvent.click(screen.getByRole("button", { name: "Theme" }));
+    for (const item of screen.getAllByRole("menuitemradio"))
+      expect(item).toHaveAttribute("tabindex", "-1");
+    await userEvent.tab();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("the menu closes when focus moves outside it", async () => {
+    render(
+      <QueryClientProvider client={client}>
+        <ThemeSwitch variant="menu" />
+        <button type="button">Elsewhere</button>
+      </QueryClientProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Theme" }));
+    act(() => screen.getByRole("button", { name: "Elsewhere" }).focus());
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("the menu opens with focus on a non-first checked item", async () => {
     client.setQueryData(meKey, { ...me, theme: "dark" });
     localStorage.setItem(THEME_KEY, "dark");

@@ -99,6 +99,11 @@ function Menu({ shown, onChoose }: PartProps) {
     const items = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitemradio"]'),
     );
+    // Tab leaves the menu (menu-button pattern): close it and let focus move on.
+    if (event.key === "Tab") {
+      setOpen(false);
+      return;
+    }
     const at = items.indexOf(document.activeElement as HTMLElement);
     const target: Record<string, number> = {
       ArrowDown: (at + 1) % items.length,
@@ -131,7 +136,15 @@ function Menu({ shown, onChoose }: PartProps) {
   }, [open]);
 
   return (
-    <div ref={root} className="dropdown dropup">
+    <div
+      ref={root}
+      className="dropdown dropup"
+      onBlur={(event) => {
+        // Only focus landing elsewhere closes it; a null target (Safari doesn't focus a clicked button) keeps it.
+        const next = event.relatedTarget;
+        if (open && next && !root.current?.contains(next)) setOpen(false);
+      }}
+    >
       <button
         ref={trigger}
         type="button"
@@ -150,6 +163,7 @@ function Menu({ shown, onChoose }: PartProps) {
               key={o.value}
               type="button"
               role="menuitemradio"
+              tabIndex={-1}
               aria-checked={shown === o.value}
               className={`dropdown-item d-flex align-items-center gap-2${shown === o.value ? " active" : ""}`}
               onClick={() => {

@@ -8,7 +8,7 @@ files_hint: ["frontend/src/components/ThemeSwitch/ThemeSwitch.tsx", "frontend/sr
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-2 (R2-7)"
-status: "todo"
+status: "done"
 ---
 
 # T29 — Close the theme menu on Tab and focus-out, with a roving tabindex on its items
