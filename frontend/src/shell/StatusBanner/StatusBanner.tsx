@@ -49,7 +49,7 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
   const codes = link === "online" ? conditions : [link, ...conditions];
   const ordered = orderConditions(codes);
   const [top, ...rest] = ordered;
-  if (!top) return null;
+  if (!top) return <div role="status" />;
 
   const onRetry = () => {
     setBusy(true);
@@ -64,32 +64,34 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
     link !== "online" && top.action.kind === "retry" && stillDown ? m.stillDown : top.message;
 
   return (
-    <div className="alert alert-warning rounded-0 mb-0 border-0" role="status">
-      <div className="d-flex align-items-center gap-2 flex-wrap">
-        <Icon name={top.icon} size={20} />
-        <span className="flex-grow-1">{text}</span>
-        {rest.length > 0 ? (
-          <Button
-            className="btn-link"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {m.more(rest.length)}
-          </Button>
+    <div role="status">
+      <div className="alert alert-warning rounded-0 mb-0 border-0">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          <Icon name={top.icon} size={20} />
+          <span className="flex-grow-1">{text}</span>
+          {rest.length > 0 ? (
+            <Button
+              className="btn-link"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {m.more(rest.length)}
+            </Button>
+          ) : null}
+          <Action condition={top} busy={busy} onRetry={onRetry} />
+        </div>
+        {expanded && rest.length > 0 ? (
+          <ul className="list-unstyled mb-0 mt-2 d-flex flex-column gap-2">
+            {rest.map((condition) => (
+              <li key={condition.code} className="d-flex align-items-center gap-2 flex-wrap">
+                <Icon name={condition.icon} size={20} />
+                <span className="flex-grow-1">{condition.message}</span>
+                <Action condition={condition} busy={busy} onRetry={onRetry} />
+              </li>
+            ))}
+          </ul>
         ) : null}
-        <Action condition={top} busy={busy} onRetry={onRetry} />
       </div>
-      {expanded && rest.length > 0 ? (
-        <ul className="list-unstyled mb-0 mt-2 d-flex flex-column gap-2">
-          {rest.map((condition) => (
-            <li key={condition.code} className="d-flex align-items-center gap-2 flex-wrap">
-              <Icon name={condition.icon} size={20} />
-              <span className="flex-grow-1">{condition.message}</span>
-              <Action condition={condition} busy={busy} onRetry={onRetry} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }

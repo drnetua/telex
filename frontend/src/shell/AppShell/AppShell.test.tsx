@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -131,6 +131,41 @@ describe("AppShell (AC-170, AC-43, AC-172)", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "More" })).toBeNull();
     expect(more).toHaveFocus();
+  });
+
+  it("AC-43: a re-render with the sheet open leaves focus on the item inside it", async () => {
+    stubWidth(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ inboxCount: 1, conditions: [] })),
+    );
+    const client = setup("/inbox");
+    await userEvent.click(screen.getByRole("button", { name: "More" }));
+    const sheet = screen.getByRole("dialog", { name: "More" });
+    const runs = within(sheet).getByRole("link", { name: "Runs" });
+    runs.focus();
+    await act(async () => {
+      client.setQueryData(["pulse"], { inboxCount: 9, conditions: [] });
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /Inbox/, hidden: true })).toHaveTextContent("9"),
+    );
+    expect(runs).toHaveFocus();
+  });
+
+  it("AC-43: Tab and Shift+Tab stay inside the open More sheet", async () => {
+    stubWidth(true);
+    setup("/inbox");
+    await userEvent.click(screen.getByRole("button", { name: "More" }));
+    const sheet = screen.getByRole("dialog", { name: "More" });
+    const focusable = Array.from(sheet.querySelectorAll<HTMLElement>("a[href], button"));
+    const first = focusable[0] as HTMLElement;
+    const last = focusable[focusable.length - 1] as HTMLElement;
+    last.focus();
+    await userEvent.tab();
+    expect(first).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(last).toHaveFocus();
   });
 
   it("a section under More marks More current; choosing one closes the sheet", async () => {

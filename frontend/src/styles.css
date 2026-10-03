@@ -140,6 +140,11 @@
   .telex-main {
     padding-bottom: 64px;
   }
+
+  /* Toasts sit above the fixed phone bottom bar, not over it. */
+  .telex-toast-container {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 /* Phone: icon-only header buttons meet the 44 px target size (screens.md). */

@@ -29,7 +29,7 @@ export function Toast({
     return () => clearTimeout(timer);
   }, [message, onDismiss, durationMs, sticky]);
   return (
-    <div className="toast-container position-fixed bottom-0 end-0 p-3">
+    <div className="toast-container telex-toast-container position-fixed bottom-0 end-0 p-3">
       <div
         className="toast show"
         role={error ? "alert" : "status"}

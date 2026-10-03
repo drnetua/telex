@@ -24,9 +24,21 @@ function show(conditions: string[] = []) {
 }
 
 describe("StatusBanner", () => {
-  it("renders nothing while all is well", () => {
+  it("AC-176: keeps an empty live region while all is well", () => {
     show();
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("AC-176: the live region element survives from empty to the first condition", () => {
+    const view = show();
+    const region = screen.getByRole("status");
+    view.rerender(
+      <MemoryRouter>
+        <StatusBanner conditions={["bot-blocked"]} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region).not.toBeEmptyDOMElement();
   });
 
   it("shows offline with words, an icon, Try again and no close control", () => {
@@ -70,7 +82,7 @@ describe("StatusBanner", () => {
     show();
     expect(screen.getByRole("status")).toBeInTheDocument();
     act(() => connectivity.reportAnswered());
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   it("shows the most important condition and lists the others under +N more with own actions", async () => {
@@ -96,6 +108,6 @@ describe("StatusBanner", () => {
   it("keeps an unknown code out of the banner", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     show(["foo-bar"]);
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 });

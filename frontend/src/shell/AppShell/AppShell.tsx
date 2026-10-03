@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type KeyboardEvent,
   type ReactNode,
 } from "react";
 import { Link, useLocation } from "react-router";
@@ -113,14 +114,37 @@ function SideMenu({
 
 function MoreSheet({ active, onClose }: { active?: Section; onClose: () => void }) {
   const sheet = useRef<HTMLDivElement>(null);
+  // Read through a ref so a re-render (new onClose) never re-runs the mount-only focus effect.
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
   useEffect(() => {
     sheet.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") closeRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
+  // aria-modal: Tab and Shift+Tab wrap inside the sheet.
+  const trapTab = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(
+      sheet.current?.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)") ?? [],
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first || !last) return;
+    const at = document.activeElement;
+    if (event.shiftKey && (at === first || at === sheet.current)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && at === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
   return (
     <>
       <div className="offcanvas-backdrop fade show" onClick={onClose} />
@@ -131,6 +155,7 @@ function MoreSheet({ active, onClose }: { active?: Section; onClose: () => void 
         aria-modal="true"
         aria-label={m.more}
         tabIndex={-1}
+        onKeyDown={trapTab}
       >
         <div className="offcanvas-header">
           <h2 className="offcanvas-title h4">{m.more}</h2>
