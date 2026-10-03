@@ -57,7 +57,7 @@ class TdlightFacade : TdlibFacade {
         listener: TdlibUpdateListener,
     ) {
         if (update !is TdApi.UpdateAuthorizationState) {
-            listener.onUpdate(TdlibUpdate.Other(tlName(update)))
+            listener.onUpdate(mapUpdate(update))
             return
         }
         when (val state = update.authorizationState) {
@@ -75,6 +75,18 @@ class TdlightFacade : TdlibFacade {
                 listener.onUpdate(TdlibUpdate.Closed)
             }
 
+            is TdApi.AuthorizationStateWaitCode -> {
+                listener.onUpdate(
+                    TdlibUpdate.AuthorizationState(tlName(state), codeLength = codeLength(state.codeInfo?.type)),
+                )
+            }
+
+            is TdApi.AuthorizationStateWaitPassword -> {
+                listener.onUpdate(
+                    TdlibUpdate.AuthorizationState(tlName(state), passwordHint = state.passwordHint?.ifEmpty { null }),
+                )
+            }
+
             else -> {
                 listener.onUpdate(TdlibUpdate.AuthorizationState(tlName(state)))
             }
@@ -86,25 +98,52 @@ class TdlightFacade : TdlibFacade {
     ) : TdlibClient {
         override fun send(request: TdlibRequest): CompletableFuture<TdlibResponse> {
             val result = CompletableFuture<TdlibResponse>()
-            val function =
-                when (request) {
-                    TdlibRequest.GetAuthorizationState -> TdApi.GetAuthorizationState()
-                }
-            client.send(function, { response -> result.complete(toResponse(response)) }) { error ->
+            if (request is TdlibRequest.GetCallingCode) {
+                result.complete(callingCode(request))
+                return result
+            }
+            client.send(toFunction(request), { response -> result.complete(toResponse(request, response)) }) { error ->
                 result.completeExceptionally(error)
             }
             return result
         }
 
+        private fun callingCode(request: TdlibRequest.GetCallingCode): TdlibResponse =
+            when (val info = client.execute(TdApi.GetPhoneNumberInfoSync("en", request.phoneNumber))) {
+                is TdApi.PhoneNumberInfo -> TdlibResponse.CallingCode(info.countryCallingCode)
+                is TdApi.Error -> TdlibResponse.Failure(info.code, info.message)
+                else -> TdlibResponse.Ok(tlName(info))
+            }
+
+        private fun toFunction(request: TdlibRequest): TdApi.Function<*> =
+            when (request) {
+                TdlibRequest.GetAuthorizationState -> TdApi.GetAuthorizationState()
+                is TdlibRequest.SetPhoneNumber -> TdApi.SetAuthenticationPhoneNumber(request.phoneNumber, null)
+                TdlibRequest.ResendCode -> TdApi.ResendAuthenticationCode()
+                is TdlibRequest.CheckCode -> TdApi.CheckAuthenticationCode(request.code)
+                is TdlibRequest.CheckPassword -> TdApi.CheckAuthenticationPassword(request.password)
+                TdlibRequest.GetMe -> TdApi.GetMe()
+                is TdlibRequest.LoadChats -> TdApi.LoadChats(toChatList(request.list), request.limit)
+                TdlibRequest.LogOut -> TdApi.LogOut()
+                is TdlibRequest.GetCallingCode -> error("handled by send")
+            }
+
         override fun close() {
             client.send(TdApi.Close()) { /* completion is reported as authorizationStateClosed */ }
         }
 
-        private fun toResponse(response: TdApi.Object): TdlibResponse =
-            when (response) {
-                is TdApi.Error -> TdlibResponse.Failure(response.code, response.message)
+        private fun toResponse(
+            request: TdlibRequest,
+            response: TdApi.Object,
+        ): TdlibResponse =
+            when {
+                response is TdApi.Error -> TdlibResponse.Failure(response.code, response.message)
+                request == TdlibRequest.GetMe && response is TdApi.User -> me(response)
                 else -> TdlibResponse.Ok(tlName(response))
             }
+
+        private fun me(user: TdApi.User) =
+            TdlibResponse.Me(user.id, user.firstName.orEmpty(), user.lastName.orEmpty(), user.phoneNumber.orEmpty())
     }
 
     private companion object {
@@ -122,5 +161,79 @@ class TdlightFacade : TdlibFacade {
 
         /** `TdApi.AuthorizationStateReady` -> `authorizationStateReady`, TDLib's own name for the type. */
         fun tlName(value: TdApi.Object): String = value.javaClass.simpleName.replaceFirstChar { it.lowercaseChar() }
+
+        const val DEFAULT_CODE_LENGTH = 5
+
+        fun codeLength(type: TdApi.AuthenticationCodeType?): Int =
+            when (type) {
+                is TdApi.AuthenticationCodeTypeTelegramMessage -> type.length
+                is TdApi.AuthenticationCodeTypeSms -> type.length
+                is TdApi.AuthenticationCodeTypeCall -> type.length
+                else -> DEFAULT_CODE_LENGTH
+            }
+
+        fun toChatList(list: TdlibChatList): TdApi.ChatList =
+            when (list) {
+                TdlibChatList.Main -> TdApi.ChatListMain()
+                TdlibChatList.Archive -> TdApi.ChatListArchive()
+                is TdlibChatList.Folder -> TdApi.ChatListFolder(list.id)
+            }
+
+        fun fromChatList(list: TdApi.ChatList?): TdlibChatList =
+            when (list) {
+                is TdApi.ChatListArchive -> TdlibChatList.Archive
+                is TdApi.ChatListFolder -> TdlibChatList.Folder(list.chatFolderId)
+                else -> TdlibChatList.Main
+            }
+
+        fun position(position: TdApi.ChatPosition) = TdlibChatPosition(fromChatList(position.list), position.order)
+
+        fun positions(positions: Array<TdApi.ChatPosition>?) = positions.orEmpty().map(::position)
+
+        fun chatType(type: TdApi.ChatType?): TdlibChatType =
+            when (type) {
+                is TdApi.ChatTypeSecret -> TdlibChatType.Secret
+                is TdApi.ChatTypeBasicGroup -> TdlibChatType.BasicGroup
+                is TdApi.ChatTypeSupergroup -> if (type.isChannel) TdlibChatType.Channel else TdlibChatType.Supergroup
+                else -> TdlibChatType.Private
+            }
+
+        fun mapUpdate(update: TdApi.Object): TdlibUpdate =
+            when (update) {
+                is TdApi.UpdateConnectionState -> {
+                    TdlibUpdate.ConnectionState(tlName(update.state))
+                }
+
+                is TdApi.UpdateNewChat -> {
+                    TdlibUpdate.NewChat(chat(update.chat))
+                }
+
+                is TdApi.UpdateChatTitle -> {
+                    TdlibUpdate.ChatTitle(update.chatId, update.title)
+                }
+
+                is TdApi.UpdateChatPosition -> {
+                    TdlibUpdate.ChatPosition(update.chatId, position(update.position))
+                }
+
+                is TdApi.UpdateChatLastMessage -> {
+                    TdlibUpdate.ChatPositions(update.chatId, positions(update.positions))
+                }
+
+                is TdApi.UpdateChatReadInbox -> {
+                    TdlibUpdate.ChatUnread(update.chatId, update.unreadCount)
+                }
+
+                is TdApi.UpdateChatRemovedFromList -> {
+                    TdlibUpdate.ChatPosition(update.chatId, TdlibChatPosition(fromChatList(update.chatList), 0))
+                }
+
+                else -> {
+                    TdlibUpdate.Other(tlName(update))
+                }
+            }
+
+        fun chat(chat: TdApi.Chat) =
+            TdlibChat(chat.id, chatType(chat.type), chat.title.orEmpty(), chat.unreadCount, positions(chat.positions))
     }
 }
