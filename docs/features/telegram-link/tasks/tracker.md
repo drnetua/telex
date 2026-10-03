@@ -30,5 +30,18 @@
 | T23 | Build SCR-60 Accounts: the list with states, Add account, Sign in again and the unlink dialog | ui | Anton Husiev | M | T19 | done |
 | T24 | Prove nothing is left behind or leaked: unlink dump, restart delivery, registry and log scans | tests | Anton Husiev | M | T10, T11, T12, T13, T16 | done |
 | T25 | Add Playwright end-to-end tests of linking, live state and unlink at 360 px and 1280 px with axe | tests | Anton Husiev | M | T14, T15, T17, T21, T22, T23 | done |
+| T26 | Publish sync progress inside a transaction, write the sync time from the Clock, time the sync once | app | Anton Husiev | S | — | todo |
+| T27 | Start chat sync only after the Linked Account is committed, report Telegram's real total, drop chats left meanwhile | app | Anton Husiev | M | T26 | todo |
+| T28 | Unlink: report an unconfirmed sign-out for Session lost, and sign out the session the delete actually removed | app | Anton Husiev | S | T27 | todo |
+| T29 | Linking refusals: end the attempt on an unregistered number, 503 when Telegram does not answer at start, clear codeLength, whitespace phone is 422 | app | Anton Husiev | M | T28, T34 | todo |
+| T30 | Log out sign-ins Telegram authorized but teleX did not finish, and never hang on a failed client open | infra | Anton Husiev | M | T29 | todo |
+| T31 | Make the SSE emitter registry add and remove atomic per Owner | ports | Anton Husiev | S | — | todo |
+| T32 | Cover the remaining contract responses over HTTP, run completions concurrently, and restart the app for real | tests | Anton Husiev | M | T30, T31 | todo |
+| T33 | Bring sad §6/§7, the api-sync open questions and the screens.md registry in line with the code | docs | Anton Husiev | S | T30, T36 | todo |
+| T34 | SPA failures: domain 503 refusals stay on the page, SCR-02 never throws in render, step errors always give feedback, cache the new account | ui | Anton Husiev | M | — | todo |
+| T35 | SCR-60 and the banner: linked Toast, Reconnecting and Session lost notes, banner refusals, unlink focus, one-shot arrival Toast, icon and copy fixes | ui | Anton Husiev | M | T34, T29 | todo |
+| T36 | Render SCR-02 in the confirmed onboarding card layout | ui | Anton Husiev | S | T35 | todo |
+| T37 | Reopen the live-update stream when the browser has closed it, with capped backoff | ui | Anton Husiev | S | — | todo |
+| T38 | End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals | tests | Anton Husiev | M | T27, T29, T30, T35, T36, T37 | todo |
 
-**Total:** 25 tasks, ~22 person-days (S = ½ day, M/L = 1 day).
+**Total:** 38 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03.
