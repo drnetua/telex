@@ -32,7 +32,7 @@ A Telegram session is a set of TDLib files (a SQLite database and a binlog) in o
 
 ## Decision outcome
 
-**Chosen:** option 1. `identity` exposes `OwnerKeys.seal(ownerId, plaintext, aad)` / `open(ownerId, sealed, aad)` and never hands out the Owner key itself. The associated data (`aad`) is the `LinkedAccountId`, so a sealed key can't be moved to another account. `messaging` generates the TDLib key when a linking attempt starts and keeps it only in memory until the account is created. It then stores the key sealed, unseals it to start a client, and passes the raw bytes to the `telegram` port. The bytes live only in the memory of the running client. An unlink deletes the sealed key in the same transaction as the account row (ADR-0002). Without that key, any session directory left on disk is unreadable (crypto-shredding: destroying the key instead of relying on every copy of the data being deleted). A startup sweep then removes such orphan directories. Option 2 can't destroy or replace one Owner's key on its own, and rotating the master key would change every Owner's key at once. Option 3 fights TDLib's constant binlog writes and risks losing session state on a crash.
+**Chosen:** option 1. `identity` exposes `OwnerKeys.seal(ownerId, plaintext, aad)` / `open(ownerId, sealed, aad)` and never hands out the Owner key itself. The associated data (`aad`) is the `LinkedAccountId`, so a sealed key can't be moved to another account. `messaging` generates the TDLib key when a linking attempt starts and keeps it only in memory until the account is created. It then stores the key sealed, unseals it to start a client, and passes the raw bytes to the `telegram` port. The bytes live only in the memory of the running client. An unlink deletes the sealed key in the same transaction as the account row (ADR-0002). Without that key, any session directory left on disk is unreadable (crypto-shredding: destroying the key instead of relying on every copy of the data being deleted). The startup sweep and a one-minute retry of failed deletions then remove such orphan directories. Option 2 can't destroy or replace one Owner's key on its own, and rotating the master key would change every Owner's key at once. Option 3 fights TDLib's constant binlog writes and risks losing session state on a crash.
 
 ## Consequences
 
@@ -43,8 +43,8 @@ A Telegram session is a set of TDLib files (a SQLite database and a binlog) in o
 - BYOK reuses `OwnerKeys` as-is.
 
 **Negative**
-- Losing `TELEX_MASTER_KEY` makes every session unreadable. Every Linked Account then goes to "Session lost", and Owners have to sign in again (§11).
-- `TELEX_MASTER_KEY` becomes a required setting for linking. Without it, linking reports "isn't set up" exactly like missing Telegram credentials (AC-119).
+- Losing `TELEX_MASTER_KEY` makes every session unreadable. Once any Owner key exists, `identity` stores a key-check value, and the app refuses to start while the configured key is missing or doesn't match it, so no account is ever shown in a false state. Recovery from a truly lost key is an explicit Operator reset (`TELEX_MASTER_KEY_RESET=true`). It deletes every Owner key, sealed key and session directory, and every Linked Account goes to "Session lost" with "Sign in again" (sad §7, §1 ¶4 override, §11).
+- `TELEX_MASTER_KEY` becomes a required setting for linking. On an installation that has never stored an Owner key, a missing key means linking reports "isn't set up", exactly like missing Telegram credentials (AC-119).
 - TDLib's `files` directory (downloaded media) is not covered by database encryption. E02 downloads no files, but E04 must revisit this (§11).
 
 **Neutral**

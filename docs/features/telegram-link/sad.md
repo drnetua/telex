@@ -32,7 +32,12 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 | Tech Lead | SAD approval; the Linked Account boundary that E03, E04, E09, E17 and E20 build on | Yes |
 | Security Lead | Review of the first stored third-party credential (the Telegram session) and the encryption and unlink decisions, done as a security-focused pass inside `/sdd:review` (spec §6.1) | No |
 
+**Spec deviations carried into the design** (spec §1): agent pause and schedule cancellation on unlink move to E09 / E20, and E02 only announces the unlink ([ADR-0001](adr/0001-move-agent-pause-on-unlink-to-agent-builder.md)). The wizard starts from "Connect Telegram" or the Accounts page instead of onboarding step 2 of 6. The account limit is one installation-wide setting until E26. The unlink dialog is the ordinary C-33 variant. There is no "Open the teleX bot" button before E17.
+
 <!-- Decision overrides (¶4) — populated by the critic resolution loop, empty otherwise. -->
+
+- Decision override: an Operator's deliberate master-key reset (`TELEX_MASTER_KEY_RESET=true`) puts every Linked Account in "Session lost" without Telegram confirming it, an exception to AC-122 — rationale: with the key truly lost, the sessions are unrecoverable, and "Session lost" with "Sign in again" is the honest state and the Owner's only way forward. A missing or wrong key never does this silently: the app refuses to start (ADR-0003, §7).
+- Decision override: "what the Operator can see" (AC-03, AC-120, spec §6.1) is read as teleX's UI, its configuration, logs and metrics, none of which carry Telegram data. The Operator's own access to the host, the database and the master key is outside that promise, because a self-hosted installation trusts whoever runs it — rationale: no encryption inside teleX can hide data from the holder of the master key. Recorded as a §11 risk for the security review.
 
 ## 2. Constraints
 
@@ -66,7 +71,7 @@ target_surfaces: [backend-service, web-frontend]  # filled in §4 — subset of:
 
 ## 3. Context and scope
 
-This feature opens teleX's second outer boundary, toward Telegram. Until now teleX only faced browsers and a mail server. Now it signs in to Telegram as a person, holds that person's session, and keeps a connection open per Linked Account. There are two trust boundaries. The browser stays untrusted until it carries a live Sign-in Session, and even then it reaches only its own Owner's Linked Accounts (AC-03). Telegram is trusted for identity, meaning it says which Telegram account a sign-in belongs to and whether a session still exists. Telegram data itself (names, chat titles) is stored and shown, never interpreted.
+This feature opens teleX's second outer boundary, toward Telegram. Until now teleX only faced browsers and a mail server. Now it signs in to Telegram as a person, holds that person's session, and keeps a connection open per Linked Account. There are two trust boundaries. The browser stays untrusted until it carries a live Sign-in Session, and even then it reaches only its own Owner's Linked Accounts (AC-03). Telegram is trusted for identity, meaning it says which Telegram account a sign-in belongs to and whether a session still exists. Telegram data itself (names, chat titles) is stored and shown, never interpreted. A third boundary is the Operator. They see teleX's UI, configuration, logs and metrics, and none of those carry Telegram data. Their access to the host, the database and the master key sits outside teleX's promise (§1 ¶4 override, §11).
 
 <!-- brownfield: skeleton + E01 present at f0d9437 — identity (Owners, SignInSessions, Passkeys, SignInSessionStarted; JdbcClient rows under internal/<concern>/), web (REST controllers under /api/v1, Spring Security with an opaque session cookie + CSRF cookie, SpaHosting, ProblemHandler), mail module, Modulith JDBC registry with republish on restart; telegram = package-info only (allowedDependencies: shared); web may not depend on telegram; messaging = package-info only; telegram-tdlib = empty TdlibFacade, no binding in the version catalog; no SSE endpoint or client; no port fakes in integrationTest; Dockerfile (temurin 25 jdk → jre) + compose (app, postgres, mailpit). docs/architecture-map.md still reflects ce5eabf (stale — re-run /sdd:survey). -->
 
@@ -90,7 +95,7 @@ C4Context
     Person(operator, "Operator", "Gives the installation its Telegram app credentials")
 
     System_Ext(cloudflare, "Cloudflare", "Production only: HTTPS edge")
-    System(telex, "teleX", "Web Telegram client; this feature links Telegram accounts and keeps them connected")
+    System(telex, "teleX", "Web Telegram client, this feature links Telegram accounts and keeps them connected")
     System_Ext(telegram, "Telegram", "Telegram servers: sign-in, sessions, chat list")
     System_Ext(tgapp, "Telegram app", "Owner's phone or desktop: receives the code, lists active sessions")
 
@@ -131,7 +136,7 @@ Tactical choices in §5–§8 trace to these four:
 The repo's Spring Modulith modular monolith is followed as-is (`internal/<concern>/` sub-packages, public API and events at the module root, `ModularityTest`). The feature touches four modules and the facade subproject, and every edge it needs is already allowed by the current `package-info.java` files:
 - **`messaging`** (core, first real code) owns the Linked Account, the linking attempt and the chat list (ADR-0002).
 - **`telegram`** (integration, `shared` only) owns Telegram sessions: the port, the `tdlight` and `fake` adapters, and session directories (ADR-0004).
-- **`identity`** (core) gains `OwnerKeys` for envelope encryption and reads the master key (ADR-0003).
+- **`identity`** (core) gains `OwnerKeys` for envelope encryption and the master-key check (ADR-0003), plus a `SignInSessions.isLive(id)` query that the attempt sweep uses (AC-110).
 - **`web`** (interface) adds the account and wizard endpoints and the SSE stream, and calls only `messaging` and `identity` (ADR-0005).
 
 Ids that cross into `telegram` are `telegram`'s own (`TelegramSessionId`, Telegram user and chat ids). `OwnerId` and `LinkedAccountId` never enter it.
@@ -150,7 +155,7 @@ backend/app/src/main/kotlin/telex/
 │       ├── account/                 LinkedAccount aggregate, states, one-owner + duplicate + limit rules, repository
 │       ├── attempt/                 in-memory LinkingAttempts (one per Owner), 15-min expiry sweep, outcome mapping
 │       ├── channel/                 Channel rows (the chat list), upsert/remove from telegram events, counts
-│       ├── lifecycle/               boot reconnect of every Connected account, telegram event listeners → state
+│       ├── lifecycle/               boot reconnect of every account that is not Session lost, telegram event listeners → state
 │       └── config/                  max linked accounts per Owner (installation-wide, default 3)
 ├── telegram/                        integration ACL — depends on shared only
 │   ├── TelegramSessions             port: open, phone, code, resend, password, log out, close and destroy
@@ -159,9 +164,10 @@ backend/app/src/main/kotlin/telex/
 │   └── internal/
 │       ├── tdlight/                 adapter over telex.telegram.tdlib facade; TDLib states → port types; chat sync
 │       ├── fake/                    in-memory Telegram (codes, 2FA, flood waits, bans, termination, N chats)
-│       └── files/                   session directory root, per-session dirs, orphan sweep at startup
+│       └── files/                   session directory root, per-session dirs, orphan sweep at startup, one-minute retry of failed deletions
 ├── identity/                        existing core
-│   ├── OwnerKeys                    seal / open with the Owner's key (AES-256-GCM, AAD), lazily creates the key
+│   ├── OwnerKeys                    seal / open with the Owner's key (AES-256-GCM, AAD), lazily creates the key, master-key check
+│   ├── SignInSessions.isLive(id)    new query: is this Sign-in Session still live (AC-110)
 │   └── internal/key/                owner_key rows, master key from TELEX_MASTER_KEY
 ├── web/                             existing interface
 │   ├── api/LinkedAccountsController, api/LinkingController   SCR-02 / SCR-60 / SCR-10 endpoints
@@ -262,6 +268,11 @@ sequenceDiagram
     alt U is another Owner's account, or already this Owner's and connected, or the limit is now full
         Msg->>Tg: log out and destroy the session
         Msg-->>SPA: refusal (one Owner per account, already linked, or limit)
+    else U is this Owner's account in Session lost
+        Msg->>Id: seal the new TDLib key for that Linked Account
+        Msg->>Msg: swap in the new Telegram session under the same Linked Account, Connected, no limit check
+        Msg->>Tg: destroy the old session directory
+        Msg-->>SPA: signed in again, everything attached kept
     else new account within the limit
         Msg->>Id: seal TDLib key for the new Linked Account
         Msg->>Msg: insert Linked Account Connected with masked phone, record AccountLinked
@@ -346,7 +357,7 @@ sequenceDiagram
   - `TELEX_MASTER_KEY`: 32 random bytes, base64. The README shows `openssl rand -base64 32` and warns that losing it loses every session (ADR-0003).
   - `TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER`, default 3 (spec §8 OQ-1 default).
 
-  When the API credentials or the master key are missing, linking reports "isn't set up" (AC-119). The app still starts.
+  When the API credentials are missing, or the master key is missing on an installation that has never stored an Owner key, linking reports "isn't set up" (AC-119), and the app still starts. Once any Owner key exists, `identity` keeps a key-check value (a known constant encrypted under the master key). If `TELEX_MASTER_KEY` is then missing or doesn't match it, the app **refuses to start** with an error that names the setting, so no Linked Account is ever shown in a false state. Recovery from a truly lost key is explicit: start once with `TELEX_MASTER_KEY_RESET=true` and the new key. That deletes every Owner key, sealed TDLib key and session directory, puts every Linked Account in "Session lost" (kept, with "Sign in again"), and records a new key-check value (§1 ¶4 override).
 - **Local and CI.** `compose.yaml` gains the volume and passes the variables. Integration tests and Playwright run `telex.telegram.adapter=fake`. `bootRun --spring.profiles.active=local` uses `fake` unless real credentials are set. Real-Telegram checks (spec §6 manual rows) run against Telegram's test servers or a test account, as the spec states.
 - **Boot order.** The app starts, Flyway migrates, the session sweeper runs, then `messaging` reopens every non-lost Linked Account in parallel on virtual threads. Readiness doesn't wait for the reconnects. The spec's "≤ 60 s after teleX is ready" counts from there.
 
@@ -375,10 +386,10 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 |---|---|---|
 | Logging | Spring Boot default logging with module loggers. **Never logged:** phone numbers, login codes, passwords, password hints, TDLib keys, Telegram names, chat titles, raw TDLib objects. Accounts appear in logs only as `LinkedAccountId` or `TelegramSessionId`. TDLib's own log goes to the app log at verbosity 1 (errors only) | here |
 | Authentication | Unchanged E01 filter chain. Every account, wizard and stream endpoint needs a live Sign-in Session | platform-skeleton ADR-0001 |
-| Authorization | Owner-scoped by construction. `messaging` takes the `OwnerId` from the caller and filters every Linked Account and Channel query on `owner_id`. Another Owner's account behaves as missing, with the same `not-found` problem, for list, get, re-sign-in, unlink and chats (AC-03). The Operator has no endpoint that reads Linked Accounts (AC-120) | here |
+| Authorization | Owner-scoped by construction. `messaging` takes the `OwnerId` from the caller and filters every Linked Account and Channel query on `owner_id`. Another Owner's account behaves as missing, with the same `not-found` problem, for list, get, re-sign-in, unlink and chats (AC-03). The Operator has no endpoint that reads Linked Accounts, and logs and metrics carry no Telegram data (AC-120). Database and host access by the Operator is outside this promise (§1 ¶4, §11) | here |
 | One Owner per Telegram account | Unique index on `linked_account.telegram_user_id` across the installation. The check runs after Telegram reports who signed in, not on the phone number (AC-04, AC-108). Two Owners finishing at the same moment are settled by the index: the loser's session is logged out | ADR-0002 |
-| Account limit | Checked when an attempt starts and again, inside the insert transaction, when it finishes (AC-115). Session-lost accounts count, re-sign-in takes no new place, and a lowered limit never unlinks. The final count runs under a row lock on the Owner's accounts, so two parallel finishes can't both take the last place | here |
-| Linking attempt | At most one per Owner, held in memory by `messaging`. It holds the open Telegram session, the step, where it started (SCR-10 or SCR-60), the target account for "Sign in again", the Sign-in Session that last stepped it and the last-step time. It is discarded on cancel, after 15 min without a step (a one-minute sweep), when the Sign-in Session that last stepped it is no longer live (AC-110), or on restart. Discarding always closes and destroys its Telegram session. An attempt never authorizes without immediately becoming a Linked Account or being logged out, so no teleX device is left behind (AC-109) | here |
+| Account limit | Checked when an attempt starts and again, inside the insert transaction, when it finishes (AC-115). Session-lost accounts count, re-sign-in takes no new place, and a lowered limit never unlinks. The final count runs under a transaction-scoped Postgres advisory lock keyed by the `OwnerId`. `messaging` can't lock `identity`'s owner row, and a row lock on zero accounts would lock nothing. With one attempt per Owner, the second check mainly catches a limit lowered during an attempt. The lock keeps it correct even if a second path (E26 tooling) ever inserts accounts | here |
+| Linking attempt | At most one per Owner, held in memory by `messaging`. It holds the open Telegram session, the step, where it started (SCR-10 or SCR-60), the target account for "Sign in again", the Sign-in Session that last stepped it and the last-step time. It is discarded on cancel, after 15 min without a step (a one-minute sweep), when the Sign-in Session that last stepped it is no longer live (checked through `identity`'s `SignInSessions.isLive` on every step and in the one-minute sweep, AC-110), or on restart. Discarding always closes and destroys its Telegram session. Once Telegram authorizes an attempt, it either becomes a Linked Account or is logged out in the same call, so no teleX device is left behind (AC-109). One residual window remains. If the process dies between Telegram authorizing and that insert or log-out, the attempt's key existed only in memory, so the startup sweep can only delete the directory, and a teleX device may stay in that Telegram account until the Owner ends it (§11) | here |
 | Telegram wait (flood wait) | Not stored by teleX. Telegram itself refuses the same number again before the wait ends, and the wizard shows the remaining time from Telegram's answer as a countdown (AC-02). teleX adds no retries | here |
 | Secrets | Login code and password go from the request straight to TDLib and are never stored or echoed. TDLib keys are generated with `SecureRandom` (32 bytes) and stored only sealed. The master key comes only from config | ADR-0003 |
 | Personal data minimisation | Stored per Linked Account: Telegram user id, display name, **masked** phone (country code and last two digits only; the full number is never stored), state, sealed key, sync counts. Chat-list rows: Telegram chat id, type, title, folder ids, archived flag, unread count, order | here |
@@ -416,7 +427,7 @@ Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim f
 
 *QG-1b: Unlink leaves nothing.*
 - **When:** an Owner unlinks an account, with Telegram reachable or not, and also when the app stops between the database commit and deleting the files.
-- **Then:** spec §6: "0 stored items that identify the Telegram account (session, Telegram account id, phone number, name, chat list) for an unlinked account, always; 0 active teleX devices in Telegram whenever Telegram is reachable at unlink time (otherwise AC-113 applies and nothing is kept for a later retry)".
+- **Then:** spec §6: "0 stored items that identify the Telegram account (session, Telegram account id, phone number, name, chat list) for an unlinked account, always; 0 active teleX devices in Telegram whenever Telegram is reachable at unlink time (otherwise AC-113 applies and nothing is kept for a later retry). Records that carry only teleX's internal id of the Linked Account and no Telegram data (events, metrics) are kept". This allows `AccountUnlinked` to stay in `event_publication` (QG-1c).
 - **How verify:** an integration test with the `fake` adapter unlinks in both cases (confirmed and unreachable). It asserts no `linked_account` or `channel` row, no sealed key and no fake-Telegram session remain. A second test kills the process after the commit and before the directory is deleted, restarts, and asserts that the sweeper removed the directory. The manual check (stored-data dump + the account's active sessions in Telegram) is recorded in the E02 pull request.
 
 *QG-1c: Unlink announcement survives a restart.*
@@ -463,9 +474,11 @@ Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim f
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
 | **TDLight on JDK 25 is still unproven** (roadmap D1, spec §8 OQ-2, overdue "before design"). The natives may not load on `eclipse-temurin:25-jre`, or JNI may misbehave on JDK 25 | High | The spike is the first E02 task, before any wizard work (ADR-0004): natives load in the image and on macOS, a test-server sign-in, two clients in one process. Fallback: official TDLib built in a Dockerfile stage, which changes only `telegram-tdlib` and the Dockerfile. Everything above the port is tested on the `fake` adapter, so wizard work isn't blocked by the spike's outcome | agent (spike), Anton Husiev (Architect) |
-| **Losing `TELEX_MASTER_KEY` loses every session.** Every Linked Account would go to Session lost and need a new sign-in | Medium | The README step generates the key and puts it next to the database backup instructions. The app refuses to start when the master key differs from the one recorded (a key-check value stored with `owner_key`), instead of silently failing every unseal | Anton Husiev (Architect) |
+| **Losing `TELEX_MASTER_KEY` loses every session.** The app won't start until the key is restored, and after an explicit reset every Linked Account needs a new sign-in | Medium | The README step generates the key and puts it next to the database backup instructions. The app refuses to start when the master key is missing or differs from the recorded key-check value, instead of showing accounts in a false state. A truly lost key is recovered by an explicit `TELEX_MASTER_KEY_RESET=true`, which sends every account to Session lost with "Sign in again" (§7, §1 ¶4) | Anton Husiev (Architect) |
 | **Telegram ban or limit risk for the Owner's account** (tech spec §Risks). Signing in from a new device and syncing chats can trigger Telegram's anti-abuse checks | Medium | Official sign-in flow only, Telegram's waits surfaced and never retried around (AC-02), the chat list loaded at TDLib's own pace. No sending in E02 | Anton Husiev (PM) |
 | **Third-party fork dependency.** TDLight may lag official TDLib or stop being maintained | Medium | The facade hides the binding (ADR-0004). Pin the version and re-check at each upgrade. Option 2 of ADR-0004 stays the documented way out | Anton Husiev (Architect) |
+| **Residual windows in "nothing left behind".** (a) A crash between Telegram authorizing an attempt and its insert or log-out leaves a teleX device in that Telegram account, because the attempt's key was only in memory, so the startup sweep can only delete the directory. (b) A session directory whose deletion fails survives until the one-minute retry or the next restart. It is already unreadable, because its sealed key is gone | Low | (a) is a sub-second window and can't happen without a crash. The Owner can end the device in the Telegram app, and AC-113's warning covers the same advice. (b) is covered by crypto-shredding (ADR-0003) plus the retry sweep, and the dump check runs after the sweep | Anton Husiev (Architect) |
+| **Operator access to the database and master key.** Display names, masked phones and chat titles are plain text in Postgres, and whoever holds the master key can open every session. The spec's "the Operator sees nothing" holds only for teleX's UI, config, logs and metrics (§1 ¶4) | Medium | Stated as the trust boundary in §3 and §8. The README tells Owners that the installation's operator is trusted. The security review in `/sdd:review` confirms that no Operator-facing surface leaks Telegram data | Anton Husiev (PM) |
 | **Single instance by construction.** TDLib clients and SSE streams are in-process | Low | Accepted for a self-hosted installation (§7). A second instance needs account sharding and a shared SSE fan-out | Anton Husiev (Architect) |
 | **SSE through Cloudflare.** Proxies may buffer or cut long-lived responses | Low | Heartbeat every 25 s, `X-Accel-Buffering: no`, `Cache-Control: no-store`. The SPA reconnects and refetches everything after a cut (ADR-0005). Polling remains a one-file fallback in the SSE client | Anton Husiev (Architect) |
 | **E06 `app-shell` is designed in parallel** and owns the Status Banner mechanism and the live Inbox counter | Low | E02 adds the "account disconnected" condition to E06's mechanism, and its live channel (ADR-0005) is offered to E06 for the counter. Settle this in `/sdd:design app-shell` or `/sdd:tasks` of whichever lands second | Anton Husiev (PM) |
