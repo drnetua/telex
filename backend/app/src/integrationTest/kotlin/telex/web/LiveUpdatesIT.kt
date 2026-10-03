@@ -25,7 +25,14 @@ import telex.messaging.LinkedAccountId
 import telex.messaging.LinkedAccountState
 import telex.messaging.LinkedAccountStateChanged
 import telex.messaging.LinkedAccountSyncProgressed
+import telex.messaging.MaskedPhone
+import telex.messaging.internal.account.LinkedAccountRows
+import telex.messaging.internal.account.NewLinkedAccount
 import telex.shared.Uuid7
+import telex.telegram.ChatSnapshot
+import telex.telegram.ChatType
+import telex.telegram.TelegramChatsChanged
+import telex.telegram.TelegramSessionId
 import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpClient
@@ -34,6 +41,7 @@ import java.net.http.HttpResponse
 import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
@@ -57,6 +65,8 @@ class LiveUpdatesIT(
     @Autowired lateinit var publisher: ApplicationEventPublisher
 
     @Autowired lateinit var tx: TransactionTemplate
+
+    @Autowired lateinit var accountRows: LinkedAccountRows
 
     private val http = HttpClient.newHttpClient()
     private val open = mutableListOf<Stream>()
@@ -89,6 +99,8 @@ class LiveUpdatesIT(
     @BeforeEach
     fun reset() {
         clock.set(Instant.parse("2026-10-02T14:00:00Z"))
+        jdbc.execute("DELETE FROM channel")
+        jdbc.execute("DELETE FROM linked_account")
         jdbc.execute("DELETE FROM sign_in_session")
         jdbc.execute("DELETE FROM owner")
     }
@@ -172,6 +184,52 @@ class LiveUpdatesIT(
             Thread.sleep(600)
         }
         assertThat(theirs.hints()).isZero()
+    }
+
+    @Test
+    fun `AC-116 AC-121 a chat-list change delivered outside any transaction still reaches the stream and completes`() {
+        val anton = owner("anton@mail.com")
+        val s = stream(start(anton).key)
+        val account = account()
+        val session = TelegramSessionId(UUID.randomUUID())
+        accountRows.insert(
+            NewLinkedAccount(
+                account,
+                anton,
+                Uuid7.next().mostSignificantBits,
+                session,
+                ByteArray(60) { 1 },
+                "Anna",
+                MaskedPhone("380", "42"),
+                clock.instant(),
+            ),
+        )
+
+        publisher.publishEvent(
+            TelegramChatsChanged(
+                session,
+                listOf(ChatSnapshot(1_001L, ChatType.Supergroup, "Chat", listOf(1), false, 0, 1L)),
+                emptyList(),
+                1,
+                true,
+            ),
+        )
+
+        awaitUntil { s.hints() >= 1 }
+        assertThat(s.hints()).isGreaterThanOrEqualTo(1)
+        awaitUntil {
+            jdbc.queryForObject(
+                "SELECT count(*) FROM event_publication WHERE completion_date IS NULL",
+                Int::class.java,
+            ) == 0
+        }
+        assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +
+                    "AND event_type LIKE '%SyncProgressed'",
+                Int::class.java,
+            ),
+        ).isZero()
     }
 
     @Test

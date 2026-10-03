@@ -6,7 +6,9 @@ import telex.messaging.LinkedAccountId
 import telex.shared.Uuid7
 import telex.telegram.ChatSnapshot
 import telex.telegram.ChatType
+import java.sql.Timestamp
 import java.sql.Types
+import java.time.Instant
 import java.util.UUID
 
 /** Chat-list persistence: `channel` rows of one Linked Account, keyed by (account, Telegram chat id). */
@@ -57,23 +59,34 @@ class ChannelRows(
         }
     }
 
-    /** Stores Telegram's reported total (archived included); [completed] also stamps the finish time. */
+    /**
+     * Stores Telegram's reported total (archived included); [completed] also stamps the finish time from [now].
+     * Returns true only on the transition from not-completed to completed.
+     */
     fun recordProgress(
         account: LinkedAccountId,
         total: Int?,
         completed: Boolean,
-    ) {
-        if (total == null && !completed) return
+        now: Instant,
+    ): Boolean {
+        if (total == null && !completed) return false
+        val wasCompleted =
+            jdbc.queryForObject(
+                "SELECT chat_sync_completed_at IS NOT NULL FROM linked_account WHERE id = ?",
+                Boolean::class.java,
+                account.value,
+            ) == true
         jdbc.update(
             "UPDATE linked_account SET chats_total = COALESCE(?, chats_total, " +
                 "(SELECT count(*) FROM channel WHERE linked_account_id = ?)), " +
-                "chat_sync_completed_at = CASE WHEN ? THEN COALESCE(chat_sync_completed_at, now()) " +
+                "chat_sync_completed_at = CASE WHEN ? THEN COALESCE(chat_sync_completed_at, ?) " +
                 "ELSE chat_sync_completed_at END WHERE id = ?",
         ) { ps ->
-            listOf(total, account.value, completed, account.value).forEachIndexed { index, value ->
+            listOf(total, account.value, completed, Timestamp.from(now), account.value).forEachIndexed { index, value ->
                 if (value == null) ps.setNull(index + 1, Types.INTEGER) else ps.setObject(index + 1, value)
             }
         }
+        return completed && !wasCompleted
     }
 
     private fun wire(type: ChatType) =

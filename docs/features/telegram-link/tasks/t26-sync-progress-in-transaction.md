@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/channel/ChatL
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-03 — findings S1, Q10, Q11 (duration part)"
-status: "todo"
+status: "done"
 ---
 
 # T26 — Publish sync progress inside a transaction, write the sync time from the Clock, time the sync once

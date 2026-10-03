@@ -1,5 +1,6 @@
 package telex.messaging
 
+import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
@@ -12,6 +13,8 @@ import org.springframework.context.annotation.Import
 import org.springframework.context.event.EventListener
 import org.springframework.jdbc.core.JdbcTemplate
 import telex.TestcontainersConfiguration
+import telex.identity.FixedClockConfiguration
+import telex.identity.MutableClock
 import telex.identity.OwnerId
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.internal.account.NewLinkedAccount
@@ -27,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 /** AC-116 and AC-121: the chat list of a Linked Account is synced into channel rows with throttled progress. */
 @SpringBootTest
-@Import(TestcontainersConfiguration::class, ChatSyncIT.Probe::class)
+@Import(TestcontainersConfiguration::class, FixedClockConfiguration::class, ChatSyncIT.Probe::class)
 class ChatSyncIT {
     class ProgressLog {
         val events = CopyOnWriteArrayList<LinkedAccountSyncProgressed>()
@@ -53,6 +56,10 @@ class ChatSyncIT {
     @Autowired lateinit var events: ApplicationEventPublisher
 
     @Autowired lateinit var progress: ProgressLog
+
+    @Autowired lateinit var clock: MutableClock
+
+    @Autowired lateinit var meters: MeterRegistry
 
     private class Linked(
         val owner: OwnerId,
@@ -133,6 +140,46 @@ class ChatSyncIT {
                 linked.id.value,
             ),
         ).isEqualTo(ARCHIVED)
+    }
+
+    @Test
+    fun `AC-121 the sync completion time comes from the clock`() {
+        val linked = link()
+
+        deliver(linked, listOf(chat(1)), total = 1, completed = true)
+
+        assertThat(summary(linked).chatSyncCompletedAt).isEqualTo(clock.instant())
+    }
+
+    @Test
+    fun `AC-121 the sync duration is timed once per completed sync`() {
+        val linked = link()
+
+        fun samples() = meters.find("telex.chat_sync.duration").timer()?.count() ?: 0L
+        val before = samples()
+
+        deliver(linked, listOf(chat(1)), total = 2, completed = true)
+        deliver(linked, listOf(chat(2)), total = 2, completed = true)
+        deliver(linked, listOf(chat(2, title = "Renamed")), completed = true)
+
+        assertThat(samples() - before).isEqualTo(1L)
+    }
+
+    @Test
+    fun `AC-116 progress is published in a transaction so no publication stays incomplete`() {
+        val linked = link()
+
+        deliver(linked, listOf(chat(1)), total = 1, completed = true)
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted {
+            assertThat(
+                jdbc.queryForObject(
+                    "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +
+                        "AND event_type LIKE '%SyncProgressed'",
+                    Int::class.java,
+                ),
+            ).isZero()
+        }
     }
 
     @Test

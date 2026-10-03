@@ -37,19 +37,23 @@ class ChatListListener(
     @EventListener
     fun on(event: TelegramChatsChanged) {
         val account = accounts.findBySession(event.sessionId) ?: return
-        started.putIfAbsent(account.id, clock.instant())
-        tx.executeWithoutResult {
-            channels.upsert(account.ownerId.value, account.id, event.upserted)
-            channels.delete(account.id, event.removedChatIds)
-            channels.recordProgress(account.id, event.total, event.loadCompleted)
-        }
-        if (event.loadCompleted) {
+        val now = clock.instant()
+        started.putIfAbsent(account.id, now)
+        val firstCompletion =
+            tx.execute {
+                channels.upsert(account.ownerId.value, account.id, event.upserted)
+                channels.delete(account.id, event.removedChatIds)
+                channels.recordProgress(account.id, event.total, event.loadCompleted, now)
+            } == true
+        if (firstCompletion) {
             started.remove(account.id)?.let {
                 Timer
                     .builder("telex.chat_sync.duration")
                     .register(meters)
                     .record(Duration.between(it, clock.instant()))
             }
+        } else if (event.loadCompleted) {
+            started.remove(account.id)
         }
         throttle.changed(account.ownerId, account.id)
     }
@@ -61,10 +65,15 @@ class ChatSyncConfiguration {
     fun syncProgressThrottle(
         clock: Clock,
         events: ApplicationEventPublisher,
+        tx: TransactionTemplate,
     ): SyncProgressThrottle {
         val scheduler =
             Executors.newSingleThreadScheduledExecutor { Thread(it, "chat-sync-progress").apply { isDaemon = true } }
-        return SyncProgressThrottle(clock, { events.publishEvent(it) }) { delay, task ->
+        return SyncProgressThrottle(clock, {
+            tx.executeWithoutResult { _ ->
+                events.publishEvent(it)
+            }
+        }) { delay, task ->
             scheduler.schedule(task, delay.toMillis(), TimeUnit.MILLISECONDS)
         }
     }
