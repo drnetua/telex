@@ -8,7 +8,7 @@
 | T1 | Promote the staged owner-preferences migration into the live Flyway tree | migration | Anton Husiev | S | — | done |
 | T2 | Add the Theme type and the known timezone list to identity | domain | Anton Husiev | S | — | done |
 | T3 | Read and change the Owner's theme and timezone in identity, with the save-if-unset write | infra | Anton Husiev | M | T1, T2 | todo |
-| T4 | Create the inbox module (InboxSource + sum) and the shared StatusConditionSource contract | wiring | Anton Husiev | S | — | todo |
+| T4 | Create the inbox module (InboxSource + sum) and the shared StatusConditionSource contract | wiring | Anton Husiev | S | — | done |
 | T5 | Serve me with preferences, PATCH /me/preferences, the detected-timezone save and GET /time-zones | ports | Anton Husiev | M | T3 | todo |
 | T6 | Serve GET /api/v1/pulse and the e2e-profile fixture Inbox and condition sources | ports | Anton Husiev | M | T4 | todo |
 | T7 | Add the connectivity state and the 3 s pulse query, and narrow fetch-client failure routing | ui | Anton Husiev | M | — | todo |
