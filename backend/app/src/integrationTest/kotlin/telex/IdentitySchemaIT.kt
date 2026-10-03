@@ -50,6 +50,21 @@ class IdentitySchemaIT {
         }.isInstanceOf(SQLException::class.java).hasMessageContaining("sign_in_grant_wrong_attempts_ck")
     }
 
+    @Test
+    fun `owner preferences default for existing owners and reject bad rows`() {
+        val pick = "WHERE email = 'pref@mail.com'"
+        exec("INSERT INTO owner VALUES (gen_random_uuid(), 'pref@mail.com', 'pref@mail.com', now())")
+        val stored = "theme || '/' || coalesce(time_zone, 'null') || '/' || time_zone_is_fallback"
+        assertThat(query("SELECT $stored FROM owner $pick")).containsExactly("system/null/false")
+        assertThatThrownBy { exec("UPDATE owner SET theme = 'blue' $pick") }
+            .isInstanceOf(SQLException::class.java)
+            .hasMessageContaining("owner_theme_ck")
+        assertThatThrownBy {
+            exec("UPDATE owner SET time_zone = 'Europe/Kyiv', time_zone_is_fallback = true $pick")
+        }.isInstanceOf(SQLException::class.java).hasMessageContaining("owner_time_zone_fallback_ck")
+        exec("UPDATE owner SET time_zone = 'UTC', time_zone_is_fallback = true, theme = 'dark' $pick")
+    }
+
     private fun connect(): Connection =
         DriverManager.getConnection(postgres.jdbcUrl, postgres.username, postgres.password)
 

@@ -5,7 +5,7 @@
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| T1 | Promote the staged owner-preferences migration into the live Flyway tree | migration | Anton Husiev | S | — | todo |
+| T1 | Promote the staged owner-preferences migration into the live Flyway tree | migration | Anton Husiev | S | — | done |
 | T2 | Add the Theme type and the known timezone list to identity | domain | Anton Husiev | S | — | done |
 | T3 | Read and change the Owner's theme and timezone in identity, with the save-if-unset write | infra | Anton Husiev | M | T1, T2 | todo |
 | T4 | Create the inbox module (InboxSource + sum) and the shared StatusConditionSource contract | wiring | Anton Husiev | S | — | todo |
