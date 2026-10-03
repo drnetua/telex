@@ -8,7 +8,7 @@ files_hint: ["frontend/src/api/destination.ts", "frontend/src/app/FailureBoundar
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-2 (R2-1, R2-2, R2-5, R2-6)"
-status: "todo"
+status: "done"
 ---
 
 # T28 — Guard the remembered destination against blocked storage, revert a failed theme save only over its own choice, and cover the review-1 test gaps

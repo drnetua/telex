@@ -12,13 +12,22 @@ function isAuthPage(path: string): boolean {
  * Kept once (the first page that was refused wins) and never a sign-in or other auth page.
  */
 export function rememberDestination(path: string): void {
-  if (isAuthPage(path) || localStorage.getItem(KEY) !== null) return;
-  localStorage.setItem(KEY, path);
+  try {
+    if (isAuthPage(path) || localStorage.getItem(KEY) !== null) return;
+    localStorage.setItem(KEY, path);
+  } catch {
+    // Blocked storage: nothing is remembered and sign-in lands on the Inbox.
+  }
 }
 /** Single-slash relative paths only; anything else leads to the Inbox. Cleared on read. */
 export function takeRememberedDestination(): string {
-  const path = localStorage.getItem(KEY);
-  localStorage.removeItem(KEY);
+  let path: string | null = null;
+  try {
+    path = localStorage.getItem(KEY);
+    localStorage.removeItem(KEY);
+  } catch {
+    // Blocked storage: nothing was remembered.
+  }
   if (path && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\")) return path;
   return INBOX;
 }

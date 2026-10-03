@@ -120,10 +120,14 @@ function chooseTheme(client: QueryClient, choice: ThemeChoice): Promise<void> {
     (error: unknown) => {
       const now = readThemeSave(client);
       if (seq !== now.latest) return;
-      applyTheme(now.settled);
-      rememberTheme(now.settled);
+      // Another tab picked a theme since this choice: that newer choice stays and nothing is offered back.
+      const superseded = currentChoice() !== choice;
+      if (!superseded) {
+        applyTheme(now.settled);
+        rememberTheme(now.settled);
+      }
       const routed = goesToFailureRouting(error);
-      writeThemeSave(client, { pending: null, failed: routed ? null : choice });
+      writeThemeSave(client, { pending: null, failed: routed || superseded ? null : choice });
       if (routed) failureBus.handler(error, () => chooseTheme(client, choice));
     },
   );

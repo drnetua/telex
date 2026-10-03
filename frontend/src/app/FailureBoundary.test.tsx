@@ -37,6 +37,7 @@ async function sendFromSignIn() {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   localStorage.clear();
   vi.unstubAllGlobals();
   resetConnectivity();
@@ -217,6 +218,38 @@ describe("auth failures leave the shell cleanly (AC-173, AC-175)", () => {
     await screen.findByRole("heading", { level: 1, name: /session/i });
     expect(localStorage.getItem("telex.destination")).toBe("/runs");
   });
+
+  it("session-ended clears the query cache (AC-175)", async () => {
+    const client = createAppQueryClient();
+    client.setQueryData(PULSE_KEY, { inboxCount: 7, conditions: [] });
+    client.setQueryData(["me"], { ownerId: "o1", email: "old@example.com" });
+    vi.stubGlobal("fetch", refuse("session-ended"));
+    setup("/profile", client);
+    await screen.findByRole("heading", { level: 1, name: /session/i });
+    expect(client.getQueryData(PULSE_KEY)).toBeUndefined();
+    expect(client.getQueryData(["me"])).toBeUndefined();
+  });
+
+  it.each([
+    ["unauthenticated", () => screen.findByLabelText("Email")],
+    ["session-ended", () => screen.findByRole("heading", { level: 1, name: /session/i })],
+  ])(
+    "%s with blocked storage still clears the cache and leaves the shell (AC-175)",
+    async (code, landed) => {
+      const blocked = () => {
+        throw new DOMException("blocked", "SecurityError");
+      };
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(blocked);
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(blocked);
+      vi.spyOn(Storage.prototype, "removeItem").mockImplementation(blocked);
+      const client = createAppQueryClient();
+      client.setQueryData(["me"], { ownerId: "o1", email: "old@example.com" });
+      vi.stubGlobal("fetch", refuse(code));
+      setup("/profile", client);
+      await landed();
+      expect(client.getQueryData(["me"])).toBeUndefined();
+    },
+  );
 
   it("a sign-in failure clears the query cache (AC-175)", async () => {
     const client = createAppQueryClient();

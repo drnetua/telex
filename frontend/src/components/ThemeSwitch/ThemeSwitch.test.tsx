@@ -301,6 +301,38 @@ describe("one shared theme state (AC-179, AC-181, AC-182)", () => {
   });
 });
 
+describe("a failed save reverts only its own choice (AC-181, AC-182)", () => {
+  it("AC-182: a failure reverts to the theme applied here, not to a differing cached account theme", async () => {
+    client.setQueryData<Me>(meKey, { ...me, theme: "dark" });
+    setup("segmented");
+    await userEvent.click(screen.getByRole("radio", { name: "System" }));
+    await act(async () => patches[0]?.settle(new TypeError("offline")));
+    expect(localStorage.getItem(THEME_KEY)).toBe("light");
+    expect(attr()).toBe("light");
+    expect(screen.getByRole("radio", { name: "Light" })).toBeChecked();
+  });
+
+  it("AC-181: a theme picked in another tab after the choice survives that choice's failed save", async () => {
+    stubDevice(true);
+    setup("segmented");
+    const stop = startThemeRuntime();
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    act(() => {
+      localStorage.setItem(THEME_KEY, "system");
+      window.dispatchEvent(new StorageEvent("storage", { key: THEME_KEY, newValue: "system" }));
+    });
+    const writes = vi.spyOn(Storage.prototype, "setItem");
+    await act(async () => patches[0]?.settle(new TypeError("offline")));
+    expect(localStorage.getItem(THEME_KEY)).toBe("system");
+    expect(writes).not.toHaveBeenCalledWith(THEME_KEY, expect.anything());
+    expect(attr()).toBe("dark");
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    writes.mockRestore();
+    stop();
+  });
+});
+
 describe("failed theme save routing (AC-173, AC-176, AC-182)", () => {
   afterEach(() => vi.restoreAllMocks());
 
