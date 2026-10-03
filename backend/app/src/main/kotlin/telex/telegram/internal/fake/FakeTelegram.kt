@@ -24,7 +24,10 @@ import java.util.concurrent.atomic.AtomicLong
  * 5 flood wait on the phone, 6 flood wait on the code, 8 two-step with hint and flood wait on the password,
  * 7 terminate right after link, 9 terminate a moment after link, once the Linked Account exists);
  * YYYY is the number of chats (and makes the account unique). A number in the shape `99965XYYYY` is unregistered
- * only once its code is checked (Telegram's WaitRegistration), whatever X is.
+ * only once its code is checked (Telegram's WaitRegistration), whatever X is. A number in the shape `99964XYYYY`
+ * scripts the Linked Account's life after the link: X = 0 makes Telegram unreachable for a while, then reachable
+ * again (Reconnecting, then Connected); X = 1 ends the first session of that phone a moment after the link, and the
+ * session made by signing in again survives.
  * Like TDLib, an unregistered number closes the client.
  */
 @Suppress("TooManyFunctions") // a port implementation plus its test hooks
@@ -44,6 +47,7 @@ class FakeTelegram(
     private val sessions = ConcurrentHashMap<TelegramSessionId, Session>()
     private val endedWhileStopped = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val loggedOut = ConcurrentHashMap.newKeySet<TelegramSessionId>()
+    private val terminatedPhones = ConcurrentHashMap.newKeySet<String>()
 
     /** Test hook: while true, [open] fails as if Telegram never reached the phone step. */
     @Volatile var openUnavailable = false
@@ -86,6 +90,8 @@ class FakeTelegram(
         when (scenarioOf(phone)) {
             TERMINATE -> terminate(id)
             TERMINATE_LATER -> terminateLater(id)
+            TERMINATE_ONCE -> if (terminatedPhones.add(phone)) terminateLater(id)
+            OUTAGE -> outageLater(id)
         }
     }
 
@@ -250,6 +256,18 @@ class FakeTelegram(
             }
     }
 
+    /** Makes Telegram unreachable for a while after the sync started, then reachable again (AC-122). */
+    private fun outageLater(id: TelegramSessionId) {
+        Thread
+            .ofVirtual()
+            .start {
+                Thread.sleep(OUTAGE_DELAY_MILLIS)
+                if (sessions.containsKey(id)) dropConnectivity(id)
+                Thread.sleep(OUTAGE_MILLIS)
+                if (sessions.containsKey(id)) restoreConnectivity(id)
+            }
+    }
+
     private fun session(id: TelegramSessionId) = checkNotNull(sessions[id]) { "Unknown session $id" }
 
     private fun reachable(id: TelegramSessionId): Session {
@@ -265,9 +283,17 @@ class FakeTelegram(
                 when {
                     it.startsWith(PHONE_PREFIX) -> it[PHONE_PREFIX.length]
                     it.startsWith(UNREGISTERED_AFTER_CODE_PREFIX) -> UNREGISTERED_AFTER_CODE
+                    it.startsWith(LIFE_PREFIX) -> lifeScenario(it[LIFE_PREFIX.length])
                     else -> null
                 }
             }
+
+    private fun lifeScenario(digit: Char): Char? =
+        when (digit) {
+            '0' -> OUTAGE
+            '1' -> TERMINATE_ONCE
+            else -> null
+        }
 
     private fun authorize(
         session: Session,
@@ -328,6 +354,9 @@ class FakeTelegram(
         private const val PHONE_PREFIX = "99966"
         private const val UNREGISTERED_AFTER_CODE_PREFIX = "99965"
         private const val UNREGISTERED_AFTER_CODE = 'u'
+        private const val LIFE_PREFIX = "99964"
+        private const val OUTAGE = 'o'
+        private const val TERMINATE_ONCE = 'r'
         private const val PHONE_LENGTH = 10
         private const val CHATS_DIGITS = 4
         private const val COUNTRY_CODE_DIGITS = 2
@@ -342,5 +371,7 @@ class FakeTelegram(
         private const val FLOOD_PASSWORD = '8'
         private const val TERMINATE_LATER = '9'
         private const val TERMINATE_LATER_DELAY_MILLIS = 1_500L
+        private const val OUTAGE_DELAY_MILLIS = 1_500L
+        private const val OUTAGE_MILLIS = 6_000L
     }
 }

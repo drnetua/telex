@@ -9,7 +9,7 @@ files_hint: ["e2e/tests/telegram-link.spec.ts", "e2e/support/", "e2e/playwright.
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings S12 (UI part)"
-status: "todo"
+status: "done"
 ---
 
 # T38 — End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals

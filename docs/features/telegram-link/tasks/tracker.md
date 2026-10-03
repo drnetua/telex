@@ -42,6 +42,6 @@
 | T35 | SCR-60 and the banner: linked Toast, Reconnecting and Session lost notes, banner refusals, unlink focus, one-shot arrival Toast, icon and copy fixes | ui | Anton Husiev | M | T34, T29 | done |
 | T36 | Render SCR-02 in the confirmed onboarding card layout | ui | Anton Husiev | S | T35 | done |
 | T37 | Reopen the live-update stream when the browser has closed it, with capped backoff | ui | Anton Husiev | S | — | done |
-| T38 | End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals | tests | Anton Husiev | M | T27, T29, T30, T35, T36, T37 | todo |
+| T38 | End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals | tests | Anton Husiev | M | T27, T29, T30, T35, T36, T37 | done |
 
 **Total:** 38 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03.
