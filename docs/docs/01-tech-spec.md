@@ -135,7 +135,7 @@ Sep 28, 2026 · @Anton Husiev
 
 | Подія | Публікує | Слухає |
 | --- | --- | --- |
-| `AccountLinked` / `AccountUnlinked` | telegram | messaging, agents, audit |
+| `AccountLinked` / `AccountUnlinked` | messaging | messaging, agents, audit |
 | `ConsentGranted` / `ConsentRevoked` | identity | agents (вмикання / зупинка), audit |
 | `OwnerBotLinked` / `OwnerBotBlocked` | bot | identity, web |
 | `MessageReceived` | telegram | messaging, triage, web (SSE) |

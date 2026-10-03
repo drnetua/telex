@@ -13,6 +13,15 @@ services:
       TELEX_MAIL_HOST: mailpit
       TELEX_MAIL_PORT: "1025"
       TELEX_PUBLIC_URL: ${TELEX_PUBLIC_URL:-http://localhost:8080}
+      # Telegram linking stays "not set up" until the Operator gives these (README, "Telegram setup").
+      TELEX_TELEGRAM_API_ID: ${TELEX_TELEGRAM_API_ID:-}
+      TELEX_TELEGRAM_API_HASH: ${TELEX_TELEGRAM_API_HASH:-}
+      TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER: ${TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER:-3}
+      TELEX_MASTER_KEY: ${TELEX_MASTER_KEY:-}
+      TELEX_MASTER_KEY_RESET: ${TELEX_MASTER_KEY_RESET:-false}
+      TELEX_TELEGRAM_SESSIONS_DIR: /var/lib/telex/tdlib
+    volumes:
+      - telex-tdlib:/var/lib/telex/tdlib
     # `docker compose up --wait` (CI e2e, smoke script) returns only once the app answers. The JRE image has no curl
     # and its sh has no /dev/tcp, so the probe is a plain HTTP request over bash.
     healthcheck:
@@ -58,3 +67,4 @@ services:
 
 volumes:
   postgres-data:
+  telex-tdlib:

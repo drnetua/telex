@@ -270,3 +270,34 @@ class LinkingNotSetUpIT {
         fun properties(registry: DynamicPropertyRegistry) = configure(registry, credentials = false)
     }
 }
+
+/** AC-119: credentials without a master key on a fresh installation still start the app and report "not set up". */
+@SpringBootTest
+@Import(TestcontainersConfiguration::class)
+class LinkingNoMasterKeyIT {
+    @Autowired lateinit var linking: Linking
+
+    @Autowired lateinit var signInSessions: SignInSessions
+
+    @Autowired lateinit var jdbc: JdbcTemplate
+
+    @Test
+    fun `starting without a master key is refused as not set up`() {
+        val id = UUID.randomUUID()
+        jdbc.update("INSERT INTO owner VALUES (?, ?, ?, now())", id, "$id@mail.com", "$id@mail.com")
+        val owner = OwnerId(id)
+        val session = signInSessions.start(owner, null, null, null, false).sessionId
+
+        assertThatThrownBy { linking.start(owner, session, LinkingOrigin.INBOX, null) }
+            .isInstanceOf(TelegramLinkingNotSetUp::class.java)
+    }
+
+    companion object {
+        @JvmStatic
+        @DynamicPropertySource
+        fun properties(registry: DynamicPropertyRegistry) {
+            configure(registry, credentials = true)
+            registry.add("telex.master-key") { "" }
+        }
+    }
+}
