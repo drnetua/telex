@@ -8,6 +8,7 @@ import { messages } from "../../messages";
 import { InboxAnnouncement, InboxPill } from "../InboxCounter";
 import { usePulse } from "../pulse";
 import { currentSection, sections, type Section } from "../sections";
+import { StatusBanner } from "../StatusBanner/StatusBanner";
 
 const m = messages.shell;
 const PHONE_QUERY = "(max-width: 767.98px)";
@@ -28,8 +29,6 @@ function usePhone() {
 
 interface AppShellProps {
   email: string;
-  /** Slot at the top of the main column (T13). */
-  banner?: ReactNode;
   children: ReactNode;
 }
 
@@ -213,9 +212,10 @@ function PhoneBar({
 }
 
 /** Signed-in frame (C-01): side menu at 768 px and up, header + bottom bar + More sheet below it. */
-export function AppShell({ email, banner, children }: AppShellProps) {
+export function AppShell({ email, children }: AppShellProps) {
   // The one pulse consumer: undefined until the first answer; the last known count stays through failures.
-  const inboxCount = usePulse().data?.inboxCount;
+  const pulse = usePulse().data;
+  const inboxCount = pulse?.inboxCount;
   const phone = usePhone();
   const location = useLocation();
   const active = currentSection(location.pathname);
@@ -239,7 +239,7 @@ export function AppShell({ email, banner, children }: AppShellProps) {
             <span className="h3 mb-0">{active ? m.sections[active.id] : messages.appName}</span>
           </header>
         ) : null}
-        {banner}
+        <StatusBanner conditions={(pulse?.conditions ?? []).filter((c) => typeof c === "string")} />
         <main className="page-body flex-grow-1 mt-3">
           <div className="container-xl">{children}</div>
         </main>
