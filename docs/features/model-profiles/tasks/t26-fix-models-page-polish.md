@@ -4,7 +4,7 @@ title: "Bare not-found page, honest default errors, the AI-not-set-up alert abov
 layer: "ui"
 deps: ["T25"]
 acs: ["AC-222", "AC-51", "AC-226", "AC-223"]
-files_hint: ["frontend/src/pages/models/", "frontend/src/app/AppRoutes.tsx", "frontend/src/components/ModelProfileCard/", "frontend/src/components/ModelChooser/", "frontend/src/components/FilterBar/", "frontend/src/messages.ts", "frontend/src/styles.css", "e2e/tests/models.spec.ts"]
+files_hint: ["frontend/src/pages/models/", "frontend/src/api/models.ts", "frontend/src/app/AppRoutes.tsx", "frontend/src/components/ModelProfileCard/", "frontend/src/components/ModelChooser/", "frontend/src/components/FilterBar/", "frontend/src/messages.ts", "frontend/src/styles.css", "e2e/tests/models.spec.ts"]
 owner: "Anton Husiev"
 estimate: "S"
 origin: "review-2026-10-03"
@@ -37,6 +37,12 @@ Manifest: alert "at the top of the page, above the tabs". `ModelsPage.tsx:54` sh
 - `FilterBar.tsx:42,46`: hard-coded `id="filter-bar-select"` → `useId()`.
 - `ModelsPage.tsx:60-79`: `role="tab"` buttons need `aria-controls`, a `role="tabpanel"` with `aria-labelledby`, and Left/Right arrow keys with roving `tabIndex`.
 - `ModelsPage.tsx:80-87`, `ProfilesTab.tsx:178-185`, `ProfileEditorModal.tsx:366-373`: three separate `toast-container`s overlap → one shared toast region.
+
+### From the T25 review (follow-ups on the editor, folded in here)
+- `ModelsPage.tsx:23`: the result notice now lives in component state and survives navigation inside the Models page (ModelsPage stays mounted across `/settings/models`, `/profiles/new`, `/profiles/:id`), so a sticky error notice (e.g. the 20-profile limit) stays over the next editor. Fix it together with the shared toast region: a notice belongs to the URL entry it was raised for and goes away on the next navigation (or the Owner dismisses it). Vitest.
+- `ProfileEditorModal.tsx:70`: `loaded = draft.data !== undefined && draft.isFetchedAfterMount` — `isFetchedAfterMount` is also true after a *failed* fetch, so a cached old draft + a failing opening refetch (409 `profile-limit-reached` or 5xx) opens the form with the stale suggested name. Count the draft as loaded only when data arrived after mount (e.g. `dataUpdatedAt > errorUpdatedAt` and fetched after mount). Vitest: cached draft, opening refetch returns 409 → back to the list with the limit notice.
+- `ProfileEditorModal.test.tsx:761-791`: the F1 tests don't exercise the `!loaded` guards — with `refetchOnWindowFocus: false` a refocus sends no request. Trigger the background refetch explicitly (`queryClient.refetchQueries` / `invalidateQueries(modelProfilesKey)`), assert the second request happened, and that the form and the typed value survive a failing refetch.
+- `api/models.ts:150`: Create/Duplicate fetch the draft twice (ProfilesTab's `loadDraft` then the modal's `refetchOnMount: "always"`) and flash the loading state. Accept data fetched just before the modal mounted (e.g. compare `dataUpdatedAt` with the mount time) so the card path makes one request.
 
 All copy in `messages.ts`, tokens only, sentence case. Run `e2e` only if Docker + the e2e stack are practical; otherwise keep `e2e/tests/models.spec.ts` compiling and consistent (tsc/eslint).
 

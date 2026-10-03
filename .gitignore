@@ -19,3 +19,4 @@ graphify-out/cache/stat-index.json
 graphify-out/cost.json
 graphify-out/20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 graphify-out/.graphify_semantic_marker
+.claude/worktrees/

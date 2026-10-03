@@ -601,7 +601,8 @@
         "frontend/src/components/FilterBar/",
         "frontend/src/messages.ts",
         "frontend/src/styles.css",
-        "e2e/tests/models.spec.ts"
+        "e2e/tests/models.spec.ts",
+        "frontend/src/api/models.ts"
       ],
       "file": "docs/features/model-profiles/tasks/t26-fix-models-page-polish.md"
     },
@@ -625,6 +626,31 @@
         "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt"
       ],
       "file": "docs/features/model-profiles/tasks/t27-fix-docs-ac211-and-inventory.md"
+    },
+    {
+      "id": "T28",
+      "title": "Make agents events survive the publication registry, and tighten the T21–T24 tests and build wiring",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-229",
+        "AC-227",
+        "AC-212",
+        "AC-220"
+      ],
+      "dod": "ModelCallFinished (with its ProfileRef) round-trips through the Modulith event publication registry; the review minors on T21–T24 tests are fixed (order of startup validation, completed publication row, delete-side lock and lock-wait-based race, logger level restored, parser price overflow skipped); the -Xemit-jvm-type-annotations flag lives in a convention plugin; the ChainInput maxItems 10 contract change is recorded.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/ProfileRef.kt",
+        "backend/app/src/main/kotlin/telex/agents/ModelCallFinished.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/ModelListParser.kt",
+        "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/agents/",
+        "backend/app/src/integrationTest/kotlin/telex/web/ModelsWriteLimitsApiIT.kt",
+        "backend/app/build.gradle.kts",
+        "build-logic/src/main/kotlin/",
+        "docs/features/model-profiles/contracts/openapi.yaml"
+      ],
+      "file": "docs/features/model-profiles/tasks/t28-fix-events-and-test-tightening.md"
     }
   ]
 }
