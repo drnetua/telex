@@ -97,6 +97,7 @@ class ProfileRulesTest {
         assertThat(validate(draft(name = "balanced"))).containsExactly(FieldError("name", "name-reserved"))
         assertThat(validate(draft(name = "Fast"))).containsExactly(FieldError("name", "name-reserved"))
         assertThat(validate(draft(name = " CAREFUL "))).containsExactly(FieldError("name", "name-reserved"))
+        assertThat(validate(draft(name = "fast and CHEAP"))).containsExactly(FieldError("name", "name-reserved"))
     }
 
     @Test

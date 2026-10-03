@@ -20,7 +20,7 @@ sealed interface SlotRequest {
     ) : SlotRequest
 }
 
-/** RED stub: shape guessed from public-api.md (ImageInput is not defined there). */
+/** An image passed to a vision call: raw bytes plus their media type (e.g. image/png); never stored or logged. */
 class ImageInput(
     val bytes: ByteArray,
     val mediaType: String,

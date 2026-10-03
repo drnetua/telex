@@ -4,7 +4,7 @@ enum class SystemProfileKey(
     val wire: String,
     val displayName: String,
 ) {
-    FAST("fast", "Fast"),
+    FAST("fast", "Fast and cheap"),
     BALANCED("balanced", "Balanced"),
     CAREFUL("careful", "Careful"),
 }
