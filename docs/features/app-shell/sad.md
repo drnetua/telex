@@ -296,25 +296,18 @@ sequenceDiagram
 
 ## 7. Deployment view
 
-<!-- 🎯 Why: the TOPOLOGY DevOps must know without reading the deploy charts — how many replicas,
-     where the background worker lives, AT WHAT NUMBERS we scale.
-     📋 Write: 2–3 sentences on topology + monitoring + concrete threshold numbers.
-     📌 e.g. «500 authors → partition by quarter» (not «we'll think about scale later»).
-     🎯 N/A allowed for XS/S that reuses an existing deployment unit with no change.
-     Deployment-diagram scaffold → templates/deployment.md. -->
-
-<Topology in 2–3 sentences. Where it runs, replicas, scaling thresholds.>
+No new deployment unit. The feature ships inside the existing app image: one Spring Boot process that serves the SPA's static files and the API, plus PostgreSQL, behind Cloudflare in production (`compose.yaml`, platform-skeleton sad §7). The only infrastructure-visible change is the pulse traffic: one small background request every 3 s per visible tab, about 20 a minute. At the course installation's scale (a handful of Owners, a few tabs each) that is well under 10 requests a second, and the app needs no tuning.
 
 **Monitoring:**
-- <Metrics — e.g. `<metric_name>`>
-- <Alerts — e.g. «worker lag > 10 min → page on-call»>
-- <Tracing — e.g. spans on the request boundary>
+- Metrics: Spring Boot Actuator's `http.server.requests`, already on, filtered by `uri=/api/v1/pulse`. Its rate shows how many tabs are open, and its p95 shows the pulse staying well under its 2 s client timeout.
+- Alerts: none new. The course installation has no paging. A pulse p95 above 1 s is the signal to look at the Inbox and condition sources (§11).
+- Tracing: none added.
 
 **Scaling thresholds:**
-- <e.g. comfortable in one table up to N rows/year>
-- <e.g. partition by quarter above N rows/year>
+- Comfortable as is up to about 50 visible tabs (≈ 17 pulses a second), each pulse running one count query per Inbox source.
+- Above that, or once Inbox sources multiply, cache the per-Owner pulse answer for ~1 s in-process, or move live signals to a push channel (ADR-0002 Neutral).
 
-<!-- For XS/S with no deployment change: <!-- N/A: reuses existing deployment unit, no infra change --> -->
+**Configuration:** the `e2e` Spring profile, which enables the fixture sources (§5), is set only by the e2e run, never in `compose.yaml` or production.
 
 ## 8. Crosscutting concepts
 
