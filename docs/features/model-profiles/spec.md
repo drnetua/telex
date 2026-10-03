@@ -247,7 +247,7 @@ Traceability:
 ## 8. Open questions
 
 - [ ] What happens to agents that use a custom profile when the Owner deletes it? Default now: deleting is allowed, and those agents move to the Owner's default profile with a warning on their card (E09 embeds the picker and the card warning per ADR-0001). — owner: Anton Husiev (PM), due: before `/sdd:specify agent-builder`
-- [ ] How long does one model attempt wait before it counts as failed and the next model is tried? Default now: 60 s. — owner: Anton Husiev (Tech Lead), due: before `/sdd:design model-profiles`
+- [x] How long does one model attempt wait before it counts as failed and the next model is tried? Default now: 60 s. — owner: Anton Husiev (Tech Lead), due: before `/sdd:design model-profiles` — **resolved in design:** 60 s, configurable as `telex.llm.attempt-timeout` (sad.md §8, ADR-0003)
 - [ ] Should Owners see, or filter by, whether a model's provider keeps the data sent to it (zero retention)? Default now: not shown. — owner: Anton Husiev (PM), due: before `/sdd:specify guardrails`
 - [ ] Should a slot get a price ceiling (skip models above a set price), as the tech spec's Model Profile describes? Default now: dropped; Budgets in E27 cap spending. — owner: Anton Husiev (PM), due: before `/sdd:specify cost-control`
 - [ ] Who pays for an Owner's model calls once BYOK exists — the installation key, the Owner's key, or the Owner's choice? Default now: the installation key. — owner: Anton Husiev (PM), due: before `/sdd:specify cost-control`
