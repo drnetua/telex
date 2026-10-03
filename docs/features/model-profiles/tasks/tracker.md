@@ -5,7 +5,7 @@
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| T1 | Promote the four staged model-profiles migrations into the live Flyway tree | migration | Anton Husiev | S | — | todo |
+| T1 | Promote the four staged model-profiles migrations into the live Flyway tree | migration | Anton Husiev | S | — | done |
 | T2 | Define the llm catalog value types, the slot-fit rule and the OpenRouter model-list parser | domain | Anton Husiev | M | — | todo |
 | T3 | Store the catalog snapshot in Postgres, load it at start and hold it in memory | infra | Anton Husiev | M | T1, T2 | todo |
 | T4 | Refresh the catalog from OpenRouter at start, every 24 h and every 5 min after a failure | app | Anton Husiev | M | T3 | todo |
