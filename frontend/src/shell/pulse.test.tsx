@@ -3,6 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectivity, resetConnectivity, setShellActive } from "./connectivity";
+import { failureBus, createAppQueryClient } from "../app/queryClient";
 import { usePulse } from "./pulse";
 
 const ok = () => Response.json({ inboxCount: 3, conditions: [] });
@@ -111,5 +112,29 @@ describe("usePulse (AC-176)", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(f).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("a pulse answered 5xx (AC-176)", () => {
+  it("reports not-responding and does not route to SCR-93", async () => {
+    vi.useFakeTimers();
+    resetConnectivity();
+    setShellActive(true);
+    setVisibility("visible");
+    const handler = vi.fn();
+    failureBus.handler = handler;
+    const client = createAppQueryClient();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ code: "internal-error" }, { status: 500 })),
+    );
+    renderHook(() => usePulse(), { wrapper: wrapper(client) });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(connectivity.get()).toBe("not-responding");
+    expect(handler).not.toHaveBeenCalled();
+    client.clear();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    failureBus.handler = () => undefined;
   });
 });

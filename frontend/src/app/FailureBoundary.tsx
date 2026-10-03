@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { rememberDestination } from "../api/destination";
@@ -13,6 +14,7 @@ import { failureBus, type Retry } from "./queryClient";
 export function FailureBoundary({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState<Retry | null>(null);
   const saved = useRef<Retry | null>(null);
   const failures = useRef(0);
@@ -26,10 +28,14 @@ export function FailureBoundary({ children }: { children: ReactNode }) {
         saved.current = null;
         setPending(null);
         rememberDestination(location.pathname + location.search + location.hash);
+        // No cached me or pulse may outlive the session into the next Owner's sign-in (spec 6.1).
+        queryClient.clear();
         void navigate("/sign-in");
       } else if (failure.route === "session-ended") {
         saved.current = null;
         setPending(null);
+        rememberDestination(location.pathname + location.search + location.hash);
+        queryClient.clear();
         void navigate("/session-ended");
       } else if (source === "query" && saved.current) {
         // The page stays mounted under SCR-93; its background refetch failures must not replace the saved action.
@@ -39,7 +45,7 @@ export function FailureBoundary({ children }: { children: ReactNode }) {
         setPending(() => retry);
       }
     };
-  }, [location, navigate]);
+  }, [location, navigate, queryClient]);
 
   async function retry() {
     const action = saved.current;

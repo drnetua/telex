@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "./AppRoutes";
 import { FailureBoundary } from "./FailureBoundary";
 import { connectivity, resetConnectivity, setShellActive } from "../shell/connectivity";
+import { PULSE_KEY } from "../shell/pulse";
 import { createAppQueryClient } from "./queryClient";
 
 const json = (status: number, body: unknown) =>
@@ -13,9 +14,12 @@ const json = (status: number, body: unknown) =>
 
 const down = () => json(503, { code: "unavailable" });
 
-function setup(entry: string | { pathname: string; state: unknown }) {
+function setup(
+  entry: string | { pathname: string; state: unknown },
+  client = createAppQueryClient(),
+) {
   render(
-    <QueryClientProvider client={createAppQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[entry]}>
         <FailureBoundary>
           <AppRoutes />
@@ -33,6 +37,7 @@ async function sendFromSignIn() {
 }
 
 afterEach(() => {
+  localStorage.clear();
   vi.unstubAllGlobals();
   resetConnectivity();
 });
@@ -190,5 +195,35 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
     await blink();
     await act(async () => finish(new Response(null, { status: 204 })));
     expect(screen.queryByText("Still no answer.")).not.toBeInTheDocument();
+  });
+});
+
+describe("auth failures leave the shell cleanly (AC-173, AC-175)", () => {
+  const refuse = (code: string) => vi.fn().mockResolvedValue(json(401, { code }));
+
+  it("session-ended remembers the section before SCR-92 (AC-173)", async () => {
+    vi.stubGlobal("fetch", refuse("session-ended"));
+    setup("/profile");
+    await screen.findByRole("heading", { level: 1, name: /session/i });
+    expect(localStorage.getItem("telex.destination")).toBe("/profile");
+  });
+
+  it("session-ended keeps the first refusal (AC-173)", async () => {
+    localStorage.setItem("telex.destination", "/runs");
+    vi.stubGlobal("fetch", refuse("session-ended"));
+    setup("/profile");
+    await screen.findByRole("heading", { level: 1, name: /session/i });
+    expect(localStorage.getItem("telex.destination")).toBe("/runs");
+  });
+
+  it("a sign-in failure clears the query cache (AC-175)", async () => {
+    const client = createAppQueryClient();
+    client.setQueryData(PULSE_KEY, { inboxCount: 7, conditions: [] });
+    client.setQueryData(["me"], { ownerId: "o1", email: "old@example.com" });
+    vi.stubGlobal("fetch", refuse("unauthenticated"));
+    setup("/profile", client);
+    await screen.findByLabelText("Email");
+    expect(client.getQueryData(PULSE_KEY)).toBeUndefined();
+    expect(client.getQueryData(["me"])).toBeUndefined();
   });
 });

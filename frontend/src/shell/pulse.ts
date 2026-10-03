@@ -25,7 +25,11 @@ export async function fetchPulse(): Promise<Pulse> {
   } catch (error) {
     if (error instanceof ApiFailure) {
       if (isConnectivityStatus(error.status)) connectivity.reportNoAnswer();
-      else connectivity.reportAnswered();
+      else if (error.status >= 500) {
+        // AC-176 limits the full page to actions: a pulse 5xx is "not responding", the screen stays.
+        connectivity.reportNoAnswer();
+        throw new ApiFailure(error.status, error.code);
+      } else connectivity.reportAnswered();
     }
     throw error;
   }
