@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { Outlet } from "react-router";
 import logo from "../assets/telex-logo-192.png";
+import { useMe } from "../api/account";
 import { PageFrame } from "../components/PageFrame/PageFrame";
 import { messages } from "../messages";
+import { useAccountTheme } from "../shell/theme";
 
 /** Bare frame for SCR-91/92/93: text wordmark, no session dependency. */
 export function BareSystemFrame({ children }: { children: ReactNode }) {
@@ -44,6 +46,7 @@ export function AuthLayout() {
 }
 
 export function AppLayout() {
+  useAccountTheme(useMe().data);
   return (
     <PageFrame>
       <Outlet />

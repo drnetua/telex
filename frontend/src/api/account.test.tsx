@@ -7,7 +7,7 @@ import {
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { meKey, useMe } from "./account";
+import { meKey, useMe, type Me } from "./account";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -59,5 +59,19 @@ describe("useMe (AC-96, ADR-0005)", () => {
     renderHook(() => useMe(), { wrapper });
     await waitFor(() => expect(client.getQueryState(meKey)?.dataUpdateCount).toBe(2));
     expect(header(1).get("X-Telex-Background")).toBeNull();
+  });
+});
+
+describe("Me theme fields (AC-181)", () => {
+  it("carries theme, timeZone and timeZoneIsFallback", () => {
+    const me: Me = {
+      ownerId: "o1",
+      email: "a@b.c",
+      linkedAccountCount: 0,
+      theme: "system",
+      timeZone: null,
+      timeZoneIsFallback: true,
+    };
+    expect(me.theme).toBe("system");
   });
 });
