@@ -142,6 +142,10 @@ export const messages = {
     },
   },
   settings: {
+    accounts: {
+      title: "Accounts",
+      hint: "Telegram accounts teleX works with",
+    },
     profile: {
       title: "Profile and security",
       hint: "Passkeys, sign-in sessions, theme and time zone",

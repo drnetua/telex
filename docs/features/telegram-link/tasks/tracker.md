@@ -27,7 +27,7 @@
 | T20 | Build the SCR-02 wizard steps: phone, code, password with their validation and refusals | ui | Anton Husiev | M | T19 | done |
 | T21 | Build the SCR-02 outcomes: wait countdown, refusals, attempt ended, cancel and success | ui | Anton Husiev | M | T20 | done |
 | T22 | Make SCR-10 Inbox start linking and list one line per Linked Account | ui | Anton Husiev | S | T19 | done |
-| T23 | Build SCR-60 Accounts: the list with states, Add account, Sign in again and the unlink dialog | ui | Anton Husiev | M | T19 | todo |
+| T23 | Build SCR-60 Accounts: the list with states, Add account, Sign in again and the unlink dialog | ui | Anton Husiev | M | T19 | done |
 | T24 | Prove nothing is left behind or leaked: unlink dump, restart delivery, registry and log scans | tests | Anton Husiev | M | T10, T11, T12, T13, T16 | todo |
 | T25 | Add Playwright end-to-end tests of linking, live state and unlink at 360 px and 1280 px with axe | tests | Anton Husiev | M | T14, T15, T17, T21, T22, T23 | todo |
 

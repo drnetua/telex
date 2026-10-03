@@ -19,7 +19,8 @@ export function InboxPage() {
   const text = messages.inbox;
   const [refusal, setRefusal] = useState<string | null>(null);
   const dismissRefusal = useCallback(() => setRefusal(null), []);
-  const arrival = (useLocation().state as { toast?: string } | null)?.toast;
+  const arrivalState = useLocation().state as { toast?: string; tone?: "info" | "error" } | null;
+  const arrival = arrivalState?.toast;
   const [arrivalShown, setArrivalShown] = useState(true);
   const dismissArrival = useCallback(() => setArrivalShown(false), []);
 
@@ -68,7 +69,9 @@ export function InboxPage() {
           </div>
         </div>
       )}
-      {arrival && arrivalShown ? <Toast message={arrival} onDismiss={dismissArrival} /> : null}
+      {arrival && arrivalShown ? (
+        <Toast message={arrival} tone={arrivalState?.tone} onDismiss={dismissArrival} />
+      ) : null}
       {refusal ? <Toast message={refusal} tone="error" onDismiss={dismissRefusal} /> : null}
     </>
   );

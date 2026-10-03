@@ -32,6 +32,9 @@ const profile: Loader = () =>
     default: m.ProfileSecurityPage,
   }));
 
+const accounts: Loader = () =>
+  import("../pages/accounts/AccountsPage").then((m) => ({ default: m.AccountsPage }));
+
 const connectTelegram: Loader = () =>
   import("../pages/connect-telegram/ConnectTelegramPage").then((m) => ({
     default: m.ConnectTelegramPage,
@@ -64,6 +67,7 @@ export function AppRoutes() {
             element={<SectionRoute key={section.id} load={load} />}
           />
         ))}
+        <Route path="/accounts" element={<SectionRoute key="accounts" load={accounts} />} />
         <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
         <Route
           path="/connect-telegram"
