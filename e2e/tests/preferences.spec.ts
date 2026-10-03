@@ -39,8 +39,20 @@ async function recordThemes(page: Page) {
       attributeFilter: ["data-bs-theme"],
     });
     note();
+    // the theme at the moment the signed-in shell first exists in the document
+    const w = window as unknown as { __themeAtShell?: string };
+    new MutationObserver(() => {
+      if (w.__themeAtShell === undefined && document.querySelector("nav"))
+        w.__themeAtShell =
+          document.documentElement.getAttribute("data-bs-theme") ?? "";
+    }).observe(document, { subtree: true, childList: true });
   });
 }
+
+const themeAtShell = (page: Page) =>
+  page.evaluate(
+    () => (window as unknown as { __themeAtShell?: string }).__themeAtShell,
+  );
 
 const recorded = (page: Page) =>
   page.evaluate(() => (window as unknown as { __themes: string[] }).__themes);
@@ -89,6 +101,16 @@ test("AC-179: choosing Dark applies within 200 ms, without a reload, and is save
   expect(marker, "no reload happened").toBe(true);
   expect(navigations, "no navigation").toEqual([]);
   expect((await getMe(page)).theme).toBe("dark");
+
+  // saved to the account: a reload opens dark from the first parse, never light first
+  await recordThemes(page);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Profile and security", level: 1 }),
+  ).toBeVisible();
+  expect(await recorded(page), "every theme the reloaded page showed").toEqual([
+    "dark",
+  ]);
 });
 
 test("AC-180: on System the theme follows the device between light and dark without a reload", async ({
@@ -101,14 +123,21 @@ test("AC-180: on System the theme follows the device between light and dark with
   await chooseTheme(page, "System");
   expect((await getMe(page)).theme).toBe("system");
   await expect(page.locator("html")).toHaveAttribute("data-bs-theme", "light");
+  const systemRadio = themeGroup(page).getByRole("radio", { name: "System" });
+  await expect(systemRadio).toBeChecked();
 
   await page.evaluate(() => {
     (window as unknown as Record<string, unknown>).__reloadMarker = true;
   });
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("html")).toHaveAttribute("data-bs-theme", "dark");
+  // following the device doesn't turn System into Dark: the choice stays System, here and on the account
+  await expect(systemRadio).toBeChecked();
+  expect((await getMe(page)).theme).toBe("system");
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("html")).toHaveAttribute("data-bs-theme", "light");
+  await expect(systemRadio).toBeChecked();
+  expect((await getMe(page)).theme).toBe("system");
   expect(
     await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__reloadMarker,
@@ -129,9 +158,14 @@ test("AC-181: a first sign-in on another device shows the account's dark theme f
   const { context, page: phone } = await newDevice(browser, page, {
     colorScheme: "light",
   });
+  await recordThemes(phone);
   await signInByLink(phone, address, 2);
   await expect(phone.getByRole("heading", { name: "Inbox" })).toBeVisible();
-  expect(await themeAttr(phone), "first signed-in screen is dark").toBe("dark");
+  expect(
+    await themeAtShell(phone),
+    "theme when the first signed-in screen appeared",
+  ).toBe("dark");
+  expect(await themeAttr(phone)).toBe("dark");
   await context.close();
 });
 
@@ -264,33 +298,40 @@ test("AC-183: the device zone is saved once, a device elsewhere doesn't change i
   await second.context.close();
 });
 
-test("AC-183: an unreadable device zone saves UTC and shows the fallback hint on every device", async ({
-  page,
-  browser,
-}) => {
-  const first = await newDevice(browser, page, { timezoneId: "Asia/Tokyo" });
-  await first.page.addInitScript(() => {
-    const original = Intl.DateTimeFormat.prototype.resolvedOptions;
-    Intl.DateTimeFormat.prototype.resolvedOptions = function () {
-      return { ...original.call(this), timeZone: undefined as never };
-    };
-  });
-  const address = await signUp(first.page);
-  await openProfile(first.page);
-  await expect(zoneCard(first.page)).toContainText("UTC");
-  await expect(first.page.getByText(FALLBACK_HINT)).toBeVisible();
-  expect(await getMe(first.page)).toMatchObject({
-    timeZone: "UTC",
-    timeZoneIsFallback: true,
-  });
+const unusableZones = [
+  ["unreadable", undefined],
+  ["not on the list", "Mars/Olympus_Mons"],
+] as const;
 
-  const second = await newDevice(browser, page, { timezoneId: "Asia/Tokyo" });
-  await signInByLink(second.page, address, 2);
-  await openProfile(second.page);
-  await expect(second.page.getByText(FALLBACK_HINT)).toBeVisible();
-  await first.context.close();
-  await second.context.close();
-});
+for (const [kind, reported] of unusableZones) {
+  test(`AC-183: a device zone that is ${kind} saves UTC and shows the fallback hint on every device`, async ({
+    page,
+    browser,
+  }) => {
+    const first = await newDevice(browser, page, { timezoneId: "Asia/Tokyo" });
+    await first.page.addInitScript((value) => {
+      const original = Intl.DateTimeFormat.prototype.resolvedOptions;
+      Intl.DateTimeFormat.prototype.resolvedOptions = function () {
+        return { ...original.call(this), timeZone: value as never };
+      };
+    }, reported);
+    const address = await signUp(first.page);
+    await openProfile(first.page);
+    await expect(zoneCard(first.page)).toContainText("UTC");
+    await expect(first.page.getByText(FALLBACK_HINT)).toBeVisible();
+    expect(await getMe(first.page)).toMatchObject({
+      timeZone: "UTC",
+      timeZoneIsFallback: true,
+    });
+
+    const second = await newDevice(browser, page, { timezoneId: "Asia/Tokyo" });
+    await signInByLink(second.page, address, 2);
+    await openProfile(second.page);
+    await expect(second.page.getByText(FALLBACK_HINT)).toBeVisible();
+    await first.context.close();
+    await second.context.close();
+  });
+}
 
 test("AC-184: picking Kyiv saves it, dates follow it, and another device shows it after a reload", async ({
   page,

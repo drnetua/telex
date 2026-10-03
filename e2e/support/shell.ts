@@ -64,6 +64,23 @@ export async function setPulseFixture(
   expect(status, "setPulseFixture answered 204").toBe(204);
 }
 
+/**
+ * Sets the fixture for the Owner signed in on `context` from outside any page, so it works while that context is
+ * offline or its page has /api/** blocked (the server state changes where the tab cannot see it).
+ */
+export async function setPulseFixtureOutOfBand(
+  context: BrowserContext,
+  fixture: { inboxCount: number; conditions: string[] },
+): Promise<void> {
+  const cookies = await context.cookies();
+  const token = cookies.find((c) => c.name === "XSRF-TOKEN")?.value ?? "";
+  const res = await context.request.put("/api/v1/e2e-fixtures/pulse", {
+    data: fixture,
+    headers: { "X-XSRF-TOKEN": decodeURIComponent(token) },
+  });
+  expect(res.status(), "setPulseFixtureOutOfBand answered 204").toBe(204);
+}
+
 /** Saves the Owner's theme through the preferences endpoint, then reloads so the shell shows it. */
 export async function setTheme(page: Page, theme: Theme): Promise<void> {
   const status = await page.evaluate(async (value) => {
@@ -174,9 +191,7 @@ export async function apiCall(
 }
 
 /** The signed-in Owner as the server reports it. */
-export async function getMe(
-  page: Page,
-): Promise<{
+export async function getMe(page: Page): Promise<{
   theme: Theme;
   timeZone: string | null;
   timeZoneIsFallback: boolean;

@@ -41,11 +41,16 @@ test("AC-102 (narrowed): an action with no answer in 10 seconds keeps the screen
 }) => {
   test.setTimeout(90_000);
   await signUp(page);
-  await page.route("**/api/v1/passkeys", () => new Promise(() => undefined));
+  // the pulse hangs too: a healthy pulse would clear the banner within 3 s and make the assertion a race
+  await page.route("**/api/**", () => new Promise(() => undefined));
   await openProfile(page);
-  await expect(
-    page.getByRole("status").filter({ hasText: "teleX isn't responding." }),
-  ).toBeVisible({ timeout: 20_000 });
+  const banner = page
+    .getByRole("status")
+    .filter({ hasText: "teleX isn't responding." });
+  await expect(banner).toBeVisible({ timeout: 20_000 });
+  // nothing answers, so it stays: longer than one pulse interval
+  await page.waitForTimeout(4_000);
+  await expect(banner).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "teleX is unavailable" }),
   ).toHaveCount(0);

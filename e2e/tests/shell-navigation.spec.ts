@@ -7,9 +7,10 @@ import {
   signInByLink,
   signUp,
 } from "../support/flows";
-import { uniqueAddress, waitForMail } from "../support/mailpit";
+import { linkOf, uniqueAddress, waitForMail } from "../support/mailpit";
 import {
   isPhone,
+  newDevice,
   openMore,
   openProfile,
   sectionList,
@@ -205,6 +206,74 @@ test("AC-173 / AC-07b: a session ended elsewhere shows Session ended with nothin
 
   await firstCtx.close();
   await secondCtx.close();
+});
+
+test("AC-173: a session that ended while on Runs shows Session ended, and signing in again returns to Runs", async ({
+  browser,
+}, testInfo) => {
+  const viewport = testInfo.project.use.viewport ?? undefined;
+  const firstCtx = await browser.newContext({ viewport });
+  const secondCtx = await browser.newContext({ viewport });
+  const first = await firstCtx.newPage();
+  const second = await secondCtx.newPage();
+
+  const address = await signUp(first);
+  await signInByLink(second, address, 2);
+  await expect(second).toHaveURL(/\/inbox$/);
+  await second.goto("/runs");
+  await expect(
+    second.getByRole("heading", { name: "Runs", level: 1 }),
+  ).toBeVisible();
+
+  await openProfile(first);
+  const rows = first.locator("#sessions li");
+  await expect(rows).toHaveCount(2);
+  await rows
+    .filter({ hasNotText: "This device" })
+    .getByRole("button", { name: "End session" })
+    .click();
+  await expect(rows).toHaveCount(1);
+
+  // the stopped tab is not touched: the shell's own pulse finds out and shows Session ended
+  await expect(second).toHaveURL(/\/session-ended$/, { timeout: 15_000 });
+  await expect(
+    second.getByRole("heading", { name: "Session ended" }),
+  ).toBeVisible();
+  await second.getByRole("link", { name: "Sign in again" }).click();
+  await expect(second).toHaveURL(/\/sign-in$/);
+
+  await signInByLink(second, address, 3);
+  await expect(second).toHaveURL(/\/runs$/);
+  await expect(
+    second.getByRole("heading", { name: "Runs", level: 1 }),
+  ).toBeVisible();
+
+  await firstCtx.close();
+  await secondCtx.close();
+});
+
+test("AC-173: a link opened in another browser lands on the Inbox, not on the section it was asked for in the first", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/runs");
+  await expect(page).toHaveURL(/\/sign-in$/);
+  const address = uniqueAddress("elsewhere");
+  await requestEmail(page, address);
+  const mail = await waitForMail(address, SIGN_IN_SUBJECT);
+
+  const other = await newDevice(browser, page);
+  await other.page.goto(linkOf(mail));
+  await other.page.getByRole("button", { name: /^Continue as / }).click();
+  await expect(other.page).toHaveURL(/\/welcome\/passkey$/);
+  await other.page
+    .getByRole("button", { name: /^(Not now|Continue)$/ })
+    .click();
+  await expect(other.page).toHaveURL(/\/inbox$/);
+  await expect(
+    other.page.getByRole("heading", { name: "Inbox" }),
+  ).toBeVisible();
+  await other.context.close();
 });
 
 test("AC-173: the Sign-in Code path also returns to the remembered section", async ({
