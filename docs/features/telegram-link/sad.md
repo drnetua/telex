@@ -128,49 +128,92 @@ Tactical choices in §5–§8 trace to these four:
 
 ## 5. Building block view
 
-<!-- 🎯 Why: INTERNAL DECOMPOSITION — modules, containers, datastores. The static topology: who
-     may talk to whom. Without §5, §6 (the flows) has no vocabulary of participants.
-     📋 Write: 1 ¶ on the style (layered / hexagonal / clean / event-driven) + a folder tree + a
-     C4Container block.
-     📌 Draw ONE Container per declared `target_surface` (frontmatter): a fullstack
-     [backend-service, web-frontend] = a backend-API container + a web/SPA container; a
-     [backend-service, mobile-app] = the API + the mobile app. The Container(web, …) line below is
-     just one surface's container — swap/add per what was declared in §4. → _shared/surfaces.md
-     📌 e.g. «web app, content API, media worker, datastore, object store, CDN». -->
+The repo's Spring Modulith modular monolith is followed as-is (`internal/<concern>/` sub-packages, public API and events at the module root, `ModularityTest`). The feature touches four modules and the facade subproject, and every edge it needs is already allowed by the current `package-info.java` files:
+- **`messaging`** (core, first real code) owns the Linked Account, the linking attempt and the chat list (ADR-0002).
+- **`telegram`** (integration, `shared` only) owns Telegram sessions: the port, the `tdlight` and `fake` adapters, and session directories (ADR-0004).
+- **`identity`** (core) gains `OwnerKeys` for envelope encryption and reads the master key (ADR-0003).
+- **`web`** (interface) adds the account and wizard endpoints and the SSE stream, and calls only `messaging` and `identity` (ADR-0005).
 
-<One paragraph: layered / hexagonal / clean / event-driven, and why.>
+Ids that cross into `telegram` are `telegram`'s own (`TelegramSessionId`, Telegram user and chat ids). `OwnerId` and `LinkedAccountId` never enter it.
 
 **Internal decomposition:**
 
 ```
-<e.g. modules/<feature>/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + integration impl>
-├── ports/        <handlers, DTOs, error mapping>
-└── wiring        <self-wiring entry point>
+backend/app/src/main/kotlin/telex/
+├── messaging/                       core — public API at the root
+│   ├── LinkedAccountId, ChannelId   typed UUIDv7 ids
+│   ├── LinkedAccounts               list mine, get mine, unlink, linking-availability (set up? within limit?)
+│   ├── Linking                      start / resume attempt, submit phone, code, password, resend code, cancel,
+│   │                                start "Sign in again" for a Session-lost account
+│   ├── AccountLinked, AccountUnlinked, LinkedAccountStateChanged, LinkedAccountSyncProgressed   events (ids + state only)
+│   └── internal/
+│       ├── account/                 LinkedAccount aggregate, states, one-owner + duplicate + limit rules, repository
+│       ├── attempt/                 in-memory LinkingAttempts (one per Owner), 15-min expiry sweep, outcome mapping
+│       ├── channel/                 Channel rows (the chat list), upsert/remove from telegram events, counts
+│       ├── lifecycle/               boot reconnect of every Connected account, telegram event listeners → state
+│       └── config/                  max linked accounts per Owner (installation-wide, default 3)
+├── telegram/                        integration ACL — depends on shared only
+│   ├── TelegramSessions             port: open, phone, code, resend, password, log out, close and destroy
+│   ├── TelegramSessionId, SignInOutcome, ChatSnapshot          port types
+│   ├── TelegramSessionStateChanged, TelegramChatsChanged       events (session id, never an Owner id)
+│   └── internal/
+│       ├── tdlight/                 adapter over telex.telegram.tdlib facade; TDLib states → port types; chat sync
+│       ├── fake/                    in-memory Telegram (codes, 2FA, flood waits, bans, termination, N chats)
+│       └── files/                   session directory root, per-session dirs, orphan sweep at startup
+├── identity/                        existing core
+│   ├── OwnerKeys                    seal / open with the Owner's key (AES-256-GCM, AAD), lazily creates the key
+│   └── internal/key/                owner_key rows, master key from TELEX_MASTER_KEY
+├── web/                             existing interface
+│   ├── api/LinkedAccountsController, api/LinkingController   SCR-02 / SCR-60 / SCR-10 endpoints
+│   └── live/                        EventStreamController (SSE), per-Owner emitter registry, hint throttling
+└── shared/                          existing kernel
+
+backend/telegram-tdlib/              facade subproject: TdlibFacade over TDLight (implementation dependency)
+
+frontend/src/
+├── pages/accounts/                  SCR-60 Accounts list, unlink dialog (C-33)
+├── pages/connect-telegram/          SCR-02 wizard, step from the server's attempt
+├── pages/inbox/                     SCR-10: Connect Telegram step ↔ one line per Linked Account
+├── components/                      account line/state badge, sync progress, wait countdown (ported from the design system)
+├── api/live.ts                      the single SSE client → queryClient.invalidateQueries
+└── messages.ts                      all new copy
 ```
 
-**C4 Container (L2):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. ONE Container per declared target_surface (frontmatter); the web container below is one example surface. -->
+**C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <feature> — Containers
+    title telegram-link — Containers
 
-    Person(actor, "<Actor>")
+    Person(owner, "Owner", "Links, watches and unlinks own accounts")
 
-    Container_Boundary(app, "<Our system>") {
-        Container(web, "<Web/UI>", "<technology>", "<purpose>")
-        Container(api, "<API/handler>", "<technology>", "<purpose>")
-        ContainerDb(db, "<Datastore>", "<technology>", "<purpose>")
+    System_Ext(telegram, "Telegram", "Telegram servers over MTProto")
+
+    System_Boundary(telex, "teleX") {
+        Container(spa, "Web SPA", "React, TypeScript, TanStack Query, Tabler", "SCR-02 wizard, SCR-60 Accounts, SCR-10 lines, Status Banner condition, SSE client")
+        Container_Boundary(app, "teleX app, one Spring Boot process (backend-service)") {
+            Container(web, "web module", "Kotlin, Spring MVC, Spring Security", "Account and wizard endpoints, SSE stream of invalidation hints")
+            Container(messaging, "messaging module", "Kotlin, Spring Data JDBC, Spring Modulith", "Linked Account, linking attempt, chat list, AccountLinked and AccountUnlinked")
+            Container(identity, "identity module", "Kotlin, Spring Data JDBC", "Owner keys: seal and open under the master key")
+            Container(tgmod, "telegram module", "Kotlin, port with tdlight and fake adapters", "Telegram sessions, TDLib state and chat events")
+            Container(facade, "telegram-tdlib", "Kotlin facade over TDLight JNI", "Only code that imports the TDLib binding")
+        }
+        ContainerDb(db, "PostgreSQL", "Postgres 17 + pgvector", "linked_account, channel, owner_key, event_publication")
+        ContainerDb(files, "Session files", "TDLib SQLite and binlog on a volume", "One encrypted directory per Telegram session")
     }
 
-    System_Ext(ext, "<External>", "<purpose>")
-
-    Rel(actor, web, "<interaction>", "<protocol>")
-    Rel(web, api, "<calls>")
-    Rel(api, db, "<reads/writes>", "<driver>")
-    Rel(api, ext, "<emits>", "<protocol>")
+    Rel(owner, spa, "Uses", "HTTPS")
+    Rel(spa, web, "REST calls and one SSE stream", "JSON, session cookie")
+    Rel(web, messaging, "Calls public API")
+    Rel(web, messaging, "Listens to account events for hints")
+    Rel(messaging, identity, "Seals and opens TDLib keys")
+    Rel(messaging, tgmod, "Calls the TelegramSessions port")
+    Rel(tgmod, messaging, "Publishes session state and chat events")
+    Rel(messaging, db, "Reads and writes", "JDBC")
+    Rel(identity, db, "Reads and writes", "JDBC")
+    Rel(tgmod, facade, "Calls in-process")
+    Rel(facade, files, "Reads and writes, encrypted with the session key")
+    Rel(facade, telegram, "MTProto", "TDLib")
 ```
 
 ## 6. Runtime view
