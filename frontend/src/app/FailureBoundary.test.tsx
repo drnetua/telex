@@ -115,6 +115,9 @@ describe("SCR-93 Retry carries the page action's outcome (AC-102, AC-103)", () =
 });
 
 describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () => {
+  // Inside the shell a 503 is the Status Banner's business; SCR-93 comes from an answered failure.
+  const broken = () => json(500, { code: "internal-error" });
+
   function routeFetch(state: { signOut: Response[]; me: () => Response }) {
     return vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/v1/sign-out" && init?.method === "POST") {
@@ -138,8 +141,8 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
   it("a failing focus refetch under SCR-93 does not replace the saved Retry", async () => {
     let meUp = true;
     const fetchMock = routeFetch({
-      signOut: [down(), new Response(null, { status: 204 })],
-      me: () => (meUp ? json(200, { ownerId: "o1", email: "me@example.com" }) : down()),
+      signOut: [broken(), new Response(null, { status: 204 })],
+      me: () => (meUp ? json(200, { ownerId: "o1", email: "me@example.com" }) : broken()),
     });
     vi.stubGlobal("fetch", fetchMock);
     setup("/profile");
@@ -170,11 +173,11 @@ describe("SCR-93 keeps the saved Retry across background failures (AC-102)", () 
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/v1/sign-out" && init?.method === "POST") {
         return fetchMock.mock.calls.filter(([u]) => u === "/api/v1/sign-out").length === 1
-          ? Promise.resolve(down())
+          ? Promise.resolve(broken())
           : slow;
       }
       if (url === "/api/v1/me") {
-        return Promise.resolve(meUp ? json(200, { ownerId: "o1", email: "m@e.com" }) : down());
+        return Promise.resolve(meUp ? json(200, { ownerId: "o1", email: "m@e.com" }) : broken());
       }
       return Promise.resolve(json(200, { items: [] }));
     });

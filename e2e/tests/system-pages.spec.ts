@@ -15,13 +15,13 @@ test("AC-102: an unknown address shows Page not found with Go to Inbox", async (
   await expect(page).toHaveURL(/\/inbox$/);
 });
 
-test("AC-102: a server failure shows teleX is unavailable and Retry repeats the action", async ({
+test("AC-102 (narrowed): an answered 500 shows teleX is unavailable and Retry repeats the action", async ({
   page,
 }) => {
   await signUp(page);
   let failing = true;
   await page.route("**/api/v1/passkeys", (route) =>
-    failing ? route.fulfill({ status: 503, body: "" }) : route.continue(),
+    failing ? route.fulfill({ status: 500, body: "" }) : route.continue(),
   );
   await openProfile(page);
   await expect(
@@ -36,7 +36,7 @@ test("AC-102: a server failure shows teleX is unavailable and Retry repeats the 
   ).toBeVisible();
 });
 
-test("AC-102: no answer within 10 seconds shows teleX is unavailable", async ({
+test("AC-102 (narrowed): an action with no answer in 10 seconds keeps the screen and shows the not-responding banner", async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -44,6 +44,10 @@ test("AC-102: no answer within 10 seconds shows teleX is unavailable", async ({
   await page.route("**/api/v1/passkeys", () => new Promise(() => undefined));
   await openProfile(page);
   await expect(
-    page.getByRole("heading", { name: "teleX is unavailable" }),
+    page.getByRole("status").filter({ hasText: "teleX isn't responding." }),
   ).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.getByRole("heading", { name: "teleX is unavailable" }),
+  ).toHaveCount(0);
+  await expect(page).toHaveURL(/\/profile$/);
 });

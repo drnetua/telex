@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createAppQueryClient } from "../../app/queryClient";
+import { isShellActive, resetConnectivity } from "../connectivity";
 import { sections } from "../sections";
 import { AppShell } from "./AppShell";
 
@@ -185,5 +186,15 @@ describe("AppShell (AC-170, AC-43, AC-172)", () => {
       }),
     );
     expect(await screen.findByRole("heading", { name: "Sign in page" })).toBeInTheDocument();
+  });
+});
+
+describe("AppShell connectivity ownership (AC-176)", () => {
+  it("marks the shell active while mounted so a connectivity failure keeps the screen", () => {
+    stubWidth(false);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
+    setup("/inbox");
+    expect(isShellActive()).toBe(true);
+    resetConnectivity();
   });
 });

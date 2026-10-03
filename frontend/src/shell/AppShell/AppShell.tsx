@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { Link, useLocation } from "react-router";
 import { useSignOut } from "../../api/account";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { ThemeSwitch } from "../../components/ThemeSwitch/ThemeSwitch";
 import { messages } from "../../messages";
+import { setShellActive } from "../connectivity";
 import { InboxAnnouncement, InboxPill } from "../InboxCounter";
 import { usePulse } from "../pulse";
 import { currentSection, sections, type Section } from "../sections";
@@ -214,6 +222,11 @@ function PhoneBar({
 /** Signed-in frame (C-01): side menu at 768 px and up, header + bottom bar + More sheet below it. */
 export function AppShell({ email, children }: AppShellProps) {
   // The one pulse consumer: undefined until the first answer; the last known count stays through failures.
+  // While mounted, connectivity failures keep the screen and the Status Banner owns them (set before any query runs).
+  useLayoutEffect(() => {
+    setShellActive(true);
+    return () => setShellActive(false);
+  }, []);
   const pulse = usePulse().data;
   const inboxCount = pulse?.inboxCount;
   const phone = usePhone();

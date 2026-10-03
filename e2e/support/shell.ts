@@ -21,6 +21,19 @@ export const shellScreens = [
   { name: "Profile and security", path: "/profile" },
 ];
 
+/** The 5 s budget for the counter and the banners (spec §6). */
+export const SIGNAL_BUDGET_MS = 5_000;
+
+/** The Inbox entry of the main navigation (side menu or bottom bar). */
+export const inboxLink = (page: Page) =>
+  page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: /^Inbox/ });
+
+/** The Status Banner showing this text (the shell has other polite live regions). */
+export const bannerOf = (page: Page, text: string) =>
+  page.getByRole("status").filter({ hasText: text });
+
 export const isPhone = (page: Page) => (page.viewportSize()?.width ?? 0) < 768;
 
 /** Sets the calling Owner's fixture Inbox count and status conditions (`e2e` profile only). */

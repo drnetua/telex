@@ -420,7 +420,7 @@ describe("SCR-64 Time zone card", () => {
         if (u === "/api/v1/me/preferences" && m === "PATCH") {
           attempts += 1;
           return attempts === 1
-            ? json(503, { code: "unavailable" })
+            ? json(500, { code: "internal-error" })
             : json(200, { theme: "light", timeZone: "Europe/Kyiv", timeZoneIsFallback: false });
         }
         return meWith({ timeZone: "Europe/Berlin" })(m, u);
