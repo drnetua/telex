@@ -33,7 +33,7 @@
 | T26 | Bare not-found page, honest default errors, the AI-not-set-up alert above the tabs, and the remaining manifest and a11y details | ui | Anton Husiev | S | T25 | done |
 | T27 | Amend AC-211 to per-1M-token prices for image models and register the new components in the design-system inventory | docs | Anton Husiev | S | T26 | done |
 | T28 | Make agents events survive the publication registry, and tighten the T21–T24 tests and build wiring | app | Anton Husiev | S | — | done |
-| T29 | Drop notices for good on navigation, refresh the draft after a save, round prices before the range check, and align the AC-211 docs | ui | Anton Husiev | S | T26, T27, T28 | todo |
+| T29 | Drop notices for good on navigation, refresh the draft after a save, round prices before the range check, and align the AC-211 docs | ui | Anton Husiev | S | T26, T27, T28 | done |
 
 **Total:** 29 tasks (T21–T29: follow-ups from review 2026-10-03), ~20 person-days.
 
@@ -57,3 +57,4 @@
 - **T26 — models routes moved out of `AppLayout`** so SCR-91 renders in `BareSystemFrame`; `ModelsPage` wraps itself in `PageFrame`. One shared toast region via `pages/models/notice.ts` (URL-scoped notices). Draft query: `staleTime` 5 s + `usable` latch → one request on the card path; a stale cached draft with a failing opening refetch returns to the list.
 - **T27 — AC-211 amended** (spec §1 deviation + §5 wording): image models show per-1M-token prices; `price_per_image` reserved (NULL in E10). Dead per-image UI branches and the `perImage` message removed. Seven components registered in `docs/design-system.md`.
 - **T28 — `ProfileRef` carries Jackson type info** (`{kind: system, key}` / `{kind: custom, id}`, events.md shape; `SystemProfileKey.wire` is the `@JsonValue`). `spring-modulith-events-core` added for ITs only. `-Xemit-jvm-type-annotations` moved to `spring.kotlin.conventions`. Parser skips models whose per-1M price is ≥ 10^8. Delete-side lock and the T21–T24 test tightenings passed on the first run (existing behaviour, NON-red).
+- **T29 — per-task review leftovers.** Notices are dropped once the URL changes (no return on re-visit); create/delete remove cached drafts; the parser rounds per-1M prices to scale 6 before the `NUMERIC(14,6)` range check; screens/data-model/openapi/design-system aligned with the amended AC-211.
