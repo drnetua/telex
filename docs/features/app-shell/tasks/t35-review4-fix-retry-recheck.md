@@ -8,7 +8,7 @@ files_hint: ["frontend/src/api/preferences.ts", "frontend/src/components/ThemeSw
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-4 (R4-1)"
-status: "todo"
+status: "done"
 ---
 
 # T35 — Re-check at retry time that a failed theme save hasn't been replaced by another tab

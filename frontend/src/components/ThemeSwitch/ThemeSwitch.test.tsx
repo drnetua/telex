@@ -377,6 +377,57 @@ describe("a failed save reverts only its own choice (AC-181, AC-182)", () => {
     vi.restoreAllMocks();
   });
 
+  it("AC-181: SCR-93's retry brings nothing back when another tab picks a theme after the server failure", async () => {
+    const retries: Array<() => Promise<unknown>> = [];
+    vi.spyOn(failureBus, "handler").mockImplementation((_failure, retry) => {
+      retries.push(retry);
+    });
+    stubDevice(true);
+    setup("segmented");
+    const stop = startThemeRuntime();
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    await act(async () => patches[0]?.settle(json(500, { code: "internal-error" })));
+    await waitFor(() => expect(retries).toHaveLength(1));
+    act(() => {
+      localStorage.setItem(THEME_KEY, "system");
+      window.dispatchEvent(new StorageEvent("storage", { key: THEME_KEY, newValue: "system" }));
+    });
+    act(() => {
+      void retries[0]?.();
+    });
+    expect(patches).toHaveLength(1);
+    expect(localStorage.getItem(THEME_KEY)).toBe("system");
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+    stop();
+    vi.restoreAllMocks();
+  });
+
+  it("AC-182: SCR-93's retry after a server failure applies and saves the choice again", async () => {
+    const retries: Array<() => Promise<unknown>> = [];
+    vi.spyOn(failureBus, "handler").mockImplementation((_failure, retry) => {
+      retries.push(retry);
+    });
+    setup("segmented");
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
+    await act(async () => patches[0]?.settle(json(500, { code: "internal-error" })));
+    await waitFor(() => expect(retries).toHaveLength(1));
+    expect(attr()).toBe("light");
+    let retried: Promise<unknown> | undefined;
+    act(() => {
+      retried = retries[0]?.();
+    });
+    expect(attr()).toBe("dark");
+    expect(localStorage.getItem(THEME_KEY)).toBe("dark");
+    expect(patches[1]?.body).toEqual({ theme: "dark" });
+    await act(async () => {
+      patches[1]?.settle(json(200, { theme: "dark", timeZone: null, timeZoneIsFallback: false }));
+      await retried;
+    });
+    expect(attr()).toBe("dark");
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    vi.restoreAllMocks();
+  });
+
   it("AC-173: a sign-in failure on a choice another tab replaced still goes to sign-in", async () => {
     const routes: Array<string | undefined> = [];
     vi.spyOn(failureBus, "handler").mockImplementation((failure) => {
