@@ -107,7 +107,7 @@ C4Context
 
 1. **One background pulse every 3 s is the live channel.** Each visible tab asks `GET /api/v1/pulse` (marked background, so it doesn't extend the session). The answer carries the Inbox count and the active Status Banner conditions, and later epics add fields to it instead of opening new channels. It meets the 5 s targets with plain requests through any proxy and doubles as the heartbeat (quality goal 1). → [ADR-0002](adr/0002-poll-one-background-pulse-every-3-seconds-for-live-signals.md)
 2. **The Inbox count is summed from sources the item owners provide.** A new core module `inbox` defines `InboxSource.countWaiting(ownerId)` and sums the implementations. Each later epic implements a source in its own module, so the "waiting" state is never duplicated and the shell never changes (quality goal 3). → [ADR-0003](adr/0003-aggregate-the-inbox-count-from-sources-in-a-new-inbox-module.md)
-3. **Connectivity is one client-side state fed by the pulse and the browser.** "You're offline" comes from the browser's network state, and "teleX isn't responding" from a pulse or call with no answer (2 s for the pulse, 10 s for calls), a network error, or, inside the shell, any 502/503/504, whatever its body (outside the shell a 502/503/504 still opens SCR-93). Inside the shell, only an action teleX answers with a failure still opens SCR-93, which narrows E01's AC-102 (quality goal 1). → [ADR-0004](adr/0004-detect-offline-from-pulse-failures-and-browser-network-state.md)
+3. **Connectivity is one client-side state fed by the pulse and the browser.** "You're offline" comes from the browser's network state, and inside the shell, "teleX isn't responding" from a pulse or call with no answer (2 s for the pulse, 10 s for calls), a network error, or any 502/503/504, whatever its body. Outside the shell (before it mounts) a call with no answer, a network error or a 502/503/504 still opens SCR-93. Inside the shell, only an action teleX answers with a failure still opens SCR-93, which narrows E01's AC-102 (quality goal 1). → [ADR-0004](adr/0004-detect-offline-from-pulse-failures-and-browser-network-state.md)
 4. **Theme and timezone are typed columns on the Owner.** `identity` owns them, `me` returns them, one preferences call changes them, and other modules read the timezone through `identity`'s public API. → [ADR-0005](adr/0005-store-theme-and-timezone-as-columns-on-the-owner-row.md)
 5. **Two extension points keep the shell closed to change.** Sections come from a client registry. Status Banner conditions come from `StatusConditionSource` implementations reported through the pulse, and a client catalog maps each code to its text, action and fixed importance (quality goal 3). → [ADR-0006](adr/0006-extend-the-shell-through-client-section-and-server-condition-registries.md)
 
@@ -163,7 +163,7 @@ frontend/
     ├── pages/coming-soon/         SCR-94 (one page, named per section)
     ├── pages/settings/            SCR-69
     ├── pages/profile-security/    SCR-64 gains Theme and Time zone
-    ├── api/client.ts              existing; no-answer and network errors feed connectivity instead of SCR-93
+    ├── api/client.ts              existing; inside the shell, no-answer, network errors and 502/503/504 feed connectivity instead of SCR-93
     └── components/PageFrame/      deleted
 
 e2e/tests/                         shell, counter, offline, theme, timezone specs; axe scan on both profiles and themes

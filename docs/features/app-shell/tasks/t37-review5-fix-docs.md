@@ -8,7 +8,7 @@ files_hint: ["docs/features/app-shell/adr/0004-detect-offline-from-pulse-failure
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-5 (R5-1)"
-status: "todo"
+status: "done"
 ---
 
 # T37 — Bring the docs in line after review 5: no answer and network errors are 'not responding' only inside the shell
