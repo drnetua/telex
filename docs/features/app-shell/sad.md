@@ -368,22 +368,22 @@ Each top-3 goal from §1 expanded into scenarios. Numbers are quoted from spec �
 
 ## 11. Risks and technical debt
 
-<!-- 🎯 Why: ⭐ collects EVERYTHING that can break — not only the technical. Without §11 risks get
-     discussed at standups and lost; debt lives only in the head of whoever accepted it.
-     📋 Write: a risk/debt table — severity — mitigation — owner. Accepted debt in its own block.
-     📌 The first risk is often a product risk, not a technical one. That's normal. -->
-
-<!-- Severity literals: Low / Medium / High for regular risks; "Open question" for rows created by
-     a Save-as-OQ resolution during the Socratic walk (see references/socratic.md). -->
-
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Worker lag may reach hours during a downstream outage> | Medium | <alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event-schema versioning in v1> | Medium | <ADR-NNNN planned for v2, tolerate unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from the Save-as-OQ> | <owner> |
+| The 5 s offline budget is tight: a 3 s pulse interval plus a 2 s timeout leaves no slack, and a slow but working teleX (answering after 2 s) briefly shows "teleX isn't responding" | Medium | The browser `offline` event usually fires at once. The e2e measures the worst case on both profiles. If it's flaky, shorten the interval to 2 s (one config value) before `/sdd:ship` | Anton Husiev |
+| iOS Safari freezes background tabs. A tab returning to the foreground may show a stale counter or miss a drop until the next pulse | Low | The pulse fires immediately when the tab becomes visible. Covered by the manual Safari iOS pass before `/sdd:ship` | Anton Husiev |
+| The `e2e` Spring profile adds fixture sources and a fixture endpoint to the production jar. Enabled by mistake, it would let anyone signed in fake Inbox counts and banners for themselves | Medium | Off by default and never set in `compose.yaml`. Its beans are `@Profile("e2e")`, and the fixture endpoint only changes the calling Owner's fixture values. `/sdd:review` checks that no production config sets it | Anton Husiev |
+| Every pulse runs every Inbox and condition source. As E11–E24 add sources, a slow source slows every tab's pulse and can trip the 2 s timeout, which shows a false "teleX isn't responding" | Medium | Each source must be one indexed count by `owner_id`, checked at each producer epic's `/sdd:review`. Watch pulse p95 (§7). A ~1 s per-Owner cache is the fallback | Anton Husiev |
+| E01's AC-102 behavior changes: an action with no answer in 10 s no longer opens SCR-93. E01 e2e tests asserting the old behavior will fail | Low | Update `e2e/tests/system-pages.spec.ts` and `client.test.ts` in the same task that changes the fetch client (the spec §1 deviation already records the change) | Anton Husiev |
+| Ending the tab on a failed pulse (SCR-01 or SCR-92 straight away) is stricter than AC-173's "next action". An Owner reading a page whose session just expired loses the page sooner | Low | Intentional: no shell content after the session stops (spec §6.1 abuse case). `/sdd:sequences` and `/sdd:plan-tests` treat it as the expected behavior | Anton Husiev |
+| `docs/architecture-map.md` is stale (reflects `ce5eabf`, before scaffold and E01) and still lists 13 modules. This feature adds a 15th (`inbox`) | Low | Run `/sdd:survey` after E06 merges to flip the map to `mode: current` | Anton Husiev |
+| `shared` gains its first interface meant to be implemented across modules (`StatusConditionSource`), stretching its "typed ids and problems" role | Low | Interface only, no Spring annotations, so `ModularityTest` keeps `shared` bean-free (ADR-0006) | Anton Husiev |
+| Spec §8 open questions still affect this design: the phone bar's four sections and the Status Banner importance order (both due before `/sdd:screens app-shell`), and E11 counting its Notes | Low | The defaults are encoded as data in `sections.ts` and `conditions.ts`, so changing them is an entry change, not a design change | Anton Husiev |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. the entity is immutable / unversioned — OK for v1, may need audit versioning in v2>
+- Polling instead of push (ADR-0002): up to 3 s latency and constant background requests. Revisit when E04 (chat messages) or E14 (run progress) needs faster updates.
+- Only the existing light and dark tokens. No high-contrast theme.
+- A theme or timezone changed on one device reaches other open devices only on their next open or reload (AC-181, AC-184 accept this).
 
 ## 12. Glossary
 
