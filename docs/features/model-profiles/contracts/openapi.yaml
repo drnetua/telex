@@ -936,7 +936,7 @@ components:
       type: object
       required: [text, vision, image]
       additionalProperties: false
-      description: Model ids per slot in chain order (position 1 = main model). Rules are domain-checked (`ProfileInvalid`).
+      description: Model ids per slot in chain order (position 1 = main model). Rules are domain-checked (`ProfileInvalid`); a `maxItems` of 10 per slot is only a transport cap, the domain still answers `slot-full` above 3.
       properties:
         text:
           type: array

@@ -68,6 +68,7 @@ class CatalogRefresherIT {
         }
     private val logs = ListAppender<ILoggingEvent>()
     private val logger = LoggerFactory.getLogger("telex.llm") as Logger
+    private var originalLevel: Level? = null
 
     private val twoModels =
         """{"data":[
@@ -95,12 +96,14 @@ class CatalogRefresherIT {
         jdbc.update("DELETE FROM model_catalog_state")
         logs.start()
         logger.addAppender(logs)
+        originalLevel = logger.level
         logger.level = Level.DEBUG
     }
 
     @AfterEach
     fun tearDown() {
         logger.detachAppender(logs)
+        logger.level = originalLevel
     }
 
     private fun ok(body: String = twoModels) =

@@ -177,4 +177,26 @@ class ModelListParserTest {
         assertThat(r.models.map { it.name }).containsExactly("First")
         assertThat(r.skipped.map { it.id }).containsExactly("acme/dup")
     }
+
+    @Test
+    fun `a price that overflows NUMERIC(14,6) per million is skipped and the others stay`() {
+        val big = """{"prompt":"100","completion":"0.000002"}"""
+        val body =
+            """{"data":[
+            ${one(id = "acme/big", pricing = big).removePrefix("{\"data\":[").removeSuffix("]}")},
+            ${one(id = "acme/ok").removePrefix("{\"data\":[").removeSuffix("]}")}]}"""
+        val r = ModelListParser.parse(body)
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/big")
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+    }
+
+    @Test
+    fun `the largest storable price is kept`() {
+        val m =
+            ModelListParser
+                .parse(one(pricing = """{"prompt":"99.999999","completion":"0.000002"}"""))
+                .models
+                .single()
+        assertThat(m.inputPerMtok).isEqualByComparingTo("99999999")
+    }
 }

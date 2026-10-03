@@ -18,10 +18,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Import
+import org.springframework.context.event.EventListener
+import org.springframework.core.annotation.AnnotationUtils
+import org.springframework.core.annotation.Order
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.util.ClassUtils
 import telex.TestcontainersConfiguration
 import telex.agents.internal.profile.OverrideValidator
 import telex.agents.internal.profile.SystemProfiles
@@ -46,6 +51,12 @@ class OverrideRefreshIT {
 
     @Autowired lateinit var jdbc: JdbcTemplate
 
+    @Autowired lateinit var realHolder: CatalogHolder
+
+    @Autowired lateinit var realRefresher: CatalogRefresher
+
+    @Autowired lateinit var realValidator: OverrideValidator
+
     private class MutableClock(
         var now: Instant,
     ) : Clock() {
@@ -59,6 +70,7 @@ class OverrideRefreshIT {
     private val clock = MutableClock(Instant.parse("2026-10-03T10:00:00Z"))
     private val logs = ListAppender<ILoggingEvent>()
     private val logger = LoggerFactory.getLogger(OverrideValidator::class.java) as Logger
+    private var originalLevel: Level? = null
 
     private fun list(vararg ids: String) =
         """{"data":[${ids.joinToString(",") {
@@ -85,12 +97,14 @@ class OverrideRefreshIT {
         jdbc.update("DELETE FROM model_catalog_state")
         logs.start()
         logger.addAppender(logs)
+        originalLevel = logger.level
         logger.level = Level.DEBUG
     }
 
     @AfterEach
     fun tearDown() {
         logger.detachAppender(logs)
+        logger.level = originalLevel
     }
 
     private fun serve(vararg ids: String) =
@@ -150,5 +164,21 @@ class OverrideRefreshIT {
         validator.onReady() // after the refresher, as at startup
 
         assertThat(warnsAbout("shipped/model")).hasSize(1)
+    }
+
+    @Test
+    fun `the real context runs holder then refresher then validator on startup`() {
+        fun order(bean: Any): Int {
+            val type = ClassUtils.getUserClass(bean)
+            val method =
+                type.methods.single { m ->
+                    AnnotationUtils.findAnnotation(m, EventListener::class.java)?.let {
+                        ApplicationReadyEvent::class.java in it.classes.map { c -> c.java }
+                    } == true
+                }
+            return AnnotationUtils.findAnnotation(method, Order::class.java)!!.value
+        }
+        assertThat(order(realHolder)).isLessThan(order(realRefresher))
+        assertThat(order(realRefresher)).isLessThan(order(realValidator))
     }
 }

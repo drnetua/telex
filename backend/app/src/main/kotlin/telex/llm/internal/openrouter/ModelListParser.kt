@@ -29,6 +29,7 @@ object ModelListParser {
     private const val MAX_NAME_LENGTH = 200
     private const val MAX_PROVIDER_LENGTH = 100
     private const val PER_MILLION = 6
+    private val MAX_PRICE = BigDecimal.TEN.pow(8)
     private val log = LoggerFactory.getLogger(ModelListParser::class.java)
     private val mapper = JsonMapper.builder().build()
 
@@ -66,6 +67,9 @@ object ModelListParser {
                 .takeIf { it.isString }
                 ?.asString()
                 ?.ifBlank { null } ?: id
+        val pricing = node.path("pricing")
+        val inputPerMtok = perMtok(pricing.path("prompt"))
+        val outputPerMtok = perMtok(pricing.path("completion"))
         val reason =
             when {
                 id.isNullOrBlank() -> {
@@ -84,6 +88,10 @@ object ModelListParser {
                     "provider longer than $MAX_PROVIDER_LENGTH characters"
                 }
 
+                !fitsColumn(inputPerMtok) || !fitsColumn(outputPerMtok) -> {
+                    "price beyond the storable range"
+                }
+
                 takes == null || produces == null -> {
                     "unknown or missing modalities"
                 }
@@ -93,7 +101,6 @@ object ModelListParser {
                 }
             }
         if (reason != null) return SkippedModel(id, reason)
-        val pricing = node.path("pricing")
         val model =
             CatalogModel(
                 modelId = ModelId(id!!),
@@ -101,8 +108,8 @@ object ModelListParser {
                 provider = id.substringBefore('/'),
                 takes = takes!!,
                 produces = produces!!,
-                inputPerMtok = perMtok(pricing.path("prompt")),
-                outputPerMtok = perMtok(pricing.path("completion")),
+                inputPerMtok = inputPerMtok,
+                outputPerMtok = outputPerMtok,
                 perImage = null,
                 contextLength =
                     node
@@ -123,6 +130,9 @@ object ModelListParser {
         val valid = names.isNotEmpty() && names.all { it in KNOWN || (ignoreUnused && it in IGNORED) }
         return if (valid) names.mapNotNullTo(linkedSetOf()) { KNOWN[it] } else null
     }
+
+    /** `NUMERIC(14,6)` holds below 10^8; a larger price would fail the whole refresh's insert. */
+    private fun fitsColumn(price: BigDecimal?) = price == null || price < MAX_PRICE
 
     private fun perMtok(node: JsonNode): BigDecimal? =
         node

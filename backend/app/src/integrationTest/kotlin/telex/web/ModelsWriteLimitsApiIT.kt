@@ -1,6 +1,7 @@
 package telex.web
 
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,10 +12,13 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.transaction.support.TransactionTemplate
 import telex.TestcontainersConfiguration
 import telex.agents.ModelProfileId
 import telex.agents.ModelSlotKind
+import telex.agents.ProfileRef
+import telex.agents.internal.profile.DefaultProfileRepository
 import telex.agents.internal.profile.ModelProfile
 import telex.agents.internal.profile.ProfileRepository
 import telex.identity.OwnerId
@@ -33,9 +37,10 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.Callable
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
 /** T24 (review-2026-10-03): name rule, default-vs-delete race, request bounds, saves during an outage. */
@@ -71,6 +76,10 @@ class ModelsWriteLimitsApiIT(
     @Autowired lateinit var profiles: ProfileRepository
 
     @Autowired lateinit var transactions: TransactionTemplate
+
+    @Autowired lateinit var jdbc: JdbcTemplate
+
+    @Autowired lateinit var defaults: DefaultProfileRepository
 
     private val http = HttpClient.newHttpClient()
     private val json = JsonMapper.builder().build()
@@ -252,21 +261,66 @@ class ModelsWriteLimitsApiIT(
     fun `a default racing a delete of the same profile is 404 not-found, never 500 (AC-220, AC-222)`() {
         val s = signedIn()
         val id = stored(s.owner, "Doomed")
-        val locked = java.util.concurrent.CountDownLatch(1)
+        val locked = CountDownLatch(1)
+        val release = CountDownLatch(1)
         val deleter =
             Executors.newSingleThreadExecutor().submit {
                 transactions.executeWithoutResult {
                     profiles.lockOwner(s.owner)
                     locked.countDown()
-                    Thread.sleep(1_500)
+                    release.await()
                     profiles.delete(s.owner, id)
                 }
             }
         locked.await()
-        val r = call("PUT", "/api/v1/models/default-profile", s.key, """{"profile":${customRef(id)}}""")
+        val response =
+            Executors.newSingleThreadExecutor().submit<HttpResponse<String>> {
+                call("PUT", "/api/v1/models/default-profile", s.key, """{"profile":${customRef(id)}}""")
+            }
+        awaitBlockedOnAdvisoryLock()
+        release.countDown()
         deleter.get()
+        val r = response.get()
         assertProblem(r, 404, "not-found")
         assertThat(list(s)["defaultProfile"]["key"].asString()).isEqualTo("balanced")
+    }
+
+    @Test
+    fun `a delete racing a default of the same profile waits and reports defaultReset, never 500 (AC-220)`() {
+        val s = signedIn()
+        val id = stored(s.owner, "Chosen")
+        val locked = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val setter =
+            Executors.newSingleThreadExecutor().submit {
+                transactions.executeWithoutResult {
+                    profiles.lockOwner(s.owner)
+                    defaults.set(s.owner, ProfileRef.Custom(id), Instant.now())
+                    locked.countDown()
+                    release.await()
+                }
+            }
+        locked.await()
+        val response =
+            Executors.newSingleThreadExecutor().submit<HttpResponse<String>> {
+                call("DELETE", "/api/v1/models/profiles/${id.value}", s.key)
+            }
+        awaitBlockedOnAdvisoryLock()
+        release.countDown()
+        setter.get()
+        val r = response.get()
+        assertThat(r.statusCode()).describedAs(r.body()).isEqualTo(200)
+        assertThat(body(r)["defaultReset"].asBoolean()).isTrue()
+        assertThat(list(s)["defaultProfile"]["key"].asString()).isEqualTo("balanced")
+    }
+
+    private fun awaitBlockedOnAdvisoryLock() {
+        await().atMost(Duration.ofSeconds(10)).until {
+            jdbc.queryForObject(
+                "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND wait_event = 'advisory'",
+                Int::class.java,
+            ) == 1
+        }
     }
 
     @Test

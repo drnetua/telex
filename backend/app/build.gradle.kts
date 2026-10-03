@@ -34,18 +34,12 @@ dependencies {
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.modulith.docs)
 
+    integrationTestImplementation(libs.spring.modulith.events.core)
     integrationTestImplementation(libs.spring.boot.testcontainers)
     integrationTestImplementation(libs.testcontainers.junit.jupiter)
     integrationTestImplementation(libs.testcontainers.postgresql)
     integrationTestImplementation(libs.swagger.request.validator.core)
     integrationTestImplementation(libs.wiremock.standalone)
-}
-
-// Bean Validation container-element constraints (`List<@Size(max = 200) String>`) need the annotations in bytecode.
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xemit-jvm-type-annotations")
-    }
 }
 
 // The React SPA is served by Spring Web from classpath:/static/.

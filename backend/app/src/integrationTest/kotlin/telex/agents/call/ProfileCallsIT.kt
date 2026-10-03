@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.modulith.events.ApplicationModuleListener
+import org.springframework.modulith.events.IncompleteEventPublications
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.event.ApplicationEvents
@@ -134,6 +135,8 @@ class ProfileCallsIT {
     @Autowired lateinit var jdbc: JdbcTemplate
 
     @Autowired lateinit var events: ApplicationEvents
+
+    @Autowired lateinit var incomplete: IncompleteEventPublications
 
     @Autowired lateinit var meters: MeterRegistry
 
@@ -452,14 +455,37 @@ class ProfileCallsIT {
         stub(a, ok())
         val r = call(o, ref) as ProfileCallResult.Answered
         await().atMost(Duration.ofSeconds(5)).until { received.any { it.callId == r.callId } }
-        await().atMost(Duration.ofSeconds(5)).until {
-            jdbc.queryForObject(
-                "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +
-                    "AND event_type LIKE '%ModelCallFinished'",
-                Int::class.java,
-            ) == 0
-        }
+        await().atMost(Duration.ofSeconds(5)).until { completedPublications(r.callId.value) == 1 }
     }
+
+    @Test
+    fun `an incomplete ModelCallFinished publication is republished and completes (AC-229)`() {
+        val o = owner()
+        stub(a, ok())
+        val r = call(o, custom(o)) as ProfileCallResult.Answered
+        await().atMost(Duration.ofSeconds(5)).until { completedPublications(r.callId.value) == 1 }
+        val before = received.count { it.callId == r.callId }
+        jdbc.update(
+            "UPDATE event_publication SET completion_date = NULL WHERE serialized_event LIKE ?",
+            like(r.callId.value),
+        )
+        incomplete.resubmitIncompletePublications { (it.event as? ModelCallFinished)?.callId == r.callId }
+        await().atMost(Duration.ofSeconds(5)).until { completedPublications(r.callId.value) == 1 }
+        assertThat(received.count { it.callId == r.callId }).isEqualTo(before + 1)
+    }
+
+    /** Listener threads log while a test reads; doAppend is synchronized on the appender, so snapshot under it. */
+    private fun logLines() = synchronized(logs) { logs.list.toList() }
+
+    private fun like(callId: UUID) = "%$callId%"
+
+    private fun completedPublications(callId: UUID) =
+        jdbc.queryForObject(
+            "SELECT count(*) FROM event_publication WHERE event_type LIKE '%ModelCallFinished' " +
+                "AND serialized_event LIKE ? AND completion_date IS NOT NULL",
+            Int::class.java,
+            like(callId),
+        )
 
     @Test
     fun `vision slot answers text and image slot answers bytes through their own models (AC-224)`() {
@@ -536,7 +562,7 @@ class ProfileCallsIT {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM model_call WHERE owner_id = ?", Int::class.java, o.value))
             .isZero()
         assertThat(events.stream(ModelCallFinished::class.java).filter { it.ownerId == o }.toList()).isEmpty()
-        assertThat(logs.list.any { it.level.isGreaterOrEqual(Level.WARN) && it.loggerName.startsWith("telex.agents") })
+        assertThat(logLines().any { it.level.isGreaterOrEqual(Level.WARN) && it.loggerName.startsWith("telex.agents") })
             .isTrue()
     }
 
@@ -549,7 +575,7 @@ class ProfileCallsIT {
         val r = call(o, ref) as ProfileCallResult.Answered
         val dump =
             rows(r.callId.value).toString() + attemptRows(r.callId.value) + finished(r.callId.value) +
-                logs.list.joinToString("\n") { it.formattedMessage + (it.throwableProxy?.message ?: "") }
+                logLines().joinToString("\n") { it.formattedMessage + (it.throwableProxy?.message ?: "") }
         assertThat(dump).doesNotContain(promptText).doesNotContain(answerText).doesNotContain("sk-or-it-key")
         val columns =
             jdbc.queryForList(
