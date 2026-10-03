@@ -1,7 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
+import { refusalFor } from "../../api/linkingRefusal";
 import {
   linkedAccountsKey,
   useLinkedAccounts,
@@ -16,20 +17,11 @@ import { LinkedAccountSummary } from "../../components/LinkedAccountSummary/Link
 import { LoadState } from "../../components/LoadState/LoadState";
 import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
+import { useArrivalToast } from "../useArrivalToast";
 
 interface Notice {
   message: string;
   tone: "info" | "error";
-}
-
-/** The refusal text for a failed start; `undefined` when the failure is silent or shared. */
-function refusalFor(error: unknown): string | undefined {
-  if (!(error instanceof ApiFailure)) return undefined;
-  const problems: Record<string, unknown> = messages.linking.problems;
-  const text = problems[error.code];
-  if (typeof text === "function")
-    return (text as (limit: number) => string)(error.extras.limit ?? 0);
-  return typeof text === "string" ? text : undefined;
 }
 
 export function AccountsPage() {
@@ -44,6 +36,9 @@ export function AccountsPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const dismissNotice = useCallback(() => setNotice(null), []);
   const cancelUnlink = useCallback(() => setTarget(null), []);
+  const { arrival, dismiss: dismissArrival } = useArrivalToast();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const unlinked = useRef(false);
 
   const begin = (targetLinkedAccountId?: string) => {
     setNotice(null);
@@ -74,6 +69,7 @@ export function AccountsPage() {
     const remaining = (accounts.data?.length ?? 1) - 1;
     unlink.mutate(gone.id, {
       onSuccess: (result) => {
+        unlinked.current = true;
         setTarget(null);
         const next: Notice = result.signOutConfirmed
           ? { message: text.unlinked(gone.displayName), tone: "info" }
@@ -92,7 +88,9 @@ export function AccountsPage() {
   const busyStart = start.isPending;
   return (
     <>
-      <h1 className="page-title mb-1">{text.title}</h1>
+      <h1 className="page-title mb-1" tabIndex={-1} ref={heading}>
+        {text.title}
+      </h1>
       <p className="text-secondary mb-4">{text.intro}</p>
       {accounts.data.length === 0 ? (
         <EmptyState
@@ -161,11 +159,15 @@ export function AccountsPage() {
           cancelLabel={text.unlinkKeep}
           busyLabel={text.unlinking}
           busy={unlink.isPending}
+          returnFocusTo={() => (unlinked.current ? heading.current : null)}
           onConfirm={confirmUnlink}
           onCancel={cancelUnlink}
         >
           {text.unlinkBody(target.chatSync.chatsSynced)}
         </ConfirmDialog>
+      ) : null}
+      {arrival ? (
+        <Toast message={arrival.message} tone={arrival.tone} onDismiss={dismissArrival} />
       ) : null}
       {notice ? (
         <Toast message={notice.message} tone={notice.tone} onDismiss={dismissNotice} />

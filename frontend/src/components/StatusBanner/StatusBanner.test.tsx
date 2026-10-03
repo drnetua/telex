@@ -95,4 +95,31 @@ describe("AccountDisconnectedBanner", () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(screen.queryByRole("status")).toBeNull();
   });
+
+  it("AC-122: a refused Sign in again shows the refusal Toast and refetches the list", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes("linking-attempt") && init?.method === "POST")
+        return Promise.resolve(json(409, { code: "linked-account-limit-reached", limit: 3 }));
+      return Promise.resolve(json(200, { items: [account("a1", "Anna", "session_lost")] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/x"]}>
+          <AccountDisconnectedBanner />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Sign in again" }));
+    expect(
+      await screen.findByText(
+        "You've linked 3 accounts, the most this installation allows. Unlink an account to add another.",
+      ),
+    ).toBeInTheDocument();
+    const listCalls = () =>
+      fetchMock.mock.calls.filter((c) => c[0] === "/api/v1/linked-accounts").length;
+    await waitFor(() => expect(listCalls()).toBeGreaterThan(1));
+  });
 });

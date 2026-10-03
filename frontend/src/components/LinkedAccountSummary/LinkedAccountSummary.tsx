@@ -34,14 +34,18 @@ function StateBadge({ state }: { state: LinkedAccount["state"] }) {
   );
 }
 
-function SyncLine({ account }: { account: LinkedAccount }) {
+function SyncLine({ account, variant }: { account: LinkedAccount; variant: "line" | "row" }) {
   const t = messages.accounts;
   const { chatsSynced, chatsTotal, completedAt } = account.chatSync;
-  if (account.state !== "connected") return null;
+  // Session lost has nothing to sync; reconnecting keeps the last values.
+  if (account.state === "session_lost") return null;
   if (completedAt !== null) {
     return <div className="small text-secondary">{t.chats(chatsSynced)}</div>;
   }
-  const label = chatsTotal === null ? t.syncingUnknown : t.syncing(chatsSynced, chatsTotal);
+  const label =
+    chatsTotal === null
+      ? t.syncingUnknown
+      : (variant === "line" ? t.chatsOf : t.syncing)(chatsSynced, chatsTotal);
   const percent = chatsTotal ? Math.round((chatsSynced / chatsTotal) * 100) : 0;
   return (
     <div>
@@ -70,12 +74,18 @@ function SyncLine({ account }: { account: LinkedAccount }) {
 }
 
 export function LinkedAccountSummary({ account, variant, actions }: LinkedAccountSummaryProps) {
+  const t = messages.accounts;
   const body = (
     <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 w-100">
       <div className="flex-grow-1">
         <div className="fw-medium">{account.displayName}</div>
         <div className="small text-secondary">{formatMaskedPhone(account.phone)}</div>
-        <SyncLine account={account} />
+        <SyncLine account={account} variant={variant} />
+        {variant === "row" && account.state !== "connected" ? (
+          <div className="small text-secondary">
+            {account.state === "reconnecting" ? t.reconnectingNote : t.sessionLostNote}
+          </div>
+        ) : null}
       </div>
       <div className="d-flex align-items-center gap-2">
         <span aria-live="polite">

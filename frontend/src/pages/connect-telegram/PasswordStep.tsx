@@ -82,7 +82,12 @@ export function PasswordStep(props: StepProps) {
             {error}
           </div>
         ) : null}
-        {hint ? <small className="form-hint d-block mt-1">{t.passwordHint(hint)}</small> : null}
+        {hint ? (
+          <small className="form-hint d-flex align-items-center gap-1 mt-1">
+            <Icon name="info-circle" size={16} />
+            {t.passwordHint(hint)}
+          </small>
+        ) : null}
       </div>
       <p className={error ? "mb-3" : "text-secondary small mb-3"}>{t.passwordForgot}</p>
       <div className="d-grid gap-2">

@@ -307,6 +307,9 @@ describe("SCR-02 password step", () => {
     expect(field).toHaveAttribute("autocomplete", "off");
     expect(screen.getByText("Hint: first pet")).toBeVisible();
     expect(
+      screen.getByText("Hint: first pet").parentElement?.querySelector(".tabler-icon-info-circle"),
+    ).not.toBeNull();
+    expect(
       screen.getByText("Forgot your password? It can only be reset in the Telegram app."),
     ).toBeVisible();
   });

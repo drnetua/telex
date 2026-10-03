@@ -2,7 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Fragment } from "react";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FailureBoundary } from "../../app/FailureBoundary";
 import { createAppQueryClient, failureBus } from "../../app/queryClient";
@@ -21,12 +21,16 @@ const account = (id: string, displayName: string) => ({
 });
 const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
 
-function setup(bounded = true) {
+function LocationState() {
+  return <span data-testid="loc-state">{JSON.stringify(useLocation().state)}</span>;
+}
+
+function setup(bounded = true, state: unknown = null) {
   const Shell = bounded ? FailureBoundary : Fragment;
   const client = createAppQueryClient();
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/inbox"]}>
+      <MemoryRouter initialEntries={[{ pathname: "/inbox", state }]}>
         <Shell>
           <Routes>
             <Route
@@ -34,6 +38,7 @@ function setup(bounded = true) {
               element={
                 <AppShell email="me@example.com">
                   <InboxPage />
+                  <LocationState />
                 </AppShell>
               }
             />
@@ -160,5 +165,15 @@ describe("SCR-10 Inbox", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     await waitFor(() => expect(handler).toHaveBeenCalled());
     expect(screen.getByRole("heading", { level: 1, name: "Inbox" })).toBeInTheDocument();
+  });
+
+  it("AC-114: the arrival Toast is cleared from history so reload and Back do not repeat it", async () => {
+    routed({
+      signOut: () => new Response(null, { status: 204 }),
+      accounts: [account("a1", "Ann")],
+    });
+    setup(true, { toast: "Ann is connected" });
+    expect(await screen.findByText("Ann is connected")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("loc-state")).toHaveTextContent("null"));
   });
 });

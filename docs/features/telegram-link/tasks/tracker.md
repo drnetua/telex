@@ -39,7 +39,7 @@
 | T32 | Cover the remaining contract responses over HTTP, run completions concurrently, and restart the app for real | tests | Anton Husiev | M | T30, T31 | todo |
 | T33 | Bring sad §6/§7, the api-sync open questions and the screens.md registry in line with the code | docs | Anton Husiev | S | T30, T36 | todo |
 | T34 | SPA failures: domain 503 refusals stay on the page, SCR-02 never throws in render, step errors always give feedback, cache the new account | ui | Anton Husiev | M | — | done |
-| T35 | SCR-60 and the banner: linked Toast, Reconnecting and Session lost notes, banner refusals, unlink focus, one-shot arrival Toast, icon and copy fixes | ui | Anton Husiev | M | T34, T29 | todo |
+| T35 | SCR-60 and the banner: linked Toast, Reconnecting and Session lost notes, banner refusals, unlink focus, one-shot arrival Toast, icon and copy fixes | ui | Anton Husiev | M | T34, T29 | done |
 | T36 | Render SCR-02 in the confirmed onboarding card layout | ui | Anton Husiev | S | T35 | todo |
 | T37 | Reopen the live-update stream when the browser has closed it, with capped backoff | ui | Anton Husiev | S | — | done |
 | T38 | End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals | tests | Anton Husiev | M | T27, T29, T30, T35, T36, T37 | todo |

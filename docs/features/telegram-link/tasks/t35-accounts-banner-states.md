@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/accounts/AccountsPage.tsx", "frontend/src/pages
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings S7, S8, S9, S11, Q8, Q16 (d)"
-status: "todo"
+status: "done"
 ---
 
 # T35 — SCR-60 and the banner: linked Toast, Reconnecting and Session lost notes, banner refusals, unlink focus, one-shot arrival Toast, icon and copy fixes

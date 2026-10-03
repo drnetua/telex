@@ -49,7 +49,7 @@ export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitState
             {starting ? t.starting : t.startAgain}
           </Button>
         ) : (
-          <Button className="btn-ghost-secondary" onClick={onBack}>
+          <Button className="btn-outline-secondary" onClick={onBack}>
             {t.back}
           </Button>
         )
@@ -104,7 +104,7 @@ export function RefusedState({
       action: accounts(t.openAccounts),
     },
     "telegram-account-mismatch": {
-      icon: "alert-circle",
+      icon: "ban",
       title: t.mismatchTitle,
       body: t.mismatchBody(displayName ?? ""),
       action: accounts(t.backToAccounts),

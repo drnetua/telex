@@ -49,10 +49,12 @@ describe("LinkedAccountSummary", () => {
   it("AC-122: reconnecting and session lost show icon and words", () => {
     const { unmount } = show({ ...base, state: "reconnecting" });
     expect(screen.getByText("Reconnecting")).toBeInTheDocument();
-    expect(screen.queryByRole("progressbar")).toBeNull();
+    // the sync line keeps its last values while reconnecting
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
     unmount();
     show({ ...base, state: "session_lost" });
     expect(screen.getByText("Session lost")).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).toBeNull();
   });
 
   it("announces the badge politely and renders the actions slot on rows", () => {

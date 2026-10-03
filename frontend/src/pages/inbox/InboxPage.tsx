@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { useLinkedAccounts } from "../../api/linkedAccounts";
 import { linkingAttemptKey, useStartLinking } from "../../api/linking";
@@ -10,6 +10,7 @@ import { LinkedAccountSummary } from "../../components/LinkedAccountSummary/Link
 import { LoadState } from "../../components/LoadState/LoadState";
 import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
+import { useArrivalToast } from "../useArrivalToast";
 
 export function InboxPage() {
   const accounts = useLinkedAccounts();
@@ -19,10 +20,7 @@ export function InboxPage() {
   const text = messages.inbox;
   const [refusal, setRefusal] = useState<string | null>(null);
   const dismissRefusal = useCallback(() => setRefusal(null), []);
-  const arrivalState = useLocation().state as { toast?: string; tone?: "info" | "error" } | null;
-  const arrival = arrivalState?.toast;
-  const [arrivalShown, setArrivalShown] = useState(true);
-  const dismissArrival = useCallback(() => setArrivalShown(false), []);
+  const { arrival, dismiss: dismissArrival } = useArrivalToast();
 
   const connect = () => {
     setRefusal(null);
@@ -69,8 +67,8 @@ export function InboxPage() {
           </div>
         </div>
       )}
-      {arrival && arrivalShown ? (
-        <Toast message={arrival} tone={arrivalState?.tone} onDismiss={dismissArrival} />
+      {arrival ? (
+        <Toast message={arrival.message} tone={arrival.tone} onDismiss={dismissArrival} />
       ) : null}
       {refusal ? <Toast message={refusal} tone="error" onDismiss={dismissRefusal} /> : null}
     </>

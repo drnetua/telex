@@ -1,7 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FailureBoundary } from "../../app/FailureBoundary";
 import { createAppQueryClient } from "../../app/queryClient";
@@ -22,6 +22,11 @@ interface Handlers {
   accounts: () => unknown[];
   start?: () => Response;
   unlink?: () => Response;
+  state?: unknown;
+}
+
+function LocationState() {
+  return <span data-testid="loc-state">{JSON.stringify(useLocation().state)}</span>;
 }
 
 function setup(handlers: Handlers) {
@@ -40,10 +45,18 @@ function setup(handlers: Handlers) {
   vi.stubGlobal("fetch", fetchMock);
   render(
     <QueryClientProvider client={createAppQueryClient()}>
-      <MemoryRouter initialEntries={["/accounts"]}>
+      <MemoryRouter initialEntries={[{ pathname: "/accounts", state: handlers.state ?? null }]}>
         <FailureBoundary>
           <Routes>
-            <Route path="/accounts" element={<AccountsPage />} />
+            <Route
+              path="/accounts"
+              element={
+                <>
+                  <AccountsPage />
+                  <LocationState />
+                </>
+              }
+            />
             <Route path="/connect-telegram" element={<h1>Wizard page</h1>} />
             <Route path="/inbox" element={<h1>Inbox page</h1>} />
           </Routes>
@@ -251,5 +264,57 @@ describe("SCR-60 Accounts", () => {
     await waitFor(() => expect(screen.queryByText("Ann")).toBeNull());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.queryByText("Ann is unlinked.")).not.toBeInTheDocument();
+  });
+
+  it("AC-114: shows the arrival Toast from the wizard and clears it from history", async () => {
+    setup({
+      accounts: () => [account("a1", "Ann")],
+      state: { toast: "Ann is connected" },
+    });
+    expect(await screen.findByText("Ann is connected")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("loc-state")).toHaveTextContent("null"));
+  });
+
+  it("AC-117: shows the connected again Toast after Sign in again", async () => {
+    setup({
+      accounts: () => [account("a1", "Ann")],
+      state: { toast: "Ann is connected again" },
+    });
+    expect(await screen.findByText("Ann is connected again")).toBeInTheDocument();
+  });
+
+  it("AC-122: a reconnecting row keeps its sync line and explains itself", async () => {
+    setup({ accounts: () => [account("a1", "Ann", "reconnecting")] });
+    expect(
+      await screen.findByText("Telegram can't be reached right now. teleX reconnects by itself."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("12 chats")).toBeInTheDocument();
+  });
+
+  it("AC-117: a session lost row explains how to recover", async () => {
+    setup({ accounts: () => [account("a1", "Ann", "session_lost")] });
+    expect(
+      await screen.findByText(
+        "The session was ended in Telegram. Sign in again to bring this account back with everything attached.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("AC-111: focus moves to the page heading after the unlinked row is gone", async () => {
+    let accounts = [account("a1", "Ann"), account("a2", "Bob")];
+    setup({
+      accounts: () => accounts,
+      unlink: () => {
+        accounts = [accounts[1]!];
+        return json(200, { signOutConfirmed: true });
+      },
+    });
+    await userEvent.click((await screen.findAllByRole("button", { name: "Unlink" }))[0]!);
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Unlink account" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toHaveFocus(),
+    );
   });
 });
