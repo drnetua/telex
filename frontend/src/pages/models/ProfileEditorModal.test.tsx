@@ -1,4 +1,4 @@
-import { QueryClientProvider } from "@tanstack/react-query";
+import { focusManager, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router";
@@ -136,7 +136,12 @@ const writes = (calls: Call[]) => calls.filter((c) => c.method === "POST" || c.m
 
 function Where() {
   const l = useLocation();
-  return <div data-testid="where">{l.pathname + l.search}</div>;
+  return (
+    <>
+      <div data-testid="where">{l.pathname + l.search}</div>
+      <div data-testid="state">{JSON.stringify(l.state)}</div>
+    </>
+  );
 }
 function open(path: string) {
   render(
@@ -149,7 +154,12 @@ function open(path: string) {
   );
 }
 const where = () => screen.getByTestId("where").textContent;
-const dialog = async (title = "Create profile") => screen.findByRole("dialog", { name: title });
+const shell = (title = "Create profile") => screen.findByRole("dialog", { name: title });
+/** The modal once its draft or profile has loaded (the frame alone shows while it is pending). */
+const dialog = async (title = "Create profile") => {
+  await screen.findByLabelText("Name");
+  return shell(title);
+};
 const section = (d: HTMLElement, name: string) => within(d).getByRole("group", { name });
 const rows = (s: HTMLElement) => within(s).queryAllByRole("listitem");
 const rowNames = (s: HTMLElement) => rows(s).map((r) => r.textContent ?? "");
@@ -707,5 +717,99 @@ describe("SCR-34 closing", () => {
     const d = await dialog();
     await user.click(within(d).getByRole("button", { name: "Close" }));
     await waitFor(() => expect(where()).toBe("/settings/models"));
+  });
+});
+
+describe("SCR-34 loading, background refetches and result notices (review-2026-10-03 C1, F1, F3)", () => {
+  const refocus = () => {
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+  };
+
+  it("C1 loading: the modal shell with a 3-row LoadState shows while the draft is pending", async () => {
+    stubApi({ draft: () => new Response(null) });
+    let release: (r: Response) => void = () => undefined;
+    const pending = new Promise<Response>((res) => (release = res));
+    const inner = globalThis.fetch as unknown as (u: string, i?: RequestInit) => Promise<Response>;
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+      url.startsWith("/api/v1/models/profile-draft") ? pending : inner(url, init),
+    );
+    open("/settings/models/profiles/new");
+    const d = await shell();
+    const status = within(d).getByRole("status");
+    expect(status.querySelectorAll(".placeholder")).toHaveLength(3);
+    expect(within(d).queryByLabelText("Name")).toBeNull();
+    release(json(200, draft()));
+    expect(await screen.findByLabelText("Name")).toBeInTheDocument();
+  });
+
+  it("C1 loading: editing shows the same loading state while the profile is pending", async () => {
+    stubApi();
+    let release: (r: Response) => void = () => undefined;
+    const pending = new Promise<Response>((res) => (release = res));
+    const inner = globalThis.fetch as unknown as (u: string, i?: RequestInit) => Promise<Response>;
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+      url === "/api/v1/models/profiles/c1" ? pending : inner(url, init),
+    );
+    open("/settings/models/profiles/c1");
+    const d = await shell("Edit profile");
+    expect(within(d).getByRole("status").querySelectorAll(".placeholder")).toHaveLength(3);
+    release(json(200, profile("c1", "Cheap vision")));
+    expect(await screen.findByLabelText("Name")).toHaveValue("Cheap vision");
+  });
+
+  it("F1: a failing draft refetch after load keeps the form and the typed name", async () => {
+    let draftCalls = 0;
+    stubApi({
+      draft: () =>
+        ++draftCalls === 1 ? json(200, draft()) : problem(409, "profile-limit-reached"),
+    });
+    const user = userEvent.setup();
+    open("/settings/models/profiles/new");
+    const d = await dialog();
+    await user.type(within(d).getByLabelText("Name"), "Typed name");
+    refocus();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(where()).toBe("/settings/models/profiles/new");
+    expect(within(await dialog()).getByLabelText("Name")).toHaveValue("Typed name");
+  });
+
+  it("F1: a failing profile refetch after load keeps the form and the typed name", async () => {
+    let gets = 0;
+    stubApi({
+      get: () => (++gets === 1 ? json(200, profile("c1", "Cheap vision")) : json(500, {})),
+    });
+    const user = userEvent.setup();
+    open("/settings/models/profiles/c1");
+    const d = await dialog("Edit profile");
+    await user.type(within(d).getByLabelText("Name"), " v2");
+    refocus();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(within(await dialog("Edit profile")).getByLabelText("Name")).toHaveValue(
+      "Cheap vision v2",
+    );
+  });
+
+  it("F3: the saved notice shows once and is cleared from the history entry", async () => {
+    stubApi();
+    const user = userEvent.setup();
+    open("/settings/models/profiles/new");
+    const d = await dialog();
+    await user.type(within(d).getByLabelText("Name"), "Fresh");
+    await add(user, d, "Text", "Test text model A");
+    await save(user, d);
+    expect(await screen.findByText("Profile saved")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("state").textContent).toBe("null"));
+    expect(screen.getByText("Profile saved")).toBeInTheDocument();
+    expect(where()).toBe("/settings/models");
+  });
+
+  it("F3: a limit notice from a refused opening shows once and is cleared from the history entry", async () => {
+    stubApi({ draft: () => problem(409, "profile-limit-reached") });
+    open("/settings/models/profiles/new");
+    expect(
+      await screen.findByText("You can have up to 20 custom profiles. Delete one to make room."),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("state").textContent).toBe("null"));
   });
 });

@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { Navigate, useLocation, useParams, useSearchParams } from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { SYSTEM_KEYS, useModelCatalog, useModelProfiles } from "../../api/models";
 import { Icon } from "../../components/Icon/Icon";
 import { Toast } from "../../components/Toast/Toast";
@@ -19,8 +19,14 @@ export function ModelsPage() {
   const url = location.pathname + location.search;
   const [goneAt, setGoneAt] = useState<string | null>(null);
   const onGone = useCallback(() => setGoneAt(url), [url]);
-  const [dismissed, setDismissed] = useState<unknown>(null);
+  const navigate = useNavigate();
+  const [notice, setNotice] = useState<EditorNotice | null>(null);
   const incoming = (location.state as { notice?: EditorNotice } | null)?.notice;
+  // A result notice is shown once: take it out of the history entry so reload and Back/Forward don't replay it.
+  if (incoming && incoming !== notice) setNotice(incoming);
+  useEffect(() => {
+    if (incoming) void navigate(url, { replace: true, state: null });
+  }, [incoming, url, navigate]);
   const editing = id !== undefined || location.pathname.endsWith("/profiles/new");
   const tab = params.get("tab") === "catalog" ? "catalog" : "profiles";
   // Both lists are requested when the page opens; each tab renders from its own query.
@@ -77,12 +83,12 @@ export function ModelsPage() {
       ) : (
         <ProfilesTab />
       )}
-      {incoming && incoming !== dismissed ? (
+      {notice ? (
         <Toast
-          tone={incoming.tone}
-          message={incoming.message}
+          tone={notice.tone}
+          message={notice.message}
           dismissLabel={m.dismiss}
-          onDismiss={() => setDismissed(incoming)}
+          onDismiss={() => setNotice(null)}
         />
       ) : null}
       {editing ? (

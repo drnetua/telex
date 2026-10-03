@@ -24,6 +24,7 @@ import {
 import { Button } from "../../components/Button/Button";
 import { ChainEditor, type ChainItem } from "../../components/ChainEditor/ChainEditor";
 import { ModelChooser } from "../../components/ModelChooser/ModelChooser";
+import { LoadState } from "../../components/LoadState/LoadState";
 import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
 import { UnavailablePage } from "../system/UnavailablePage";
@@ -65,7 +66,11 @@ export function ProfileEditorModal({ profileId, from, onGone }: Props) {
   const draft = useModelProfileDraft(profileId ? undefined : from, !profileId);
   const profile = useModelProfile(profileId);
   const source = profileId ? profile : draft;
-  const failure = source.error instanceof ApiFailure ? source.error : null;
+  // A failed background refetch must not close or reset an editor that already has its data.
+  const loaded = profileId
+    ? profile.data !== undefined
+    : draft.data !== undefined && draft.isFetchedAfterMount;
+  const failure = !loaded && source.error instanceof ApiFailure ? source.error : null;
   const code = failure?.code;
   const gone = code === "not-found";
   useEffect(() => {
@@ -77,7 +82,7 @@ export function ProfileEditorModal({ profileId, from, onGone }: Props) {
     return <Navigate to={MODELS_PATH} replace state={{ notice: { tone: "error", message } }} />;
   }
   if (gone) return null;
-  if (source.isError) return <UnavailablePage onRetry={() => void source.refetch()} />;
+  if (source.isError && !loaded) return <UnavailablePage onRetry={() => void source.refetch()} />;
   const data: ModelProfileDraft | undefined = profileId
     ? profile.data && {
         name: profile.data.name,
@@ -85,9 +90,44 @@ export function ProfileEditorModal({ profileId, from, onGone }: Props) {
         slots: profile.data.slots,
         pricePer100Runs: profile.data.pricePer100Runs,
       }
-    : draft.data;
-  if (!data) return null;
+    : draft.isFetchedAfterMount
+      ? draft.data
+      : undefined;
+  if (!data) return <EditorShell profileId={profileId} />;
   return <EditorForm profileId={profileId} initial={data} onGone={onGone} />;
+}
+
+/** SCR-34 `loading`: the modal frame with a skeleton while the draft or the profile is pending. */
+function EditorShell({ profileId }: { profileId?: string }) {
+  const navigate = useNavigate();
+  const titleId = useId();
+  return (
+    <div className="modal modal-blur d-block">
+      <div
+        className="modal-dialog modal-lg modal-fullscreen-md-down modal-dialog-scrollable"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2 id={titleId} className="modal-title h3">
+              {profileId ? m.editor.editTitle : m.editor.createTitle}
+            </h2>
+            <button
+              type="button"
+              className="btn-close"
+              aria-label={m.editor.close}
+              onClick={() => void navigate(MODELS_PATH)}
+            />
+          </div>
+          <div className="modal-body">
+            <LoadState state="loading" rows={3} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function EditorForm({

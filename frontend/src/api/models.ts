@@ -122,6 +122,9 @@ export function useModelProfile(key: string | undefined) {
   return useQuery({
     queryKey: [...modelProfilesKey, key],
     enabled: key !== undefined,
+    // An open editor must not be reset by a background refetch (AC-218).
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
     queryFn: () =>
       apiFetch<ModelProfile>(`${base}/profiles/${encodeURIComponent(key ?? "")}`, {
         background: isBackground(),
@@ -137,7 +140,15 @@ const fetchDraft = (from?: string) =>
   );
 
 export function useModelProfileDraft(from?: string, enabled = true) {
-  return useQuery({ queryKey: draftKey(from), queryFn: () => fetchDraft(from), enabled });
+  // Always ask on mount (the suggested name goes stale), never in the background while the form is open.
+  return useQuery({
+    queryKey: draftKey(from),
+    queryFn: () => fetchDraft(from),
+    enabled,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+  });
 }
 
 /** On-demand draft fetch for "Create profile" / "Duplicate": always asks the server, caches under the hook's key. */
