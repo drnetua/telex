@@ -94,6 +94,28 @@ export const messages = {
       tasks: "Tasks",
       settings: "Settings",
     },
+    loadFailed: {
+      title: "This section didn't load.",
+      retry: "Try again",
+    },
+  },
+  comingSoon: {
+    badge: "Coming soon",
+    goToInbox: "Go to Inbox",
+    sentences: {
+      overview:
+        "See your day at a glance: what assistants did, what waits for you and what it cost.",
+      chats: "Read and answer your Telegram chats, with assistants working alongside you.",
+      assistants: "Set up the assistants that work for you, with their rules and limits.",
+      runs: "Follow every time an assistant worked, step by step.",
+      tasks: "Handle the tasks and approvals assistants hand to you.",
+    },
+  },
+  settings: {
+    profile: {
+      title: "Profile and security",
+      hint: "Passkeys, sign-in sessions, theme and time zone",
+    },
   },
   inbox: {
     title: "Inbox",

@@ -15,7 +15,7 @@
 | T8 | Apply the theme before first paint, follow System, sync tabs and switch once to the account theme | ui | Anton Husiev | S | — | done |
 | T9 | Build ThemeSwitch (segmented and menu), the Toast action prop and the Appearance card on SCR-64 | ui | Anton Husiev | M | T8 | done |
 | T10 | Port AppShell (C-01) from the section registry: side menu, phone bottom bar, More sheet and Sign out | ui | Anton Husiev | L | T9 | done |
-| T11 | Route every section lazily, with the Coming soon page (SCR-94) and the Settings page (SCR-69) | ui | Anton Husiev | M | T10 | todo |
+| T11 | Route every section lazily, with the Coming soon page (SCR-94) and the Settings page (SCR-69) | ui | Anton Husiev | M | T10 | done |
 | T12 | Show the live Inbox counter in the shell from the pulse (none at 0, 99+ above 99) | ui | Anton Husiev | S | T7, T10 | todo |
 | T13 | Port StatusBanner (C-04) with the condition catalog, Try again, still-down and N more | ui | Anton Husiev | M | T7, T10 | todo |
 | T14 | Save the device timezone on first open and show SCR-64 dates in the Owner's timezone | ui | Anton Husiev | S | T9, T10 | todo |

@@ -1,0 +1,21 @@
+import type { IconName } from "../../components/Icon/Icon";
+import { messages } from "../../messages";
+
+export interface SettingsEntry {
+  id: string;
+  path: string;
+  icon: IconName;
+  title: string;
+  hint: string;
+}
+
+/** Settings registry: later epics add their row here without touching the shell (QG-3a). */
+export const settingsEntries: readonly SettingsEntry[] = [
+  {
+    id: "profile",
+    path: "/profile",
+    icon: "user",
+    title: messages.settings.profile.title,
+    hint: messages.settings.profile.hint,
+  },
+];

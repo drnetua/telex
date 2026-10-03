@@ -5,6 +5,7 @@ import {
   IconBrandTelegram,
   IconCheck,
   IconChecklist,
+  IconChevronRight,
   IconClock,
   IconDeviceDesktop,
   IconDots,
@@ -54,6 +55,7 @@ const icons = {
   settings: IconSettings,
   "layout-dashboard": IconLayoutDashboard,
   dots: IconDots,
+  "chevron-right": IconChevronRight,
   x: IconX,
 } satisfies Record<string, TablerIcon>;
 

@@ -30,6 +30,12 @@ export const sections: readonly Section[] = [
   { id: "settings", path: "/settings", icon: "settings", phone: "more", page: "page" },
 ];
 
+/** Addresses that sit under a section without being its own entry, e.g. Profile and security under Settings. */
+const owned: Readonly<Record<string, SectionId>> = { "/profile": "settings" };
+
 export function currentSection(pathname: string): Section | undefined {
-  return sections.find((s) => pathname === s.path || pathname.startsWith(`${s.path}/`));
+  const underPath = (base: string) => pathname === base || pathname.startsWith(`${base}/`);
+  const owner = Object.keys(owned).find(underPath);
+  if (owner) return sections.find((s) => s.id === owned[owner]);
+  return sections.find((s) => underPath(s.path));
 }
