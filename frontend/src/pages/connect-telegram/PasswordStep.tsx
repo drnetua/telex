@@ -42,7 +42,7 @@ export function PasswordStep(props: StepProps) {
       } else if (isValidation(e)) reject(t.passwordRequired);
       else {
         setPassword("");
-        if (!props.onCommonFailure(e, () => void submit())) throw e;
+        props.onCommonFailure(e, () => void submit());
       }
     }
   }

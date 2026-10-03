@@ -50,11 +50,9 @@ function Elsewhere() {
   );
 }
 
-function setup() {
+function setup(client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={["/connect-telegram"]}>
         <Routes>
           <Route path="/connect-telegram" element={<ConnectTelegramPage />} />
@@ -63,6 +61,7 @@ function setup() {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return client;
 }
 
 const A = "GET /api/v1/linking-attempt";
@@ -349,6 +348,73 @@ describe("SCR-02 password step", () => {
     await userEvent.type(await screen.findByLabelText("Password"), "secret");
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+  });
+});
+
+describe("SCR-02 failures", () => {
+  it("does not throw when the attempt load fails with a 503; the page stays rendered", async () => {
+    mockApi({ [A]: [problem(503, "unavailable")] });
+    const client = setup();
+    await waitFor(() => expect(client.getQueryState(["linking-attempt"])?.status).toBe("error"));
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Connect your Telegram" })).toBeNull(),
+    );
+    expect(document.body).not.toBeEmptyDOMElement();
+  });
+
+  it("keeps the step on screen when a later refetch fails", async () => {
+    mockApi({ [A]: [json(200, attempt()), problem(503, "unavailable")] });
+    const client = setup();
+    expect(await screen.findByLabelText("Phone number")).toBeVisible();
+    await client.refetchQueries({ queryKey: ["linking-attempt"] });
+    expect(screen.getByLabelText("Phone number")).toBeVisible();
+  });
+
+  it("gives an error toast for a failure no screen state covers (AC-01)", async () => {
+    mockApi({ [A]: [json(200, attempt())], [PHONE]: [problem(418, "teapot")] });
+    setup();
+    await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+    expect(await screen.findByText("Something went wrong. Try again.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Send code" })).toBeEnabled();
+  });
+
+  it("gives an error toast when the step-mismatch refetch fails", async () => {
+    mockApi({
+      [A]: [json(200, attempt()), problem(418, "teapot")],
+      [PHONE]: [problem(409, "linking-step-mismatch")],
+    });
+    setup();
+    await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+    expect(await screen.findByText("Something went wrong. Try again.")).toBeVisible();
+  });
+
+  it("caches the linked accounts so the Inbox's first render has the new account (AC-01)", async () => {
+    mockApi({
+      [A]: [json(200, attempt({ step: "password" }))],
+      [PASSWORD]: [json(200, { outcome: "linked", linkedAccountId: "a1", origin: "inbox" })],
+      "GET /api/v1/linked-accounts": [
+        json(200, {
+          items: [
+            {
+              id: "a1",
+              displayName: "Ann",
+              phone: { countryCode: "380", lastDigits: "42" },
+              state: "connected",
+              chatSync: null,
+              linkedAt: "2026-01-01T00:00:00Z",
+            },
+          ],
+        }),
+      ],
+    });
+    const client = setup();
+    await userEvent.type(await screen.findByLabelText("Password"), "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+    expect(client.getQueryData(["linked-accounts"])).toHaveLength(1);
   });
 });
 

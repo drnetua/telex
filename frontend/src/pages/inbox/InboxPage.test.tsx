@@ -1,8 +1,10 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Fragment } from "react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { FailureBoundary } from "../../app/FailureBoundary";
 import { createAppQueryClient, failureBus } from "../../app/queryClient";
 import { AppShell } from "../../shell/AppShell/AppShell";
 import { InboxPage } from "./InboxPage";
@@ -19,23 +21,26 @@ const account = (id: string, displayName: string) => ({
 });
 const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
 
-function setup() {
+function setup(bounded = true) {
+  const Shell = bounded ? FailureBoundary : Fragment;
   const client = createAppQueryClient();
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={["/inbox"]}>
-        <Routes>
-          <Route
-            path="/inbox"
-            element={
-              <AppShell email="me@example.com">
-                <InboxPage />
-              </AppShell>
-            }
-          />
-          <Route path="/connect-telegram" element={<h1>Wizard page</h1>} />
-          <Route path="/sign-in" element={<h1>Sign in page</h1>} />
-        </Routes>
+        <Shell>
+          <Routes>
+            <Route
+              path="/inbox"
+              element={
+                <AppShell email="me@example.com">
+                  <InboxPage />
+                </AppShell>
+              }
+            />
+            <Route path="/connect-telegram" element={<h1>Wizard page</h1>} />
+            <Route path="/sign-in" element={<h1>Sign in page</h1>} />
+          </Routes>
+        </Shell>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -104,6 +109,9 @@ describe("SCR-10 Inbox", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
+    // The refusal stays on the page; the app-wide unavailable screen (SCR-93) must not cover it.
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 
@@ -147,7 +155,7 @@ describe("SCR-10 Inbox", () => {
     const handler = vi.fn();
     failureBus.handler = handler;
     vi.stubGlobal("fetch", routed({ signOut: () => json(403, { code: "forbidden" }) }));
-    setup();
+    setup(false);
     await screen.findByRole("heading", { level: 1, name: "Inbox" });
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     await waitFor(() => expect(handler).toHaveBeenCalled());

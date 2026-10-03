@@ -10,8 +10,8 @@ export interface StepProps {
   onNext: (attempt: LinkingAttempt) => void;
   /** The attempt ended in a linked account (the page leaves to the origin). */
   onFinished: (result: FinishedResult) => void;
-  /** Shared failures (503, 409 mismatch, routable ones); true when it handled the error. */
-  onCommonFailure: (error: unknown, retry: () => void) => boolean;
+  /** Shared failures (503, 409 mismatch, routable ones); anything else gets a generic error toast. */
+  onCommonFailure: (error: unknown, retry: () => void) => void;
   onInfo: (message: string) => void;
   onCancel: () => Promise<void> | void;
 }

@@ -400,6 +400,7 @@ export const messages = {
     connectedAgain: (displayName: string) => `${displayName} is connected again.`,
     stepDone: "This step was already completed in another window.",
     /** One entry per problem code of the linking API; limit-aware ones take the limit. */
+    genericError: "Something went wrong. Try again.",
     problems: {
       "telegram-linking-not-set-up":
         "Telegram linking isn't set up on this installation yet. The person who runs teleX has to finish the setup.",

@@ -106,6 +106,12 @@ describe("linked account and linking clients", () => {
 
   it("routes only unmapped failures; screen-handled codes carry no route", async () => {
     f.mockResolvedValue(problem(503, { code: "telegram-unavailable" }));
+    await expect(submitLinkingPhone("1")).rejects.toMatchObject({ route: undefined });
+    f.mockResolvedValue(problem(503, { code: "telegram-linking-not-set-up" }));
+    await expect(startMyLinkingAttempt({ origin: "inbox" })).rejects.toMatchObject({
+      route: undefined,
+    });
+    f.mockResolvedValue(problem(503, { code: "internal-error" }));
     await expect(submitLinkingPhone("1")).rejects.toMatchObject({ route: "unavailable" });
   });
 });

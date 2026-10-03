@@ -9,7 +9,7 @@ files_hint: ["frontend/src/api/client.ts", "frontend/src/app/queryClient.ts", "f
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings S6, Q1, Q16 (a–c)"
-status: "todo"
+status: "done"
 ---
 
 # T34 — SPA failures: domain 503 refusals stay on the page, SCR-02 never throws in render, step errors always give feedback, cache the new account

@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { FailureBoundary } from "../../app/FailureBoundary";
 import { createAppQueryClient } from "../../app/queryClient";
 import { AccountsPage } from "./AccountsPage";
 
@@ -40,11 +41,13 @@ function setup(handlers: Handlers) {
   render(
     <QueryClientProvider client={createAppQueryClient()}>
       <MemoryRouter initialEntries={["/accounts"]}>
-        <Routes>
-          <Route path="/accounts" element={<AccountsPage />} />
-          <Route path="/connect-telegram" element={<h1>Wizard page</h1>} />
-          <Route path="/inbox" element={<h1>Inbox page</h1>} />
-        </Routes>
+        <FailureBoundary>
+          <Routes>
+            <Route path="/accounts" element={<AccountsPage />} />
+            <Route path="/connect-telegram" element={<h1>Wizard page</h1>} />
+            <Route path="/inbox" element={<h1>Inbox page</h1>} />
+          </Routes>
+        </FailureBoundary>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -133,7 +136,8 @@ describe("SCR-60 Accounts", () => {
       start: () => json(503, { code: "telegram-linking-not-set-up" }),
     });
     await userEvent.click(await screen.findByRole("button", { name: "Add account" }));
-    expect(await screen.findByText(/Telegram linking isn't set up/)).toBeInTheDocument();
+    expect(await screen.findByText(/Telegram linking isn't set up/)).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
   });
 
   it("start refused as already linked shows the toast and refetches", async () => {

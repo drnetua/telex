@@ -49,7 +49,12 @@ export function isConnectivityStatus(status: number): boolean {
   return status === 0 || status === 502 || status === 503 || status === 504;
 }
 
+/** 503 refusals a screen shows where the Owner chose the action (AC-119); they never take over the app. */
+const SCREEN_HANDLED_503 = ["telegram-linking-not-set-up", "telegram-unavailable"];
+
 function routeFor(status: number, code: string): FailureRoute | undefined {
+  // A domain 503 is an answer from teleX, not a connectivity failure, so it is checked first.
+  if (status === 503 && SCREEN_HANDLED_503.includes(code)) return undefined;
   if (isConnectivityStatus(status)) {
     if (!isShellActive()) return "unavailable";
     connectivity.reportNoAnswer();

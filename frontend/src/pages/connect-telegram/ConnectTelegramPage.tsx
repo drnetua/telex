@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import {
   formatMaskedPhone,
+  linkedAccountsKey,
   listMyLinkedAccounts,
   useLinkedAccounts,
 } from "../../api/linkedAccounts";
@@ -74,7 +75,10 @@ export function ConnectTelegramPage() {
   const finished = async (result: FinishedResult) => {
     let toast: string | undefined;
     try {
-      const linked = (await listMyLinkedAccounts()).find((a) => a.id === result.linkedAccountId);
+      const list = await listMyLinkedAccounts();
+      // The page we leave to renders this list on first paint, not the pre-link one.
+      client.setQueryData(linkedAccountsKey, list);
+      const linked = list.find((a) => a.id === result.linkedAccountId);
       if (linked) {
         toast =
           result.outcome === "linked"
@@ -103,7 +107,9 @@ export function ConnectTelegramPage() {
       const problem = error instanceof ApiFailure ? error : undefined;
       const text = problem ? startRefusal(problem) : undefined;
       if (text) show(text, "error");
-      else if (!routeFailure(error, async () => startAgain())) throw error;
+      else if (!routeFailure(error, async () => startAgain())) {
+        show(messages.linking.genericError, "error");
+      }
     } finally {
       setStarting(false);
     }
@@ -123,27 +129,27 @@ export function ConnectTelegramPage() {
     return true;
   };
 
-  const common = (error: unknown, retry: () => void): boolean => {
-    if (outcomeOf(error)) return true;
+  const common = (error: unknown, retry: () => void): void => {
+    if (outcomeOf(error)) return;
     if (error instanceof ApiFailure && error.code === "telegram-unavailable") {
       show(messages.linking.problems["telegram-unavailable"], "error");
-      return true;
+    } else if (error instanceof ApiFailure && error.code === "linking-step-mismatch") {
+      getMyLinkingAttempt()
+        .then((fresh) => {
+          client.setQueryData(linkingAttemptKey, fresh);
+          show(messages.linking.stepDone, "info");
+        })
+        .catch((e: unknown) => common(e, retry));
+    } else if (!routeFailure(error, async () => retry())) {
+      show(messages.linking.genericError, "error");
     }
-    if (error instanceof ApiFailure && error.code === "linking-step-mismatch") {
-      void getMyLinkingAttempt().then((fresh) => {
-        client.setQueryData(linkingAttemptKey, fresh);
-        show(messages.linking.stepDone, "info");
-      });
-      return true;
-    }
-    return routeFailure(error, async () => retry());
   };
 
   const cancel = async () => {
     try {
       await cancelMyLinkingAttempt();
     } catch (error) {
-      if (!common(error, () => void cancel())) throw error;
+      common(error, () => void cancel());
       return;
     }
     leave(origin());
@@ -154,7 +160,6 @@ export function ConnectTelegramPage() {
     query.error.status === 404 &&
     query.error.code === "linking-attempt-not-found";
   const shownOutcome: Outcome | null = outcome ?? (ended && !attempt ? { kind: "ended" } : null);
-  if (query.error && !ended && !outcome) throw query.error;
   if (shownOutcome) {
     const back = () => leave(origin());
     const target = known?.targetLinkedAccountId;
@@ -189,9 +194,13 @@ export function ConnectTelegramPage() {
     );
   }
   if (!attempt) {
+    // A failed load keeps the skeleton: routable failures reach the failure bus, others get a toast.
     return (
       <Card>
         <LoadState state="loading" rows={3} />
+        {query.error && !(query.error instanceof ApiFailure && query.error.route) ? (
+          <Toast message={messages.linking.genericError} tone="error" onDismiss={dismiss} />
+        ) : null}
       </Card>
     );
   }

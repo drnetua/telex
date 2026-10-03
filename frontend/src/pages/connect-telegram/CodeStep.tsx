@@ -41,7 +41,7 @@ export function CodeStep(props: StepProps) {
         setExpired(e instanceof ApiFailure && e.code === "telegram-code-expired");
         reject(refused, true);
       } else if (isValidation(e)) reject(t.codeIncomplete(length), false);
-      else if (!props.onCommonFailure(e, () => void submit())) throw e;
+      else props.onCommonFailure(e, () => void submit());
     }
   }
 
@@ -55,7 +55,7 @@ export function CodeStep(props: StepProps) {
       props.onInfo(t.codeResent);
       props.onNext(next);
     } catch (e) {
-      if (!props.onCommonFailure(e, () => void resend())) throw e;
+      props.onCommonFailure(e, () => void resend());
     } finally {
       setResending(false);
     }
