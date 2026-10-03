@@ -43,7 +43,7 @@ class SessionCookieSecurityContextRepository(
     private fun resolve(request: HttpServletRequest): SecurityContext {
         val context = SecurityContextHolder.createEmptyContext()
         val key = cookies.read(request) ?: return context
-        val background = request.getHeader(BACKGROUND_HEADER) == "1"
+        val background = request.getHeader(BACKGROUND_HEADER) == "1" || request.requestURI == LIVE_UPDATES_PATH
         when (val resolution = sessions.resolve(key, background)) {
             is SessionResolution.Live -> {
                 context.authentication =
@@ -68,5 +68,8 @@ class SessionCookieSecurityContextRepository(
     companion object {
         const val SESSION_ENDED = "telex.sessionEnded"
         const val BACKGROUND_HEADER = "X-Telex-Background"
+
+        /** `EventSource` can't set headers, so the live stream is background by its path (ADR-0005). */
+        const val LIVE_UPDATES_PATH = "/api/v1/live-updates"
     }
 }
