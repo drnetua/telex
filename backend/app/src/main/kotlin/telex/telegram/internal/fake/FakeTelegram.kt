@@ -213,6 +213,9 @@ class FakeTelegram(
     /** Test hook: true once Telegram confirmed a log out of [id], so no device of it remains in the account. */
     fun wasLoggedOut(id: TelegramSessionId) = loggedOut.contains(id)
 
+    /** Test hook: how many sessions Telegram confirmed a log out of, to tell that an HTTP refusal logged one out. */
+    fun loggedOutCount() = loggedOut.size
+
     /** Test hook: true while a client is open for [id]. */
     fun isOpen(id: TelegramSessionId) = sessions.containsKey(id)
 

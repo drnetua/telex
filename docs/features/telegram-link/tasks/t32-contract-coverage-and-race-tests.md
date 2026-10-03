@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt",
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-03 — findings Q14, S12 (backend part)"
-status: "todo"
+status: "done"
 ---
 
 # T32 — Cover the remaining contract responses over HTTP, run completions concurrently, and restart the app for real

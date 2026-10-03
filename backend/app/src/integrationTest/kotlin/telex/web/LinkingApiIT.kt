@@ -44,6 +44,8 @@ private const val BANNED = "9996630005"
 private const val UNREGISTERED = "9996640005"
 private const val FLOOD_PHONE = "9996650005"
 private const val CODE = "\"code\":\""
+private const val SEALED_BYTES = 60
+private const val HINT_OF_OTHER = "9996610412"
 private const val INBOX = "{\"origin\":\"inbox\"}"
 private const val PASSWORD_HINT = "\"passwordHint\":\"first pet\""
 
@@ -101,6 +103,7 @@ class LinkingApiIT(
     private val fake get() = telegram as FakeTelegram
 
     private val api = Api(port)
+    private var loggedOutBefore = 0
     private val owners = mutableListOf<OwnerId>()
     private val appender = ListAppender<ILoggingEvent>()
     private val root get() = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
@@ -108,6 +111,7 @@ class LinkingApiIT(
     @BeforeEach
     fun reset() {
         clock.set(Instant.parse(START))
+        loggedOutBefore = fake.loggedOutCount()
         appender.start()
         root.addAppender(appender)
     }
@@ -141,6 +145,48 @@ class LinkingApiIT(
         key: String,
         value: String,
     ) = api.call("POST", "$BASE/password", key, "{\"password\":\"$value\"}")
+
+    private fun account(
+        owner: OwnerId,
+        telegramUserId: Long,
+        lost: Boolean = false,
+    ): UUID {
+        val id = UUID.randomUUID()
+        jdbc.update(
+            "INSERT INTO linked_account (id, owner_id, telegram_user_id, telegram_session_id, tdlib_key_sealed, " +
+                "display_name, phone_country_code, phone_last_digits, state, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, 'Old name', '99', '00', ?, now())",
+            id,
+            owner.value,
+            telegramUserId,
+            if (lost) null else UUID.randomUUID(),
+            if (lost) null else ByteArray(SEALED_BYTES) { 1 },
+            if (lost) "session_lost" else "connected",
+        )
+        return id
+    }
+
+    /** An attempt of a new Owner at the code step for [number], so the next call is the one that completes it. */
+    private fun atCodeStep(
+        number: String,
+        target: UUID? = null,
+        owner: OwnerId? = null,
+    ): StartedSession {
+        val (_, s) = session(owner)
+        val body = target?.let { "{\"origin\":\"accounts\",\"targetLinkedAccountId\":\"$it\"}" } ?: INBOX
+        assertThat(api.call("POST", BASE, s.key, body).statusCode()).isIn(200, 201)
+        assertThat(phone(s.key, number).statusCode()).isEqualTo(200)
+        return s
+    }
+
+    private fun assertRefusedAndLoggedOut(
+        r: HttpResponse<String>,
+        code: String,
+    ) {
+        assertThat(r.statusCode()).isEqualTo(409)
+        assertThat(r.body()).contains("$CODE$code\"")
+        assertThat(fake.loggedOutCount()).isGreaterThan(loggedOutBefore)
+    }
 
     @Test
     fun `AC-109 start opens an attempt at the phone step and a second session of the owner resumes it`() {
@@ -329,6 +375,108 @@ class LinkingApiIT(
 
         assertThat(r.statusCode()).isEqualTo(404)
         assertThat(r.body()).contains("${CODE}not-found\"")
+    }
+
+    @Test
+    fun `AC-115 starting at the limit is 409 linked-account-limit-reached with the limit`() {
+        val (o, s) = session()
+        account(o, 9996600401L)
+        account(o, 9996600402L)
+
+        val r = api.call("POST", BASE, s.key, INBOX)
+
+        assertThat(r.statusCode()).isEqualTo(409)
+        assertThat(r.body()).contains("${CODE}linked-account-limit-reached\"", "\"limit\":2")
+        assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
+    }
+
+    @Test
+    fun `AC-115 an account that took the last place during the attempt is 409 with the limit and is logged out`() {
+        val (o, _) = session()
+        account(o, 9996600403L)
+        val s = atCodeStep("9996600404", owner = o)
+        account(o, 9996600405L)
+
+        val r = code(s.key)
+
+        assertRefusedAndLoggedOut(r, "linked-account-limit-reached")
+        assertThat(r.body()).contains("\"limit\":2")
+        assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
+    }
+
+    @Test
+    fun `AC-117 signing in again for an account that is not Session lost is 409 telegram-account-already-linked`() {
+        val (o, s) = session()
+        val connected = account(o, 9996600406L)
+
+        val r = api.call("POST", BASE, s.key, "{\"origin\":\"accounts\",\"targetLinkedAccountId\":\"$connected\"}")
+
+        assertThat(r.statusCode()).isEqualTo(409)
+        assertThat(r.body()).contains("${CODE}telegram-account-already-linked\"")
+    }
+
+    @Test
+    fun `AC-108 the same account again after authorization is 409 telegram-account-already-linked and logged out`() {
+        val (o, _) = session()
+        account(o, 9996600407L)
+        val s = atCodeStep("9996600407", owner = o)
+
+        assertRefusedAndLoggedOut(code(s.key), "telegram-account-already-linked")
+        assertThat(
+            jdbc.queryForObject("SELECT count(*) FROM linked_account WHERE owner_id = ?", Int::class.java, o.value),
+        ).isEqualTo(1)
+    }
+
+    @Test
+    fun `AC-04 an account of another Owner is 409 telegram-account-owned-by-another-owner and logged out`() {
+        val (other, _) = session()
+        account(other, 9996600408L)
+        val s = atCodeStep("9996600408")
+
+        assertRefusedAndLoggedOut(code(s.key), "telegram-account-owned-by-another-owner")
+        assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM linked_account WHERE telegram_user_id = 9996600408",
+                Int::class.java,
+            ),
+        ).isEqualTo(1)
+    }
+
+    @Test
+    fun `AC-117 signing in to a different Telegram account is 409 telegram-account-mismatch and logged out`() {
+        val (o, _) = session()
+        val lost = account(o, 9996600409L, lost = true)
+        val s = atCodeStep("9996600410", target = lost, owner = o)
+
+        assertRefusedAndLoggedOut(code(s.key), "telegram-account-mismatch")
+        assertThat(jdbc.queryForObject("SELECT state FROM linked_account WHERE id = ?", String::class.java, lost))
+            .isEqualTo("session_lost")
+    }
+
+    @Test
+    fun `AC-117 signing in again as the same account answers signed-in-again with the same id`() {
+        val (o, _) = session()
+        val lost = account(o, 9996600411L, lost = true)
+        val s = atCodeStep("9996600411", target = lost, owner = o)
+
+        val r = code(s.key)
+
+        assertThat(r.statusCode()).isEqualTo(200)
+        assertThat(
+            r.body(),
+        ).contains("\"outcome\":\"signed-in-again\"", "\"linkedAccountId\":\"$lost\"", "\"origin\":\"accounts\"")
+        assertThat(jdbc.queryForObject("SELECT state FROM linked_account WHERE id = ?", String::class.java, lost))
+            .isEqualTo("connected")
+    }
+
+    @Test
+    fun `a password step that completes into a refusal is 409 as well`() {
+        val (other, _) = session()
+        account(other, 9996610412L)
+        val s = atCodeStep(HINT_OF_OTHER)
+        assertThat(code(s.key).body()).contains("\"step\":\"password\"")
+
+        assertRefusedAndLoggedOut(password(s.key, FakeTelegram.PASSWORD), "telegram-account-owned-by-another-owner")
     }
 
     @Test

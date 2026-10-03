@@ -6,32 +6,40 @@ import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.event.ApplicationEvents
 import org.springframework.test.context.event.RecordApplicationEvents
+import org.springframework.test.util.AopTestUtils
 import telex.TestcontainersConfiguration
 import telex.identity.FixedClockConfiguration
 import telex.identity.OwnerId
 import telex.identity.OwnerKeys
 import telex.identity.SignInSessionId
 import telex.identity.SignInSessions
+import telex.messaging.internal.account.LinkCompletion
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.internal.attempt.LinkingAttempts
 import telex.shared.DomainProblem
 import telex.shared.Uuid7
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
+import telex.telegram.TelegramUser
 import telex.telegram.internal.fake.FakeTelegram
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.listDirectoryEntries
 
 private val SESSIONS_DIR: Path = Files.createTempDirectory("telex-linking-completion")
@@ -56,7 +64,9 @@ class LinkingCompletionIT {
 
     @Autowired lateinit var telegram: TelegramSessions
 
-    @Autowired lateinit var rows: LinkedAccountRows
+    @MockitoSpyBean lateinit var rows: LinkedAccountRows
+
+    @MockitoSpyBean lateinit var completion: LinkCompletion
 
     @Autowired lateinit var ownerKeys: OwnerKeys
 
@@ -83,6 +93,10 @@ class LinkingCompletionIT {
 
     @AfterEach
     fun cleanUp() {
+        Mockito.reset(
+            AopTestUtils.getUltimateTargetObject<LinkedAccountRows>(rows),
+            AopTestUtils.getUltimateTargetObject<LinkCompletion>(completion),
+        )
         fake.failAfterAuthorization = false
         linking.cancel(owner)
     }
@@ -390,7 +404,101 @@ class LinkingCompletionIT {
         ).isEqualTo(1)
     }
 
+    /**
+     * Makes the first two reads of "who holds this Telegram user" meet before either returns, so both completions
+     * see no holder and both go on to insert: the unique index, not the earlier read, decides the winner.
+     */
+    private fun meetAfterTheHolderRead() {
+        val met = CountDownLatch(2)
+        Mockito
+            .doAnswer { call ->
+                val holder = call.callRealMethod()
+                met.countDown()
+                met.await(RACE_SECONDS, TimeUnit.SECONDS)
+                holder
+            }.`when`(rows)
+            .findByTelegramUser(Mockito.anyLong())
+    }
+
+    private fun <T> concurrently(vararg jobs: () -> T): List<Result<T>> {
+        val pool = Executors.newFixedThreadPool(jobs.size)
+        try {
+            val go = CountDownLatch(1)
+            val futures = jobs.map { job -> pool.submit<Result<T>> { go.await().let { runCatching(job) } } }
+            go.countDown()
+            return futures.map { it.get(RACE_SECONDS * 2, TimeUnit.SECONDS) }
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `AC-04 two Owners completing the same Telegram account together leave one row and log the loser out`() {
+        val other = newOwner()
+        val otherSession = signInSessions.start(other, null, null, null, false).sessionId
+        toCodeStep("9996600120")
+        linking.start(other, otherSession, LinkingOrigin.INBOX, null)
+        linking.submitPhone(other, otherSession, "9996600120")
+        val mine = attemptSession()
+        val theirs = attempts.find(other)!!.sessionId
+        meetAfterTheHolderRead()
+
+        val results =
+            concurrently(
+                { linking.submitCode(owner, session, FakeTelegram.CODE) },
+                { linking.submitCode(other, otherSession, FakeTelegram.CODE) },
+            )
+
+        val winner = results.indexOfFirst { it.isSuccess }
+        assertThat(results.count { it.isSuccess }).isEqualTo(1)
+        val loser = results[1 - winner].exceptionOrNull()
+        assertThat(loser).isInstanceOf(DomainProblem::class.java)
+        assertThat(
+            (loser as DomainProblem).body.properties,
+        ).containsEntry(CODE, "telegram-account-owned-by-another-owner")
+        // the lost insert ran the afterRace branch rather than the early read refusing it
+        assertThat(
+            Mockito.mockingDetails(AopTestUtils.getUltimateTargetObject<LinkCompletion>(completion)).invocations.count {
+                it.method.name.startsWith("afterRace")
+            },
+        ).isEqualTo(1)
+        assertThat(fake.wasLoggedOut(if (winner == 0) theirs else mine)).isTrue()
+        assertThat(fake.wasLoggedOut(if (winner == 0) mine else theirs)).isFalse()
+        assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM linked_account WHERE telegram_user_id = 9996600120",
+                Int::class.java,
+            ),
+        ).isEqualTo(1)
+        assertThat(attempts.find(owner)).isNull()
+        assertThat(attempts.find(other)).isNull()
+        linking.cancel(other)
+    }
+
+    @Test
+    fun `AC-115 four completions of one Owner racing a limit of two link exactly two`() {
+        val sessionsOpened = (1..RACERS).map { fake.open(ByteArray(KEY_BYTES)) }
+        val users = (1..RACERS).map { TelegramUser(9996600130L + it, "Racer $it", "99", "3$it") }
+
+        val results =
+            concurrently(
+                *(0 until RACERS)
+                    .map { i ->
+                        { completion.complete(owner, null, sessionsOpened[i], ByteArray(KEY_BYTES), users[i]) }
+                    }.toTypedArray(),
+            ).map { it.getOrThrow() }
+
+        assertThat(results.filterIsInstance<telex.messaging.internal.account.Completion.Linked>()).hasSize(2)
+        assertThat(results.filterIsInstance<telex.messaging.internal.account.Completion.Refused>().map { it.reason })
+            .containsOnly(telex.messaging.internal.account.LinkRefusal.LIMIT)
+        assertThat(rowsOf(owner)).hasSize(2)
+    }
+
     companion object {
+        private const val RACE_SECONDS = 5L
+        private const val RACERS = 4
+        private const val KEY_BYTES = 32
+
         @JvmStatic
         @DynamicPropertySource
         fun properties(registry: DynamicPropertyRegistry) {

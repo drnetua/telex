@@ -123,8 +123,27 @@ class LiveUpdatesIT(
 
     private fun stream(key: String): Stream {
         val response = http.send(request(key), HttpResponse.BodyHandlers.ofInputStream())
-        return Stream(response).also { open += it }
+        val stream = Stream(response).also { open += it }
+        // an open stream has no finished body: the contract sees its headers and what it has sent so far
+        awaitUntil { stream.lines.isNotEmpty() }
+        conforms(response.statusCode(), response.headers().map(), stream.lines.joinToString("\n", postfix = "\n"))
+        return stream
     }
+
+    private fun conforms(
+        status: Int,
+        headers: Map<String, List<String>>,
+        body: String,
+    ) = ContractValidator.assertConforms(
+        "GET",
+        "/api/v1/live-updates",
+        null,
+        emptyMap(),
+        status,
+        headers,
+        body,
+        ContractValidator.TELEGRAM_LINK_SPEC,
+    )
 
     private fun publish(event: Any) {
         tx.executeWithoutResult { publisher.publishEvent(event) }
@@ -160,6 +179,7 @@ class LiveUpdatesIT(
         val r = http.send(request(null), HttpResponse.BodyHandlers.ofString())
 
         assertThat(r.statusCode()).isEqualTo(401)
+        conforms(r.statusCode(), r.headers().map(), r.body())
     }
 
     @Test
@@ -181,6 +201,7 @@ class LiveUpdatesIT(
             awaitUntil { mine.hints() == i + 1 }
             assertThat(mine.hints()).describedAs(event::class.simpleName).isEqualTo(i + 1)
             assertThat(mine.lines).contains("event: hint")
+            assertThat(mine.lines.filter { it.startsWith("data: ") }).containsOnly("data: linked-accounts")
             Thread.sleep(600)
         }
         assertThat(theirs.hints()).isZero()

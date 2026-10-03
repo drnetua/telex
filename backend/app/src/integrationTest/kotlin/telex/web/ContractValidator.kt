@@ -37,6 +37,32 @@ object ContractValidator {
         response: HttpResponse<String>,
         specPath: String = SKELETON_SPEC,
         ignoredKeys: Set<String> = emptySet(),
+    ) = assertConforms(
+        method,
+        path,
+        requestBody,
+        requestHeaders,
+        response.statusCode(),
+        response.headers().map(),
+        response.body(),
+        specPath,
+        ignoredKeys,
+    )
+
+    /**
+     * The same check for an exchange that is not a finished String response, such as a Server-Sent Events stream
+     * whose body is still open: the caller passes the status and headers, and a body only when it has a whole one.
+     */
+    fun assertConforms(
+        method: String,
+        path: String,
+        requestBody: String?,
+        requestHeaders: Map<String, String>,
+        status: Int,
+        responseHeaders: Map<String, List<String>>,
+        responseBody: String,
+        specPath: String,
+        ignoredKeys: Set<String> = emptySet(),
     ) {
         val request =
             SimpleRequest.Builder(method, path.substringBefore('?')).apply {
@@ -47,9 +73,9 @@ object ContractValidator {
                 }
             }
         val reply =
-            SimpleResponse.Builder(response.statusCode()).apply {
-                response.headers().map().forEach { (k, values) -> values.forEach { withHeader(k, it) } }
-                if (response.body().isNotEmpty()) withBody(response.body())
+            SimpleResponse.Builder(status).apply {
+                responseHeaders.forEach { (k, values) -> values.forEach { withHeader(k, it) } }
+                if (responseBody.isNotEmpty()) withBody(responseBody)
             }
         // app-shell changes `getMe` (adds theme and timezone), so it supersedes the skeleton contract for that path.
         val effectiveSpec = if (path.substringBefore('?') == "/api/v1/me") APP_SHELL_SPEC else specPath
@@ -59,10 +85,10 @@ object ContractValidator {
         val relevant =
             report.messages.filter {
                 it.key !in ignoredKeys &&
-                    (response.statusCode() !in REFUSED_REQUEST || !it.key.startsWith("validation.request."))
+                    (status !in REFUSED_REQUEST || !it.key.startsWith("validation.request."))
             }
         assertThat(relevant.map { "${it.key}: ${it.message}" })
-            .describedAs("$method $path -> ${response.statusCode()} must match openapi.yaml")
+            .describedAs("$method $path -> $status must match openapi.yaml")
             .isEmpty()
     }
 }
