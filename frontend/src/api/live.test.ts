@@ -8,6 +8,7 @@ import { openLiveUpdates, useLiveUpdates } from "./live";
 
 class FakeSource {
   closed = false;
+  readyState = 0;
   private listeners = new Map<string, ((e: Event) => void)[]>();
   constructor(readonly url: string) {}
   addEventListener(type: string, fn: (e: Event) => void) {
@@ -15,6 +16,7 @@ class FakeSource {
   }
   close() {
     this.closed = true;
+    this.readyState = 2;
   }
   emit(type: string, data?: string) {
     const event = data === undefined ? new Event(type) : new MessageEvent(type, { data });
@@ -68,6 +70,73 @@ describe("openLiveUpdates (AC-116, AC-121, AC-122)", () => {
     const { source, close } = setup();
     close();
     expect(source.closed).toBe(true);
+  });
+});
+
+describe("openLiveUpdates reconnect (AC-116, AC-117, AC-122)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  function setupMany() {
+    const client = new QueryClient();
+    const spy = vi.spyOn(client, "invalidateQueries");
+    const sources: FakeSource[] = [];
+    const close = openLiveUpdates(client, (url) => {
+      const s = new FakeSource(url);
+      sources.push(s);
+      return s as never;
+    });
+    return { spy, sources, close };
+  }
+
+  /** The browser gave up: readyState CLOSED, then an error event. */
+  const giveUp = (s: FakeSource) => {
+    s.readyState = 2;
+    s.emit("error");
+  };
+
+  it("leaves a still-connecting source to the browser's own retry", () => {
+    const { sources } = setupMany();
+    sources[0]!.readyState = 0;
+    sources[0]!.emit("error");
+    vi.advanceTimersByTime(120_000);
+    expect(sources).toHaveLength(1);
+  });
+
+  it("reopens a stream the browser has closed, after the backoff, and refetches everything", () => {
+    const { sources, spy } = setupMany();
+    giveUp(sources[0]!);
+    expect(sources[0]!.closed).toBe(true);
+    expect(sources).toHaveLength(1);
+    vi.advanceTimersByTime(1_000);
+    expect(sources).toHaveLength(2);
+    sources[1]!.emit("open");
+    expect(spy).toHaveBeenCalledWith();
+  });
+
+  it("doubles the backoff up to a cap, and resets it after a successful open", () => {
+    const { sources } = setupMany();
+    for (const delay of [1_000, 2_000, 4_000, 8_000, 16_000, 30_000, 30_000]) {
+      const before = sources.length;
+      giveUp(sources[before - 1]!);
+      vi.advanceTimersByTime(delay - 1);
+      expect(sources).toHaveLength(before);
+      vi.advanceTimersByTime(1);
+      expect(sources).toHaveLength(before + 1);
+    }
+    const last = sources[sources.length - 1]!;
+    last.emit("open");
+    giveUp(last);
+    vi.advanceTimersByTime(1_000);
+    expect(sources).toHaveLength(9);
+  });
+
+  it("cancels a pending reopen on cleanup", () => {
+    const { sources, close } = setupMany();
+    giveUp(sources[0]!);
+    close();
+    vi.advanceTimersByTime(120_000);
+    expect(sources).toHaveLength(1);
   });
 });
 

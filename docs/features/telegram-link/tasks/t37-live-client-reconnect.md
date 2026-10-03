@@ -9,7 +9,7 @@ files_hint: ["frontend/src/api/live.ts", "frontend/src/api/live.test.ts"]
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-03 — findings Q6"
-status: "todo"
+status: "done"
 ---
 
 # T37 — Reopen the live-update stream when the browser has closed it, with capped backoff
