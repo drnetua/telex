@@ -27,6 +27,7 @@ Traceability:
 - Decision deviation: SCR-34 is a modal editor for a custom profile; E10 also adds a Models page (catalog + profiles + picker) to host it, which the screen inventory doesn't list. The roadmap already plans it (`pages/models`).
 - Decision deviation: system profile names follow the mockup ("Fast and cheap", "Balanced", "Careful"), not the product spec's "швидкий, збалансований, якісний".
 - Decision deviation: the tech spec's per-slot price ceiling (glossary Model Profile, "лімітом ціни") is dropped from E10, and no epic carries it; spending is capped by Budgets in E27 instead. Whether to bring it back is a §8 question.
+- Decision deviation: image models are priced per 1M tokens like other models, not per image, because OpenRouter publishes no per-image price (its `pricing.image_output` is per output image token); AC-211 reads accordingly. Recorded by review 2026-10-03.
 - Decision deviation: the epic DoD's "each slot checked by a real model call" is a developer smoke check recorded in the pull request (§6), not a button in the UI.
 
 ## 2. Goals
@@ -96,7 +97,7 @@ Traceability:
 
 **Given** a signed-in Owner and a loaded Model Catalog
 **When** the Owner opens the catalog on the Models page, searches by name and filters by the vision slot
-**Then** the Owner sees only models that can understand images and answer in text, each with its name, provider, what it accepts and produces, its price in US dollars (per million input and output tokens, or per image for models that create images) and how much text it can take at once, and sees when the catalog was last updated; the catalog lists only models that fit at least one slot (text: takes and produces text; vision: takes images and produces text; image: creates images)
+**Then** the Owner sees only models that can understand images and answer in text, each with its name, provider, what it accepts and produces, its price in US dollars (per million input and output tokens, for every model including those that create images) and how much text it can take at once, and sees when the catalog was last updated; the catalog lists only models that fit at least one slot (text: takes and produces text; vision: takes images and produces text; image: creates images)
 
 ### AC-212 (US-80) — error
 

@@ -28,15 +28,9 @@ function disabledReason(model: CatalogModel, slot: SlotKind, taken: string[]) {
   return null;
 }
 
-/** W-34b: "$2.50 / $10.00 per 1M", "$0.04 per image", "Free" or "Price unknown", in catalog precision. */
+/** W-34b: "$2.50 / $10.00 per 1M", "Free" or "Price unknown", in catalog precision. */
 function ChooserPrice({ model }: { model: CatalogModel }) {
   const { inputPricePerMillionTokens: input, outputPricePerMillionTokens: output } = model;
-  if (model.pricePerImage !== null)
-    return (
-      <>
-        <Cost amount={model.pricePerImage} precision /> {m.perImage}
-      </>
-    );
   if (input === null || output === null) return <>{m.priceUnknown}</>;
   if (Number(input) === 0 && Number(output) === 0) return <>{m.free}</>;
   return (

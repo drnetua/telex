@@ -124,7 +124,7 @@ erDiagram
 | `produces_images` | BOOLEAN | NOT NULL | Image = `produces_images` |
 | `input_price_per_mtok` | NUMERIC(14,6) | NULL, `≥ 0` | USD per million input tokens. NULL = unknown → "Price unknown" (AC-210). 0 → "Free" |
 | `output_price_per_mtok` | NUMERIC(14,6) | NULL, `≥ 0` | USD per million output tokens |
-| `price_per_image` | NUMERIC(14,6) | NULL, `≥ 0` | USD per created image, for image models (AC-211) |
+| `price_per_image` | NUMERIC(14,6) | NULL, `≥ 0` | USD per created image. Reserved: stays NULL in E10 because OpenRouter publishes no per-image price (AC-211 shows per-1M-token prices instead) |
 | `context_length` | INTEGER | NULL, `> 0` | "How much text it can take at once" (AC-211). NULL when the provider doesn't say |
 
 **Aggregate root:** the snapshot as a whole (`ModelCatalog`). A refresh replaces every row and updates `model_catalog_state` in **one transaction**, so a restart never loads a half-written list (AC-212).

@@ -43,8 +43,8 @@ const models = [
     takes: ["text"],
     produces: ["image"],
     slots: ["image"],
-    inputPricePerMillionTokens: null,
-    outputPricePerMillionTokens: null,
+    inputPricePerMillionTokens: "0.3",
+    outputPricePerMillionTokens: "30",
     pricePerImage: "0.04",
     contextLength: null,
   }),
@@ -194,13 +194,15 @@ describe("SCR-66 Model catalog tab", () => {
     expect(row.getByText("200,000")).toBeInTheDocument();
   });
 
-  it("edge: an image model shows '$0.04 per image' and Context em dash", async () => {
+  it("AC-211: an image-output model shows its per-1M-token price (never per image) and Context em dash", async () => {
     stubApi(() => json(200, catalog()));
     setup();
     await screen.findByText("Test image model C");
     const row = within(rowOf("Test image model C"));
-    expect(row.getByText("$0.04")).toBeInTheDocument();
-    expect(row.getByText(/per image/)).toBeInTheDocument();
+    expect(row.getByText("$0.30")).toBeInTheDocument();
+    expect(row.getByText("$30.00")).toBeInTheDocument();
+    expect(row.getByText(/per 1M tokens/)).toBeInTheDocument();
+    expect(row.queryByText(/per image/)).not.toBeInTheDocument();
     expect(row.getByText("—")).toBeInTheDocument();
   });
 

@@ -238,11 +238,11 @@ W-34c  validation
 
 | Component | Why no existing primitive fits | Registered in design-system |
 |---|---|---|
-| `ModelProfileCard` | No inventory card shows a profile's three slots, chains, slot states and price. `AssistantCard` (C-16) is an agent with run status, not a model choice. It is a Tabler `card` composing `Badge`, `Cost` and `Button`. E09 reuses it for the warning on assistant cards (feature ADR-0001) | pending |
-| `ChainEditor` | An ordered list of at most three models with Move up / Move down / Remove and position labels. No inventory component reorders items (`Chip` removes but doesn't order) | pending |
-| `ModelChooser` | Search plus a catalog list with disabled-with-reason rows. `ChatPicker` (C-30) has the same pattern (search, rows disabled with the reason) but is built around chats: folders, a multi-select count and avatars. `ModelChooser` takes its list-row and disabled-row styling from C-30 rather than inventing new ones | pending |
-| `Cost` `precision` prop | `Cost` (C-27) rounds to cents. Per-million-token catalog prices need 2–4 significant decimals. This is a prop extension, not a new component | pending |
-| Ports: `ModelProfilePicker` (C-22), `Cost` (C-27), `FilterBar` (C-28), `DataTable` (C-29) | Existing reference components, ported into `frontend/src/components/` on first use. The picker gains `value`, `onChange`, a per-option `busy` state, a disabled option with a reason, price states and the warning line. `DataTable` is used without pagination or export | pending (implement registers each) |
+| `ModelProfileCard` | No inventory card shows a profile's three slots, chains, slot states and price. `AssistantCard` (C-16) is an agent with run status, not a model choice. It is a Tabler `card` composing `Badge`, `Cost` and `Button`. E09 reuses it for the warning on assistant cards (feature ADR-0001) | registered |
+| `ChainEditor` | An ordered list of at most three models with Move up / Move down / Remove and position labels. No inventory component reorders items (`Chip` removes but doesn't order) | registered |
+| `ModelChooser` | Search plus a catalog list with disabled-with-reason rows. `ChatPicker` (C-30) has the same pattern (search, rows disabled with the reason) but is built around chats: folders, a multi-select count and avatars. `ModelChooser` takes its list-row and disabled-row styling from C-30 rather than inventing new ones | registered |
+| `Cost` `precision` prop | `Cost` (C-27) rounds to cents. Per-million-token catalog prices need 2–4 significant decimals. This is a prop extension, not a new component | registered |
+| Ports: `ModelProfilePicker` (C-22), `Cost` (C-27), `FilterBar` (C-28), `DataTable` (C-29) | Existing reference components, ported into `frontend/src/components/` on first use. The picker gains `value`, `onChange`, a per-option `busy` state, a disabled option with a reason, price states and the warning line. `DataTable` is used without pagination or export | registered |
 
 ## Noted gaps
 

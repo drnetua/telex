@@ -17,14 +17,6 @@ const slots: SlotKind[] = ["text", "vision", "image"];
 
 function Price({ model }: { model: CatalogModel }) {
   const { inputPricePerMillionTokens: input, outputPricePerMillionTokens: output } = model;
-  if (model.pricePerImage !== null) {
-    return (
-      <>
-        <Cost amount={model.pricePerImage} precision />{" "}
-        <span className="text-secondary">{m.perImage}</span>
-      </>
-    );
-  }
   if (input === null && output === null) return <>{m.priceUnknown}</>;
   if (Number(input ?? 1) === 0 && Number(output ?? 1) === 0) return <>{m.free}</>;
   const side = (amount: string | null, label: string) => (

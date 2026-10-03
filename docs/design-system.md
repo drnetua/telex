@@ -42,7 +42,7 @@ Built components (`frontend/src/components/`) plus the reference components the 
 |---|---|---|---|
 | Button | `frontend/src/components/Button/Button.tsx:10` | default / hover / focus / disabled / busy (spinner, label kept) | Variant via Tabler class (`btn-primary` default, `btn-ghost-dark`, `btn-danger`); optional icon |
 | Badge | `frontend/src/components/Badge/Badge.tsx:11` | neutral / success / danger | Always icon plus words, never color alone |
-| Icon | `frontend/src/components/Icon/Icon.tsx:66` | sizes (24 default) | Tabler Icons subset by name |
+| Icon | `frontend/src/components/Icon/Icon.tsx:38` | sizes (24 default) | Tabler Icons subset by name |
 | CodeInput | `frontend/src/components/CodeInput/CodeInput.tsx:16` | empty / typing / invalid / disabled | 6-digit Sign-in Code entry |
 | EmptyState | `frontend/src/components/EmptyState/EmptyState.tsx:14` | kind: none / blocked / first | One sentence and one action |
 | LoadState | `frontend/src/components/LoadState/LoadState.tsx:7` | loading (skeleton rows) | The one loading pattern |
@@ -52,6 +52,14 @@ Built components (`frontend/src/components/`) plus the reference components the 
 | TimeZonePicker | `frontend/src/components/TimeZonePicker/TimeZonePicker.tsx` | loading / list (current marked `check`) / no match / list failed with Try again; keyboard ↑ ↓ Enter Escape; full screen below 768 px | Searchable single-choice modal over the known time zones; no empty choice; used by the Time zone card on SCR-64 |
 | ConfirmDialog | `frontend/src/components/ConfirmDialog/ConfirmDialog.tsx:27` | open / busy / confirm variant `danger` | Names the consequences; destructive confirm in `danger` |
 | FailureBoundary | `frontend/src/app/FailureBoundary.tsx:14` | error | Routes render failures to the system pages (SCR-90) |
+| PageFrame | `frontend/src/components/PageFrame/PageFrame.tsx:8` | default / signing out (busy) | **Temporary** E01 frame for the Models page until it moves into the AppShell |
+| ModelProfileCard | `frontend/src/components/ModelProfileCard/ModelProfileCard.tsx:84` | system / custom; per slot: chain, "Not used", missing main model warning; price per 100 runs; Default badge; `no-model-available` slot state (`circle-off` line with "Pick another model" on a custom card, "Choose another profile" on a system card); "Not in the catalog" badge on a chain model that left the catalog | Tabler `card` composing `Badge`, `Cost` and `Button`; E09 reuses it for the assistant-card warning |
+| ChainEditor | `frontend/src/components/ChainEditor/ChainEditor.tsx:38` | empty / 1 to 3 models; Move up / Move down / Remove; add disabled at three | Ordered Fallback Chain with position labels; `ModelChooser` adds models |
+| ModelChooser | `frontend/src/components/ModelChooser/ModelChooser.tsx:44` | search / list / row disabled with reason (cannot do the slot, already in chain) / no match | Prices per 1M tokens at catalog precision, "Free" or "Price unknown"; row styling from ChatPicker (C-30) |
+| ModelProfilePicker (C-22) | `frontend/src/components/ModelProfilePicker/ModelProfilePicker.tsx:23` | one radio per profile; Default badge; per-option busy; disabled option with reason; price states; fallback warning line | Ported by E10; E09 embeds it in the builder "limits" block |
+| Cost (C-27) | `frontend/src/components/Cost/Cost.tsx:4` | default (cents) / `precision` (2 to 4 decimals); exact string as tooltip | Ported by E10; `precision` prop added for per-1M-token catalog prices |
+| FilterBar (C-28) | `frontend/src/components/FilterBar/FilterBar.tsx:24` | search / option filters | Ported by E10 for the Model catalog |
+| DataTable (C-29) | `frontend/src/components/DataTable/DataTable.tsx:16` | rows / under 600 px label-value cards | Ported by E10 without pagination, sorting or export |
 | AppShell (C-01) | `frontend/src/shell/AppShell/AppShell.tsx` | desktop side menu / phone bottom nav + header + More sheet; active section; Inbox counter; banner slot | Section list comes from `frontend/src/shell/sections.ts` |
 | StatusBanner (C-04) | `frontend/src/shell/StatusBanner/StatusBanner.tsx:41` | one condition / most important + "N more"; not dismissable while its cause holds | Reference: `docs/docs/design-system/components/StatusBanner/README.md`; catalog in `frontend/src/shell/conditions.ts` |
 | SidePanel (C-05) | `docs/docs/design-system/components/SidePanel/README.md` | desktop side panel / phone full-screen sheet | Not yet ported; moved to E14 (SCR-41) per `docs/features/app-shell/adr/0001-shell-scope-moves-offline-banner-coming-soon-panel.md` |

@@ -245,7 +245,6 @@ export const messages = {
     priceIn: "in",
     priceOut: "out",
     perMillion: "per 1M tokens",
-    perImage: "per image",
     free: "Free",
     priceUnknown: "Price unknown",
     noContext: "\u2014",
