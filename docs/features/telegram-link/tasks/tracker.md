@@ -22,7 +22,7 @@
 | T15 | Expose the linking-attempt endpoints with the contract's problem codes, validation and Retry-After | ports | Anton Husiev | M | T10 | todo |
 | T16 | Serve the live-update SSE stream of invalidation hints per Owner | ports | Anton Husiev | M | T7 | todo |
 | T17 | Wire the Operator config, the session volume and the README Telegram setup step | wiring | Anton Husiev | S | T3, T6 | todo |
-| T18 | Add the SPA API clients, the single SSE live-update client and all new copy | ui | Anton Husiev | M | — | todo |
+| T18 | Add the SPA API clients, the single SSE live-update client and all new copy | ui | Anton Husiev | M | — | done |
 | T19 | Build LinkedAccountSummary, port StatusBanner, extend CodeInput, Icon and PageFrame | ui | Anton Husiev | M | T18 | todo |
 | T20 | Build the SCR-02 wizard steps: phone, code, password with their validation and refusals | ui | Anton Husiev | M | T19 | todo |
 | T21 | Build the SCR-02 outcomes: wait countdown, refusals, attempt ended, cancel and success | ui | Anton Husiev | M | T20 | todo |

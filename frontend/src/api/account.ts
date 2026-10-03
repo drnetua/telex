@@ -23,7 +23,7 @@ export const meKey = ["me"] as const;
 let backgroundTrigger = false;
 
 /** Window-focus and reconnect refetches start synchronously inside the event; the flag lives for that tick. */
-function markBackgroundTick() {
+export function markBackgroundTick() {
   backgroundTrigger = true;
   setTimeout(() => (backgroundTrigger = false), 0);
 }

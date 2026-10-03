@@ -8,6 +8,14 @@ export interface FieldError {
   message: string;
 }
 
+/** Problem extensions of telegram-link. */
+export interface ProblemExtras {
+  retryAt?: string;
+  passwordHint?: string | null;
+  limit?: number;
+  step?: "phone" | "code" | "password";
+}
+
 export class ApiFailure extends Error {
   constructor(
     readonly status: number,
@@ -16,6 +24,7 @@ export class ApiFailure extends Error {
     readonly attemptsLeft?: number,
     readonly email?: string,
     readonly errors: FieldError[] = [],
+    readonly extras: ProblemExtras = {},
   ) {
     super(`${status} ${code}`);
   }
@@ -75,14 +84,14 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     return (response.status === 204 ? undefined : await response.clone().json()) as T;
   }
   let code = "internal-error";
-  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } = {};
+  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } & ProblemExtras = {};
   try {
     const body = (await response.json()) as {
       code?: string;
       attemptsLeft?: number;
       email?: string;
       errors?: FieldError[];
-    };
+    } & ProblemExtras;
     code = body.code ?? code;
     problem = body;
   } catch {
@@ -95,5 +104,11 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     problem.attemptsLeft,
     problem.email,
     Array.isArray(problem.errors) ? problem.errors : [],
+    {
+      retryAt: problem.retryAt,
+      passwordHint: problem.passwordHint,
+      limit: problem.limit,
+      step: problem.step,
+    },
   );
 }

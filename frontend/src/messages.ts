@@ -341,4 +341,120 @@ export const messages = {
     hoursAgo: (n: number) => `${n} ${n === 1 ? "hour" : "hours"} ago`,
     daysAgo: (n: number) => `${n} ${n === 1 ? "day" : "days"} ago`,
   },
+  linking: {
+    title: "Connect your Telegram",
+    titleAgain: (displayName: string, phone: string) => `Sign in again to ${displayName} ${phone}`,
+    intro:
+      "teleX signs in as you through Telegram's official library. Your session is encrypted with a key only your account holds.",
+    phoneLabel: "Phone number",
+    phonePlaceholder: "+380 00 000 00 00",
+    phoneHint: "Include the country code.",
+    sendCode: "Send code",
+    sendingCode: "Sending code",
+    phoneRequired: "Enter your phone number with the country code.",
+    codeIntro:
+      "Telegram sent the code to your other devices, not by SMS. Open Telegram on your phone or computer.",
+    codeLabel: "Login code",
+    codeIncomplete: (length: number) => `Enter all ${length} digits of the code.`,
+    continue: "Continue",
+    checkingCode: "Checking the code",
+    sendNewCode: "Send a new code",
+    sendingNewCode: "Sending a new code",
+    codeResent: "Telegram sent a new code.",
+    passwordIntro:
+      "Your account has two-step verification. Enter the password you set in Telegram.",
+    passwordLabel: "Password",
+    passwordRequired: "Enter your two-step verification password.",
+    passwordHint: (hint: string) => `Hint: ${hint}`,
+    passwordForgot: "Forgot your password? It can only be reset in the Telegram app.",
+    checkingPassword: "Checking the password",
+    cancel: "Cancel",
+    cancelling: "Cancelling",
+    waitTitle: "Too many attempts",
+    waitBody: (time: string, remaining: string) =>
+      `Telegram asks you to wait. You can try again at ${time}, in ${remaining}.`,
+    waitOver: "You can try again now.",
+    back: "Back",
+    startAgain: "Start again",
+    starting: "Starting",
+    otherOwnerTitle: "This account is linked elsewhere",
+    otherOwnerBody:
+      "This Telegram account is already linked to another teleX account. One Telegram account belongs to one person. teleX has signed out of it again.",
+    alreadyLinkedTitle: "Already linked",
+    alreadyLinkedBody:
+      "This Telegram account is already one of your accounts. teleX has signed out of the extra sign-in.",
+    limitTitle: "Account limit reached",
+    limitBody: (limit: number) =>
+      `You've linked ${limit} accounts, the most this installation allows. teleX has signed out of this one. Unlink an account to free a place.`,
+    openAccounts: "Open Accounts",
+    mismatchTitle: "A different account",
+    mismatchBody: (displayName: string) =>
+      `You signed in to a different Telegram account, not ${displayName}. teleX has signed out of it. To use it, add it as a new account.`,
+    backToAccounts: "Back to Accounts",
+    endedTitle: "This linking has ended",
+    endedBody: "It was cancelled, finished in another window, or left for 15 minutes.",
+    connected: (displayName: string) => `${displayName} is connected. teleX is syncing its chats.`,
+    connectedAgain: (displayName: string) => `${displayName} is connected again.`,
+    stepDone: "This step was already completed in another window.",
+    /** One entry per problem code of the linking API; limit-aware ones take the limit. */
+    problems: {
+      "telegram-linking-not-set-up":
+        "Telegram linking isn't set up on this installation yet. The person who runs teleX has to finish the setup.",
+      "linked-account-limit-reached": (limit: number) =>
+        `You've linked ${limit} accounts, the most this installation allows. Unlink an account to add another.`,
+      "linking-attempt-not-found": "This linking has ended",
+      "linking-step-mismatch": "This step was already completed in another window.",
+      "telegram-phone-invalid":
+        "This isn't a valid phone number. Check the country code and the digits.",
+      "telegram-phone-unregistered":
+        "No Telegram account uses this number. Create the account in the Telegram app first, then come back.",
+      "telegram-phone-banned": "Telegram has banned this number, so it can't be linked.",
+      "telegram-code-wrong": "That code is not right. Try again, or send a new code.",
+      "telegram-code-expired": "This code has expired. Send a new code.",
+      "telegram-wait-required": "Telegram asks you to wait before trying again.",
+      "telegram-password-wrong": "That password is not right.",
+      "telegram-unavailable": "Telegram didn't answer. Check your connection and try again.",
+      "telegram-account-owned-by-another-owner":
+        "This Telegram account is already linked to another teleX account.",
+      "telegram-account-already-linked": "This account is already connected.",
+      "telegram-account-mismatch": "You signed in to a different Telegram account.",
+    },
+  },
+  accounts: {
+    title: "Accounts",
+    intro: "Telegram accounts teleX works with. Each one syncs its own chats.",
+    cardTitle: "Linked accounts",
+    add: "Add account",
+    emptyTitle: "No Telegram accounts linked yet.",
+    connected: "Connected",
+    reconnecting: "Reconnecting",
+    sessionLost: "Session lost",
+    reconnectingNote: "Telegram can't be reached right now. teleX reconnects by itself.",
+    sessionLostNote:
+      "The session was ended in Telegram. Sign in again to bring this account back with everything attached.",
+    syncing: (synced: number, total: number) => `Syncing chats: ${synced} of ${total}`,
+    syncingUnknown: "Syncing chats",
+    chats: (n: number) => `${n} chat${n === 1 ? "" : "s"}`,
+    chatsOf: (synced: number, total: number) => `${synced} of ${total} chats`,
+    signInAgain: "Sign in again",
+    starting: "Starting",
+    unlink: "Unlink",
+    unlinkTitle: (displayName: string) => `Unlink ${displayName}?`,
+    unlinkBody: (chats: number) =>
+      `teleX will sign out of this Telegram account and delete its session and the ${chats} chats it synced. To use it in teleX again, you'll link it from the start.`,
+    unlinkConfirm: "Unlink account",
+    unlinking: "Unlinking",
+    unlinkKeep: "Keep account",
+    unlinked: (displayName: string) => `${displayName} is unlinked.`,
+    unlinkedUnconfirmed: (displayName: string) =>
+      `${displayName} is unlinked and teleX deleted everything it kept. Telegram couldn't confirm the sign-out, so check Active sessions in the Telegram app and end teleX there if it's listed.`,
+    frameButton: "Accounts",
+  },
+  banner: {
+    one: (displayName: string) =>
+      `${displayName}'s Telegram is disconnected. teleX can't work with it until you sign in again.`,
+    several: (n: number) => `${n} Telegram accounts are disconnected.`,
+    signInAgain: "Sign in again",
+    openAccounts: "Open Accounts",
+  },
 } as const;
