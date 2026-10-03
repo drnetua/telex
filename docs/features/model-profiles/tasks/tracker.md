@@ -15,7 +15,7 @@
 | T8 | Resolve slots against the current catalog and estimate the price per 100 runs | domain | Anton Husiev | S | T2, T7 | done |
 | T9 | Build the three system profiles from settings and validate the Operator's slot overrides | app | Anton Husiev | S | T4, T8 | done |
 | T10 | Persist custom profiles, their chains and the default profile, always scoped by Owner | infra | Anton Husiev | M | T1, T7 | done |
-| T11 | Serve the catalog view, the profile list with picker data, one profile and a new-profile draft | app | Anton Husiev | M | T3, T9, T10 | todo |
+| T11 | Serve the catalog view, the profile list with picker data, one profile and a new-profile draft | app | Anton Husiev | M | T3, T9, T10 | done |
 | T12 | Create, update and delete custom profiles and choose the default, each in one transaction | app | Anton Husiev | M | T11 | todo |
 | T13 | Answer profile slot calls through ProfileCalls and record every call without content | app | Anton Husiev | M | T6, T11 | todo |
 | T14 | Expose the read endpoints: catalog, profile list, one profile and the draft | ports | Anton Husiev | M | T11 | todo |
