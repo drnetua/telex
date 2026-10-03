@@ -201,4 +201,49 @@ class FallbackLoopTest {
         assertThat(r.attempts).isEmpty()
         assertThat(p.calls).isEmpty()
     }
+
+    @Test
+    fun `an interrupted caller gets a failure with the in-flight attempt as timeout and the flag restored`() {
+        val started = java.util.concurrent.CountDownLatch(1)
+        val cancelled = java.util.concurrent.CountDownLatch(1)
+        val p =
+            FakeProvider(
+                script =
+                    mapOf(
+                        a to {
+                            started.countDown()
+                            try {
+                                Thread.sleep(10_000)
+                            } catch (e: InterruptedException) {
+                                cancelled.countDown()
+                                throw e
+                            }
+                            ProviderResult.Answer(SlotAnswer.Text("late"))
+                        },
+                        b to answer("B"),
+                    ),
+            )
+        var result: Any? = null
+        var flag = false
+        val caller =
+            Thread {
+                try {
+                    result = loop(p, timeout = Duration.ofSeconds(30)).call(listOf(a, b), ModelSlotKind.TEXT, request)
+                } catch (e: Throwable) {
+                    result = e
+                }
+                flag = Thread.currentThread().isInterrupted
+            }
+        caller.start()
+        assertThat(started.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue()
+        caller.interrupt()
+        caller.join(5_000)
+        assertThat(result).isInstanceOf(ModelCallResult.Failed::class.java)
+        val r = result as ModelCallResult.Failed
+        assertThat(r.reason).isEqualTo(ModelCallFailure.NO_MODEL_ANSWERED)
+        assertThat(r.attempts).containsExactly(Attempt(a, AttemptOutcome.TIMEOUT))
+        assertThat(flag).isTrue()
+        assertThat(cancelled.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue()
+        assertThat(p.calls.map { it.first }).containsExactly(a)
+    }
 }

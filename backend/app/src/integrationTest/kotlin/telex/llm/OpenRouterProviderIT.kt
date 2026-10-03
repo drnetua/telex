@@ -219,6 +219,7 @@ class OpenRouterProviderIT {
         "413, payload too large, TOO_LARGE",
         "400, maximum context length is 8000 tokens, TOO_LARGE",
         "408, request timeout, TIMEOUT",
+        "400, acme/a is not a valid model ID, UNAVAILABLE",
     )
     fun `a move-on error on A is answered by B and the next request starts from A again`(
         status: Int,

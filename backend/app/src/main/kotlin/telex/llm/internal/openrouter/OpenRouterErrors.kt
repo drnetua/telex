@@ -27,6 +27,7 @@ object OpenRouterErrors {
     private val tooLarge = listOf("context length", "too long", "too large", "maximum context")
     private val refused = listOf("moderation", "content policy", "flagged")
     private val noProvider = listOf("no endpoints", "no allowed providers")
+    private val modelGone = listOf("not a valid model", "model not found", "no such model", "no endpoints")
 
     fun classify(
         status: Int,
@@ -53,6 +54,7 @@ object OpenRouterErrors {
         when {
             message.hasAny(tooLarge) -> AttemptOutcome.TOO_LARGE
             message.hasAny(refused) -> AttemptOutcome.CONTENT_REFUSED
+            message.hasAny(modelGone) -> AttemptOutcome.UNAVAILABLE
             else -> AttemptOutcome.INVALID_REQUEST
         }
 

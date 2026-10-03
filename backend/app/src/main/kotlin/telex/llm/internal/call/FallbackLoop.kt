@@ -37,7 +37,7 @@ class FallbackLoop(
             if (result is ProviderResult.Answer) {
                 answered = ModelCallResult.Answered(result.answer, modelId, modelId != chain.first(), attempts)
             }
-            if (answered != null || !result.outcome.movesOn) break
+            if (answered != null || !result.outcome.movesOn || Thread.currentThread().isInterrupted) break
         }
         return answered ?: ModelCallResult.Failed(ModelCallFailure.NO_MODEL_ANSWERED, attempts)
     }
@@ -57,6 +57,10 @@ class FallbackLoop(
             future.get(attemptTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (_: TimeoutException) {
             future.cancel(true)
+            ProviderResult.Failure(AttemptOutcome.TIMEOUT)
+        } catch (_: InterruptedException) {
+            future.cancel(true)
+            Thread.currentThread().interrupt()
             ProviderResult.Failure(AttemptOutcome.TIMEOUT)
         } catch (_: ExecutionException) {
             ProviderResult.Failure(AttemptOutcome.PROVIDER_ERROR)
