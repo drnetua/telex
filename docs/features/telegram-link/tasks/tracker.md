@@ -18,7 +18,7 @@
 | T11 | Unlink an account: bounded sign-out, one-transaction delete with AccountUnlinked, then destroy the session | app | Anton Husiev | S | T5, T7 | done |
 | T12 | Reconnect accounts on boot and follow Telegram's session state (Connected, Reconnecting, Session lost) | app | Anton Husiev | M | T3, T5, T7 | done |
 | T13 | Sync each account's chat list into channel rows with throttled progress events | app | Anton Husiev | M | T4, T7 | done |
-| T14 | Expose list and unlink of my Linked Accounts, and back getMe.linkedAccountCount with messaging | ports | Anton Husiev | S | T7, T11 | todo |
+| T14 | Expose list and unlink of my Linked Accounts, and back getMe.linkedAccountCount with messaging | ports | Anton Husiev | S | T7, T11 | done |
 | T15 | Expose the linking-attempt endpoints with the contract's problem codes, validation and Retry-After | ports | Anton Husiev | M | T10 | done |
 | T16 | Serve the live-update SSE stream of invalidation hints per Owner | ports | Anton Husiev | M | T7 | done |
 | T17 | Wire the Operator config, the session volume and the README Telegram setup step | wiring | Anton Husiev | S | T3, T6 | done |
