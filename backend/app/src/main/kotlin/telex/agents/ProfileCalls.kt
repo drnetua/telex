@@ -5,12 +5,13 @@ import telex.llm.Attempt
 import telex.llm.ModelId
 import telex.llm.SlotAnswer
 import telex.llm.SlotRequest
+import telex.shared.TypedId
 import java.util.UUID
 
 @JvmInline
 value class ModelCallId(
-    val value: UUID,
-)
+    override val value: UUID,
+) : TypedId
 
 enum class SlotFailure { NO_MODEL_AVAILABLE, NO_MODEL_ANSWERED, AI_NOT_CONFIGURED, PROFILE_NOT_FOUND }
 

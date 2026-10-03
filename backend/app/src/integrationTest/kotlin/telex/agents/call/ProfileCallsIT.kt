@@ -14,6 +14,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -27,6 +28,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.event.ApplicationEvents
@@ -57,9 +59,11 @@ import telex.llm.SlotAnswer
 import telex.llm.SlotRequest
 import telex.shared.Uuid7
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Profile slot calls and call records (T13): AC-10, AC-223, AC-224, AC-228, AC-229 against WireMock standing in for
@@ -84,14 +88,25 @@ class ProfileCallsIT {
         override fun find(modelId: ModelId) = current.models[modelId]
     }
 
+    open class FinishedListener {
+        @ApplicationModuleListener
+        open fun on(event: ModelCallFinished) {
+            received += event
+        }
+    }
+
     @TestConfiguration
     class FakeCatalog {
+        @Bean
+        fun finishedListener() = FinishedListener()
+
         @Bean
         @Primary
         fun callsSwitchableCatalog(): ModelCatalog = SwitchableCatalog()
     }
 
     companion object {
+        val received = CopyOnWriteArrayList<ModelCallFinished>()
         private val wm = WireMockServer(options().dynamicPort())
 
         @BeforeAll
@@ -358,7 +373,9 @@ class ProfileCallsIT {
             Attempt(b, AttemptOutcome.RATE_LIMITED),
         )
         assertThat(attemptRows(r.callId.value)).hasSize(2)
+        assertThat(rows(r.callId.value).single()["fallback"]).isEqualTo(true)
         val event = finished(r.callId.value).single()
+        assertThat(event.fallback).isTrue()
         assertThat(event.outcome).isEqualTo(ModelCallOutcome.NO_MODEL_ANSWERED)
         assertThat(event.answeredByModelId).isNull()
     }
@@ -402,6 +419,46 @@ class ProfileCallsIT {
         assertThat(wm.allServeEvents).isEmpty()
         assertThat(attemptRows(r.callId.value)).hasSize(2)
         assertThat(rows(r.callId.value).single()["outcome"]).isEqualTo("no-model-available")
+        assertThat(rows(r.callId.value).single()["fallback"]).isEqualTo(true)
+    }
+
+    @Test
+    fun `main model missing then backup fails - fallback is recorded as true (AC-229)`() {
+        val o = owner()
+        val ref = custom(o, listOf(gone, b))
+        stub(b, err(500))
+        val r = call(o, ref) as ProfileCallResult.Failed
+        assertThat(r.attempts).containsExactly(
+            Attempt(gone, AttemptOutcome.MISSING),
+            Attempt(b, AttemptOutcome.PROVIDER_ERROR),
+        )
+        assertThat(rows(r.callId.value).single()["fallback"]).isEqualTo(true)
+        assertThat(finished(r.callId.value).single().fallback).isTrue()
+    }
+
+    @Test
+    fun `single model failing is not a fallback (AC-229)`() {
+        val o = owner()
+        val ref = custom(o, listOf(a))
+        stub(a, err(500))
+        val r = call(o, ref) as ProfileCallResult.Failed
+        assertThat(rows(r.callId.value).single()["fallback"]).isEqualTo(false)
+    }
+
+    @Test
+    fun `ModelCallFinished reaches an application module listener and its publication completes (AC-229)`() {
+        val o = owner()
+        val ref = custom(o)
+        stub(a, ok())
+        val r = call(o, ref) as ProfileCallResult.Answered
+        await().atMost(Duration.ofSeconds(5)).until { received.any { it.callId == r.callId } }
+        await().atMost(Duration.ofSeconds(5)).until {
+            jdbc.queryForObject(
+                "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +
+                    "AND event_type LIKE '%ModelCallFinished'",
+                Int::class.java,
+            ) == 0
+        }
     }
 
     @Test

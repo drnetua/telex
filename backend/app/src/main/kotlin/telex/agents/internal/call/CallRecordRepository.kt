@@ -32,7 +32,10 @@ class CallRecordRepository(
     private val jdbc: JdbcClient,
 ) {
     @Transactional
-    fun insert(record: CallRecord) {
+    fun insert(
+        record: CallRecord,
+        inTransaction: () -> Unit = {},
+    ) {
         val system = (record.profile as? ProfileRef.System)?.key?.wire
         val custom = (record.profile as? ProfileRef.Custom)?.id?.value
         jdbc
@@ -62,6 +65,7 @@ class CallRecordRepository(
                 .param("outcome", attempt.outcome.wire())
                 .update()
         }
+        inTransaction()
     }
 
     fun outcomeOf(id: ModelCallId): String? =

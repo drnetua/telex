@@ -66,29 +66,31 @@ class ProfileCallService(
         val finishedAt = clock.instant()
         val outcome = outcomeOf(result, chain)
         val answered = result as? ModelCallResult.Answered
-        val fallback = answered?.fallback ?: false
+        // A failed call counts as a fallback when a later model was tried or the missing main model was skipped.
+        val fallback =
+            answered?.fallback
+                ?: (result.attempts.size > 1 || result.attempts.firstOrNull()?.outcome == AttemptOutcome.MISSING)
         record(slot, Duration.between(startedAt, finishedAt), outcome, fallback, result.attempts)
-        val saved =
-            runCatching {
-                records.insert(
-                    CallRecord(
-                        id,
-                        ownerId,
-                        profile,
-                        slot,
-                        outcome.wire(),
-                        answered?.answeredBy,
-                        fallback,
-                        startedAt,
-                        finishedAt,
-                        result.attempts,
-                    ),
+        runCatching {
+            records.insert(
+                CallRecord(
+                    id,
+                    ownerId,
+                    profile,
+                    slot,
+                    outcome.wire(),
+                    answered?.answeredBy,
+                    fallback,
+                    startedAt,
+                    finishedAt,
+                    result.attempts,
+                ),
+            ) {
+                events.publishEvent(
+                    ModelCallFinished(id, ownerId, profile, slot, outcome, answered?.answeredBy, fallback),
                 )
-            }.onFailure { log.warn("Call record {} was not written: {}", id.value, it.javaClass.simpleName) }
-                .isSuccess
-        if (saved) {
-            events.publishEvent(ModelCallFinished(id, ownerId, profile, slot, outcome, answered?.answeredBy, fallback))
-        }
+            }
+        }.onFailure { log.warn("Call record {} was not written: {}", id.value, it.javaClass.simpleName) }
         return when (result) {
             is ModelCallResult.Answered -> {
                 ProfileCallResult.Answered(id, result.answer, result.answeredBy, result.fallback, result.attempts)
