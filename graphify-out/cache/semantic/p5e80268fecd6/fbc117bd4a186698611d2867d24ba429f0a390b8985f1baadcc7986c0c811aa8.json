@@ -1,0 +1,1 @@
+{"nodes": [{"id": "backend_app_src_main_resources_application_yaml", "label": "Application Configuration", "file_type": "code", "source_file": "backend/app/src/main/resources/application.yaml", "rationale": "Central Spring Boot configuration including mail, modulith, and telex settings."}], "edges": [], "hyperedges": []}

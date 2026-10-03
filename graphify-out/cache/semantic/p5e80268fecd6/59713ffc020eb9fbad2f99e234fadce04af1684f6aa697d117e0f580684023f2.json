@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_app_shell_sad", "label": "Software Architecture Document \u2014 app-shell", "file_type": "document", "source_file": "docs/features/app-shell/sad.md", "rationale": "Defines the core architecture, quality goals, and strategic decisions for the app-shell feature."}], "edges": [], "hyperedges": []}

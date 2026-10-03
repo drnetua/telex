@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_model_profiles_spec_spec", "label": "Spec: Model Profiles", "file_type": "document", "source_file": "docs/features/model-profiles/spec.md", "rationale": "Defines the model catalog, profiles, and fallback mechanisms for AI helpers."}], "edges": [], "hyperedges": []}

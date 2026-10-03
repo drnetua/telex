@@ -1,0 +1,1 @@
+{"nodes": [{"id": "github_workflows_ci_yml", "label": "CI Workflow", "file_type": "code", "source_file": ".github/workflows/ci.yml", "rationale": "Defines build, test, lint, and Playwright e2e jobs.", "verification": "unverified"}], "edges": [], "hyperedges": []}
