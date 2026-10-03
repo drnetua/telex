@@ -115,49 +115,88 @@ Tactical choices in §5–§8 trace to these five.
 
 ## 5. Building block view
 
-<!-- 🎯 Why: INTERNAL DECOMPOSITION — modules, containers, datastores. The static topology: who
-     may talk to whom. Without §5, §6 (the flows) has no vocabulary of participants.
-     📋 Write: 1 ¶ on the style (layered / hexagonal / clean / event-driven) + a folder tree + a
-     C4Container block.
-     📌 Draw ONE Container per declared `target_surface` (frontmatter): a fullstack
-     [backend-service, web-frontend] = a backend-API container + a web/SPA container; a
-     [backend-service, mobile-app] = the API + the mobile app. The Container(web, …) line below is
-     just one surface's container — swap/add per what was declared in §4. → _shared/surfaces.md
-     📌 e.g. «web app, content API, media worker, datastore, object store, CDN». -->
+The repo's Spring Modulith modular monolith is followed as-is. The feature touches three backend modules and adds one:
+- **`identity`** (core) gains the two preference columns, the preference rules (known timezone list, never empty, first save only while unset) and a typed read for other modules.
+- **`inbox`** (new core module, 15th) holds only the `InboxSource` contract and the sum. It depends on `shared` only, and producer modules depend on it (ADR-0003).
+- **`shared`** (kernel) gains the `StatusConditionSource` interface, a type with no beans (ADR-0006).
+- **`web`** (interface) adds the pulse, preferences and timezone-list endpoints. Its `allowedDependencies` gain `inbox`.
 
-<One paragraph: layered / hexagonal / clean / event-driven, and why.>
+The SPA is the second container. Most of the feature lives there: the shell, the registries, connectivity, theme and dates.
 
 **Internal decomposition:**
 
 ```
-<e.g. modules/<feature>/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + integration impl>
-├── ports/        <handlers, DTOs, error mapping>
-└── wiring        <self-wiring entry point>
+backend/app/src/main/kotlin/telex/
+├── inbox/                         NEW core module (package-info: allowedDependencies = shared)
+│   ├── InboxSource                interface: countWaiting(ownerId): Int — implemented by producer modules (E11+)
+│   └── Inbox                      countWaiting(ownerId) = sum over all InboxSource beans
+├── identity/
+│   ├── Theme                      enum light | dark | system
+│   ├── OwnerPreferences           read (theme, time zone), change theme, change time zone,
+│   │                              set time zone if not yet saved, timeZoneOf(ownerId) for other modules
+│   ├── TimeZones                  the known list (ZoneId ids in Area/City form + UTC), isKnown(id)
+│   ├── OwnerProfiles              existing; Me gains theme + timeZone
+│   └── internal/owner/            Owners repository gains the two columns (JdbcClient)
+├── shared/
+│   └── StatusConditionSource      interface: activeConditions(ownerId): Set<String> (condition codes), no beans
+└── web/api/
+    ├── MeController               existing; body gains theme, timeZone; PATCH /api/v1/me/preferences
+    ├── TimeZonesController        GET /api/v1/time-zones
+    └── PulseController            GET /api/v1/pulse → { inboxCount, conditions[] } (Inbox + all StatusConditionSource beans)
+
+backend/app/src/main/resources/db/migration/   V…__add_owner_preferences.sql (+ db/rollback/U…) — staged by /sdd:data-model
+
+frontend/
+├── index.html                     inline script: apply the theme last used on this device before first paint
+└── src/
+    ├── shell/                     NEW
+    │   ├── AppShell/              C-01 ported: side menu ≥ 768 px, bottom bar + header < 768 px, More sheet, Sign out
+    │   ├── StatusBanner/          C-04 ported: most important condition + "N more", no close control
+    │   ├── sections.ts            section registry: id, path, label, icon, phone placement (bar | more), page | Coming soon
+    │   ├── conditions.ts          condition catalog: code → text, action, importance (offline and not-responding first)
+    │   ├── connectivity.ts        state online | offline | not-responding; browser events; drives onlineManager
+    │   ├── pulse.ts               usePulse: background query every 3 s while visible, 2 s timeout
+    │   ├── theme.ts               apply, follow the device for System, remember on this device, sync other tabs
+    │   └── time.ts                device time zone, formatInstant(instant, timeZone)
+    ├── pages/coming-soon/         SCR-94 (one page, named per section)
+    ├── pages/settings/            SCR-69
+    ├── pages/profile-security/    SCR-64 gains Theme and Time zone
+    ├── api/client.ts              existing; no-answer and network errors feed connectivity instead of SCR-93
+    └── components/PageFrame/      deleted
+
+e2e/tests/                         shell, counter, offline, theme, timezone specs; axe scan on both profiles and themes
 ```
 
-**C4 Container (L2):** <!-- syntax → references/c4-mermaid-syntax.md. Real names, no <placeholder> stubs. ONE Container per declared target_surface (frontmatter); the web container below is one example surface. -->
+A Spring profile `e2e` (off by default, never set in `compose.yaml`) registers a fixture `InboxSource` and a fixture `StatusConditionSource`, plus a fixture endpoint that prepares their values. This is the only way to test AC-174 and AC-178 before a real producer exists (§11).
+
+**C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <feature> — Containers
+    title app-shell — Containers
 
-    Person(actor, "<Actor>")
+    Person(owner, "Owner", "Uses teleX on a phone or a laptop")
+    System_Ext(device, "Owner's browser and device", "Network state, light or dark mode, timezone, theme last used here")
 
-    Container_Boundary(app, "<Our system>") {
-        Container(web, "<Web/UI>", "<technology>", "<purpose>")
-        Container(api, "<API/handler>", "<technology>", "<purpose>")
-        ContainerDb(db, "<Datastore>", "<technology>", "<purpose>")
+    System_Boundary(telex, "teleX") {
+        Container(spa, "Web SPA (web-frontend)", "React, TypeScript, Vite, Tabler, React Router, TanStack Query", "AppShell, section and condition registries, Status Banner, connectivity, pulse, theme, dates in the Owner's timezone")
+        Container_Boundary(app, "teleX app, one Spring Boot process (backend-service)") {
+            Container(web, "web module", "Kotlin, Spring MVC, Spring Security 7", "Pulse, me and preferences, timezone list, SPA hosting, RFC 9457 errors")
+            Container(identity, "identity module", "Kotlin, JdbcClient", "Owner theme and timezone, known timezone list, preference rules")
+            Container(inbox, "inbox module", "Kotlin, Spring Modulith", "InboxSource contract and the waiting count")
+            Container(producers, "Later producer modules", "Kotlin", "E02+ InboxSource and StatusConditionSource implementations, none in E06")
+        }
+        ContainerDb(db, "PostgreSQL", "Postgres 17 + pgvector", "owner gains theme and time_zone")
     }
 
-    System_Ext(ext, "<External>", "<purpose>")
-
-    Rel(actor, web, "<interaction>", "<protocol>")
-    Rel(web, api, "<calls>")
-    Rel(api, db, "<reads/writes>", "<driver>")
-    Rel(api, ext, "<emits>", "<protocol>")
+    Rel(owner, spa, "Navigates, reads counter and banners, picks theme and timezone")
+    Rel(spa, device, "Reads network state, color scheme, timezone, remembered theme")
+    Rel(spa, web, "Pulse every 3 s, me, preferences, timezone list", "JSON, session cookie")
+    Rel(web, identity, "Reads and changes preferences")
+    Rel(web, inbox, "Waiting count for the Owner")
+    Rel(web, producers, "Active Status Banner conditions")
+    Rel(inbox, producers, "Sums their waiting counts")
+    Rel(identity, db, "Reads and writes owner", "JDBC")
 ```
 
 ## 6. Runtime view
