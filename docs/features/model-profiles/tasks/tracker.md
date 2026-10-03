@@ -12,7 +12,7 @@
 | T5 | Build the in-call fallback loop in llm with one attempt per model, a per-attempt timeout and outcome classification | app | Anton Husiev | M | T2 | done |
 | T6 | Call OpenRouter for text, vision and image through the provider port and classify its errors | infra | Anton Husiev | M | T4, T5 | todo |
 | T7 | Model the custom profile aggregate, ProfileRef and the profile rules in plain Kotlin | domain | Anton Husiev | M | T2 | done |
-| T8 | Resolve slots against the current catalog and estimate the price per 100 runs | domain | Anton Husiev | S | T2, T7 | todo |
+| T8 | Resolve slots against the current catalog and estimate the price per 100 runs | domain | Anton Husiev | S | T2, T7 | done |
 | T9 | Build the three system profiles from settings and validate the Operator's slot overrides | app | Anton Husiev | S | T4, T8 | todo |
 | T10 | Persist custom profiles, their chains and the default profile, always scoped by Owner | infra | Anton Husiev | M | T1, T7 | todo |
 | T11 | Serve the catalog view, the profile list with picker data, one profile and a new-profile draft | app | Anton Husiev | M | T3, T9, T10 | todo |

@@ -76,8 +76,6 @@ object ProfileRules {
         return errors
     }
 
-    private fun ModelSlotKind.toLlm(): LlmSlotKind = LlmSlotKind.valueOf(name)
-
     fun canCreate(ownCustomProfileCount: Int): Boolean = ownCustomProfileCount < MAX_CUSTOM_PROFILES
 
     fun isEditable(ref: ProfileRef): Boolean = ref is ProfileRef.Custom
@@ -93,3 +91,5 @@ object ProfileRules {
             .first { it.lowercase() !in taken }
     }
 }
+
+internal fun ModelSlotKind.toLlm(): LlmSlotKind = LlmSlotKind.valueOf(name)
