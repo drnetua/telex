@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { canCreatePasskey, createPasskey, PasskeyCancelled } from "../../api/webauthn";
 import { Button } from "../../components/Button/Button";
@@ -27,11 +27,15 @@ export function CreatePasskeyPage() {
     };
   }, [flagged]);
 
-  const reloaded = useRef<string | null>(null);
-  if (!flagged) {
-    reloaded.current ??= takeRememberedDestination();
-    return <Navigate to={reloaded.current} replace />;
-  }
+  // Reloaded or opened directly: consume the remembered section once, in an effect (render must stay pure, and
+  // a render React discards would otherwise lose it).
+  const reloaded = useRef(false);
+  useEffect(() => {
+    if (flagged || reloaded.current) return;
+    reloaded.current = true;
+    void navigate(takeRememberedDestination(), { replace: true });
+  }, [flagged, navigate]);
+  if (!flagged) return null;
 
   const leave = () => void navigate(takeRememberedDestination(), { replace: true });
 

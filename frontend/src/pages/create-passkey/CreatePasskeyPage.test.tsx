@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CreatePasskeyPage } from "./CreatePasskeyPage";
@@ -12,15 +13,16 @@ function Where() {
   return <div data-testid="where">{pathname}</div>;
 }
 
-function setup(state: unknown = { createdAccount: true }) {
-  render(
+function setup(state: unknown = { createdAccount: true }, strict = false) {
+  const app = (
     <MemoryRouter initialEntries={[{ pathname: "/welcome/passkey", state }]}>
       <Routes>
         <Route path="/welcome/passkey" element={<CreatePasskeyPage />} />
         <Route path="*" element={<Where />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+  render(strict ? <StrictMode>{app}</StrictMode> : app);
 }
 
 const credential = {
@@ -193,6 +195,15 @@ describe("SCR-09 Create a passkey", () => {
       setup(null);
       expect((await screen.findByTestId("where")).textContent).toBe("/runs");
       expect(localStorage.getItem("telex.destination")).toBeNull();
+    });
+
+    it("no-flag reads the remembered section once under Strict Mode", async () => {
+      localStorage.setItem("telex.destination", "/runs");
+      const read = vi.spyOn(Storage.prototype, "getItem");
+      setup(null, true);
+      expect((await screen.findByTestId("where")).textContent).toBe("/runs");
+      expect(read.mock.calls.filter(([key]) => key === "telex.destination")).toHaveLength(1);
+      read.mockRestore();
     });
   });
 });
