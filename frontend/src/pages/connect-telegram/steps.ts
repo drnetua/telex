@@ -8,12 +8,12 @@ export interface StepProps {
   attempt: LinkingAttempt;
   /** Applies the step the server moved to. */
   onNext: (attempt: LinkingAttempt) => void;
-  /** The attempt ended in a linked account (T21 renders the outcome). */
+  /** The attempt ended in a linked account (the page leaves to the origin). */
   onFinished: (result: FinishedResult) => void;
   /** Shared failures (503, 409 mismatch, routable ones); true when it handled the error. */
   onCommonFailure: (error: unknown, retry: () => void) => boolean;
   onInfo: (message: string) => void;
-  onCancel: () => void;
+  onCancel: () => Promise<void> | void;
 }
 
 /** Message of a 422 refusal for its problem code, when the catalog has one. */

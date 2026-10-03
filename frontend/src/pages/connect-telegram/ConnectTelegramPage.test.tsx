@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LinkingAttempt } from "../../api/linking";
 import { ConnectTelegramPage } from "./ConnectTelegramPage";
@@ -41,6 +41,15 @@ function mockApi(replies: Record<string, Response[]>) {
   return calls;
 }
 
+function Elsewhere() {
+  const state = useLocation().state as { toast?: string } | null;
+  return (
+    <div data-testid="elsewhere">
+      <span data-testid="arrival">{state?.toast}</span>
+    </div>
+  );
+}
+
 function setup() {
   render(
     <QueryClientProvider
@@ -49,7 +58,7 @@ function setup() {
       <MemoryRouter initialEntries={["/connect-telegram"]}>
         <Routes>
           <Route path="/connect-telegram" element={<ConnectTelegramPage />} />
-          <Route path="*" element={<div data-testid="elsewhere" />} />
+          <Route path="*" element={<Elsewhere />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -340,5 +349,155 @@ describe("SCR-02 password step", () => {
     await userEvent.type(await screen.findByLabelText("Password"), "secret");
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+  });
+});
+
+describe("SCR-02 outcomes", () => {
+  const LIST = "GET /api/v1/linked-accounts";
+  const START = "POST /api/v1/linking-attempt";
+  const CANCEL = "DELETE /api/v1/linking-attempt";
+  const submitPhone = async () => {
+    await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+  };
+  const phoneReply = (reply: Response) => ({ [A]: [json(200, attempt())], [PHONE]: [reply] });
+  const account = (id: string, displayName: string) =>
+    json(200, {
+      items: [
+        {
+          id,
+          displayName,
+          phone: { countryCode: "380", lastDigits: "67" },
+          state: "connected",
+          chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+          linkedAt: "2026-01-01T00:00:00Z",
+        },
+      ],
+    });
+
+  it("shows the wait state with the time from retryAt on 429", async () => {
+    const retryAt = new Date(Date.now() + 90_000).toISOString();
+    mockApi(phoneReply(json(429, { code: "telegram-wait-required", retryAt })));
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "Too many attempts" })).toBeVisible();
+    expect(
+      screen.getByText(/You can try again at \d\d:\d\d, in 1:/, {
+        selector: "[aria-hidden='true']",
+      }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["telegram-account-owned-by-another-owner", {}, "This account is linked elsewhere", "Back"],
+    ["telegram-account-already-linked", {}, "Already linked", "Back"],
+    ["linked-account-limit-reached", { limit: 3 }, "Account limit reached", "Open Accounts"],
+  ])("refuses with %s (AC-04, AC-108, AC-115)", async (code, extras, title, button) => {
+    mockApi(phoneReply(json(409, { code, ...extras })));
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: title })).toBeVisible();
+    expect(screen.getByRole("button", { name: button })).toBeEnabled();
+  });
+
+  it("states the limit and that teleX signed out (AC-115)", async () => {
+    mockApi(phoneReply(json(409, { code: "linked-account-limit-reached", limit: 3 })));
+    setup();
+    await submitPhone();
+    expect(
+      await screen.findByText(
+        "You've linked 3 accounts, the most this installation allows. teleX has signed out of this one. Unlink an account to free a place.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("names the expected account on a mismatch and returns to Accounts (AC-117)", async () => {
+    mockApi({
+      [A]: [json(200, attempt({ targetLinkedAccountId: "a1" }))],
+      [LIST]: [account("a1", "Work")],
+      [PHONE]: [json(409, { code: "telegram-account-mismatch" })],
+    });
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "A different account" })).toBeVisible();
+    expect(screen.getByText(/not Work\. teleX has signed out of it/)).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Back to Accounts" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+  });
+
+  it("shows the ended state on 404 and starts again at the phone step (AC-109)", async () => {
+    const calls = mockApi({
+      ...phoneReply(problem(404, "linking-attempt-not-found")),
+      [START]: [json(201, attempt())],
+    });
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+    expect(
+      screen.getByText("It was cancelled, finished in another window, or left for 15 minutes."),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Start again" }));
+    expect(await screen.findByLabelText("Phone number")).toHaveValue("");
+    expect(calls.find((c) => c.method === "POST" && c.url === START.slice(5))?.body).toEqual({
+      origin: "inbox",
+    });
+  });
+
+  it("toasts the start refusal and stays on the ended state", async () => {
+    mockApi({
+      [A]: [problem(404, "linking-attempt-not-found")],
+      [START]: [problem(503, "telegram-linking-not-set-up")],
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Start again" }));
+    expect(await screen.findByText(/Telegram linking isn't set up/)).toBeVisible();
+    expect(screen.getByRole("heading", { name: "This linking has ended" })).toBeVisible();
+  });
+
+  it("Back on the ended state leaves", async () => {
+    mockApi({ [A]: [problem(404, "linking-attempt-not-found")] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+  });
+
+  it("cancels and leaves without a message (AC-109)", async () => {
+    mockApi({ [A]: [json(200, attempt())], [CANCEL]: [new Response(null, { status: 204 })] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+    expect(screen.getByTestId("arrival")).toBeEmptyDOMElement();
+  });
+
+  it("shows Cancelling while the cancel is in flight", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.method === "DELETE"
+          ? new Promise(() => undefined)
+          : Promise.resolve(json(200, attempt())),
+      ),
+    );
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+    expect(await screen.findByRole("button", { name: "Cancelling" })).toBeDisabled();
+  });
+
+  it.each([
+    ["linked", "Anna is connected. teleX is syncing its chats."],
+    ["signed-in-again", "Anna is connected again."],
+  ])("carries the %s toast to the origin (AC-117)", async (outcome, text) => {
+    mockApi({
+      [A]: [json(200, attempt({ step: "password" }))],
+      [PASSWORD]: [json(200, { outcome, linkedAccountId: "a1", origin: "inbox" })],
+      [LIST]: [account("a1", "Anna")],
+    });
+    setup();
+    await userEvent.type(await screen.findByLabelText("Password"), "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+    expect(screen.getByTestId("arrival")).toHaveTextContent(text);
   });
 });

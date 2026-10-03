@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useLocation } from "react-router";
 import { useMe } from "../../api/account";
 import { EmptyState } from "../../components/EmptyState/EmptyState";
 import { LoadState } from "../../components/LoadState/LoadState";
@@ -11,6 +12,9 @@ export function InboxPage() {
   const [toastShown, setToastShown] = useState(false);
   const dismiss = useCallback(() => setToastShown(false), []);
   const text = messages.inbox;
+  const arrival = (useLocation().state as { toast?: string } | null)?.toast;
+  const [arrivalShown, setArrivalShown] = useState(true);
+  const dismissArrival = useCallback(() => setArrivalShown(false), []);
 
   if (!me.data) return <LoadState state="loading" />;
   return (
@@ -32,6 +36,7 @@ export function InboxPage() {
       >
         {text.empty}
       </EmptyState>
+      {arrival && arrivalShown ? <Toast message={arrival} onDismiss={dismissArrival} /> : null}
       {toastShown ? <Toast message={text.note} onDismiss={dismiss} /> : null}
     </>
   );
