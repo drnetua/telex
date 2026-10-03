@@ -25,8 +25,15 @@
 | T18 | Build the profile editor modal with the chain editor and the model chooser | ui | Anton Husiev | M | T17 | done |
 | T19 | Add Playwright end-to-end tests for the Models page at 360 px and 1280 px with axe and a 500-model load timing | tests | Anton Husiev | M | T15, T18 | done |
 | T20 | Document the AI settings in the README and add the real-call smoke check per slot | docs | Anton Husiev | S | T9, T13 | done |
+| T21 | Re-check the Operator overrides against the new catalog and skip bad provider entries | app | Anton Husiev | S | — | todo |
+| T22 | Fall back past a withdrawn model id and keep the fallback loop from throwing on interrupt | infra | Anton Husiev | S | — | todo |
+| T23 | Record the fallback flag on failed calls, publish ModelCallFinished with the record, and type ModelCallId | app | Anton Husiev | S | — | todo |
+| T24 | Refuse only system display names, serialize default against delete, cap request sizes, and prove saves during an outage | app | Anton Husiev | S | — | todo |
+| T25 | Show the editor loading state, keep edits across background refetches, and show result notices once | ui | Anton Husiev | S | — | todo |
+| T26 | Bare not-found page, honest default errors, the AI-not-set-up alert above the tabs, and the remaining manifest and a11y details | ui | Anton Husiev | S | T25 | todo |
+| T27 | Amend AC-211 to per-1M-token prices for image models and register the new components in the design-system inventory | docs | Anton Husiev | S | T26 | todo |
 
-**Total:** 20 tasks, ~18 person-days.
+**Total:** 27 tasks (T21–T27: follow-ups from review 2026-10-03), ~20 person-days.
 
 ## Deviations
 

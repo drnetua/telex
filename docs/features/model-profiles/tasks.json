@@ -477,6 +477,154 @@
         "docs/docs/03-product-spec.md"
       ],
       "file": "docs/features/model-profiles/tasks/t20-readme-and-real-call-smoke.md"
+    },
+    {
+      "id": "T21",
+      "title": "Re-check the Operator overrides against the new catalog and skip bad provider entries",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-227",
+        "AC-212"
+      ],
+      "dod": "A refresh that drops (or restores) a shipped override model logs (or stops logging) its warning on that same refresh, startup logs each warning once, and a provider list with an over-long name or provider or a repeated id still refreshes, skipping and logging only the bad entries; proved by an integration test over the real CatalogRefresher + CatalogHolder + OverrideValidator and by parser unit tests.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/internal/catalog/CatalogRefresher.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/catalog/CatalogHolder.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/catalog/CatalogSnapshotStore.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/ModelListParser.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/OverrideValidator.kt",
+        "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt",
+        "backend/app/src/test/kotlin/telex/agents/internal/profile/OverrideValidatorTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t21-fix-override-recheck-and-parser.md"
+    },
+    {
+      "id": "T22",
+      "title": "Fall back past a withdrawn model id and keep the fallback loop from throwing on interrupt",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-224",
+        "AC-229"
+      ],
+      "dod": "A 400 whose error message says the model id is not valid / not found / has no endpoints is classified UNAVAILABLE and the loop tries the next model (unit + OpenRouterProviderIT move-on case); an interrupted caller gets a Failure result with the in-flight attempt cancelled and the interrupt flag restored, never an exception.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterErrors.kt",
+        "backend/app/src/main/kotlin/telex/llm/internal/call/FallbackLoop.kt",
+        "backend/app/src/test/kotlin/telex/llm/OpenRouterErrorsTest.kt",
+        "backend/app/src/test/kotlin/telex/llm/call/FallbackLoopTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/llm/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t22-fix-withdrawn-model-and-interrupt.md"
+    },
+    {
+      "id": "T23",
+      "title": "Record the fallback flag on failed calls, publish ModelCallFinished with the record, and type ModelCallId",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-229",
+        "AC-224"
+      ],
+      "dod": "A failed call where a later model was tried or the main model was missing stores fallback = true; ModelCallFinished is published inside the record transaction and a test proves an @ApplicationModuleListener receives it and the publication completes; ModelCallId is a TypedId; a stalled first model through ProfileCalls records attempts timeout then answered with fallback = true.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/ProfileCalls.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/call/",
+        "backend/app/src/integrationTest/kotlin/telex/agents/call/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t23-fix-call-record-fallback-and-event.md"
+    },
+    {
+      "id": "T24",
+      "title": "Refuse only system display names, serialize default against delete, cap request sizes, and prove saves during an outage",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-214",
+        "AC-220",
+        "AC-222",
+        "AC-212"
+      ],
+      "dod": "Custom profiles named Fast/Balanced/Careful (keys) are accepted while the display names stay refused; setDefault racing delete answers 404 not-found, never 500; request bodies are bounded per openapi.yaml with validation-failed; create and update succeed while the catalog is UPDATE_FAILED with a non-empty snapshot.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileRules.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileCommands.kt",
+        "backend/app/src/main/kotlin/telex/agents/internal/profile/FieldProblems.kt",
+        "backend/app/src/main/kotlin/telex/web/api/ModelsDtos.kt",
+        "backend/app/src/test/kotlin/telex/agents/internal/profile/ProfileRulesTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/",
+        "backend/app/src/integrationTest/kotlin/telex/agents/profile/"
+      ],
+      "file": "docs/features/model-profiles/tasks/t24-fix-names-race-limits-outage.md"
+    },
+    {
+      "id": "T25",
+      "title": "Show the editor loading state, keep edits across background refetches, and show result notices once",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-213",
+        "AC-218",
+        "AC-222"
+      ],
+      "dod": "SCR-34 loading renders LoadState (3 rows) inside the modal while the draft or profile is pending; a window refocus or a failed background refetch never closes the editor or resets typed edits; a result notice from the editor shows once and does not return after reload or Back/Forward; Vitest covers each.",
+      "files_hint": [
+        "frontend/src/pages/models/ProfileEditorModal.tsx",
+        "frontend/src/pages/models/ProfileEditorModal.test.tsx",
+        "frontend/src/api/models.ts",
+        "frontend/src/pages/models/ModelsPage.tsx",
+        "frontend/src/pages/models/ModelsPage.test.tsx"
+      ],
+      "file": "docs/features/model-profiles/tasks/t25-fix-editor-loading-refetch-notice.md"
+    },
+    {
+      "id": "T26",
+      "title": "Bare not-found page, honest default errors, the AI-not-set-up alert above the tabs, and the remaining manifest and a11y details",
+      "layer": "ui",
+      "deps": [
+        "T25"
+      ],
+      "acs": [
+        "AC-222",
+        "AC-51",
+        "AC-226",
+        "AC-223"
+      ],
+      "dod": "A missing or foreign profile renders SCR-91 in the bare system layout; a routed failure on choosing a default shows no cantBeDefault toast; the AI-not-set-up alert sits above the tabs on both tabs; the circle-off icon, the visible headings and the chooser row price match screens.md; FilterBar ids are unique, tabs follow the ARIA tabs pattern, and toasts share one region; Vitest (and the e2e spec where it asserts these) cover each.",
+      "files_hint": [
+        "frontend/src/pages/models/",
+        "frontend/src/app/AppRoutes.tsx",
+        "frontend/src/components/ModelProfileCard/",
+        "frontend/src/components/ModelChooser/",
+        "frontend/src/components/FilterBar/",
+        "frontend/src/messages.ts",
+        "frontend/src/styles.css",
+        "e2e/tests/models.spec.ts"
+      ],
+      "file": "docs/features/model-profiles/tasks/t26-fix-models-page-polish.md"
+    },
+    {
+      "id": "T27",
+      "title": "Amend AC-211 to per-1M-token prices for image models and register the new components in the design-system inventory",
+      "layer": "docs",
+      "deps": [
+        "T26"
+      ],
+      "acs": [
+        "AC-211"
+      ],
+      "dod": "spec.md §1 records the decision deviation and AC-211 reads per-1M-token prices for image models; data-model.md notes price_per_image is unused in E10; a test asserts an image model in the catalog shows its per-1M-token price; docs/design-system.md lists every new or ported component and screens.md flips their Registered column.",
+      "files_hint": [
+        "docs/features/model-profiles/spec.md",
+        "docs/features/model-profiles/data-model.md",
+        "docs/features/model-profiles/screens.md",
+        "docs/design-system.md",
+        "frontend/src/pages/models/ModelsPage.test.tsx",
+        "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt"
+      ],
+      "file": "docs/features/model-profiles/tasks/t27-fix-docs-ac211-and-inventory.md"
     }
   ]
 }
