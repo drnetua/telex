@@ -39,7 +39,15 @@ export function Toast({
           <Icon name={error ? "alert-circle" : "info-circle"} size={18} />
           {message}
           {action ? (
-            <button type="button" className="btn btn-link ms-auto" onClick={action.onClick}>
+            <button
+              type="button"
+              className="btn btn-link ms-auto"
+              onClick={() => {
+                // Acted on: the toast goes away, whatever the caller does with its own state.
+                action.onClick();
+                onDismiss();
+              }}
+            >
               {action.label}
             </button>
           ) : null}
