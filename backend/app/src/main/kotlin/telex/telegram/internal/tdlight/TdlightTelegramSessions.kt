@@ -299,7 +299,7 @@ class TdlightTelegramSessions(
         val log = LoggerFactory.getLogger(TdlightTelegramSessions::class.java)
         val FLOOD_SECONDS = Regex("""(?:retry after|FLOOD_WAIT_)\s*(\d+)""")
 
-        const val STEP_TIMEOUT_SECONDS = 30L
+        const val STEP_TIMEOUT_SECONDS = 8L
         const val DEFAULT_CODE_LENGTH = 5
         const val HTTP_TOO_MANY_REQUESTS = 429
         const val STATE_WAIT_CODE = "authorizationStateWaitCode"

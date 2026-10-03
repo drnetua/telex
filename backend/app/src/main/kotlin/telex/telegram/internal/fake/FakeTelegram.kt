@@ -21,7 +21,8 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * In-memory Telegram scripted by test phone numbers in Telegram's test shape `99966XYYYY`:
  * X picks the behaviour (0 plain, 1 two-step with hint, 2 two-step without hint, 3 banned, 4 unregistered,
- * 5 flood wait, 7 terminate right after link); YYYY is the number of chats (and makes the account unique).
+ * 5 flood wait on the phone, 6 flood wait on the code, 8 two-step with hint and flood wait on the password,
+ * 7 terminate right after link); YYYY is the number of chats (and makes the account unique).
  */
 @Suppress("TooManyFunctions") // a port implementation plus its test hooks
 class FakeTelegram(
@@ -101,11 +102,29 @@ class FakeTelegram(
         val session = reachable(id)
         val phone = checkNotNull(session.phone) { "No phone sent" }
         return when {
-            code == EXPIRED_CODE -> SignInOutcome.CodeExpired
-            code != CODE -> SignInOutcome.CodeWrong
-            scenarioOf(phone) == TWO_STEP_HINT -> SignInOutcome.PasswordNeeded(PASSWORD_HINT)
-            scenarioOf(phone) == TWO_STEP -> SignInOutcome.PasswordNeeded(null)
-            else -> authorize(id, session, phone)
+            scenarioOf(phone) == FLOOD_CODE -> {
+                SignInOutcome.WaitRequired(FLOOD_WAIT_SECONDS)
+            }
+
+            code == EXPIRED_CODE -> {
+                SignInOutcome.CodeExpired
+            }
+
+            code != CODE -> {
+                SignInOutcome.CodeWrong
+            }
+
+            scenarioOf(phone) == TWO_STEP_HINT || scenarioOf(phone) == FLOOD_PASSWORD -> {
+                SignInOutcome.PasswordNeeded(PASSWORD_HINT)
+            }
+
+            scenarioOf(phone) == TWO_STEP -> {
+                SignInOutcome.PasswordNeeded(null)
+            }
+
+            else -> {
+                authorize(id, session, phone)
+            }
         }
     }
 
@@ -115,6 +134,7 @@ class FakeTelegram(
     ): SignInOutcome {
         val session = reachable(id)
         val phone = checkNotNull(session.phone) { "No phone sent" }
+        if (scenarioOf(phone) == FLOOD_PASSWORD) return SignInOutcome.WaitRequired(FLOOD_WAIT_SECONDS)
         return if (password == PASSWORD) {
             authorize(id, session, phone)
         } else {
@@ -262,5 +282,7 @@ class FakeTelegram(
         private const val UNREGISTERED = '4'
         private const val FLOOD = '5'
         private const val TERMINATE = '7'
+        private const val FLOOD_CODE = '6'
+        private const val FLOOD_PASSWORD = '8'
     }
 }

@@ -2,6 +2,7 @@ package telex.messaging
 
 import org.springframework.http.HttpStatus
 import telex.shared.DomainProblem
+import java.time.Instant
 
 /** AC-119: no Telegram app credentials (or no master key); the wizard is not started. */
 class TelegramLinkingNotSetUp :
@@ -34,3 +35,62 @@ class TelegramAccountAlreadyLinked :
 /** AC-109 / AC-110: no open attempt (cancelled, expired, session ended, or teleX restarted). */
 class LinkingAttemptNotFound :
     DomainProblem(HttpStatus.NOT_FOUND, "linking-attempt-not-found", "This linking attempt ended.")
+
+/** The step does not match where the attempt is (a stale tab); nothing changed (api-sync §B 4, gap 1). */
+class LinkingStepMismatch(
+    step: LinkingStep,
+) : DomainProblem(HttpStatus.CONFLICT, "linking-step-mismatch", "The linking attempt is at another step.") {
+    init {
+        body.setProperty("step", step.name.lowercase())
+    }
+}
+
+/** AC-107: the number is not a valid phone number. */
+class TelegramPhoneInvalid :
+    DomainProblem(HttpStatus.UNPROCESSABLE_ENTITY, "telegram-phone-invalid", "This isn't a valid phone number.")
+
+/** AC-107: no Telegram account uses the number; teleX never creates one. */
+class TelegramPhoneUnregistered :
+    DomainProblem(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        "telegram-phone-unregistered",
+        "No Telegram account uses this number.",
+    )
+
+/** AC-107: Telegram has banned the number. */
+class TelegramPhoneBanned :
+    DomainProblem(HttpStatus.UNPROCESSABLE_ENTITY, "telegram-phone-banned", "Telegram has banned this number.")
+
+/** AC-02: the code is wrong. */
+class TelegramCodeWrong :
+    DomainProblem(HttpStatus.UNPROCESSABLE_ENTITY, "telegram-code-wrong", "The code is wrong.")
+
+/** AC-02: the code has expired. */
+class TelegramCodeExpired :
+    DomainProblem(HttpStatus.UNPROCESSABLE_ENTITY, "telegram-code-expired", "The code has expired.")
+
+/** AC-106: the two-step verification password is wrong; [hint] is the Owner's own hint, null when none. */
+class TelegramPasswordWrong(
+    hint: String?,
+) : DomainProblem(HttpStatus.UNPROCESSABLE_ENTITY, "telegram-password-wrong", "The password is wrong.") {
+    init {
+        body.setProperty("passwordHint", hint)
+    }
+}
+
+/** AC-02: Telegram limits the attempts; the attempt ended and the Owner can try again at [retryAt]. */
+class TelegramWaitRequired(
+    retryAt: Instant,
+) : DomainProblem(
+        HttpStatus.TOO_MANY_REQUESTS,
+        "telegram-wait-required",
+        "Telegram asks you to wait before trying again.",
+    ) {
+    init {
+        body.setProperty("retryAt", retryAt.toString())
+    }
+}
+
+/** Telegram did not answer the step in time; the attempt stays at its step. */
+class TelegramUnavailableProblem :
+    DomainProblem(HttpStatus.SERVICE_UNAVAILABLE, "telegram-unavailable", "Telegram can't be reached right now.")
