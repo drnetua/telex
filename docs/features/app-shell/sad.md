@@ -347,29 +347,24 @@ ADR files live under `docs/features/app-shell/adr/NNNN-<title>.md`. Foundation d
 
 ## 10. Quality requirements
 
-<!-- 🎯 Why: the QUALITY TREE — take a goal from §1 and break it into concrete leaves: tests,
-     metrics, configs, drills. ⭐ Without §10, §1 is a manifesto. With §10 each declaration maps
-     to something PROVABLE.
-     📋 Write: per §1 goal — When / Then / How-verify. Numbers from spec §6 NFR VERBATIM (don't
-     round ≤250ms to ≤300ms — that's a critic F6 hit).
-     📌 e.g. «p95 ≤ 500 ms on a block update, verified by a 100 req/s load test». -->
+Each top-3 goal from §1 expanded into scenarios. Numbers are quoted from spec §6.
 
-Each top-3 goal from §1 expanded into a full scenario:
+**QG-1. Live awareness**
+- **QG-1a. When:** the device loses its network, or teleX stops answering, on any shell screen. **Then:** the offline Status Banner appears "≤ 5 s after the device loses its network or teleX stops answering", and the screen stays. **How verify:** Playwright e2e on both profiles. It cuts the network with `context.setOffline(true)`, and separately stops answers by routing `/api/**` to abort, then measures the time until the banner is visible.
+- **QG-1b. When:** the connection returns. **Then:** the banner clears "≤ 5 s after the connection returns", and the current screen shows fresh data. **How verify:** the same e2e restores the network or the route and measures the time until the banner is gone and a fresh pulse has landed.
+- **QG-1c. When:** an Inbox item lands or is resolved for the Owner. **Then:** the counter shows the new number "≤ 5 s from an item landing or being resolved to the new number on screen". **How verify:** e2e under the `e2e` profile, with items prepared through the fixture `InboxSource`. It changes the count and measures until the number on screen matches, on both profiles, including the 0 (no number) and "99+" cases.
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behaviour with numbers from spec §6 NFR>
-- **How verify:** <test / chaos drill / load test / metric>
+**QG-2. Works fully on a phone**
+- **QG-2a. When:** any shell screen is open at 360 px or 1280 px, in either theme. **Then:** "0 shell screens wider than the viewport at 360 px and 1280 px, both themes". **How verify:** e2e checks that `document.documentElement.scrollWidth <= innerWidth` on every shell screen (each section, More, Settings, Profile and security, Coming soon, with a banner showing).
+- **QG-2b. When:** the same screens are scanned. **Then:** "0 serious or critical axe findings on every shell screen, both widths, both themes", with "bottom-bar targets ≥ 44 × 44 px" and "WCAG 2.2 AA contrast per D-18". **How verify:** an axe scan in e2e per screen × width × theme, plus a bounding-box check of every bottom-bar item on the phone profile (extends `e2e/tests/touch-targets.spec.ts`).
+- **QG-2c. When:** a signed-in Owner opens teleX on the phone profile. **Then:** "first signed-in screen usable ≤ 2.5 s p75 on the phone profile with a simulated fast-4G network". **How verify:** a Playwright performance trace in CI on the phone profile with fast-4G throttling, measuring until the Inbox screen and its counter are interactive. Sections are lazy-loaded to stay inside the budget.
+- **QG-2d. When:** the Owner chooses another theme. **Then:** it is "applied ≤ 200 ms after the choice, no reload". On a device used before, "the first frame shows the theme last used there and at most one switch follows (only when the account's theme changed elsewhere)". **How verify:** an e2e trace from the click to the change of the `data-bs-theme` attribute. The attribute is read at first paint with a remembered theme, and switch events are counted after `me` returns.
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-3. Extensible without shell changes**
+- **QG-3a. When:** a later UI epic adds its section page, an Inbox source or a Status Banner condition. **Then:** "0 UI epics through G3 need to change the shell beyond adding their section, replacing their 'Coming soon' page or adding their Status Banner" (spec §7). **How verify:** at each UI epic's `/sdd:review`, its diff under `frontend/src/shell/` may touch only `sections.ts` and `conditions.ts` entries. In E06, the fixture sources under the `e2e` profile prove a new source shows up without shell code changes (AC-174, AC-178).
+- **QG-3b. When:** any UI e2e scenario runs in CI. **Then:** "100 % of UI e2e scenarios run in both the phone (360 px) and desktop (1280 px) profiles, from E06 on". **How verify:** the CI report lists every scenario under both Playwright projects. A scenario marked for one project fails the check.
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**Browsers.** The "latest two versions of Chrome and Safari, including Safari on iOS" get a manual pass before `/sdd:ship`, recorded in the PR (spec §6). It checks the theme on first paint, `prefers-color-scheme` following, pulse pause and resume when a tab is hidden on iOS, and the offline banner.
 
 ## 11. Risks and technical debt
 
