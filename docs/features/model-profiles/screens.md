@@ -30,7 +30,7 @@ updated_at: "2026-10-03"
 These apply to every screen below. Each table lists only what differs.
 
 - **Signed-in frame.** SCR-66 renders inside `PageFrame` (E01, temporary). Until E06's AppShell and Settings navigation ship, `PageFrame` gets an interim "Models" link that goes to `/settings/models` (sad §4). E06 replaces the link with its Settings entry.
-  *Updated at `/sdd:ship` (merge with E06 `app-shell`):* E06 shipped first, so `PageFrame` and its interim link are gone. SCR-66 renders inside the AppShell through `AppFrame` (`frontend/src/app/layouts.tsx`), so SCR-91 can still render bare. It is reached from the Settings list (SCR-69) row "Models" (`settingsRegistry.ts`), and the Settings section is the current section. The wireframes below still show the old frame.
+  *Updated at `/sdd:ship` (rebase on E06 `app-shell`):* E06 shipped first, so `PageFrame` and its interim link are gone. SCR-66 renders inside the AppShell through `AppFrame` (`frontend/src/app/layouts.tsx`), so SCR-91 can still render bare. It is reached from the Settings list (SCR-69) row "Models" (`settingsRegistry.ts`), and the Settings section is the current section. The wireframes below still show the old frame.
 - **Busy button.** As in platform-skeleton: an action that calls the API shows its `Button` `busy` (spinner, label kept) and makes the other controls of that form read-only.
 - **Failure routing** (the shared fetch client, unchanged from E01). Not drawn per screen; each `error` row cites it.
   - `401 unauthenticated` → SCR-01 with the path remembered.
