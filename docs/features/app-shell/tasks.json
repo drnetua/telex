@@ -823,6 +823,51 @@
       ],
       "file": "docs/features/app-shell/tasks/t34-review3-fix-docs.md",
       "source": "review-2026-10-03-3"
+    },
+    {
+      "id": "T35",
+      "title": "Re-check at retry time that a failed theme save hasn't been replaced by another tab",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-181",
+        "AC-182"
+      ],
+      "dod": "The SCR-93 retry handed out by a failed, non-superseded theme save re-checks at retry time: it re-runs chooseTheme only while the theme applied on this device still equals the one the failure reverted to (now.settled); if another tab has chosen since, it resolves without applying or remembering anything, so SCR-93 closes. Vitest: (1) Dark answers 500 while not superseded, SCR-93 gets a retry, another tab then picks System via a storage event, the retry runs, and telex.theme and the applied theme stay System; (2) a non-superseded 500's retry re-applies and re-sends Dark (the T33 DoD 'working retry').",
+      "files_hint": [
+        "frontend/src/api/preferences.ts",
+        "frontend/src/components/ThemeSwitch/ThemeSwitch.test.tsx"
+      ],
+      "findings": [
+        "R4-1"
+      ],
+      "file": "docs/features/app-shell/tasks/t35-review4-fix-retry-recheck.md",
+      "source": "review-2026-10-03-4"
+    },
+    {
+      "id": "T36",
+      "title": "Bring the docs in line after review 4: 502/503/504 inside vs outside the shell, W-10b wireframe N/A",
+      "layer": "docs",
+      "deps": [
+        "T35"
+      ],
+      "acs": [
+        "AC-170",
+        "AC-176"
+      ],
+      "dod": "openapi.yaml info (around line 38), sad.md §4 (line 110) and §8 (line 586) and ADR-0004 (line 29) say a 502/503/504 reads as 'teleX isn't responding' inside the shell and goes to SCR-93 outside it (e.g. the first GET /api/v1/me before the shell mounts), matching screens.md:47-50 and :500; screens.md W-10b wireframe block (lines 376-380) is labelled N/A (guard only, see the SCR-10 loading row) or removed.",
+      "files_hint": [
+        "docs/features/app-shell/contracts/openapi.yaml",
+        "docs/features/app-shell/sad.md",
+        "docs/features/app-shell/adr/0004-detect-offline-from-pulse-failures-and-browser-network-state.md",
+        "docs/features/app-shell/screens.md"
+      ],
+      "findings": [
+        "R4-2",
+        "R4-3"
+      ],
+      "file": "docs/features/app-shell/tasks/t36-review4-fix-docs.md",
+      "source": "review-2026-10-03-4"
     }
   ]
 }
