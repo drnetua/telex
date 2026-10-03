@@ -2,6 +2,7 @@ package telex.agents.profile
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -40,6 +41,13 @@ class ProfileRepositoriesIT {
     @Autowired lateinit var tx: PlatformTransactionManager
 
     private val now = Instant.parse("2026-10-03T10:00:00Z")
+
+    // This context is shared with identity ITs that wipe `owner`; leave no rows that reference an Owner.
+    @AfterEach
+    fun clearProfiles() {
+        jdbc.update("DELETE FROM default_model_profile")
+        jdbc.update("DELETE FROM model_profile")
+    }
 
     private fun owner(): OwnerId {
         val id = UUID.randomUUID()
