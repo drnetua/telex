@@ -8,7 +8,7 @@ files_hint: ["e2e/tests/system-pages.spec.ts"]
 owner: "Anton Husiev"
 estimate: "S"
 source: "review-2026-10-03-2 (R2-3)"
-status: "todo"
+status: "done"
 ---
 
 # T31 — e2e: make the narrowed AC-102 test outlast the action's 10 s timeout

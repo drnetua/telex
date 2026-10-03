@@ -35,7 +35,7 @@
 | T28 | Guard the remembered destination against blocked storage, revert a failed theme save only over its own choice, and cover the review-1 test gaps | ui | Anton Husiev | S | — | done |
 | T29 | Close the theme menu on Tab and focus-out, with a roving tabindex on its items | ui | Anton Husiev | S | T28 | done |
 | T30 | List the new field codes in the contract and cap fixture condition codes at 63 characters | ports | Anton Husiev | S | — | done |
-| T31 | e2e: make the narrowed AC-102 test outlast the action's 10 s timeout | tests | Anton Husiev | S | — | todo |
+| T31 | e2e: make the narrowed AC-102 test outlast the action's 10 s timeout | tests | Anton Husiev | S | — | done |
 | T32 | Bring the docs in line after review 2: ADR-0006 deviation heading, draft labels, inventory line refs, applied-theme wording, deferred visual tier, load-test sample deviation | docs | Anton Husiev | S | T29, T30, T31 | todo |
 
 **Total:** 32 tasks (T20–T27 are review follow-ups from `_review/review-2026-10-03.md`, T28–T32 from `_review/review-2026-10-03-2.md`), ~20.5 person-days (S ≈ 0.5 d, M ≈ 0.75 d, L ≈ 1 d).

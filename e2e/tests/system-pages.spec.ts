@@ -43,13 +43,17 @@ test("AC-102 (narrowed): an action with no answer in 10 seconds keeps the screen
   await signUp(page);
   // the pulse hangs too: a healthy pulse would clear the banner within 3 s and make the assertion a race
   await page.route("**/api/**", () => new Promise(() => undefined));
+  // the client's own 10 s timeout aborts the action; everything below is asserted after that point
+  const aborted = page.waitForEvent("requestfailed", {
+    predicate: (r) => r.url().endsWith("/api/v1/passkeys"),
+    timeout: 20_000,
+  });
   await openProfile(page);
   const banner = page
     .getByRole("status")
     .filter({ hasText: "teleX isn't responding." });
   await expect(banner).toBeVisible({ timeout: 20_000 });
-  // nothing answers, so it stays: longer than one pulse interval
-  await page.waitForTimeout(4_000);
+  await aborted;
   await expect(banner).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "teleX is unavailable" }),
