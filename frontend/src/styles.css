@@ -9,6 +9,60 @@
   --telex-danger-subtle: #3a1f1f;
 }
 
+/* Primary and warning tokens (tokens.json): Tabler's dark theme keeps the light blue, which fails contrast. */
+:root {
+  --telex-primary-text: #055aa8;
+  --telex-on-primary: #fff;
+  --telex-warning-text: #9a5d00;
+  --telex-warning-subtle: #fef5e6;
+}
+
+[data-bs-theme="dark"] {
+  --tblr-primary: #79aae7;
+  --tblr-primary-rgb: 121, 170, 231;
+  --tblr-primary-fg: #171717;
+  --tblr-primary-lt: #16273a;
+  --tblr-primary-darken: #94bced;
+  --tblr-link-color: #79aae7;
+  --tblr-link-color-rgb: 121, 170, 231;
+  --telex-primary-text: #94bced;
+  --telex-on-primary: #171717;
+  --telex-warning-text: #f5b340;
+  --telex-warning-subtle: #33290f;
+}
+
+/* Buttons whose text Tabler leaves light on a light dark-theme fill or dark on a dark surface. */
+[data-bs-theme="dark"] .btn-secondary,
+[data-bs-theme="dark"] .btn-outline-secondary {
+  --tblr-btn-hover-color: #171717;
+  --tblr-btn-active-color: #171717;
+}
+
+[data-bs-theme="dark"] .btn-secondary {
+  --tblr-btn-color: #171717;
+}
+
+[data-bs-theme="dark"] .btn-ghost-dark {
+  --tblr-btn-color: var(--tblr-body-color);
+  --tblr-btn-hover-color: var(--tblr-body-color);
+  --tblr-btn-active-color: var(--tblr-body-color);
+}
+
+.badge.bg-primary {
+  color: var(--telex-on-primary);
+}
+
+/* Status Banner (C-04): warning-text on warning-subtle; its links and "+N more" read as text, not as blue links. */
+.alert-warning {
+  --tblr-alert-color: var(--telex-warning-text);
+  --tblr-alert-bg: var(--telex-warning-subtle);
+}
+
+.alert-warning .btn-link {
+  color: inherit;
+  text-decoration: underline;
+}
+
 /* Error banners: danger-text on danger-subtle (5.9:1); Tabler's red on its tint is 4.2:1. */
 .alert-danger {
   --tblr-alert-color: var(--telex-danger-text);
@@ -37,7 +91,7 @@
 .telex-moreitem.active,
 .telex-baritem.active {
   background: var(--tblr-primary-lt);
-  color: var(--tblr-primary);
+  color: var(--telex-primary-text);
 }
 
 .telex-navitem.active::before,

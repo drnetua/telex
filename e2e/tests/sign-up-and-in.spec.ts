@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openProfile } from "../support/shell";
 import {
   addVirtualAuthenticator,
   codeOf,
@@ -66,7 +67,7 @@ test("AC-34: sign up by link creates the account, offers a passkey, lands on the
     address.replace("Anton", "ANTON").replace("+work", "+other"),
   );
   await expect(page).toHaveURL(/\/inbox$/);
-  await page.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(page);
   await expect(page.getByText(`Signed in as ${address}`)).toBeVisible();
 });
 

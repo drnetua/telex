@@ -68,8 +68,8 @@ jobs:
           node-version: "24"
           cache: pnpm
 
-      - name: Start the stack (app, Postgres, Mailpit)
-        run: docker compose up -d --build --wait
+      - name: Start the stack (app with the e2e profile, Postgres, Mailpit)
+        run: docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait
 
       - name: Install dependencies and Chromium
         run: |
@@ -93,4 +93,4 @@ jobs:
 
       - name: Stop the stack
         if: always()
-        run: docker compose down -v
+        run: docker compose -f compose.yaml -f compose.e2e.yaml down -v

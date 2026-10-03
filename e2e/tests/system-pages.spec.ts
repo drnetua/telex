@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openProfile } from "../support/shell";
 import { expectNoA11yViolations, signUp } from "../support/flows";
 
 test("AC-102: an unknown address shows Page not found with Go to Inbox", async ({
@@ -22,7 +23,7 @@ test("AC-102: a server failure shows teleX is unavailable and Retry repeats the 
   await page.route("**/api/v1/passkeys", (route) =>
     failing ? route.fulfill({ status: 503, body: "" }) : route.continue(),
   );
-  await page.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(page);
   await expect(
     page.getByRole("heading", { name: "teleX is unavailable" }),
   ).toBeVisible();
@@ -41,7 +42,7 @@ test("AC-102: no answer within 10 seconds shows teleX is unavailable", async ({
   test.setTimeout(90_000);
   await signUp(page);
   await page.route("**/api/v1/passkeys", () => new Promise(() => undefined));
-  await page.getByRole("button", { name: "Profile and security" }).click();
+  await openProfile(page);
   await expect(
     page.getByRole("heading", { name: "teleX is unavailable" }),
   ).toBeVisible({ timeout: 20_000 });

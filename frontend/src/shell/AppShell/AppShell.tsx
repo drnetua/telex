@@ -157,7 +157,7 @@ function MoreSheet({ active, onClose }: { active?: Section; onClose: () => void 
             <span>{messages.theme.label}</span>
             <ThemeSwitch variant="segmented" />
           </div>
-          <SignOutButton className="btn-outline-secondary" />
+          <SignOutButton className="btn-outline-secondary touch-target" />
         </div>
       </div>
     </>

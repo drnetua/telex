@@ -1,0 +1,7 @@
+# End-to-end override: `docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait`.
+# The `e2e` Spring profile enables the fixture sources and /api/v1/e2e-fixtures; it is set only here, never in
+# compose.yaml, application.yaml or production.
+services:
+  app:
+    environment:
+      SPRING_PROFILES_ACTIVE: e2e

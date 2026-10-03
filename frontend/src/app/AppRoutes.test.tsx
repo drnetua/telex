@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { messages } from "../messages";
 import { AppRoutes } from "./AppRoutes";
@@ -69,5 +70,21 @@ describe("section routes (AC-171, AC-172)", () => {
     expect(
       within(mainNav()).getByRole("link", { name: messages.shell.sections.settings }),
     ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("AC-171: moving from one section to another by its menu link shows the new section's page", async () => {
+    open("/settings");
+    await screen.findByRole("heading", { level: 1, name: messages.shell.sections.settings });
+
+    await userEvent.click(
+      within(mainNav()).getByRole("link", { name: messages.shell.sections.runs }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: messages.shell.sections.runs }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { level: 1, name: messages.shell.sections.settings }),
+    ).not.toBeInTheDocument();
   });
 });

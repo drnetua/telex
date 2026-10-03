@@ -52,9 +52,13 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
         {sectionLoaders.map(({ section, load }) => (
-          <Route key={section.id} path={section.path} element={<SectionRoute load={load} />} />
+          <Route
+            key={section.id}
+            path={section.path}
+            element={<SectionRoute key={section.id} load={load} />}
+          />
         ))}
-        <Route path="/profile" element={<SectionRoute load={profile} />} />
+        <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
       </Route>
       <Route element={<BareSystemLayout />}>
         <Route path="/session-ended" element={<SessionEndedPage />} />
