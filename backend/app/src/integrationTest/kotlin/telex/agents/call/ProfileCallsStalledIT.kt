@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import org.assertj.core.api.Assertions.assertThat
@@ -90,7 +91,8 @@ class ProfileCallsStalledIT {
     companion object {
         private const val CONTEXT_LENGTH = 128_000
         private const val STALL_MILLIS = 5_000
-        private const val INTERRUPT_AFTER_MILLIS = 200L
+        private const val REQUEST_WAIT_MILLIS = 5_000L
+        private const val POLL_MILLIS = 5L
         private const val JOIN_MILLIS = 10_000L
         private val wm = WireMockServer(options().dynamicPort())
 
@@ -187,6 +189,7 @@ class ProfileCallsStalledIT {
                 .withRequestBody(containing("\"it/a\""))
                 .willReturn(aResponse().withStatus(200).withFixedDelay(STALL_MILLIS).withBody("{}")),
         )
+        wm.resetRequests()
         val result = AtomicReference<ProfileCallResult>()
         val flagOnReturn = AtomicReference<Boolean>()
         val thread =
@@ -201,9 +204,15 @@ class ProfileCallsStalledIT {
                 )
                 flagOnReturn.set(Thread.currentThread().isInterrupted)
             }
-        Thread.sleep(INTERRUPT_AFTER_MILLIS)
+        // Interrupt only once the attempt on it/a is in flight, not during the profile lookup before it.
+        val deadline = System.currentTimeMillis() + REQUEST_WAIT_MILLIS
+        while (wm.findAll(postRequestedFor(urlEqualTo("/chat/completions"))).isEmpty()) {
+            check(System.currentTimeMillis() < deadline) { "the call never reached the provider" }
+            Thread.sleep(POLL_MILLIS)
+        }
         thread.interrupt()
         thread.join(JOIN_MILLIS)
+        assertThat(thread.isAlive).describedAs("the interrupted call returned").isFalse()
         val r = result.get() as ProfileCallResult.Failed
         assertThat(flagOnReturn.get()).isTrue()
         assertThat(
