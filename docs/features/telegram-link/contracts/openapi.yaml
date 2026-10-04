@@ -980,5 +980,7 @@ components:
       type: string
       enum: [linked-accounts]
       description: |
-        Names a query to refetch. `linked-accounts` → `listMyLinkedAccounts` (and the SCR-10 lines and the
-        Status Banner, which read it). E04 and E06 add values.
+        Names a query to refetch. `linked-accounts` → `listMyLinkedAccounts` (and the SCR-10 lines, which read it).
+        The Status Banner condition `account-disconnected` does not come from this stream: the shell's pulse
+        (app-shell ADR-0002) reports it while an account is Session lost, and only the banner's text and action
+        come from the list. E04 adds values.

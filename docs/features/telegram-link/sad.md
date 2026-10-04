@@ -152,7 +152,8 @@ backend/app/src/main/kotlin/telex/
 │   │                                start "Sign in again" for a Session-lost account
 │   ├── AccountLinked, AccountUnlinked, LinkedAccountStateChanged, LinkedAccountSyncProgressed   events (ids + state only)
 │   └── internal/
-│       ├── account/                 LinkedAccount aggregate, states, one-owner + duplicate + limit rules, repository
+│       ├── account/                 LinkedAccount aggregate, states, one-owner + duplicate + limit rules, repository,
+│       │                            SessionLostConditions (StatusConditionSource: account-disconnected for the pulse, AC-122)
 │       ├── attempt/                 in-memory LinkingAttempts (one per Owner), 15-min expiry sweep, outcome mapping
 │       ├── channel/                 Channel rows (the chat list), upsert/remove from telegram events, counts
 │       ├── lifecycle/               boot reconnect of every account that is not Session lost, telegram event listeners → state
@@ -182,6 +183,7 @@ frontend/src/
 ├── pages/inbox/                     SCR-10: Connect Telegram step ↔ one line per Linked Account
 ├── components/                      account line/state badge, sync progress, wait countdown (ported from the design system)
 ├── api/live.ts                      the single SSE client → queryClient.invalidateQueries
+├── shell/accountDisconnected.tsx    the account-disconnected condition's live text and Sign in again (app-shell ADR-0006 amendment)
 └── messages.ts                      all new copy
 ```
 
@@ -432,7 +434,8 @@ sequenceDiagram
         S-->>U: attempt at the code step
         U-->>O: show the code step
     end
-    Note over S: the same unregistered-number refusal at the code step, when Telegram reports it there, ends the attempt (outcome refused_phone), because its client is closed
+    Note over S,X: unregistered with no replacement session: when no fresh Telegram session can be opened (Telegram unavailable), the attempt ends (outcome refused_phone) instead of staying on a dead client, and the Owner is still told the number is unregistered; the next submit would get linking attempt not found
+    Note over S: a phone refusal (invalid, unregistered or banned) reported at the code step or on a new code request ends the attempt (outcome refused_phone), because its client is closed; the SPA shows that refusal's text on the ended card, not the generic "This linking has ended" (AC-107)
     Note over S,X: every wizard step waits at most 8 s for Telegram (`TdlightTelegramSessions`), then the refusal is telegram unavailable; if Telegram had already authorized the account, the attempt is ended and its session logged out (outcome failed)
     Note over O,S: Postcondition: teleX never creates a Telegram account, sends no code while Telegram's wait runs, and stores nothing about the number
 ```
@@ -452,8 +455,15 @@ sequenceDiagram
         O->>U: ask for a new code
         U->>S: resend code
         S->>X: resend the login code
-        X-->>S: new code sent
-        S-->>U: attempt at the code step
+        alt Telegram refuses the phone on the resend (invalid, unregistered or banned)
+            X-->>S: phone refusal
+            S->>S: discard the attempt and destroy its Telegram session (outcome refused_phone)
+            S-->>U: refusal for that phone problem, the attempt has ended
+            U-->>O: show that refusal's text on the ended card, with Start again
+        else new code sent
+            X-->>S: new code sent
+            S-->>U: attempt at the code step
+        end
     end
     O->>U: type the code
     U->>S: submit code
@@ -605,10 +615,18 @@ sequenceDiagram
     S->>D: read this Owner's Linked Accounts
     D-->>S: accounts with states
     S-->>U: accounts with states
-    alt any account is Session lost
-        U-->>O: Session lost with Sign in again on Accounts, the account-disconnected Status Banner on every signed-in screen
-    else no account is Session lost
-        U-->>O: Reconnecting or Connected on Accounts, no banner
+    U-->>O: Reconnecting, Connected or Session lost on Accounts (the list, over the SSE hint)
+    Note over U,S: the Status Banner has its own path: on its next 3 s pulse (app-shell ADR-0002) the shell asks every StatusConditionSource, and SessionLostConditions in messaging reports account-disconnected while the Owner has a Session lost account
+    U->>S: pulse
+    S->>D: any of this Owner's accounts Session lost?
+    D-->>S: yes or no
+    S-->>U: pulse with or without account-disconnected
+    alt the pulse reports account-disconnected
+        U->>S: refetch my Linked Accounts, only while it is reported
+        S-->>U: accounts with states
+        U-->>O: the account-disconnected Status Banner on every signed-in screen; the list supplies only the account's name and the Sign in again action, and a loaded list with no Session lost account drops the banner
+    else the pulse doesn't report it
+        U-->>O: no banner
     end
     alt the event isn't delivered
         Note over B,S: the publication stays incomplete in the registry and is republished on restart, and a tab whose stream dropped refetches everything when it reconnects
@@ -656,7 +674,12 @@ sequenceDiagram
             S->>X: log out and destroy the new session
             S-->>U: refusal account mismatch
             U-->>O: link that account as a new account, A stays Session lost
+        else A was unlinked while the attempt ran (the race)
+            S->>X: log out and destroy the new session
+            S-->>U: not found, linking attempt not found (never a mismatch)
+            U-->>O: the attempt has ended; Start again retries as a plain add without the target
         end
+        Note over S: an untargeted add of an account that was unlinked meanwhile is not refused: it is linked as new
     end
     Note over O,X: Postcondition: A keeps its id and everything attached, and no extra teleX device is left in any Telegram account
 ```
@@ -842,7 +865,7 @@ sequenceDiagram
 **Monitoring:**
 - Metrics (Micrometer, with no phone numbers, names or Telegram ids in tags):
   - `telex.telegram.sessions.active{state=connected|reconnecting|session_lost}`, the count of `linked_account` rows in each state (`LifecycleMetrics`);
-  - `telex.linking.attempts{outcome=linked|signed_in_again|cancelled|expired|refused_other_owner|refused_already_linked|refused_limit|refused_mismatch|refused_phone|flood_wait|failed}` (`refused_phone` is an attempt ended by an unregistered or banned number or a client that could not be opened; `failed` is an attempt ended by an error after Telegram authorized it);
+  - `telex.linking.attempts{outcome=linked|signed_in_again|cancelled|expired|refused_other_owner|refused_already_linked|refused_limit|refused_mismatch|refused_phone|flood_wait|failed}` (`refused_phone` is an attempt ended by an invalid, unregistered or banned number, at the code step, on a new code request or at the phone step with no replacement session, or by a client that could not be opened; `failed` is an attempt ended by an error after Telegram authorized it);
   - `telex.linking.step.duration{step=phone|code|password}` (the p95 ≤ 3 s target);
   - `telex.linked_accounts.reconnect.duration`;
   - `telex.unlink{signout=confirmed|unconfirmed}`;
@@ -874,7 +897,7 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 | Error handling | RFC 9457 via `ProblemHandler`. New codes, each keying a `messages.ts` entry: `telegram-linking-not-set-up`, `linked-account-limit-reached`, `linking-attempt-not-found` (expired, cancelled or session ended), `telegram-phone-invalid`, `telegram-phone-unregistered`, `telegram-phone-banned`, `telegram-code-wrong`, `telegram-code-expired`, `telegram-wait-required` (with the retry time), `telegram-password-wrong` (with the hint), `telegram-account-owned-by-another-owner`, `telegram-account-already-linked`, `telegram-account-mismatch` (Sign in again with a different account), plus `not-found`. Exact statuses are settled by `/sdd:api` | `CLAUDE.md` §Errors + here |
 | ID strategy | UUIDv7 typed ids: `LinkedAccountId`, `ChannelId` (messaging) and `TelegramSessionId` (telegram). Telegram's own user and chat ids are stored as `bigint` attributes, never as keys of our aggregates | foundation ADR-0003 |
 | Events | Modulith JDBC registry. `messaging` publishes `AccountLinked`, `AccountUnlinked` (durable, survives restart, NFR-06), `LinkedAccountStateChanged` and `LinkedAccountSyncProgressed` (throttled to one per second per account). `telegram` publishes `TelegramSessionStateChanged` and `TelegramChatsChanged` in-process and non-durably (not through the JDBC registry; state is re-read on restart). Payloads carry ids and states only, with no names, phones or titles | ADR-0002 |
-| Live updates | One SSE stream per tab, carrying invalidation hints only (`linked-accounts`). It counts as background, so it never bumps session activity. A heartbeat runs every 25 s, and the SPA refetches everything after a reconnect | ADR-0005 |
+| Live updates | Two channels. One SSE stream per tab carries invalidation hints only (`linked-accounts`) for the Accounts page, the SCR-10 lines and sync progress. It counts as background, so it never bumps session activity. A heartbeat runs every 25 s, and the SPA refetches everything after a reconnect. The Status Banner condition `account-disconnected` comes from app-shell's 3 s pulse: `SessionLostConditions` (a `StatusConditionSource` in `messaging`) reports it, and the SPA fetches the list only while it is reported, for the name and the Sign in again action | ADR-0005 (amended), app-shell ADR-0002 and ADR-0006 |
 | Concurrency | Telegram callbacks arrive on TDLib's threads. The adapter hands each one to a virtual thread, and `messaging` applies state changes per account in order (state changes carry TDLib's sequence, and stale ones are dropped). Attempt steps are serialized per Owner | here |
 | Time | The injectable `java.time.Clock` bean drives the 15-min attempt expiry, the sweeps and the countdown base. The integration tests use a fixed clock with the `fake` adapter (AC-109, AC-117 within 5 min) | platform-skeleton §8 |
 | Internationalisation | English only. Copy in `frontend/src/messages.ts`, sentence case, no emoji. Telegram's own error texts are never shown raw; each maps to a code above | design-system README |
@@ -959,7 +982,7 @@ Each §1 goal is expanded into testable scenarios. Numbers are quoted verbatim f
 | **Operator access to the database and master key.** Display names, masked phones and chat titles are plain text in Postgres, and whoever holds the master key can open every session. The spec's "the Operator sees nothing" holds only for teleX's UI, config, logs and metrics (§1 ¶4) | Medium | Stated as the trust boundary in §3 and §8. The README tells Owners that the installation's operator is trusted. The security review in `/sdd:review` confirms that no Operator-facing surface leaks Telegram data | Anton Husiev (PM) |
 | **Single instance by construction.** TDLib clients and SSE streams are in-process | Low | Accepted for a self-hosted installation (§7). A second instance needs account sharding and a shared SSE fan-out | Anton Husiev (Architect) |
 | **SSE through Cloudflare.** Proxies may buffer or cut long-lived responses | Low | Heartbeat every 25 s, `X-Accel-Buffering: no`, `Cache-Control: no-store`. The SPA reconnects and refetches everything after a cut (ADR-0005). Polling remains a one-file fallback in the SSE client | Anton Husiev (Architect) |
-| **E06 `app-shell` is designed in parallel** and owns the Status Banner mechanism and the live Inbox counter | Low | E02 adds the "account disconnected" condition to E06's mechanism, and its live channel (ADR-0005) is offered to E06 for the counter. Settle this in `/sdd:design app-shell` or `/sdd:tasks` of whichever lands second | Anton Husiev (PM) |
+| ~~**E06 `app-shell` is designed in parallel** and owns the Status Banner mechanism and the live Inbox counter~~ **Closed 2026-10-04.** E06 landed first with the one 3 s pulse and server-reported conditions. The split is recorded: SSE hints for the Accounts list (ADR-0005 amendment), the pulse for the banner condition, with E02's generic shell extension in app-shell ADR-0006's amendment | Closed | E02 adds `SessionLostConditions` and one catalog entry with a live hook; no open item | Anton Husiev (PM) |
 | **Docs drift.** The tech-spec event table names `telegram` as the publisher of `AccountLinked` / `AccountUnlinked`. CLAUDE.md, the tech spec and foundation ADR-0002 name `org.drinkless.tdlib`. `docs/architecture-map.md` reflects `ce5eabf` | Low | `implement` updates the tech-spec event table, rule 1's package name and CLAUDE.md when it lands the dependency. Re-run `/sdd:survey` after E02 | Anton Husiev (Architect) |
 | **Spec §8 OQ-1 is overdue** (due "before `/sdd:design`"): the default account limit | Low | The design assumes the spec's default of 3, one installation-wide setting (`TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER`). It's a config value, so it can close any time before `/sdd:ship` | Anton Husiev (PM) |
 

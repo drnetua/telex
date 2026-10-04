@@ -41,7 +41,7 @@ The Accounts page has to show changes while it is open: sync progress (AC-116), 
 
 **Negative**
 - One long-lived HTTP connection per tab. With virtual threads this is cheap, but a second app instance would need a shared fan-out (§7).
-- E06 (`app-shell`, designed in parallel) must agree to build its live counter on this stream (§11).
+- E06's one background pulse (app-shell ADR-0002) shipped first, so the SPA has two live channels (see the amendment).
 
 **Neutral**
 - Hints are not durable. That is acceptable, because the state lives in REST and is always refetched after a reconnect.
@@ -50,4 +50,14 @@ The Accounts page has to show changes while it is open: sync progress (AC-116), 
 
 - Spec: [[../spec.md]] AC-116, AC-121, AC-122, §6
 - SAD: [[../sad.md]] §4, §5, §8
+- Related ADR: app-shell [[../../app-shell/adr/0002-poll-one-background-pulse-every-3-seconds-for-live-signals]], [[../../app-shell/adr/0006-extend-the-shell-through-client-section-and-server-condition-registries]]
 - Related ADR: platform-skeleton [[../../platform-skeleton/adr/0005-count-session-activity-only-from-requests-the-spa-does-not-mark-as-background]]
+
+## Amendment 2026-10-04 (E02 telegram-link)
+
+Status stays Accepted. The Context said the Status Banner needed this stream and that E06 would build on it. E06 `app-shell` landed first and chose one background pulse every 3 s as the single live channel for shell signals (app-shell ADR-0002), with server-reported banner conditions (app-shell ADR-0006). The split as built:
+
+- **SSE hints (this ADR)** carry `linked-accounts` invalidation only. They refresh the Accounts list, the SCR-10 lines and the sync progress (AC-116, AC-121) within about a second.
+- **The pulse** decides the Status Banner condition (AC-122): `SessionLostConditions` reports `account-disconnected` while an account is Session lost, and the SPA fetches the list only for the banner's name and action.
+- The "E06 must agree to build on this stream" consequence is dropped: E06 did not, and E04 and E06 are not bound to add hint names here. The decision to use SSE for Linked Account state stands, because the Accounts page needs sub-second progress that a 3 s pulse does not give.
+- Cost: two channels while E02 is open. Either one failing leaves the other working: the banner still comes within one pulse, and the Accounts page still refetches on reconnect.
