@@ -53,20 +53,22 @@ class LinkedAccountRows(
             .optional()
             .orElse(null)
 
-    /** Sign in again: the new session and sealed key replace the old, the account is Connected and re-syncs. */
+    /**
+     * Sign in again: the new session and sealed key replace the old, the account is Connected and re-syncs. Returns
+     * the rows updated: 0 when an unlink deleted the account meanwhile.
+     */
     fun swapSession(
         id: LinkedAccountId,
         sessionId: TelegramSessionId,
         tdlibKeySealed: ByteArray,
         displayName: String,
-    ) {
+    ): Int =
         jdbc
             .sql(
                 "UPDATE linked_account SET telegram_session_id = ?, tdlib_key_sealed = ?, display_name = ?, " +
                     "state = 'connected', chat_sync_completed_at = NULL WHERE id = ?",
             ).params(sessionId.value, tdlibKeySealed, displayName, id.value)
             .update()
-    }
 
     fun listMine(owner: OwnerId): List<LinkedAccountWithChats> =
         jdbc

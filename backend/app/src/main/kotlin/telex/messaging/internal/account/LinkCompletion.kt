@@ -107,7 +107,10 @@ class LinkCompletion(
         dbKey: ByteArray,
         user: TelegramUser,
     ): Completion {
-        rows.swapSession(account.id, sessionId, ownerKeys.seal(owner, dbKey, account.id.keyAad()), user.displayName)
+        val swapped =
+            rows.swapSession(account.id, sessionId, ownerKeys.seal(owner, dbKey, account.id.keyAad()), user.displayName)
+        // An unlink deleted the account since it was read: nothing holds the new session, so it is refused, not kept.
+        if (swapped == 0) return Completion.Refused(LinkRefusal.MISMATCH)
         events.publishEvent(LinkedAccountStateChanged(owner, account.id, LinkedAccountState.CONNECTED))
         return Completion.SignedInAgain(account.id, account.telegramSessionId)
     }

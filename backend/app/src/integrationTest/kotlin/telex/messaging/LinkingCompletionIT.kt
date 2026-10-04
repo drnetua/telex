@@ -346,6 +346,35 @@ class LinkingCompletionIT {
     }
 
     @Test
+    fun `AC-111 AC-117 signing in again for an account unlinked meanwhile is refused and its new session logged out`() {
+        val oldSession = fake.open(ByteArray(32))
+        val target = insertAccount(owner, 9996600150L, sessionId = oldSession)
+        jdbc.update(
+            "UPDATE linked_account SET state = 'session_lost', telegram_session_id = NULL, tdlib_key_sealed = NULL " +
+                "WHERE id = ?",
+            target.value,
+        )
+        toCodeStep("9996600150")
+        val newSession = attemptSession()
+        Mockito
+            .doAnswer { call ->
+                val holder = call.callRealMethod()
+                jdbc.update("DELETE FROM linked_account WHERE id = ?", target.value)
+                holder
+            }.`when`(rows)
+            .findByTelegramUser(Mockito.anyLong())
+
+        assertThat(refusal { finish() }).containsEntry(CODE, "telegram-account-mismatch")
+
+        assertThat(rowsOf(owner)).isEmpty()
+        assertThat(events.stream(LinkedAccountStateChanged::class.java).toList().map { it.linkedAccountId })
+            .doesNotContain(target)
+        assertThat(fake.wasLoggedOut(newSession)).isTrue()
+        assertThat(fake.isOpen(newSession)).isFalse()
+        assertThat(attempts.find(owner)).isNull()
+    }
+
+    @Test
     fun `AC-117 signing in again with a different Telegram account is refused and the target stays Session lost`() {
         val target = insertAccount(owner, 9996600110L, LinkedAccountState.SESSION_LOST)
         toCodeStep("9996600111", target)

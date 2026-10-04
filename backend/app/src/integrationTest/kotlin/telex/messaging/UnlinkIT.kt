@@ -6,14 +6,17 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.event.ApplicationEvents
 import org.springframework.test.context.event.RecordApplicationEvents
+import org.springframework.test.util.AopTestUtils
 import telex.TestcontainersConfiguration
 import telex.identity.FixedClockConfiguration
 import telex.identity.OwnerId
@@ -48,7 +51,7 @@ class UnlinkIT {
 
     @Autowired lateinit var ownerKeys: OwnerKeys
 
-    @Autowired lateinit var rows: LinkedAccountRows
+    @MockitoSpyBean lateinit var rows: LinkedAccountRows
 
     @Autowired lateinit var jdbc: JdbcTemplate
 
@@ -75,6 +78,7 @@ class UnlinkIT {
 
     @BeforeEach
     fun clean() {
+        Mockito.reset(AopTestUtils.getUltimateTargetObject<LinkedAccountRows>(rows))
         jdbc.execute("DELETE FROM channel")
         jdbc.execute("DELETE FROM linked_account")
     }
@@ -222,28 +226,33 @@ class UnlinkIT {
     }
 
     @Test
-    fun `AC-111 the delete reports the session it removed, so a session swapped in meanwhile is not left behind`() {
+    fun `AC-111 a session swapped in between the read and the delete is signed out, closed and destroyed`() {
         val owner = owner()
         val account = connected(owner)
         val stale = account.session!!
-        jdbc.update("UPDATE linked_account SET state = 'session_lost' WHERE id = ?", account.id.value)
         val replacement = telegram.open(ByteArray(KEY_BYTES) { 7 })
-        rows.swapSession(
-            account.id,
-            replacement,
-            ownerKeys.seal(
-                owner,
-                ByteArray(KEY_BYTES) {
-                    7
-                },
-                account.id.keyAad(),
-            ),
-            "Anna",
-        )
+        telegram.sendPhone(replacement, "9996600999")
+        check(telegram.checkCode(replacement, FakeTelegram.CODE) is SignInOutcome.Authorized)
+        Mockito
+            .doAnswer { call ->
+                val read = call.callRealMethod()
+                rows.swapSession(
+                    account.id,
+                    replacement,
+                    ownerKeys.seal(owner, ByteArray(KEY_BYTES) { 7 }, account.id.keyAad()),
+                    "Anna",
+                )
+                read
+            }.`when`(rows)
+            .getMine(owner, account.id)
 
-        val removed = deletion.delete(owner, account.id)
+        accounts.unlink(owner, account.id)
 
-        assertThat(removed?.session).isEqualTo(replacement).isNotEqualTo(stale)
+        assertThat(count("linked_account")).isZero()
+        assertThat(fake.wasLoggedOut(stale)).isTrue()
+        assertThat(fake.wasLoggedOut(replacement)).isTrue()
+        assertThat(fake.isOpen(replacement)).isFalse()
+        assertThat(Files.exists(sessionDir(replacement))).isFalse()
     }
 
     @Test

@@ -65,7 +65,8 @@ class LinkedAccounts(
         owner: OwnerId,
         id: LinkedAccountId,
     ): UnlinkResult {
-        // The attempt goes first: a Sign in again completing later fails, so the session read below is final.
+        // The attempt goes first, so a targeted Sign in again completing later fails. An untargeted one can still swap
+        // the session after the read below: the delete reports the session it removed and that one is destroyed too.
         linking.discardTargeting(owner, id)
         val account = rows.getMine(owner, id) ?: throw LinkedAccountNotFound()
         val sessions = telegram.ifAvailable
