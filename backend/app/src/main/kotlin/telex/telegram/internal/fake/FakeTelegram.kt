@@ -193,9 +193,9 @@ class FakeTelegram(
     ): Boolean {
         val session = sessions[id]?.takeIf { it.authorized } ?: return false
         if (session.reachable) {
+            // like TDLib, teleX's own log out is not a lost session: no Closed is announced (AC-113, AC-122)
             session.authorized = false
             loggedOut.add(id)
-            publishState(id, session, SessionState.Closed)
         } else {
             Thread.sleep(timeout.toMillis())
         }

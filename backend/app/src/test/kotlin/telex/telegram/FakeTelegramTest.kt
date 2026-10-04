@@ -220,6 +220,17 @@ class FakeTelegramTest {
     }
 
     @Test
+    fun `teleX's own logOut publishes no Closed, as in the real adapter (AC-113, AC-122)`() {
+        link("9996600008")
+        val before = states().size
+
+        assertThat(fake.logOut(id, Duration.ofMillis(10))).isTrue()
+
+        assertThat(states().drop(before)).isEmpty()
+        assertThat(fake.wasLoggedOut(id)).isTrue()
+    }
+
+    @Test
     fun `logOut of a session that is not open is not confirmed, as in the real adapter (AC-113)`() {
         link("9996600007")
         fake.close(id)

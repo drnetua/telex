@@ -27,8 +27,10 @@ import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.internal.account.NewLinkedAccount
 import telex.messaging.internal.attempt.LinkingAttempts
 import telex.shared.Uuid7
+import telex.telegram.SessionState
 import telex.telegram.SignInOutcome
 import telex.telegram.TelegramSessionId
+import telex.telegram.TelegramSessionStateChanged
 import telex.telegram.TelegramSessions
 import telex.telegram.internal.fake.FakeTelegram
 import java.nio.file.Files
@@ -148,6 +150,27 @@ class UnlinkIT {
         assertThat(accounts.listMine(owner)).isEmpty()
         assertThat(unlinkedCounter("confirmed")).isEqualTo(before + 1)
         assertThat(events.stream(AccountUnlinked::class.java).toList()).contains(AccountUnlinked(owner, account.id))
+    }
+
+    @Test
+    fun `AC-113 AC-122 unlinking a connected account never shows it as Session lost`() {
+        val owner = owner()
+        val account = connected(owner)
+        val session = account.session!!
+
+        val result = accounts.unlink(owner, account.id)
+
+        assertThat(result.signOutConfirmed).isTrue()
+        assertThat(
+            events.stream(LinkedAccountStateChanged::class.java).filter {
+                it.state == LinkedAccountState.SESSION_LOST
+            },
+        ).isEmpty()
+        assertThat(
+            events.stream(TelegramSessionStateChanged::class.java).filter {
+                it.sessionId == session && it.state == SessionState.Closed
+            },
+        ).isEmpty()
     }
 
     @Test

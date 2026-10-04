@@ -22,6 +22,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 /** How a sign-in step ended: the next authorization state, or an error answer. */
 internal sealed interface StepResult {
@@ -69,7 +70,15 @@ internal class TdlightSession(
     /** Completes when the session is over for good (lost, closing or closed), so a waiter need not wait it out. */
     private val over = CompletableFuture<Unit>()
 
+    /**
+     * Completes once teleX's own log out ends: true only when TDLib closed the session through that log out, false
+     * when teleX closed it first.
+     */
+    val loggedOut = CompletableFuture<Boolean>()
+
     @Volatile var waiter: CompletableFuture<StepResult>? = null
+
+    private val authorizationWaiters = AtomicInteger()
 
     @Volatile var passwordHint: String? = null
         private set
@@ -78,6 +87,8 @@ internal class TdlightSession(
     private var authorized = false
     private var lost = false
     private var closing = false
+    private var loggingOut = false
+    private var logOutReported = false
     private var lastState: SessionState? = null
     private var syncStarted = reopened
     private var loadStarted = false
@@ -107,17 +118,35 @@ internal class TdlightSession(
 
     /** Waits up to [timeout] for Ready, or for the session to end; true only when it is authorized afterwards. */
     fun awaitAuthorized(timeout: Duration): Boolean {
+        authorizationWaiters.incrementAndGet()
         try {
             CompletableFuture.anyOf(ready, over).get(timeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (_: TimeoutException) {
             return false
+        } finally {
+            authorizationWaiters.decrementAndGet()
         }
         return isAuthorized()
     }
 
+    /** Test hook: true while a caller is parked in [awaitAuthorized]. */
+    fun isAwaitingAuthorization() = authorizationWaiters.get() > 0
+
     @Synchronized fun markClosing() {
         closing = true
         over.complete(Unit)
+        loggedOut.complete(false)
+    }
+
+    /**
+     * Marks teleX's own log out before it is sent, so TDLib's LoggingOut and Closed that follow are not a lost
+     * session (AC-113, AC-122); false when the session is not authorized or already logging out.
+     */
+    @Synchronized
+    fun beginLogOut(): Boolean {
+        if (!isAuthorized() || loggingOut) return false
+        loggingOut = true
+        return true
     }
 
     /**
@@ -206,7 +235,11 @@ internal class TdlightSession(
             }
 
             STATE_LOGGING_OUT -> {
-                if (authorized) emitState(SessionState.Closed)
+                if (loggingOut) {
+                    logOutReported = true
+                } else if (authorized) {
+                    emitState(SessionState.Closed)
+                }
             }
         }
         waiter?.complete(StepResult.State(update))
@@ -233,6 +266,7 @@ internal class TdlightSession(
 
     private fun onClosed() {
         if (authorized && !closing) emitState(SessionState.Closed)
+        loggedOut.complete(loggingOut && logOutReported && !closing)
         waitingForPhone.completeExceptionally(IllegalStateException("closed"))
         waiter?.completeExceptionally(IllegalStateException("closed"))
         closed.complete(Unit)
@@ -245,8 +279,9 @@ internal class TdlightSession(
         waiter?.completeExceptionally(update.cause)
     }
 
+    /** Announces [state] once; nothing once the session is lost or while teleX's own log out runs. */
     private fun emitState(state: SessionState) {
-        if (state == lastState || lost) return
+        if (state == lastState || lost || loggingOut) return
         lastState = state
         if (state == SessionState.Closed) {
             lost = true

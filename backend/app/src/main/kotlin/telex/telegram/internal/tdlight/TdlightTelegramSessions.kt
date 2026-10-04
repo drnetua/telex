@@ -122,11 +122,11 @@ class TdlightTelegramSessions(
         val deadline = System.nanoTime() + timeout.toNanos()
         val signedIn =
             session != null && (session.isAuthorized() || (session.wasReopened() && session.awaitAuthorized(timeout)))
-        if (session == null || !signedIn) return false
+        if (session == null || !signedIn || !session.beginLogOut()) return false
         session.client().send(TdlibRequest.LogOut)
+        // only TDLib closing the session through this log out confirms it; teleX's own close does not
         return try {
-            session.closed.get(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)
-            true
+            session.loggedOut.get(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)
         } catch (_: TimeoutException) {
             false
         }
@@ -143,6 +143,9 @@ class TdlightTelegramSessions(
     }
 
     override fun sweepOrphans(referenced: Set<TelegramSessionId>) = directories.sweepOrphans(referenced)
+
+    /** Test hook: true while a [logOut] of [id] waits for the reopened session to reach Ready. */
+    internal fun awaitingAuthorization(id: TelegramSessionId) = sessions[id]?.isAwaitingAuthorization() == true
 
     /** Closes every client and waits for TDLib to finish, so the JVM does not exit under a live client. */
     fun shutdown() {
