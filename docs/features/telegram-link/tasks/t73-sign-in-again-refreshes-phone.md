@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/account/Linke
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (eighth pass) — finding K15"
-status: "todo"
+status: "done"
 ---
 
 # T73 — Sign in again refreshes the account's masked phone along with its name

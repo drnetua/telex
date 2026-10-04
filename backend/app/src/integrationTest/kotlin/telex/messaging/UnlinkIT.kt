@@ -364,6 +364,7 @@ class UnlinkIT {
                     replacement,
                     ownerKeys.seal(owner, ByteArray(KEY_BYTES) { 7 }, account.id.keyAad()),
                     "Anna",
+                    MaskedPhone("99", "99"),
                 )
                 read
             }.`when`(rows)

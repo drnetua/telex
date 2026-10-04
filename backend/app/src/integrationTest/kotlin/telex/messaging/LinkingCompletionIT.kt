@@ -316,6 +316,9 @@ class LinkingCompletionIT {
         assertThat(row[STATE]).isEqualTo("connected")
         assertThat(row[SESSION_ID]).isEqualTo(newSession.value)
         assertThat(row["display_name"]).isEqualTo("Test user 0108")
+        // seeded with '11'/'11': the masked phone is the one Telegram reports now, as after a number change
+        assertThat(row["phone_country_code"]).isEqualTo("99")
+        assertThat(row["phone_last_digits"]).isEqualTo("08")
         assertThat(ownerKeys.open(owner, row["tdlib_key_sealed"] as ByteArray, target.keyAad())).hasSize(32)
         assertThat(rowsOf(owner)).hasSize(2)
         assertThat(sessionDirectories()).isEqualTo(before)

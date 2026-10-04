@@ -124,7 +124,13 @@ class LinkCompletion(
         user: TelegramUser,
     ): Completion {
         val swapped =
-            rows.swapSession(account.id, sessionId, ownerKeys.seal(owner, dbKey, account.id.keyAad()), user.displayName)
+            rows.swapSession(
+                account.id,
+                sessionId,
+                ownerKeys.seal(owner, dbKey, account.id.keyAad()),
+                user.displayName,
+                MaskedPhone(user.phoneCountryCode, user.phoneLastTwo),
+            )
         if (swapped == 0) {
             // An unlink deleted the account since it was read. A targeted sign in again has nothing to return to, so
             // it ends as not found (the new session is discarded); an untargeted add just links it as new.
