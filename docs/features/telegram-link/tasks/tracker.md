@@ -78,7 +78,7 @@
 | T71 | SCR-10 and SCR-60 each pin the start-refused toast for 503 telegram-unavailable | ui | Anton Husiev | XS | — | done |
 | T72 | Correct the AC-121 citations and the interrupted-unlink claims after the seventh review | docs | Anton Husiev | XS | T70, T71 | done |
 | T73 | Sign in again refreshes the account's masked phone along with its name | app | Anton Husiev | XS | — | done |
-| T74 | An unlink deletes the account whatever way an interrupt arrives, and closes and destroys before handing it back | app | Anton Husiev | XS | — | todo |
+| T74 | An unlink deletes the account whatever way an interrupt arrives, and closes and destroys before handing it back | app | Anton Husiev | XS | — | done |
 | T75 | The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows | ui | Anton Husiev | XS | — | todo |
 | T76 | Sync the data model, test plan and tracker with the eighth-review fixes | docs | Anton Husiev | XS | T73, T74, T75 | todo |
 

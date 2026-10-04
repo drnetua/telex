@@ -49,6 +49,7 @@ class FakeTelegram(
     private val endedWhileStopped = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val loggedOut = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val destroyed = ConcurrentHashMap.newKeySet<TelegramSessionId>()
+    private val releasedInterrupted = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val terminatedPhones = ConcurrentHashMap.newKeySet<String>()
 
     /** Test hook: while true, [open] fails as if Telegram never reached the phone step. */
@@ -214,16 +215,26 @@ class FakeTelegram(
     }
 
     override fun close(id: TelegramSessionId) {
+        noteInterrupt(id)
         sessions.remove(id)
     }
 
     override fun destroy(id: TelegramSessionId) {
+        noteInterrupt(id)
         sessions.remove(id)
         destroyed.add(id)
         directories.delete(id)
     }
 
     override fun sweepOrphans(referenced: Set<TelegramSessionId>) = directories.sweepOrphans(referenced)
+
+    // the real adapter stops waiting for TDLib's Closed on an interrupted thread, so a caller must not close one there
+    private fun noteInterrupt(id: TelegramSessionId) {
+        if (Thread.currentThread().isInterrupted) releasedInterrupted.add(id)
+    }
+
+    /** Test hook: true once [close] or [destroy] of [id] ran on a thread marked interrupted. */
+    fun releasedWhileInterrupted(id: TelegramSessionId) = releasedInterrupted.contains(id)
 
     /** Test hook: teleX stops. Every client is gone; the session directories stay. */
     fun simulateStop() = sessions.clear()

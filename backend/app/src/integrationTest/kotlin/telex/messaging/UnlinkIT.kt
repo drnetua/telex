@@ -345,6 +345,43 @@ class UnlinkIT {
         assertThat(count("linked_account")).isZero()
         assertThat(count("channel")).isZero()
         assertThat(fake.isOpen(session)).isFalse()
+        assertThat(fake.releasedWhileInterrupted(session)).describedAs("closed before the interrupt").isFalse()
+        assertThat(interruptedOnReturn).describedAs("interrupt handed back").isTrue()
+    }
+
+    @Test
+    fun `AC-113 AC-111 an interrupt that fails the sign-out some other way still deletes the account`() {
+        val owner = owner()
+        val account = connected(owner)
+        val session = account.session!!
+        fake.simulateStop() // boot hasn't reopened it: the sign-out reads the sealed key first
+        // the interrupt lands in that JDBC read, which fails without an InterruptedException
+        Mockito
+            .doAnswer { call ->
+                Thread.currentThread().interrupt()
+                call.callRealMethod()
+            }.`when`(rows)
+            .sealedKey(account.id)
+        var result: UnlinkResult? = null
+        var failure: Throwable? = null
+        var interruptedOnReturn = false
+
+        val unlinking =
+            Thread.ofVirtual().start {
+                try {
+                    result = accounts.unlink(owner, account.id)
+                } catch (e: Throwable) {
+                    failure = e
+                }
+                interruptedOnReturn = Thread.currentThread().isInterrupted
+            }
+        unlinking.join()
+
+        assertThat(failure).isNull()
+        assertThat(result?.signOutConfirmed).isFalse()
+        assertThat(count("linked_account")).isZero()
+        assertThat(count("channel")).isZero()
+        assertThat(fake.releasedWhileInterrupted(session)).describedAs("closed before the interrupt").isFalse()
         assertThat(interruptedOnReturn).describedAs("interrupt handed back").isTrue()
     }
 

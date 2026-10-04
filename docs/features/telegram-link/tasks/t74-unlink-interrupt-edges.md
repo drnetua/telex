@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "b
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (eighth pass) — findings K16, K17"
-status: "todo"
+status: "done"
 ---
 
 # T74 — An unlink deletes the account whatever way an interrupt arrives, and closes and destroys before handing it back

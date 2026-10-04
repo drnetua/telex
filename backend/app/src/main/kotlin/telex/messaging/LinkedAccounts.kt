@@ -161,22 +161,30 @@ class LinkedAccounts(
         }
     }
 
+    /**
+     * Returns with the thread's interrupt cleared and reported to [onInterrupt], however it arrived: as an
+     * `InterruptedException`, or as another failure that left it set (a JDBC read on an interrupted virtual thread).
+     */
     @Suppress("TooGenericExceptionCaught") // any failure to open the key or reach Telegram means "not confirmed"
     private fun signOut(
         sessions: TelegramSessions,
         session: TelegramSessionId,
         reopenFor: LinkedAccount? = null,
         onInterrupt: () -> Unit,
-    ): Boolean =
-        try {
-            if (reopenFor != null) reopenIfClosed(sessions, reopenFor, session)
-            sessions.logOut(session, SIGN_OUT_TIMEOUT)
-        } catch (_: InterruptedException) {
-            onInterrupt()
-            false
-        } catch (_: Exception) {
-            false
-        }
+    ): Boolean {
+        val confirmed =
+            try {
+                if (reopenFor != null) reopenIfClosed(sessions, reopenFor, session)
+                sessions.logOut(session, SIGN_OUT_TIMEOUT)
+            } catch (_: InterruptedException) {
+                onInterrupt()
+                false
+            } catch (_: Exception) {
+                false
+            }
+        if (Thread.interrupted()) onInterrupt()
+        return confirmed
+    }
 
     private companion object {
         val SIGN_OUT_TIMEOUT: Duration = Duration.ofSeconds(10)
