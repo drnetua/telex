@@ -1238,6 +1238,113 @@
         "docs/features/app-shell/screens.md"
       ],
       "file": "docs/features/telegram-link/tasks/t55-docs-sync-r3.md"
+    },
+    {
+      "id": "T56",
+      "title": "A session whose unlink failed after teleX's own sign-out still reports its state, and the fake behaves the same",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117",
+        "AC-113"
+      ],
+      "dod": "If deletion.delete throws after logOut, the account is not left with a muted dead client: it reaches Session lost (or its session is closed) instead of staying connected/reconnecting forever; the tdlight adapter and the fake agree after an unconfirmed logOut.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/FakeTelegramTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t56-own-logout-state-after-failed-unlink.md"
+    },
+    {
+      "id": "T57",
+      "title": "An unlink during the boot reopen window still signs teleX out of Telegram, and a failed reopen leaves no directory",
+      "layer": "infra",
+      "deps": [
+        "T56"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113"
+      ],
+      "dod": "An unlink that races a boot reopen (reopen in flight, or before boot read the row) sends LogOut when Telegram is reachable, so signOutConfirmed is true and no teleX device stays in Telegram's active sessions; a reopen that fails after an unlink leaves no session directory.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/BootReconnect.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t57-unlink-during-boot-reopen-signs-out.md"
+    },
+    {
+      "id": "T58",
+      "title": "The real code step ends the attempt on an invalid or banned number instead of answering 503",
+      "layer": "infra",
+      "deps": [
+        "T57"
+      ],
+      "acs": [
+        "AC-107"
+      ],
+      "dod": "checkAuthenticationCode failing with PHONE_NUMBER_INVALID / PHONE_NUMBER_BANNED / PHONE_NUMBER_UNOCCUPIED maps to the phone refusal outcomes (flood first), as resend does since T52; the port KDoc lists them.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t58-code-step-phone-refusals.md"
+    },
+    {
+      "id": "T59",
+      "title": "SCR-02 moves focus back to the step after an outcome card, the wait card's buttons don't swap under focus, and the AC-110 and focus tests are sound",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-107",
+        "AC-109",
+        "AC-02",
+        "AC-108",
+        "AC-110"
+      ],
+      "dod": "Start again / Try again move focus to the step heading; at 0:00 the focused Back button is not silently replaced by Start again; the first AC-110 case mocks every request it triggers; the focus tests carry the ACs they cover.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/PhoneStep.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t59-scr02-focus-back-to-step-and-test-hygiene.md"
+    },
+    {
+      "id": "T60",
+      "title": "Sync screens.md, events.md, the T54 record, sad, ux-flows and spec with the fourth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T56",
+        "T57",
+        "T58",
+        "T59"
+      ],
+      "acs": [],
+      "dod": "screens.md, events.md, sad, ux-flows, spec §8 and the T54 record describe the code as built after T56–T59.",
+      "files_hint": [
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/contracts/events.md",
+        "docs/features/telegram-link/tasks/t54-scr02-focus-e2e-and-ac110.md",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/ux-flows.md",
+        "docs/features/telegram-link/spec.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t60-docs-sync-r4.md"
     }
   ]
 }
