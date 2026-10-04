@@ -230,13 +230,16 @@ class LifecycleIT {
     }
 
     @Test
-    fun `AC-111 a reopen that completes after an unlink could not sign out signs the session out before dropping it`() {
+    fun `AC-111 a reopen after an unlink could not sign out leaves it unconfirmed, with no session or directory`() {
         val account = connected(owner())
-        // The unlink cannot reach Telegram (its own reopen fails), then the boot reopen it raced succeeds.
+        // The unlink cannot reach Telegram (its own reopen fails); the boot reopen it raced finds an empty database.
+        val result =
+            java.util.concurrent.atomic
+                .AtomicReference<telex.messaging.UnlinkResult>()
         afterBootReadsKey(account) {
             fake.reopenUnavailable = true
             try {
-                accounts.unlink(account.owner, account.id)
+                result.set(accounts.unlink(account.owner, account.id))
             } finally {
                 fake.reopenUnavailable = false
             }
@@ -244,7 +247,7 @@ class LifecycleIT {
 
         restart()
 
-        assertThat(fake.wasLoggedOut(account.session)).`as`("teleX device signed out of Telegram").isTrue()
+        assertThat(result.get().signOutConfirmed).isFalse()
         assertThat(fake.isOpen(account.session)).isFalse()
         assertThat(Files.exists(sessionsRoot.resolve(account.session.value.toString()))).isFalse()
     }

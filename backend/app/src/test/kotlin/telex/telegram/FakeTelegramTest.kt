@@ -265,6 +265,21 @@ class FakeTelegramTest {
     }
 
     @Test
+    fun `a destroyed session reopens Closed and cannot be signed out, like TDLib on an empty db (AC-111, AC-113)`() {
+        // Real adapter: TDLib opens an empty database and asks for a phone number, so TdlightSession.onWaitPhone
+        // reports Closed and logOut returns false.
+        link("9996600008")
+        fake.close(id)
+        fake.destroy(id)
+        val before = states().size
+
+        fake.reopen(id, ByteArray(32))
+
+        assertThat(states().drop(before).map { it.state }).containsExactly(SessionState.Closed)
+        assertThat(fake.logOut(id, Duration.ofMillis(10))).isFalse()
+    }
+
+    @Test
     fun `an unreachable Telegram does not answer sign-in steps`() {
         fake.dropConnectivity(id)
         assertThatThrownBy { fake.sendPhone(id, "9996600005") }.isInstanceOf(TelegramUnavailable::class.java)

@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTeleg
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (fifth pass) — findings K11 (the trace reviewer's F1)"
-status: "todo"
+status: "done"
 ---
 
 # T63 — The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out

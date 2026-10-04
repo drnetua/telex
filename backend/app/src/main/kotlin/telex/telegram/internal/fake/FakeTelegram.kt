@@ -48,6 +48,7 @@ class FakeTelegram(
     private val sessions = ConcurrentHashMap<TelegramSessionId, Session>()
     private val endedWhileStopped = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val loggedOut = ConcurrentHashMap.newKeySet<TelegramSessionId>()
+    private val destroyed = ConcurrentHashMap.newKeySet<TelegramSessionId>()
     private val terminatedPhones = ConcurrentHashMap.newKeySet<String>()
 
     /** Test hook: while true, [open] fails as if Telegram never reached the phone step. */
@@ -75,10 +76,14 @@ class FakeTelegram(
     ) {
         directories.create(id)
         if (reopenUnavailable) throw TelegramUnavailable()
-        val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
+        // like TDLib opening an empty database after the directory was destroyed: it asks for a phone number
+        // (TdlightSession.onWaitPhone), so the real adapter reports Closed and a log out cannot succeed
+        val wasDestroyed = destroyed.remove(id)
+        val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = !wasDestroyed } }
         session.syncStarted = true
         // like TDLib, a session teleX signed out of asks for a phone number again: the real adapter reports Closed
-        if (endedWhileStopped.remove(id) || (session.authorized && loggedOut.contains(id))) {
+        val signedOut = session.authorized && loggedOut.contains(id)
+        if (wasDestroyed || endedWhileStopped.remove(id) || signedOut) {
             session.authorized = false
             publishState(id, session, SessionState.Closed)
         } else if (session.authorized) {
@@ -213,6 +218,7 @@ class FakeTelegram(
 
     override fun destroy(id: TelegramSessionId) {
         sessions.remove(id)
+        destroyed.add(id)
         directories.delete(id)
     }
 

@@ -68,7 +68,7 @@
 | T60 | Sync screens.md, events.md, the T54 record, sad, ux-flows and spec with the fourth-review fixes | docs | Anton Husiev | XS | T56, T57, T58, T59 | done |
 | T61 | An unlink whose sealed key can't be opened still deletes the account and reports the sign-out unconfirmed | infra | Anton Husiev | XS | — | done |
 | T62 | A failed delete after the sign-out leaves the account Session lost when Telegram confirmed it, and keeps an unconfirmed session running | infra | Anton Husiev | S | T61 | done |
-| T63 | The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out | infra | Anton Husiev | S | T62 | todo |
+| T63 | The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out | infra | Anton Husiev | S | T62 | done |
 | T64 | SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again | ui | Anton Husiev | XS | — | todo |
 | T65 | Sync sad, tracker, test-plan and spec with the fifth-review fixes | docs | Anton Husiev | XS | T61, T62, T63, T64 | todo |
 
