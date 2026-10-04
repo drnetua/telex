@@ -2,6 +2,12 @@ import { connectivity, isShellActive } from "../shell/connectivity";
 
 export type FailureRoute = "sign-in" | "session-ended" | "unavailable" | "connectivity";
 
+export interface FieldError {
+  field: string;
+  code: string;
+  message: string;
+}
+
 export class ApiFailure extends Error {
   constructor(
     readonly status: number,
@@ -9,6 +15,7 @@ export class ApiFailure extends Error {
     readonly route?: FailureRoute,
     readonly attemptsLeft?: number,
     readonly email?: string,
+    readonly errors: FieldError[] = [],
   ) {
     super(`${status} ${code}`);
   }
@@ -68,12 +75,13 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     return (response.status === 204 ? undefined : await response.clone().json()) as T;
   }
   let code = "internal-error";
-  let problem: { attemptsLeft?: number; email?: string } = {};
+  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } = {};
   try {
     const body = (await response.json()) as {
       code?: string;
       attemptsLeft?: number;
       email?: string;
+      errors?: FieldError[];
     };
     code = body.code ?? code;
     problem = body;
@@ -86,5 +94,6 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     routeFor(response.status, code),
     problem.attemptsLeft,
     problem.email,
+    Array.isArray(problem.errors) ? problem.errors : [],
   );
 }

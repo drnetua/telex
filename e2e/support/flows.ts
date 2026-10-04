@@ -9,11 +9,13 @@ export const NEW_SIGN_IN_SUBJECT = "New sign-in to teleX";
 /**
  * WCAG 2.2 AA scan of the screen state currently shown; any violation fails. The scan is retried for a few seconds so
  * a colour measured mid-transition (a fading alert, a hovered button) is not reported as a contrast failure; a
- * violation that persists still fails.
+ * violation that persists still fails. A single scan of a large table (the 500-model catalog) takes ~9 s, so such a
+ * caller passes a longer `timeoutMs`.
  */
 export async function expectNoA11yViolations(
   page: Page,
   state: string,
+  timeoutMs = 5_000,
 ): Promise<void> {
   await expect
     .poll(
@@ -26,7 +28,7 @@ export async function expectNoA11yViolations(
             `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`,
         );
       },
-      { message: `axe violations on ${state}`, timeout: 5_000 },
+      { message: `axe violations on ${state}`, timeout: timeoutMs },
     )
     .toEqual([]);
 }

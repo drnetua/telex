@@ -58,7 +58,9 @@
   --tblr-alert-bg: var(--telex-warning-subtle);
 }
 
-.alert-warning .btn-link {
+/* .btn included so this outranks the .btn.btn-link primary colour below. */
+.alert-warning .btn-link,
+.alert-warning .btn.btn-link {
   color: inherit;
   text-decoration: underline;
 }
@@ -67,6 +69,16 @@
 .alert-danger {
   --tblr-alert-color: var(--telex-danger-text);
   --tblr-alert-bg: var(--telex-danger-subtle);
+}
+
+/* Text-style buttons: Tabler lightens the link colour on .btn-link (4.0:1 on white); the design-system primary is 5.0:1. */
+.btn.btn-link {
+  color: var(--tblr-primary);
+}
+
+/* Outline-danger label: danger-text (5.9:1) instead of the danger fill colour, which falls under 4.5:1 on tinted surfaces. */
+.btn.btn-outline-danger:not(:hover):not(:active):not(:disabled) {
+  color: var(--telex-danger-text);
 }
 
 /* AppShell (C-01): side menu 240 px, phone bottom bar, current-section bar and bold label. */
@@ -155,5 +167,37 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* DataTable (C-29): under 600 px rows become label/value cards. */
+@media (max-width: 599.98px) {
+  .data-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .data-table tr {
+    display: block;
+    padding: 0.5rem 0;
+    border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+  }
+
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 0;
+    padding: 0.25rem var(--tblr-card-cap-padding-x, 1rem);
+    text-align: end;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    color: var(--tblr-secondary);
+    text-align: start;
   }
 }

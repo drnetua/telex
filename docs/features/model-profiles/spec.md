@@ -27,6 +27,7 @@ Traceability:
 - Decision deviation: SCR-34 is a modal editor for a custom profile; E10 also adds a Models page (catalog + profiles + picker) to host it, which the screen inventory doesn't list. The roadmap already plans it (`pages/models`).
 - Decision deviation: system profile names follow the mockup ("Fast and cheap", "Balanced", "Careful"), not the product spec's "швидкий, збалансований, якісний".
 - Decision deviation: the tech spec's per-slot price ceiling (glossary Model Profile, "лімітом ціни") is dropped from E10, and no epic carries it; spending is capped by Budgets in E27 instead. Whether to bring it back is a §8 question.
+- Decision deviation: image models are priced per 1M tokens like other models, not per image, because OpenRouter publishes no per-image price (its `pricing.image_output` is per output image token); AC-211 reads accordingly. Recorded by review 2026-10-03.
 - Decision deviation: the epic DoD's "each slot checked by a real model call" is a developer smoke check recorded in the pull request (§6), not a button in the UI.
 
 ## 2. Goals
@@ -96,7 +97,7 @@ Traceability:
 
 **Given** a signed-in Owner and a loaded Model Catalog
 **When** the Owner opens the catalog on the Models page, searches by name and filters by the vision slot
-**Then** the Owner sees only models that can understand images and answer in text, each with its name, provider, what it accepts and produces, its price in US dollars (per million input and output tokens, or per image for models that create images) and how much text it can take at once, and sees when the catalog was last updated; the catalog lists only models that fit at least one slot (text: takes and produces text; vision: takes images and produces text; image: creates images)
+**Then** the Owner sees only models that can understand images and answer in text, each with its name, provider, what it accepts and produces, its price in US dollars (per million input and output tokens, for every model including those that create images) and how much text it can take at once, and sees when the catalog was last updated; the catalog lists only models that fit at least one slot (text: takes and produces text; vision: takes images and produces text; image: creates images)
 
 ### AC-212 (US-80) — error
 
@@ -247,7 +248,10 @@ Traceability:
 ## 8. Open questions
 
 - [ ] What happens to agents that use a custom profile when the Owner deletes it? Default now: deleting is allowed, and those agents move to the Owner's default profile with a warning on their card (E09 embeds the picker and the card warning per ADR-0001). — owner: Anton Husiev (PM), due: before `/sdd:specify agent-builder`
-- [ ] How long does one model attempt wait before it counts as failed and the next model is tried? Default now: 60 s. — owner: Anton Husiev (Tech Lead), due: before `/sdd:design model-profiles`
+- [x] How long does one model attempt wait before it counts as failed and the next model is tried? Default now: 60 s. — owner: Anton Husiev (Tech Lead), due: before `/sdd:design model-profiles` — **resolved in design:** 60 s, configurable as `telex.llm.attempt-timeout` (sad.md §8, ADR-0003)
 - [ ] Should Owners see, or filter by, whether a model's provider keeps the data sent to it (zero retention)? Default now: not shown. — owner: Anton Husiev (PM), due: before `/sdd:specify guardrails`
 - [ ] Should a slot get a price ceiling (skip models above a set price), as the tech spec's Model Profile describes? Default now: dropped; Budgets in E27 cap spending. — owner: Anton Husiev (PM), due: before `/sdd:specify cost-control`
 - [ ] Who pays for an Owner's model calls once BYOK exists — the installation key, the Owner's key, or the Owner's choice? Default now: the installation key. — owner: Anton Husiev (PM), due: before `/sdd:specify cost-control`
+- [ ] Review 2026-10-03 B1 (AC-213, AC-227): a duplicated system profile whose Operator override names a model that is in the catalog but can't do the slot's job is refused with `model-not-capable` on save, and the editor doesn't mark that row "Not in the catalog" (`ProfileRules.kt:81-82`, `ProfileEditorModal.tsx:45`). Default now: the Owner removes or replaces that model before saving. — owner: Anton Husiev (Tech Lead), due: before `/sdd:specify agent-builder`
+- [ ] Review 2026-10-03 B2 (AC-213): the suggested name for a duplicate ("… copy N") isn't trimmed, so duplicating a profile with a 36–40 character name gives a draft name over 40 characters, which the Owner must shorten (`ProfileRules.kt:92-101`). — owner: Anton Husiev (Tech Lead), due: before `/sdd:specify agent-builder`
+- [ ] Review 2026-10-03 B3 (AC-216, AC-217): when the server refuses a model on save (`model-not-capable` / `model-duplicate`), the editor shows generic copy instead of the model chooser's slot-specific words (`ProfileEditorModal.tsx:390-395`, `messages.ts:224,226`). The add path in the chooser already uses the right words. — owner: Anton Husiev (Tech Lead), due: before `/sdd:specify agent-builder`

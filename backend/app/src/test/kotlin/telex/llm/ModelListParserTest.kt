@@ -1,0 +1,251 @@
+package telex.llm
+
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
+import org.junit.jupiter.api.Test
+import telex.llm.internal.openrouter.ModelListParser
+import java.time.Duration
+
+class ModelListParserTest {
+    private val fixture =
+        checkNotNull(javaClass.getResource("/openrouter/models.json")) { "fixture missing" }.readText()
+
+    private fun one(
+        id: String = "acme/m",
+        pricing: String = """{"prompt":"0.000001","completion":"0.000002"}""",
+        context: String = "8192",
+        input: String = """["text"]""",
+        output: String = """["text"]""",
+        extra: String = "",
+    ) = """{"data":[{"id":"$id","name":"M","context_length":$context,$extra
+            "architecture":{"input_modalities":$input,"output_modalities":$output},
+            "pricing":$pricing}]}"""
+
+    private fun byId(id: String) = ModelListParser.parse(fixture).models.single { it.modelId == ModelId(id) }
+
+    @Test
+    fun `price is shifted from per token to per million exactly`() {
+        val m = byId("openai/gpt-4o-mini")
+        assertThat(m.inputPerMtok).isEqualByComparingTo("0.150000")
+        assertThat(m.outputPerMtok).isEqualByComparingTo("0.600000")
+        assertThat(m.contextLength).isEqualTo(128000)
+    }
+
+    @Test
+    fun `provider comes from the id prefix and name is kept`() {
+        val m = byId("openai/gpt-4o-mini")
+        assertThat(m.provider).isEqualTo("openai")
+        assertThat(m.name).isNotBlank()
+    }
+
+    @Test
+    fun `capabilities map to modalities and slots`() {
+        assertThat(byId("openai/gpt-4o-mini").slots)
+            .containsExactlyInAnyOrder(ModelSlotKind.TEXT, ModelSlotKind.VISION)
+        assertThat(byId("inclusionai/ling-3.1-flash").slots).containsExactly(ModelSlotKind.TEXT)
+        assertThat(byId("google/gemini-2.5-flash-image").fits(ModelSlotKind.IMAGE)).isTrue()
+    }
+
+    @Test
+    fun `free model has price zero not null`() {
+        assertThat(byId("inclusionai/ling-3.1-flash").inputPerMtok).isEqualByComparingTo("0")
+    }
+
+    @Test
+    fun `audio-only models are skipped and reported`() {
+        val r = ModelListParser.parse(fixture)
+        assertThat(r.models.map { it.modelId.value }).doesNotContain("openai/gpt-audio", "google/lyria-3-clip-preview")
+        assertThat(r.skipped.map { it.id }).contains("openai/gpt-audio", "google/lyria-3-clip-preview")
+    }
+
+    @Test
+    fun `every parsed model fits at least one slot`() {
+        assertThat(ModelListParser.parse(fixture).models).isNotEmpty().allMatch { it.slots.isNotEmpty() }
+    }
+
+    @Test
+    fun `negative sentinel price becomes unknown`() {
+        assertThat(byId("openrouter/auto").inputPerMtok).isNull()
+    }
+
+    @Test
+    fun `missing or non-decimal price is null and the model stays`() {
+        val r = ModelListParser.parse(one(pricing = """{"prompt":"abc"}"""))
+        val m = r.models.single()
+        assertThat(m.inputPerMtok).isNull()
+        assertThat(m.outputPerMtok).isNull()
+    }
+
+    @Test
+    fun `negative price is unknown`() {
+        val m = ModelListParser.parse(one(pricing = """{"prompt":"-0.5","completion":"-1"}""")).models.single()
+        assertThat(m.inputPerMtok).isNull()
+        assertThat(m.outputPerMtok).isNull()
+    }
+
+    @Test
+    fun `non-positive or missing context length is null`() {
+        assertThat(
+            ModelListParser
+                .parse(one(context = "0"))
+                .models
+                .single()
+                .contextLength,
+        ).isNull()
+        assertThat(
+            ModelListParser
+                .parse(one(context = "-5"))
+                .models
+                .single()
+                .contextLength,
+        ).isNull()
+        assertThat(
+            ModelListParser
+                .parse(one(context = "null"))
+                .models
+                .single()
+                .contextLength,
+        ).isNull()
+    }
+
+    @Test
+    fun `unknown modality is skipped`() {
+        val r = ModelListParser.parse(one(input = """["hologram"]"""))
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/m")
+    }
+
+    @Test
+    fun `missing modalities are skipped`() {
+        val json = """{"data":[{"id":"acme/m","name":"M","pricing":{}}]}"""
+        val r = ModelListParser.parse(json)
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped).hasSize(1)
+    }
+
+    @Test
+    fun `id longer than 200 characters is skipped`() {
+        val r = ModelListParser.parse(one(id = "acme/" + "x".repeat(196)))
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped).hasSize(1)
+        assertThat(ModelListParser.parse(one(id = "acme/" + "x".repeat(195))).models).hasSize(1)
+    }
+
+    @Test
+    fun `one bad entry does not drop the others`() {
+        val json = """{"data":[{"id":5},{"id":"acme/ok","name":"Ok","context_length":10,
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}]}"""
+        val r = ModelListParser.parse(json)
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+        assertThat(r.skipped).hasSize(1)
+    }
+
+    @Test
+    fun `an out-of-range context length reads as unknown and the model stays (R3)`() {
+        val r = ModelListParser.parse(one(context = "10000000000"))
+        assertThat(r.models.single().contextLength).isNull()
+        assertThat(r.skipped).isEmpty()
+    }
+
+    @Test
+    fun `a non-string modality skips only that model and the others stay (R3)`() {
+        val json = """{"data":[
+            {"id":"acme/bad","name":"B","architecture":{"input_modalities":[{}],"output_modalities":["text"]},"pricing":{}},
+            {"id":"acme/ok","name":"Ok","architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}]}"""
+        val r = ModelListParser.parse(json)
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/bad")
+    }
+
+    @Test
+    fun `name longer than 200 characters is skipped and the others stay`() {
+        val long = "N".repeat(201)
+        val json =
+            """{"data":[{"id":"acme/long","name":"$long",
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}},
+            {"id":"acme/ok","name":"Ok",
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}]}"""
+        val r = ModelListParser.parse(json)
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/long")
+        assertThat(ModelListParser.parse(one().replace("\"M\"", "\"${"N".repeat(200)}\"")).models).hasSize(1)
+    }
+
+    @Test
+    fun `provider longer than 100 characters is skipped`() {
+        val r = ModelListParser.parse(one(id = "p".repeat(101) + "/m"))
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped).hasSize(1)
+        assertThat(ModelListParser.parse(one(id = "p".repeat(100) + "/m")).models).hasSize(1)
+    }
+
+    @Test
+    fun `an id without a slash longer than 100 characters is skipped as its own provider`() {
+        val r = ModelListParser.parse(one(id = "x".repeat(150)))
+        assertThat(r.models).isEmpty()
+        assertThat(r.skipped).hasSize(1)
+    }
+
+    @Test
+    fun `a repeated id keeps the first and reports the rest`() {
+        val entry = { name: String ->
+            """{"id":"acme/dup","name":"$name",
+            "architecture":{"input_modalities":["text"],"output_modalities":["text"]},"pricing":{}}"""
+        }
+        val r = ModelListParser.parse("""{"data":[${entry("First")},${entry("Second")}]}""")
+        assertThat(r.models.map { it.name }).containsExactly("First")
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/dup")
+    }
+
+    @Test
+    fun `a price that overflows NUMERIC(14,6) per million is skipped and the others stay`() {
+        val big = """{"prompt":"100","completion":"0.000002"}"""
+        val body =
+            """{"data":[
+            ${one(id = "acme/big", pricing = big).removePrefix("{\"data\":[").removeSuffix("]}")},
+            ${one(id = "acme/ok").removePrefix("{\"data\":[").removeSuffix("]}")}]}"""
+        val r = ModelListParser.parse(body)
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/big")
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+    }
+
+    @Test
+    fun `the largest storable price is kept`() {
+        val m =
+            ModelListParser
+                .parse(one(pricing = """{"prompt":"99.999999","completion":"0.000002"}"""))
+                .models
+                .single()
+        assertThat(m.inputPerMtok).isEqualByComparingTo("99999999")
+    }
+
+    @Test
+    fun `a price that rounds to 10^8 at scale 6 is skipped, not left to overflow the insert`() {
+        // 99.99999999999999 per token -> 99999999.99999999 per million, which Postgres rounds to 100000000.000000.
+        val body =
+            """{"data":[
+            ${one(id = "acme/edge", pricing = """{"prompt":"99.99999999999999","completion":"0.000002"}""")
+                .removePrefix("{\"data\":[").removeSuffix("]}")},
+            ${one(id = "acme/ok").removePrefix("{\"data\":[").removeSuffix("]}")}]}"""
+        val r = ModelListParser.parse(body)
+        assertThat(r.skipped.map { it.id }).containsExactly("acme/edge")
+        assertThat(r.models.map { it.modelId.value }).containsExactly("acme/ok")
+    }
+
+    @Test
+    fun `a price with an extreme exponent is read as unknown without exhausting the parser`() {
+        // Rescaling 1e-999999999 or 1e999999999 to scale 6 would build a power of ten with ~10^9 digits.
+        for (price in listOf("1e-999999999", "1e999999999")) {
+            val m =
+                assertTimeoutPreemptively<CatalogModel>(Duration.ofSeconds(2)) {
+                    ModelListParser
+                        .parse(
+                            one(pricing = """{"prompt":"$price","completion":"$price"}"""),
+                        ).models
+                        .single()
+                }
+            assertThat(m.inputPerMtok).isNull()
+            assertThat(m.outputPerMtok).isNull()
+        }
+    }
+}

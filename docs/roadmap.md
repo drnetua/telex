@@ -31,7 +31,7 @@ Step ids 1–29 are the epic numbers of `docs/docs/02-epics.md` (E01–E29); 0 i
 | 7 | Semantic search — find a message by meaning, with filters | `docs/docs/02-epics.md` §E07 · semantic-search | S | idea |
 | 8 | Channel scope — Channel Sets (manual + from folders) and the private zone | `docs/docs/02-epics.md` §E08 · channel-scope | S | idea |
 | 9 | Agent builder — create an agent from a template, pause / clone / delete / export / import | `docs/docs/02-epics.md` §E09 · agent-builder | M | idea |
-| 10 | Model profiles — OpenRouter catalog with prices, profiles, per-slot fallback ([`model-profiles`](features/model-profiles/)) | `docs/docs/02-epics.md` §E10 · model-profiles | S | spec'd |
+| 10 | Model profiles — OpenRouter catalog with prices, profiles, per-slot fallback ([`model-profiles`](features/model-profiles/)) | `docs/docs/02-epics.md` §E10 · model-profiles | S | shipped |
 | 11 | Keyword triggers — first live agent: keyword → note in Inbox, no AI call | `docs/docs/02-epics.md` §E11 · keyword-triggers | S | idea |
 | 12 | Semantic triggers — plain-language condition scored by Jev, with sensitivity and degradation | `docs/docs/02-epics.md` §E12 · semantic-triggers | M | idea |
 | 13 | Review queue and «Why?» — doubtful cases go to the human, every decision explained | `docs/docs/02-epics.md` §E13 · review-queue-and-why | S | idea |
@@ -171,3 +171,4 @@ Zones: `telex/<m>` = `backend/app/src/main/kotlin/telex/<m>/`, `pages/<x>` = `fr
 | 0 | 2026-10-02 | PR `scaffold/skeleton` → `master` (shipped together with step 1; no separate changelog) |
 | 1 | 2026-10-02 | [changelog](features/platform-skeleton/_ship/changelog.md) · PR `scaffold/skeleton` → `master` |
 | 6 | 2026-10-03 | [changelog](features/app-shell/_ship/changelog.md) · [PR #3](https://github.com/drnetua/telex/pull/3) `app-shell` → `master` |
+| 10 | 2026-10-04 | [changelog](features/model-profiles/_ship/changelog.md) · [PR #4](https://github.com/drnetua/telex/pull/4) `model-profiles` → `master` |

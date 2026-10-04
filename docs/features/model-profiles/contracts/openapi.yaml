@@ -1,0 +1,990 @@
+# Derived contract for model-profiles (/sdd:api, 2026-10-03).
+#   fields + constraints  ← data-model.md (model_catalog_entry, model_catalog_state, model_profile,
+#                            model_profile_slot_model, default_model_profile) + sad.md §8 computed views
+#   error responses       ← sad.md §6 alt-branches (Critical flows 3–6)
+#   endpoint list + shape ← spec.md §4 (US-13, US-80, US-81, US-82, US-83) / §5
+# Conventions inherited from platform-skeleton's contract (same deviations from the sdd defaults, see
+# api-sync-report.md §C): SessionCookie + X-XSRF-TOKEN, RFC 9457 problem+json with kebab-case `code`,
+# camelCase JSON, whole lists without cursor pagination, no Idempotency-Key.
+# Decided here (user, 2026-10-03): ProfileRef as a tagged object in JSON and a bare key-or-uuid path segment;
+# `not-found` reused for AC-222; money as decimal strings in USD.
+# The in-process ProfileCalls port (AC-224, AC-228, AC-229) is in public-api.md; module events in events.md.
+openapi: 3.1.0
+
+info:
+  title: teleX model catalog and model profiles API
+  version: 0.1.0
+  contact:
+    name: teleX backend (agents / llm / web modules)
+    url: https://github.com/drnetua/telex
+  description: |
+    Every AI helper in teleX needs a model, and the model market moves under it. This API gives the
+    Owner's Models page what it needs to make a short, priced choice that survives a vanished model:
+    the Model Catalog (what each model can do and costs, and how fresh the list is), the three system
+    Model Profiles and up to 20 custom ones, each with three Model Slots holding a Fallback Chain of up
+    to three models, and the Owner's default profile, which E09 later uses for new agents.
+
+    Conventions for every operation (as in the platform-skeleton contract):
+    - JSON property names are camelCase.
+    - Every state-changing request (POST, PUT, DELETE) carries `X-XSRF-TOKEN`; a missing or wrong token
+      answers `403 forbidden`.
+    - SPA background refetches carry `X-Telex-Background: 1` (ADR-0005 of platform-skeleton).
+    - Errors are RFC 9457 `application/problem+json` with `type = urn:telex:error:<code>`, the `code`
+      extension and, for field errors, `errors[]`. `code` keys `frontend/src/messages.ts`.
+    - Model availability, slot states and prices are computed against the catalog at the moment of the
+      request and never stored (sad §4). A returning main model clears its warning on the next read.
+    - Money is a decimal string in US dollars, never a JSON number.
+    - Nothing on this API calls a model. The provider key is never returned.
+
+servers:
+  - url: http://localhost:8080
+    description: Local (one-command install; TELEX_PUBLIC_URL default)
+  - url: https://telex.example.test
+    description: Production behind Cloudflare (TELEX_PUBLIC_URL)
+
+# Global default — every operation needs a live Sign-in Session.
+security:
+  - SessionCookie: []
+
+tags:
+  - name: catalog
+    description: The Model Catalog (US-80, US-83)
+  - name: profiles
+    description: System and custom Model Profiles with their slot states and prices (US-81, US-82, US-83)
+  - name: default-profile
+    description: The Owner's default profile (US-13)
+
+paths:
+  /api/v1/models/catalog:
+    get:
+      tags: [catalog]
+      summary: Read the Model Catalog
+      description: |
+        The whole slot-fit catalog from memory, never from the provider (sad §7), so it answers while the
+        provider is down (QG-1). Search and the slot filter run in the browser over this one response
+        (sad §6 flags; QG-4 sizes it for 500 models). `state` drives the page's notes: `update-failed`
+        shows the last known list with "couldn't be updated" and `lastRefreshedAt` (AC-212),
+        `not-loaded` shows "The model list isn't available yet" (AC-212), `not-configured` shows the
+        "AI models aren't set up" banner (AC-226). Models are ordered by name.
+      operationId: getModelCatalog
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: The current catalog and its state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelCatalog" }
+              examples:
+                current:
+                  value:
+                    state: current
+                    lastRefreshedAt: "2026-10-03T06:00:00Z"
+                    lastFailedAt: null
+                    models:
+                      - modelId: "test/text-model-a"
+                        name: "Test text model A"
+                        provider: "test"
+                        takes: [text]
+                        produces: [text]
+                        slots: [text]
+                        inputPricePerMillionTokens: "0.150000"
+                        outputPricePerMillionTokens: "0.600000"
+                        pricePerImage: null
+                        contextLength: 128000
+                      - modelId: "test/vision-model-b"
+                        name: "Test vision model B"
+                        provider: "test"
+                        takes: [text, image]
+                        produces: [text]
+                        slots: [text, vision]
+                        inputPricePerMillionTokens: "2.500000"
+                        outputPricePerMillionTokens: "10.000000"
+                        pricePerImage: null
+                        contextLength: 200000
+                      - modelId: "test/image-model-c"
+                        name: "Test image model C"
+                        provider: "test"
+                        takes: [text]
+                        produces: [image]
+                        slots: [image]
+                        inputPricePerMillionTokens: "0.300000"
+                        outputPricePerMillionTokens: "30.000000"
+                        pricePerImage: null
+                        contextLength: null
+                updateFailed:
+                  value:
+                    state: update-failed
+                    lastRefreshedAt: "2026-10-02T06:00:00Z"
+                    lastFailedAt: "2026-10-03T06:05:00Z"
+                    models: []
+                notLoaded:
+                  value:
+                    state: not-loaded
+                    lastRefreshedAt: null
+                    lastFailedAt: "2026-10-03T06:05:00Z"
+                    models: []
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+  /api/v1/models/profiles:
+    get:
+      tags: [profiles]
+      summary: List my profiles and my default
+      description: |
+        The three system profiles (Fast and cheap, Balanced, Careful — built from the installation
+        settings, with the Operator's overrides where set, AC-225, AC-227) followed by the Owner's own
+        custom profiles in creation order, never another Owner's (AC-222). Each carries its slot states
+        (AC-10, AC-223), its price per 100 runs (AC-51, AC-210) and whether it can be chosen as a new
+        default. `defaultProfile` is Balanced when nothing is stored (feature ADR-0005). This is the data
+        of the picker C-22, which E09 embeds unchanged.
+      operationId: listModelProfiles
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: My profiles
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelProfileList" }
+              example:
+                aiConfigured: true
+                defaultProfile: { kind: system, key: balanced }
+                customProfileLimit: 20
+                items:
+                  - ref: { kind: system, key: balanced }
+                    name: "Balanced"
+                    slots:
+                      text:
+                        state: fallback
+                        currentModelId: "test/text-model-b"
+                        chain:
+                          - { modelId: "test/text-model-a", name: null, availability: not-in-catalog }
+                          - { modelId: "test/text-model-b", name: "Test text model B", availability: available }
+                      vision:
+                        state: main-model
+                        currentModelId: "test/vision-model-b"
+                        chain:
+                          - { modelId: "test/vision-model-b", name: "Test vision model B", availability: available }
+                      image:
+                        state: not-used
+                        currentModelId: null
+                        chain: []
+                    pricePer100Runs: { state: estimate, amount: "0.30" }
+                    choosable: true
+                  - ref: { kind: custom, id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e70" }
+                    name: "Cheap vision"
+                    slots:
+                      text:
+                        state: main-model
+                        currentModelId: "test/free-model"
+                        chain:
+                          - { modelId: "test/free-model", name: "Test free model", availability: available }
+                      vision:
+                        state: no-model-available
+                        currentModelId: null
+                        chain:
+                          - { modelId: "test/gone-model", name: null, availability: not-in-catalog }
+                      image:
+                        state: not-used
+                        currentModelId: null
+                        chain: []
+                    pricePer100Runs: { state: free, amount: null }
+                    choosable: true
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+
+    post:
+      tags: [profiles]
+      summary: Create a custom profile
+      description: |
+        Saves a new custom profile from the editor (SCR-34): a fresh one, or a duplicate when
+        `duplicatedFrom` names the source (AC-213). Nothing is stored before this call, so a cancelled
+        duplicate leaves nothing behind (sad §6 flags). The name is trimmed first. Rules, all reported at
+        once in `errors[]` (AC-214…AC-217, AC-221): name not empty, ≤ 40 characters, not another of my
+        names ignoring case, not a system name; text slot not empty; every model can do its slot's job;
+        ≤ 3 models per slot, each once; every model **not** in `duplicatedFrom` is in the catalog now
+        (models copied from the source may be missing and are kept). The 20-profile limit and the name
+        are re-checked in the write transaction (AC-218).
+      operationId: createModelProfile
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ModelProfileCreate" }
+            example:
+              name: "Cheap vision"
+              duplicatedFrom: { kind: system, key: balanced }
+              slots:
+                text: ["test/text-model-b", "test/text-model-a"]
+                vision: ["test/vision-model-b"]
+                image: []
+      responses:
+        "201":
+          description: Profile saved — the SPA shows "Profile saved" on SCR-66
+          headers:
+            Location:
+              description: "`/api/v1/models/profiles/<id>`"
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelProfile" }
+              example:
+                ref: { kind: custom, id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e71" }
+                name: "Cheap vision"
+                slots:
+                  text:
+                    state: main-model
+                    currentModelId: "test/text-model-b"
+                    chain:
+                      - { modelId: "test/text-model-b", name: "Test text model B", availability: available }
+                      - { modelId: "test/text-model-a", name: null, availability: not-in-catalog }
+                  vision:
+                    state: main-model
+                    currentModelId: "test/vision-model-b"
+                    chain:
+                      - { modelId: "test/vision-model-b", name: "Test vision model B", availability: available }
+                  image:
+                    state: not-used
+                    currentModelId: null
+                    chain: []
+                pricePer100Runs: { state: under-one-cent, amount: null }
+                choosable: true
+        "400": { $ref: "#/components/responses/ProfileInvalid" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409": { $ref: "#/components/responses/ProfileWriteRefused" }
+
+  /api/v1/models/profile-draft:
+    get:
+      tags: [profiles]
+      summary: Start a new or duplicated profile
+      description: |
+        The unsaved starting point the editor opens with — nothing is written (sad §6 flow 5, flags for
+        `api`). Without `from`: an empty profile named "". With `from`: a copy of that system or own
+        profile named "<name> copy", or "<name> copy 2", "<name> copy 3"… when taken, with every model of
+        the source copied, including ones that left the catalog, marked `not-in-catalog` (AC-213).
+        Refused before the editor opens when the Owner already has 20 custom profiles (AC-218) or AI isn't
+        set up (AC-226).
+      operationId: getModelProfileDraft
+      parameters:
+        - in: query
+          name: from
+          required: false
+          description: Profile to duplicate, as a profile path key (`fast`, `balanced`, `careful` or a custom profile id)
+          schema: { $ref: "#/components/schemas/ProfileKey" }
+          example: balanced
+      responses:
+        "200":
+          description: Draft for the editor
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelProfileDraft" }
+              example:
+                name: "Balanced copy"
+                duplicatedFrom: { kind: system, key: balanced }
+                slots:
+                  text:
+                    state: fallback
+                    currentModelId: "test/text-model-b"
+                    chain:
+                      - { modelId: "test/text-model-a", name: null, availability: not-in-catalog }
+                      - { modelId: "test/text-model-b", name: "Test text model B", availability: available }
+                  vision:
+                    state: main-model
+                    currentModelId: "test/vision-model-b"
+                    chain:
+                      - { modelId: "test/vision-model-b", name: "Test vision model B", availability: available }
+                  image:
+                    state: not-used
+                    currentModelId: null
+                    chain: []
+                pricePer100Runs: { state: estimate, amount: "0.30" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/DraftRefused" }
+
+  /api/v1/models/profiles/{profileKey}:
+    parameters:
+      - $ref: "#/components/parameters/ProfileKey"
+    get:
+      tags: [profiles]
+      summary: Read one profile
+      description: |
+        For the editor link `/settings/models/profiles/:id` and for showing a system profile. A custom
+        profile is looked up only among the caller's own: another Owner's id answers the same `404
+        not-found` as a missing one, and the SPA shows SCR-91 (AC-222).
+      operationId: getModelProfile
+      parameters:
+        - $ref: "#/components/parameters/Background"
+      responses:
+        "200":
+          description: The profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelProfile" }
+              example:
+                ref: { kind: custom, id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e70" }
+                name: "Night shift"
+                slots:
+                  text:
+                    state: main-model
+                    currentModelId: "test/text-model-a"
+                    chain:
+                      - { modelId: "test/text-model-a", name: "Test text model A", availability: available }
+                  vision: { state: not-used, currentModelId: null, chain: [] }
+                  image: { state: not-used, currentModelId: null, chain: [] }
+                pricePer100Runs: { state: estimate, amount: "0.08" }
+                choosable: true
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+    put:
+      tags: [profiles]
+      summary: Save changes to a custom profile
+      description: |
+        Replaces the name and all three chains, in the chosen order (position 1 = main model). Same rules
+        as create (AC-214…AC-217); the "newly added model left the catalog" rule (AC-221) compares with
+        the stored profile, so an older missing model stays and is no reason to refuse. Last write wins
+        (sad §11 accepted debt). A system key answers `409 system-profile-read-only` (AC-219).
+      operationId: updateModelProfile
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ModelProfileUpdate" }
+            example:
+              name: "Cheap vision"
+              slots:
+                text: ["test/text-model-b", "test/text-model-a"]
+                vision: ["test/vision-model-b"]
+                image: []
+      responses:
+        "200":
+          description: Profile saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelProfile" }
+              example:
+                ref: { kind: custom, id: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e71" }
+                name: "Cheap vision"
+                slots:
+                  text:
+                    state: main-model
+                    currentModelId: "test/text-model-b"
+                    chain:
+                      - { modelId: "test/text-model-b", name: "Test text model B", availability: available }
+                      - { modelId: "test/text-model-a", name: null, availability: not-in-catalog }
+                  vision:
+                    state: main-model
+                    currentModelId: "test/vision-model-b"
+                    chain:
+                      - { modelId: "test/vision-model-b", name: "Test vision model B", availability: available }
+                  image: { state: not-used, currentModelId: null, chain: [] }
+                pricePer100Runs: { state: under-one-cent, amount: null }
+                choosable: true
+        "400": { $ref: "#/components/responses/ProfileInvalid" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ProfileWriteRefused" }
+
+    delete:
+      tags: [profiles]
+      summary: Delete a custom profile
+      description: |
+        Deletes the profile with its chains. If it was the default, the default returns to Balanced in the
+        same transaction and `defaultReset` is true, so the SPA says "Balanced is now the default"
+        (AC-220). Publishes `ModelProfileDeleted` (events.md). Call records keep their reference. A system
+        key answers `409 system-profile-read-only` (AC-219).
+      operationId: deleteModelProfile
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelProfileDeletion" }
+              example:
+                defaultProfile: { kind: system, key: balanced }
+                defaultReset: true
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: System profiles can't be changed (AC-219) — the SPA offers Duplicate
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:system-profile-read-only"
+                title: "Conflict"
+                status: 409
+                detail: "System profiles can't be changed."
+                code: "system-profile-read-only"
+
+  /api/v1/models/default-profile:
+    put:
+      tags: [default-profile]
+      summary: Choose my default profile
+      description: |
+        Sets the profile E09 will use for new agents (AC-51). Choosing Balanced removes the stored choice
+        (feature ADR-0005). A profile whose text slot has no model in the catalog can't become the new
+        default (AC-223); an Owner who already has it keeps it. Another Owner's profile answers `404
+        not-found` (AC-222).
+      operationId: setDefaultModelProfile
+      parameters:
+        - $ref: "#/components/parameters/XsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DefaultProfileChoice" }
+            example:
+              profile: { kind: system, key: careful }
+      responses:
+        "200":
+          description: Default changed — the SPA confirms it by name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefaultProfileChoice" }
+              example:
+                profile: { kind: system, key: careful }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The profile has no text model in the catalog, so it can't become the default (AC-223)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example:
+                type: "urn:telex:error:no-text-model"
+                title: "Conflict"
+                status: 409
+                detail: "This profile has no model available for text."
+                code: "no-text-model"
+
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: telex_session
+      description: The platform-skeleton Sign-in Session cookie (its ADR-0001). Every endpoint here needs a live session.
+
+  parameters:
+    XsrfToken:
+      in: header
+      name: X-XSRF-TOKEN
+      required: true
+      description: Echo of the `XSRF-TOKEN` cookie; required on every state-changing request.
+      schema: { type: string }
+    Background:
+      in: header
+      name: X-Telex-Background
+      required: false
+      description: "`1` on requests the SPA sends on its own (refetches); such requests don't count as session activity."
+      schema: { type: string, enum: ["1"] }
+    ProfileKey:
+      in: path
+      name: profileKey
+      required: true
+      description: A system profile key or a custom profile id (see `ProfileKey`).
+      schema: { $ref: "#/components/schemas/ProfileKey" }
+      examples:
+        system: { value: balanced }
+        custom: { value: "01928f3a-7b2c-7d4e-9f10-0a1b2c3d4e70" }
+
+  responses:
+    NotSignedIn:
+      description: No live Sign-in Session (`unauthenticated` or `session-ended`, as in platform-skeleton)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:unauthenticated"
+            title: "Unauthorized"
+            status: 401
+            detail: "Sign in to continue."
+            code: "unauthenticated"
+    Forbidden:
+      description: Missing or wrong CSRF token
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:forbidden"
+            title: "Forbidden"
+            status: 403
+            detail: "The request was refused."
+            code: "forbidden"
+    NotFound:
+      description: |
+        No such profile among the system profiles and the caller's own — identical for another Owner's
+        profile and a missing one (AC-222). The SPA shows SCR-91 for an editor link, an inline message otherwise.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:not-found"
+            title: "Not Found"
+            status: 404
+            detail: "Not found."
+            code: "not-found"
+    ValidationFailed:
+      description: The request body is missing a required field or breaks a declared bound
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            type: "urn:telex:error:validation-failed"
+            title: "Bad Request"
+            status: 400
+            detail: "Some fields are invalid."
+            code: "validation-failed"
+            errors:
+              - field: "profile"
+                code: "required"
+                message: "This field is required."
+    ProfileInvalid:
+      description: |
+        The profile breaks one or more rules; nothing is saved and the editor stays open naming each one.
+        `errors[].field` is `name`, `slots.<slot>` or `slots.<slot>[<index>]`. Field codes: `name-required`,
+        `name-too-long`, `name-taken`, `name-reserved` (AC-214), `text-slot-required` (AC-215),
+        `model-not-capable` (AC-216), `slot-full`, `model-duplicate` (AC-217), `model-left-catalog`
+        (AC-221 — a newly added model that isn't in the catalog now). A name taken by a parallel save
+        (unique index) also answers `name-taken`.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            name:
+              value:
+                type: "urn:telex:error:validation-failed"
+                title: "Bad Request"
+                status: 400
+                detail: "Some fields are invalid."
+                code: "validation-failed"
+                errors:
+                  - field: "name"
+                    code: "name-taken"
+                    message: "You already have a profile called Cheap vision."
+            chains:
+              value:
+                type: "urn:telex:error:validation-failed"
+                title: "Bad Request"
+                status: 400
+                detail: "Some fields are invalid."
+                code: "validation-failed"
+                errors:
+                  - field: "slots.text"
+                    code: "text-slot-required"
+                    message: "The text slot needs at least one model."
+                  - field: "slots.vision[0]"
+                    code: "model-not-capable"
+                    message: "Test text model A can't understand images, so it can't go in the vision slot."
+                  - field: "slots.image[1]"
+                    code: "model-left-catalog"
+                    message: "Test image model D is no longer available. Pick another model."
+    ProfileWriteRefused:
+      description: |
+        `profile-limit-reached`: the Owner already has 20 custom profiles, also when a parallel create took
+        the last place (AC-218). `system-profile-read-only`: the path names a system profile (AC-219).
+        `ai-not-configured`: the installation has no provider key, so custom profiles can't be edited (AC-226).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            limit:
+              value:
+                type: "urn:telex:error:profile-limit-reached"
+                title: "Conflict"
+                status: 409
+                detail: "You can have up to 20 custom profiles."
+                code: "profile-limit-reached"
+            systemReadOnly:
+              value:
+                type: "urn:telex:error:system-profile-read-only"
+                title: "Conflict"
+                status: 409
+                detail: "System profiles can't be changed."
+                code: "system-profile-read-only"
+            aiNotConfigured:
+              value:
+                type: "urn:telex:error:ai-not-configured"
+                title: "Conflict"
+                status: 409
+                detail: "AI models aren't set up on this installation."
+                code: "ai-not-configured"
+    DraftRefused:
+      description: "`profile-limit-reached` (AC-218) or `ai-not-configured` (AC-226); the editor doesn't open"
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            limit:
+              value:
+                type: "urn:telex:error:profile-limit-reached"
+                title: "Conflict"
+                status: 409
+                detail: "You can have up to 20 custom profiles."
+                code: "profile-limit-reached"
+            aiNotConfigured:
+              value:
+                type: "urn:telex:error:ai-not-configured"
+                title: "Conflict"
+                status: 409
+                detail: "AI models aren't set up on this installation."
+                code: "ai-not-configured"
+
+  schemas:
+    # ---- Errors (RFC 9457 + teleX extensions; telex.shared.problemDetail)
+    ErrorCode:
+      description: |
+        Stable machine code; keys `frontend/src/messages.ts`. Lowercase kebab-case DNS-1123 label. The
+        platform-skeleton codes this API can emit, plus four new ones (`profile-limit-reached`,
+        `system-profile-read-only`, `no-text-model`, `ai-not-configured`).
+      type: string
+      maxLength: 63
+      pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      enum:
+        - validation-failed
+        - unauthenticated
+        - session-ended
+        - not-found
+        - forbidden
+        - internal-error
+        - profile-limit-reached
+        - system-profile-read-only
+        - no-text-model
+        - ai-not-configured
+    FieldProblem:
+      type: object
+      required: [field, code, message]
+      additionalProperties: false
+      properties:
+        field: { type: string, description: "`name`, `slots.<slot>`, `slots.<slot>[<index>]` or a request property" }
+        code:
+          type: string
+          maxLength: 63
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          description: Field-level code (see `ProfileInvalid`), or `required` for a missing property
+        message: { type: string }
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+          pattern: "^urn:telex:error:[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string, description: "Human-readable; the SPA shows its own copy keyed by `code`" }
+        instance: { type: string, format: uri-reference }
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldProblem" }
+
+    # ---- Value types
+    ModelId:
+      type: string
+      minLength: 1
+      maxLength: 200
+      pattern: "^\\S+$"
+      description: The provider's model id, e.g. `openai/gpt-4o-mini` (model_catalog_entry.model_id, model_profile_slot_model.model_id)
+    SlotKind:
+      type: string
+      enum: [text, vision, image]
+      description: model_profile_slot_model.slot CHECK
+    Modality:
+      type: string
+      enum: [text, image]
+      description: The two modalities any slot uses (model_catalog_entry takes_* / produces_*)
+    SystemProfileKey:
+      type: string
+      enum: [fast, balanced, careful]
+      description: default_model_profile.system_profile_key CHECK; a contract E09 copies (feature ADR-0005)
+    CustomProfileId:
+      type: string
+      format: uuid
+      description: UUIDv7 (model_profile.id)
+    ProfileKey:
+      description: |
+        A profile in a URL: a system key or a custom profile id. Unambiguous, because keys are never UUIDs.
+      oneOf:
+        - $ref: "#/components/schemas/SystemProfileKey"
+        - $ref: "#/components/schemas/CustomProfileId"
+    ProfileRef:
+      description: |
+        A profile in JSON, mirroring the two columns `system_profile_key` / `custom_profile_id` (data-model
+        decision 1). E09 stores and sends the same shape.
+      oneOf:
+        - $ref: "#/components/schemas/SystemProfileRef"
+        - $ref: "#/components/schemas/CustomProfileRef"
+      discriminator:
+        propertyName: kind
+        mapping:
+          system: "#/components/schemas/SystemProfileRef"
+          custom: "#/components/schemas/CustomProfileRef"
+    SystemProfileRef:
+      type: object
+      required: [kind, key]
+      additionalProperties: false
+      properties:
+        kind: { type: string, const: system }
+        key: { $ref: "#/components/schemas/SystemProfileKey" }
+    CustomProfileRef:
+      type: object
+      required: [kind, id]
+      additionalProperties: false
+      properties:
+        kind: { type: string, const: custom }
+        id: { $ref: "#/components/schemas/CustomProfileId" }
+    UsdAmount:
+      type: string
+      pattern: "^[0-9]{1,8}(\\.[0-9]{1,6})?$"
+      description: US dollars as a decimal string (NUMERIC(14,6) in the catalog), never a JSON number
+      examples: ["0.150000", "0.30"]
+
+    # ---- Catalog (llm snapshot, served through agents' ModelCatalogView)
+    ModelCatalog:
+      type: object
+      required: [state, lastRefreshedAt, lastFailedAt, models]
+      additionalProperties: false
+      properties:
+        state:
+          type: string
+          enum: [current, update-failed, not-loaded, not-configured]
+          description: |
+            `not-configured`: no provider key (AC-226). `not-loaded`: no successful refresh ever
+            (model_catalog_state.last_refreshed_at NULL, AC-212). `update-failed`: last_failed_at >
+            last_refreshed_at (AC-212). `current` otherwise.
+        lastRefreshedAt:
+          type: [string, "null"]
+          format: date-time
+          description: model_catalog_state.last_refreshed_at — "last updated" (AC-211) and "the time it is from" (AC-212)
+        lastFailedAt:
+          type: [string, "null"]
+          format: date-time
+          description: model_catalog_state.last_failed_at
+        models:
+          type: array
+          maxItems: 2000
+          items: { $ref: "#/components/schemas/CatalogModel" }
+    CatalogModel:
+      type: object
+      required: [modelId, name, provider, takes, produces, slots, inputPricePerMillionTokens,
+                 outputPricePerMillionTokens, pricePerImage, contextLength]
+      additionalProperties: false
+      properties:
+        modelId: { $ref: "#/components/schemas/ModelId" }
+        name: { type: string, maxLength: 200, description: model_catalog_entry.name }
+        provider: { type: string, maxLength: 100, description: model_catalog_entry.provider }
+        takes:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/Modality" }
+          description: model_catalog_entry.takes_text / takes_images
+        produces:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/Modality" }
+          description: model_catalog_entry.produces_text / produces_images
+        slots:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/SlotKind" }
+          description: Slots the model fits (derived; text = takes and produces text, vision = takes images and produces text, image = produces images) — the slot filter (AC-211)
+        inputPricePerMillionTokens:
+          oneOf: [{ $ref: "#/components/schemas/UsdAmount" }, { type: "null" }]
+          description: model_catalog_entry.input_price_per_mtok; null = unknown
+        outputPricePerMillionTokens:
+          oneOf: [{ $ref: "#/components/schemas/UsdAmount" }, { type: "null" }]
+          description: model_catalog_entry.output_price_per_mtok; null = unknown
+        pricePerImage:
+          oneOf: [{ $ref: "#/components/schemas/UsdAmount" }, { type: "null" }]
+          description: Reserved; always null in E10 (OpenRouter publishes no per-image price, image models show per-1M-token prices, AC-211)
+        contextLength:
+          type: [integer, "null"]
+          minimum: 1
+          description: model_catalog_entry.context_length — how much text it can take at once
+
+    # ---- Profiles (agents)
+    ChainModel:
+      type: object
+      required: [modelId, name, availability]
+      additionalProperties: false
+      properties:
+        modelId: { $ref: "#/components/schemas/ModelId" }
+        name:
+          type: [string, "null"]
+          maxLength: 200
+          description: Catalog name; null when the model isn't in the catalog
+        availability:
+          type: string
+          enum: [available, not-in-catalog, not-capable]
+          description: |
+            Evaluated now (sad §4). `not-in-catalog` is shown "Not in the catalog" (AC-213, AC-221).
+            `not-capable` only occurs in a system profile whose Operator override names a model that can't
+            do the slot's job (AC-227); it is skipped like a missing one.
+    Slot:
+      type: object
+      required: [state, currentModelId, chain]
+      additionalProperties: false
+      properties:
+        state:
+          type: string
+          enum: [main-model, fallback, no-model-available, not-used]
+          description: |
+            `main-model`: position 1 is available. `fallback`: it isn't, a later one is — "Main model
+            unavailable. Using <currentModel> for now." (AC-10). `no-model-available`: no model of the
+            chain is available (AC-223). `not-used`: empty vision or image slot (AC-213, AC-223).
+        currentModelId:
+          oneOf: [{ $ref: "#/components/schemas/ModelId" }, { type: "null" }]
+          description: The first available model of the chain — the one a call would use now
+        chain:
+          type: array
+          maxItems: 3
+          items: { $ref: "#/components/schemas/ChainModel" }
+          description: model_profile_slot_model rows in position order (system profiles from settings, beyond the third ignored)
+    ProfileSlots:
+      type: object
+      required: [text, vision, image]
+      additionalProperties: false
+      properties:
+        text: { $ref: "#/components/schemas/Slot" }
+        vision: { $ref: "#/components/schemas/Slot" }
+        image: { $ref: "#/components/schemas/Slot" }
+    PricePer100Runs:
+      type: object
+      required: [state, amount]
+      additionalProperties: false
+      description: |
+        From the text slot's current model: 100 × (3,000 input + 500 output tokens) × its catalog prices,
+        rounded to whole cents (spec §6, sad §8).
+      properties:
+        state:
+          type: string
+          enum: [estimate, under-one-cent, free, unknown, no-text-model]
+          description: "\"$x.xx per 100 runs\", \"< $0.01 per 100 runs\", \"Free\", \"Price unknown\", \"No model available for text\" (AC-51, AC-210, AC-223)"
+        amount:
+          oneOf:
+            - type: string
+              pattern: "^[0-9]{1,8}\\.[0-9]{2}$"
+            - type: "null"
+          description: Whole-cent USD, set only when `state = estimate`
+    ModelProfile:
+      type: object
+      required: [ref, name, slots, pricePer100Runs, choosable]
+      additionalProperties: false
+      properties:
+        ref: { $ref: "#/components/schemas/ProfileRef" }
+        name:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: model_profile.name (trimmed), or the system profile's display name ("Fast and cheap", "Balanced", "Careful")
+        slots: { $ref: "#/components/schemas/ProfileSlots" }
+        pricePer100Runs: { $ref: "#/components/schemas/PricePer100Runs" }
+        choosable:
+          type: boolean
+          description: False when the text slot has no available model — can't become a new default (AC-223)
+    ModelProfileList:
+      type: object
+      required: [aiConfigured, defaultProfile, customProfileLimit, items]
+      additionalProperties: false
+      properties:
+        aiConfigured:
+          type: boolean
+          description: False without a provider key — banner, editing disabled (AC-226)
+        defaultProfile:
+          $ref: "#/components/schemas/ProfileRef"
+        customProfileLimit:
+          type: integer
+          const: 20
+          description: AC-218, for the "limit is 20" message
+        items:
+          type: array
+          maxItems: 23
+          items: { $ref: "#/components/schemas/ModelProfile" }
+          description: The 3 system profiles (fast, balanced, careful), then the Owner's custom profiles by model_profile.created_at
+    ModelProfileDraft:
+      type: object
+      required: [name, duplicatedFrom, slots, pricePer100Runs]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 40
+          description: '"" for a new profile, "<source> copy" / "<source> copy N" for a duplicate (AC-213)'
+        duplicatedFrom:
+          oneOf: [{ $ref: "#/components/schemas/ProfileRef" }, { type: "null" }]
+          description: Sent back on create so copied missing models are accepted (AC-213, AC-221)
+        slots: { $ref: "#/components/schemas/ProfileSlots" }
+        pricePer100Runs: { $ref: "#/components/schemas/PricePer100Runs" }
+    ChainInput:
+      type: object
+      required: [text, vision, image]
+      additionalProperties: false
+      description: Model ids per slot in chain order (position 1 = main model). Rules are domain-checked (`ProfileInvalid`); a `maxItems` of 10 per slot is only a transport cap, the domain still answers `slot-full` above 3.
+      properties:
+        text:
+          type: array
+          maxItems: 10
+          items: { $ref: "#/components/schemas/ModelId" }
+        vision:
+          type: array
+          maxItems: 10
+          items: { $ref: "#/components/schemas/ModelId" }
+        image:
+          type: array
+          maxItems: 10
+          items: { $ref: "#/components/schemas/ModelId" }
+    ModelProfileUpdate:
+      type: object
+      required: [name, slots]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Trimmed by the service; after trimming 1–40 characters (`name-required`, `name-too-long`)
+        slots: { $ref: "#/components/schemas/ChainInput" }
+    ModelProfileCreate:
+      type: object
+      required: [name, slots]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Trimmed by the service; after trimming 1–40 characters (`name-required`, `name-too-long`)
+        slots: { $ref: "#/components/schemas/ChainInput" }
+        duplicatedFrom:
+          oneOf: [{ $ref: "#/components/schemas/ProfileRef" }, { type: "null" }]
+          description: The draft's source; must be a system profile or one of the caller's own (else `404 not-found`)
+    ModelProfileDeletion:
+      type: object
+      required: [defaultProfile, defaultReset]
+      additionalProperties: false
+      properties:
+        defaultProfile: { $ref: "#/components/schemas/ProfileRef" }
+        defaultReset:
+          type: boolean
+          description: True when the deleted profile was the default, which is Balanced again (AC-220)
+    DefaultProfileChoice:
+      type: object
+      required: [profile]
+      additionalProperties: false
+      properties:
+        profile: { $ref: "#/components/schemas/ProfileRef" }

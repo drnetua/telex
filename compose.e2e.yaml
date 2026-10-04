@@ -1,7 +1,22 @@
-# End-to-end override: `docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait`.
+# Overlay for the Playwright suite: `docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait`.
 # The `e2e` Spring profile enables the fixture sources and /api/v1/e2e-fixtures; it is set only here, never in
-# compose.yaml, application.yaml or production.
+# compose.yaml, application.yaml or production. The app talks to a WireMock stand-in for OpenRouter (500-model
+# /models list) and never reaches the real service.
 services:
   app:
     environment:
       SPRING_PROFILES_ACTIVE: e2e
+      TELEX_LLM_OPENROUTER_BASE_URL: http://openrouter-fake:8080/api/v1
+      TELEX_OPENROUTER_API_KEY: e2e-dummy-key
+    depends_on:
+      openrouter-fake:
+        condition: service_started
+
+  openrouter-fake:
+    image: wiremock/wiremock:3.13.1
+    command: ["--disable-banner"]
+    volumes:
+      - ./e2e/wiremock/mappings:/home/wiremock/mappings:ro
+      - ./e2e/wiremock/__files:/home/wiremock/__files:ro
+    ports:
+      - "8089:8080"

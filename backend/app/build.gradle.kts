@@ -34,10 +34,12 @@ dependencies {
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.modulith.docs)
 
+    integrationTestImplementation(libs.spring.modulith.events.core)
     integrationTestImplementation(libs.spring.boot.testcontainers)
     integrationTestImplementation(libs.testcontainers.junit.jupiter)
     integrationTestImplementation(libs.testcontainers.postgresql)
     integrationTestImplementation(libs.swagger.request.validator.core)
+    integrationTestImplementation(libs.wiremock.standalone)
 }
 
 // The React SPA is served by Spring Web from classpath:/static/.

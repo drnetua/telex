@@ -36,3 +36,26 @@ telex:
   public-url: ${TELEX_PUBLIC_URL:http://localhost:8080}
   mail:
     from: ${TELEX_MAIL_FROM:teleX <no-reply@localhost>}
+  llm:
+    attempt-timeout: 60s
+    openrouter:
+      api-key: ${TELEX_OPENROUTER_API_KEY:}
+      base-url: https://openrouter.ai/api/v1
+    catalog:
+      refresh-interval: 24h
+      retry-interval: 5m
+  models:
+    # Shipped models of the system profiles; an Operator override replaces a whole slot (up to three ids).
+    system-profiles:
+      fast:
+        text: [google/gemini-3.5-flash-lite]
+        vision: [google/gemini-3.5-flash-lite]
+        image: [google/gemini-3.1-flash-lite-image]
+      balanced:
+        text: [google/gemini-3.5-flash]
+        vision: [google/gemini-3.5-flash]
+        image: [google/gemini-3.1-flash-image]
+      careful:
+        text: [anthropic/claude-sonnet-5]
+        vision: [anthropic/claude-sonnet-5]
+        image: [google/gemini-3-pro-image]

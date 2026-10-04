@@ -68,7 +68,7 @@ jobs:
           node-version: "24"
           cache: pnpm
 
-      - name: Start the stack (app with the e2e profile, Postgres, Mailpit)
+      - name: Start the stack (app with the e2e profile, Postgres, Mailpit, fake OpenRouter)
         run: docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait
 
       - name: Install dependencies and Chromium

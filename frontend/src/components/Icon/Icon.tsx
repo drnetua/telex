@@ -1,12 +1,17 @@
 import {
   IconActivity,
   IconAlertCircle,
+  IconArrowDown,
+  IconArrowUp,
+  IconAlertTriangle,
   IconBan,
   IconBrandTelegram,
   IconCheck,
   IconChecklist,
   IconChevronRight,
+  IconCircleOff,
   IconCloudOff,
+  IconCpu,
   IconClock,
   IconDeviceDesktop,
   IconDots,
@@ -33,6 +38,7 @@ import {
 const icons = {
   search: IconSearch,
   "alert-circle": IconAlertCircle,
+  "alert-triangle": IconAlertTriangle,
   ban: IconBan,
   "brand-telegram": IconBrandTelegram,
   user: IconUser,
@@ -46,6 +52,9 @@ const icons = {
   plus: IconPlus,
   trash: IconTrash,
   check: IconCheck,
+  "circle-off": IconCircleOff,
+  "arrow-up": IconArrowUp,
+  "arrow-down": IconArrowDown,
   sun: IconSun,
   moon: IconMoon,
   "device-desktop": IconDeviceDesktop,
@@ -58,6 +67,7 @@ const icons = {
   "layout-dashboard": IconLayoutDashboard,
   dots: IconDots,
   "chevron-right": IconChevronRight,
+  cpu: IconCpu,
   x: IconX,
 } satisfies Record<string, TablerIcon>;
 
