@@ -9,7 +9,7 @@ files_hint: ["frontend/src/shell/StatusBanner/StatusBanner.tsx", "frontend/src/s
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (third pass) — findings W1, W2, W4, W6"
-status: "todo"
+status: "done"
 ---
 
 # T53 — Banner Toast keeps its node, error Toasts are not nested live regions, a pulse 403 in the shell routes again, pulse tests cover 503/504

@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx", "fro
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (third pass) — findings W3, W5, D5"
-status: "todo"
+status: "done"
 ---
 
 # T54 — SCR-02 moves focus to the outcome card, Playwright covers the refusal-ended and load-failed states, and a 401 mid-wizard reaches SCR-92

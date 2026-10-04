@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/Boo
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (third pass) — findings K2, K3"
-status: "todo"
+status: "done"
 ---
 
 # T52 — An unlink during boot reopen leaves no live session, and the real resendCode reports phone refusals
