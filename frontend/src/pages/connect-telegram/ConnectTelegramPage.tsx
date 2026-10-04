@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import { refusalFor } from "../../api/linkingRefusal";
@@ -34,13 +34,17 @@ interface Notice {
   tone: "info" | "error";
 }
 
-function Title({ attempt }: { attempt: LinkingAttempt }) {
+function Title({ attempt, focus }: { attempt: LinkingAttempt; focus: boolean }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focus) heading.current?.focus();
+  }, [focus]);
   const accounts = useLinkedAccounts();
   const target = attempt.targetLinkedAccountId
     ? accounts.data?.find((a) => a.id === attempt.targetLinkedAccountId)
     : undefined;
   return (
-    <h1 className="h2 text-center">
+    <h1 className="h2 text-center" ref={heading} tabIndex={-1}>
       {target
         ? messages.linking.titleAgain(target.displayName, formatMaskedPhone(target.phone))
         : messages.linking.title}
@@ -57,6 +61,8 @@ export function ConnectTelegramPage() {
   const accounts = useLinkedAccounts();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [starting, setStarting] = useState(false);
+  // Set once an outcome or load-failed card was left, so the step that replaces it takes focus (not the first load).
+  const [refocus, setRefocus] = useState(false);
   const attempt = query.data;
   const [last, setLast] = useState<LinkingAttempt | undefined>(undefined);
   const known = attempt ?? last;
@@ -118,6 +124,7 @@ export function ConnectTelegramPage() {
         ...(target ? { targetLinkedAccountId: target } : {}),
       });
       client.setQueryData(linkingAttemptKey, fresh);
+      setRefocus(true);
       setOutcome(null);
     } catch (error) {
       const text = refusalFor(error);
@@ -238,7 +245,13 @@ export function ConnectTelegramPage() {
     if (loadFailed && !query.isFetching) {
       return (
         <Card>
-          <LoadFailedState onRetry={() => void query.refetch()} onBack={() => leave(origin())} />
+          <LoadFailedState
+            onRetry={() => {
+              setRefocus(true);
+              void query.refetch();
+            }}
+            onBack={() => leave(origin())}
+          />
         </Card>
       );
     }
@@ -261,7 +274,7 @@ export function ConnectTelegramPage() {
 
   return (
     <Card>
-      <Title attempt={attempt} />
+      <Title attempt={attempt} focus={refocus} />
       {attempt.step === "phone" ? <PhoneStep key="phone" {...props} /> : null}
       {attempt.step === "code" ? <CodeStep key="code" {...props} /> : null}
       {attempt.step === "password" ? <PasswordStep key="password" {...props} /> : null}

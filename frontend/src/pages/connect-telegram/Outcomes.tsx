@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/Button/Button";
 import { EmptyState } from "../../components/EmptyState/EmptyState";
 import type { IconName } from "../../components/Icon/Icon";
@@ -30,6 +30,14 @@ export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitState
   const [remaining, setRemaining] = useState(() => secondsUntil(retryAt));
   const [text] = useState(() => t.waitBody(clock(retryAt), minutesSeconds(remaining)));
   const over = remaining === 0;
+  const card = useRef<HTMLDivElement>(null);
+
+  // Back is replaced by Start again at 0:00; when that drops the focused button, focus returns to the heading.
+  useEffect(() => {
+    if (over && document.activeElement === document.body) {
+      card.current?.querySelector<HTMLElement>("[tabindex='-1']")?.focus();
+    }
+  }, [over]);
 
   useEffect(() => {
     if (over) return;
@@ -39,28 +47,30 @@ export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitState
 
   const visible = over ? t.waitOver : t.waitBody(clock(retryAt), minutesSeconds(remaining));
   return (
-    <EmptyState
-      kind="blocked"
-      focusTitle
-      icon="clock"
-      title={t.waitTitle}
-      action={
-        over ? (
-          <Button busy={starting} onClick={onStartAgain}>
-            {starting ? t.starting : t.startAgain}
-          </Button>
-        ) : (
-          <Button className="btn-outline-secondary" onClick={onBack}>
-            {t.back}
-          </Button>
-        )
-      }
-    >
-      <span aria-hidden={!over}>{visible}</span>
-      <span role="status" className="visually-hidden">
-        {over ? t.waitOver : text}
-      </span>
-    </EmptyState>
+    <div ref={card}>
+      <EmptyState
+        kind="blocked"
+        focusTitle
+        icon="clock"
+        title={t.waitTitle}
+        action={
+          over ? (
+            <Button key="start-again" busy={starting} onClick={onStartAgain}>
+              {starting ? t.starting : t.startAgain}
+            </Button>
+          ) : (
+            <Button key="back" className="btn-outline-secondary" onClick={onBack}>
+              {t.back}
+            </Button>
+          )
+        }
+      >
+        <span aria-hidden={!over}>{visible}</span>
+        <span role="status" className="visually-hidden">
+          {over ? t.waitOver : text}
+        </span>
+      </EmptyState>
+    </div>
   );
 }
 

@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx", "fro
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (fourth pass) — findings W7, W8, W9, W10"
-status: "todo"
+status: "done"
 ---
 
 # T59 — SCR-02 moves focus back to the step after an outcome card, the wait card's buttons don't swap under focus, and the AC-110 and focus tests are sound

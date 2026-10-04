@@ -64,7 +64,7 @@
 | T56 | A session whose unlink failed after teleX's own sign-out still reports its state, and the fake behaves the same | infra | Anton Husiev | S | — | done |
 | T57 | An unlink during the boot reopen window still signs teleX out of Telegram, and a failed reopen leaves no directory | infra | Anton Husiev | M | T56 | done |
 | T58 | The real code step ends the attempt on an invalid or banned number instead of answering 503 | infra | Anton Husiev | XS | T57 | done |
-| T59 | SCR-02 moves focus back to the step after an outcome card, the wait card's buttons don't swap under focus, and the AC-110 and focus tests are sound | ui | Anton Husiev | S | — | todo |
+| T59 | SCR-02 moves focus back to the step after an outcome card, the wait card's buttons don't swap under focus, and the AC-110 and focus tests are sound | ui | Anton Husiev | S | — | done |
 | T60 | Sync screens.md, events.md, the T54 record, sad, ux-flows and spec with the fourth-review fixes | docs | Anton Husiev | XS | T56, T57, T58, T59 | todo |
 
 **Total:** 60 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55 and T56–T60 follow-ups from the four 2026-10-04 reviews.

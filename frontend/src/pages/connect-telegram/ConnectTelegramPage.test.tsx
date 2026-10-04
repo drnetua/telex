@@ -753,7 +753,7 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
   });
 
-  it("moves focus to the wait card on 429 (AC-109)", async () => {
+  it("moves focus to the wait card on 429 (AC-02)", async () => {
     const retryAt = new Date(Date.now() + 90_000).toISOString();
     mockApi({
       [A]: [json(200, attempt())],
@@ -764,7 +764,7 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     expect(await screen.findByRole("heading", { name: "Too many attempts" })).toHaveFocus();
   });
 
-  it("moves focus to the refused card on 409 (AC-109)", async () => {
+  it("moves focus to the refused card on 409 (AC-108)", async () => {
     mockApi({
       [A]: [json(200, attempt())],
       [PHONE]: [json(409, { code: "telegram-account-already-linked" })],
@@ -790,6 +790,38 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
   });
 
+  it("moves focus to the phone step heading after Start again on the ended card (AC-109)", async () => {
+    mockApi({
+      [A]: [problem(404, "linking-attempt-not-found")],
+      [START]: [json(201, attempt())],
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Start again" }));
+    expect(await screen.findByRole("heading", { name: "Connect your Telegram" })).toHaveFocus();
+  });
+
+  it("moves focus to the step heading after load-failed Try again (AC-109)", async () => {
+    mockApi({ [A]: [problem(418, "teapot"), json(200, attempt())] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("heading", { name: "Connect your Telegram" })).toHaveFocus();
+  });
+
+  it("does not turn the focused Back into Start again at 0:00 on the wait card (AC-02)", async () => {
+    const retryAt = new Date(Date.now() + 1500).toISOString();
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
+    });
+    setup();
+    await submitPhone();
+    await screen.findByRole("heading", { name: "Too many attempts" });
+    const back = screen.getByRole("button", { name: "Back" });
+    back.focus();
+    const again = await screen.findByRole("button", { name: "Start again" }, { timeout: 4000 });
+    expect(again).not.toHaveFocus();
+  });
+
   it("moves focus to the load-failed card (AC-109)", async () => {
     mockApi({ [A]: [problem(418, "teapot")] });
     setup();
@@ -801,7 +833,14 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
 
 describe("SCR-02 session end (AC-110)", () => {
   it.each([
-    ["the attempt load", { [A]: [problem(401, "session-ended")] }, false],
+    [
+      "the attempt load",
+      {
+        [A]: [problem(401, "session-ended")],
+        "GET /api/v1/linked-accounts": [json(200, { items: [] })],
+      },
+      false,
+    ],
     [
       "a step submit",
       {
