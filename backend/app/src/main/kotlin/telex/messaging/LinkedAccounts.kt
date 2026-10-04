@@ -66,7 +66,7 @@ class LinkedAccounts(
      * Unlinks the Owner's account (AC-111, AC-113): a bounded sign-out, then one transaction that deletes the
      * account and records `AccountUnlinked`, then the session is closed and destroyed. A sign-out Telegram does not
      * confirm never stops the delete. If the delete fails, the account is Session lost after a confirmed sign-out and
-     * its session is left open after an unconfirmed one.
+     * its session is left open after an unconfirmed one. An interrupt during the sign-out is handed back on return.
      */
     fun unlink(
         owner: OwnerId,
@@ -78,23 +78,29 @@ class LinkedAccounts(
         val account = rows.getMine(owner, id) ?: throw LinkedAccountNotFound()
         val sessions = telegram.ifAvailable
         val signedOut = account.telegramSessionId
-        // A Session lost account has no open session to sign out; Telegram already ended it.
-        var confirmed =
-            account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
-                signOut(sessions, signedOut, account)
-        val removed = deleteOrClose(owner, id, sessions, signedOut, confirmed) ?: throw LinkedAccountNotFound()
-        val session = removed.session
-        if (session != null && sessions != null) {
-            // The row held another session than the one read: it is signed out and destroyed too.
-            if (session != signedOut) confirmed = signOut(sessions, session)
-            try {
-                sessions.close(session)
-            } finally {
-                sessions.destroy(session)
+        var interrupted = false
+        try {
+            // A Session lost account has no open session to sign out; Telegram already ended it.
+            var confirmed =
+                account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
+                    signOut(sessions, signedOut, account) { interrupted = true }
+            val removed = deleteOrClose(owner, id, sessions, signedOut, confirmed) ?: throw LinkedAccountNotFound()
+            val session = removed.session
+            if (session != null && sessions != null) {
+                // The row held another session than the one read: it is signed out and destroyed too.
+                if (session != signedOut) confirmed = signOut(sessions, session) { interrupted = true }
+                try {
+                    sessions.close(session)
+                } finally {
+                    sessions.destroy(session)
+                }
             }
+            meters.counter("telex.unlink", "signout", if (confirmed) "confirmed" else "unconfirmed").increment()
+            return UnlinkResult(confirmed)
+        } finally {
+            // only now: on a virtual request thread marked interrupted, the delete's JDBC calls would fail
+            if (interrupted) Thread.currentThread().interrupt()
         }
-        meters.counter("telex.unlink", "signout", if (confirmed) "confirmed" else "unconfirmed").increment()
-        return UnlinkResult(confirmed)
     }
 
     /**
@@ -160,12 +166,13 @@ class LinkedAccounts(
         sessions: TelegramSessions,
         session: TelegramSessionId,
         reopenFor: LinkedAccount? = null,
+        onInterrupt: () -> Unit,
     ): Boolean =
         try {
             if (reopenFor != null) reopenIfClosed(sessions, reopenFor, session)
             sessions.logOut(session, SIGN_OUT_TIMEOUT)
         } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
+            onInterrupt()
             false
         } catch (_: Exception) {
             false

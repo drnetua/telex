@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "b
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (seventh pass) — finding K14"
-status: "todo"
+status: "done"
 ---
 
 # T70 — An unlink whose sign-out is interrupted still deletes the account and puts the interrupt back only at the end

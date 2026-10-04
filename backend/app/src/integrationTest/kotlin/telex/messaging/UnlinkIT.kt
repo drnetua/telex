@@ -317,6 +317,38 @@ class UnlinkIT {
     }
 
     @Test
+    fun `AC-113 AC-111 an interrupted sign-out still deletes the account and hands the interrupt back`() {
+        val owner = owner()
+        val account = connected(owner)
+        val session = account.session!!
+        fake.dropConnectivity(session) // the fake's log out now waits out its timeout, where the interrupt lands
+        var result: UnlinkResult? = null
+        var failure: Throwable? = null
+        var interruptedOnReturn = false
+
+        // a virtual thread, like a request: once it is marked interrupted, its JDBC calls fail
+        val unlinking =
+            Thread.ofVirtual().start {
+                try {
+                    result = accounts.unlink(owner, account.id)
+                } catch (e: Throwable) {
+                    failure = e
+                }
+                interruptedOnReturn = Thread.currentThread().isInterrupted
+            }
+        await().until { unlinking.state == Thread.State.TIMED_WAITING }
+        unlinking.interrupt()
+        unlinking.join()
+
+        assertThat(failure).isNull()
+        assertThat(result?.signOutConfirmed).isFalse()
+        assertThat(count("linked_account")).isZero()
+        assertThat(count("channel")).isZero()
+        assertThat(fake.isOpen(session)).isFalse()
+        assertThat(interruptedOnReturn).describedAs("interrupt handed back").isTrue()
+    }
+
+    @Test
     fun `AC-111 a session swapped in between the read and the delete is signed out, closed and destroyed`() {
         val owner = owner()
         val account = connected(owner)
