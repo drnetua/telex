@@ -379,6 +379,39 @@ class LinkingCompletionIT {
     }
 
     @Test
+    fun `AC-111 AC-117 signing in again for an account unlinked before the completion read ends as not found`() {
+        val oldSession = fake.open(ByteArray(32))
+        val target = insertAccount(owner, 9996600152L, sessionId = oldSession)
+        jdbc.update(
+            "UPDATE linked_account SET state = 'session_lost', telegram_session_id = NULL, tdlib_key_sealed = NULL " +
+                "WHERE id = ?",
+            target.value,
+        )
+        toCodeStep("9996600152", target)
+        val newSession = attemptSession()
+        val before = sessionDirectories()
+        Mockito
+            .doAnswer { call ->
+                val count = call.callRealMethod()
+                jdbc.update("DELETE FROM linked_account WHERE id = ?", target.value)
+                count
+            }.`when`(rows)
+            .countMineLocked(owner)
+
+        assertThat(refusal { finish() })
+            .containsEntry(CODE, "linking-attempt-not-found")
+            .containsEntry("status", 404)
+
+        assertThat(rowsOf(owner)).isEmpty()
+        assertThat(events.stream(LinkedAccountStateChanged::class.java).toList().map { it.linkedAccountId })
+            .doesNotContain(target)
+        assertThat(fake.wasLoggedOut(newSession)).isTrue()
+        assertThat(fake.isOpen(newSession)).isFalse()
+        assertThat(sessionDirectories()).isEqualTo(before - 1)
+        assertThat(attempts.find(owner)).isNull()
+    }
+
+    @Test
     fun `AC-04 an untargeted add of an account unlinked meanwhile links it as new instead of refusing`() {
         val oldSession = fake.open(ByteArray(32))
         val gone = insertAccount(owner, 9996600151L, sessionId = oldSession)

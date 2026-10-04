@@ -301,6 +301,23 @@ describe("SCR-02 code step", () => {
     expect(screen.getByRole("button", { name: "Start again" })).toBeVisible();
   });
 
+  it("an unregistered number with the attempt still open keeps the inline error and the field (AC-107)", async () => {
+    const calls = mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [problem(422, "telegram-phone-unregistered")],
+    });
+    setup();
+    await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+    expect(await screen.findByText(/Telegram app first/)).toBeVisible();
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "GET" && c.url === A.slice(4))).toHaveLength(2),
+    );
+    expect(screen.queryByRole("heading", { name: "This linking has ended" })).toBeNull();
+    expect(screen.getByLabelText("Phone number")).toBeVisible();
+    expect(screen.getByText(/Telegram app first/)).toBeVisible();
+  });
+
   it("an expired code makes Send a new code primary (AC-02)", async () => {
     mockApi({ [A]: [json(200, codeAttempt)], [CODE]: [problem(422, "telegram-code-expired")] });
     setup();
@@ -587,6 +604,23 @@ describe("SCR-02 outcomes", () => {
     expect(calls.find((c) => c.method === "POST" && c.url === START.slice(5))?.body).toEqual({
       origin: "inbox",
     });
+  });
+
+  it("starts again without the target when the account was unlinked meanwhile (AC-117)", async () => {
+    const calls = mockApi({
+      [A]: [json(200, attempt({ targetLinkedAccountId: "a1" }))],
+      [PHONE]: [problem(404, "linking-attempt-not-found")],
+      [START]: [problem(404, "not-found"), json(201, attempt())],
+    });
+    setup();
+    await submitPhone();
+    await userEvent.click(await screen.findByRole("button", { name: "Start again" }));
+    expect(await screen.findByLabelText("Phone number")).toHaveValue("");
+    const starts = calls.filter((c) => c.method === "POST" && c.url === START.slice(5));
+    expect(starts.map((c) => c.body)).toEqual([
+      { origin: "inbox", targetLinkedAccountId: "a1" },
+      { origin: "inbox" },
+    ]);
   });
 
   it("AC-122: a fresh attempt landing in the cache replaces an outcome card with its step", async () => {

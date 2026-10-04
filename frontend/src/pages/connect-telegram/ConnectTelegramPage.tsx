@@ -115,22 +115,30 @@ export function ConnectTelegramPage() {
     leave(result.origin, toast);
   };
 
-  const startAgain = async () => {
-    const previous = known;
+  const startAgain = async (withTarget = true) => {
+    const target = withTarget ? known?.targetLinkedAccountId : null;
     setStarting(true);
     try {
       const fresh = await startMyLinkingAttempt({
         origin: origin(),
-        ...(previous?.targetLinkedAccountId
-          ? { targetLinkedAccountId: previous.targetLinkedAccountId }
-          : {}),
+        ...(target ? { targetLinkedAccountId: target } : {}),
       });
       client.setQueryData(linkingAttemptKey, fresh);
       setOutcome(null);
     } catch (error) {
       const text = refusalFor(error);
+      if (
+        target &&
+        error instanceof ApiFailure &&
+        error.status === 404 &&
+        error.code === "not-found"
+      ) {
+        // The account to sign in again was unlinked meanwhile: a plain add is all that is left.
+        await startAgain(false);
+        return;
+      }
       if (text) show(text, "error");
-      else if (!routeFailure(error, async () => startAgain())) {
+      else if (!routeFailure(error, async () => startAgain(withTarget))) {
         show(messages.linking.genericError, "error");
       }
     } finally {
