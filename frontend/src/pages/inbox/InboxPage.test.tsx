@@ -121,7 +121,7 @@ describe("SCR-10 Inbox", () => {
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 
-  it("AC-119: a refused start at the limit names the limit", async () => {
+  it("AC-115: a refused start at the limit names the limit (F4 refusalFor)", async () => {
     routed({
       signOut: () => new Response(null, { status: 204 }),
       start: () => json(409, { code: "linked-account-limit-reached", limit: 3 }),

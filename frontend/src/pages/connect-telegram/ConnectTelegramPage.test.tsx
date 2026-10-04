@@ -423,7 +423,7 @@ describe("SCR-02 password step", () => {
 });
 
 describe("SCR-02 failures", () => {
-  it("AC-119: a 503 on the attempt load shows SCR-93 and hides the wizard", async () => {
+  it("SCR-93: a 503 on the attempt load shows the unavailable page and hides the wizard", async () => {
     mockApi({ [A]: [problem(503, "unavailable")] });
     render(
       <QueryClientProvider client={createAppQueryClient()}>
