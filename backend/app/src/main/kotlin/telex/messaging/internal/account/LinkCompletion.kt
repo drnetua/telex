@@ -59,9 +59,24 @@ class LinkCompletion(
         if (target != null && targetAccount == null) return Completion.Refused(LinkRefusal.MISMATCH)
         val existing = rows.findByTelegramUser(user.telegramUserId)
         return when (val decision = LinkRules.decide(owner, targetAccount, existing, count, limit.maxPerOwner)) {
-            is LinkDecision.Refused -> Completion.Refused(decision.reason)
-            is LinkDecision.SignedInAgain -> signInAgain(owner, decision.account, sessionId, dbKey, user)
-            LinkDecision.NewLink -> link(owner, sessionId, dbKey, user)
+            is LinkDecision.Refused -> {
+                Completion.Refused(decision.reason)
+            }
+
+            is LinkDecision.SignedInAgain -> {
+                signInAgain(
+                    owner,
+                    target != null,
+                    decision.account,
+                    sessionId,
+                    dbKey,
+                    user,
+                )
+            }
+
+            LinkDecision.NewLink -> {
+                link(owner, sessionId, dbKey, user)
+            }
         }
     }
 
@@ -102,6 +117,7 @@ class LinkCompletion(
 
     private fun signInAgain(
         owner: OwnerId,
+        targeted: Boolean,
         account: LinkedAccount,
         sessionId: TelegramSessionId,
         dbKey: ByteArray,
@@ -109,8 +125,11 @@ class LinkCompletion(
     ): Completion {
         val swapped =
             rows.swapSession(account.id, sessionId, ownerKeys.seal(owner, dbKey, account.id.keyAad()), user.displayName)
-        // An unlink deleted the account since it was read: nothing holds the new session, so it is refused, not kept.
-        if (swapped == 0) return Completion.Refused(LinkRefusal.MISMATCH)
+        if (swapped == 0) {
+            // An unlink deleted the account since it was read. A targeted sign in again has nothing to return to, so
+            // it is refused (the new session is discarded); an untargeted add just finds the account no longer linked.
+            return if (targeted) Completion.Refused(LinkRefusal.MISMATCH) else link(owner, sessionId, dbKey, user)
+        }
         events.publishEvent(LinkedAccountStateChanged(owner, account.id, LinkedAccountState.CONNECTED))
         return Completion.SignedInAgain(account.id, account.telegramSessionId)
     }

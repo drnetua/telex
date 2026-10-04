@@ -354,8 +354,9 @@ class LinkingCompletionIT {
                 "WHERE id = ?",
             target.value,
         )
-        toCodeStep("9996600150")
+        toCodeStep("9996600150", target)
         val newSession = attemptSession()
+        val before = sessionDirectories()
         Mockito
             .doAnswer { call ->
                 val holder = call.callRealMethod()
@@ -371,7 +372,38 @@ class LinkingCompletionIT {
             .doesNotContain(target)
         assertThat(fake.wasLoggedOut(newSession)).isTrue()
         assertThat(fake.isOpen(newSession)).isFalse()
+        assertThat(sessionDirectories()).isEqualTo(before - 1)
         assertThat(attempts.find(owner)).isNull()
+    }
+
+    @Test
+    fun `AC-04 an untargeted add of an account unlinked meanwhile links it as new instead of refusing`() {
+        val oldSession = fake.open(ByteArray(32))
+        val gone = insertAccount(owner, 9996600151L, sessionId = oldSession)
+        jdbc.update(
+            "UPDATE linked_account SET state = 'session_lost', telegram_session_id = NULL, tdlib_key_sealed = NULL " +
+                "WHERE id = ?",
+            gone.value,
+        )
+        toCodeStep("9996600151")
+        val newSession = attemptSession()
+        Mockito
+            .doAnswer { call ->
+                val holder = call.callRealMethod()
+                jdbc.update("DELETE FROM linked_account WHERE id = ?", gone.value)
+                holder
+            }.`when`(rows)
+            .findByTelegramUser(Mockito.anyLong())
+
+        val done = finish() as LinkingProgress.Completed
+
+        assertThat(done.outcome).isEqualTo(LinkingOutcome.LINKED)
+        val row = rowsOf(owner).single()
+        assertThat(row["id"]).isEqualTo(done.linkedAccountId.value)
+        assertThat(row["id"]).isNotEqualTo(gone.value)
+        assertThat(row[SESSION_ID]).isEqualTo(newSession.value)
+        assertThat(fake.isOpen(newSession)).isTrue()
+        assertThat(fake.wasLoggedOut(newSession)).isFalse()
     }
 
     @Test
