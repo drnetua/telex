@@ -64,14 +64,16 @@ class TdlightTelegramSessions(
         id: TelegramSessionId,
         dbKey: ByteArray,
     ) {
-        if (sessions.containsKey(id)) return
+        // Claim first, then check: a reopen that finished registered its session before releasing its claim,
+        // so a racing caller (boot, an unlink) either loses the claim or sees the session, never opens a second one.
         val inFlight = CompletableFuture<Unit>()
         if (opening.putIfAbsent(id, inFlight) != null) return
         try {
+            if (sessions.containsKey(id)) return
             directories.create(id)
             start(id, dbKey, reopened = true)
         } finally {
-            opening.remove(id)
+            opening.remove(id, inFlight)
             inFlight.complete(Unit)
         }
     }

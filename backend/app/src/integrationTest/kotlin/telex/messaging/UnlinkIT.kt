@@ -247,7 +247,8 @@ class UnlinkIT {
                 .describedAs("account state %s, session open %s", state, fake.isOpen(session))
                 .isTrue()
         }
-        assertThat(accounts.unlink(owner, account.id).signOutConfirmed).isNotNull()
+        // the first attempt already signed the session out and closed it: the retry has nothing left to sign out
+        assertThat(accounts.unlink(owner, account.id).signOutConfirmed).isFalse()
         assertThat(count("linked_account")).isZero()
     }
 

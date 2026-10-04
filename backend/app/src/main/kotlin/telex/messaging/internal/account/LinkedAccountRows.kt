@@ -129,15 +129,6 @@ class LinkedAccountRows(
             .query { rs, _ -> TelegramSessionId(rs.getObject(1, UUID::class.java)) }
             .set()
 
-    /** The sealed key the unlink reopens a not yet reopened session with; same column as [sealedKey], read apart. */
-    fun sealedKeyToSignOut(id: LinkedAccountId): ByteArray? =
-        jdbc
-            .sql("SELECT tdlib_key_sealed FROM linked_account WHERE id = ?")
-            .param(id.value)
-            .query { rs, _ -> rs.getBytes(1) }
-            .optional()
-            .orElse(null)
-
     /** The sealed TDLib key of an account, or null when it has none (Session lost after a master-key reset). */
     fun sealedKey(id: LinkedAccountId): ByteArray? =
         jdbc

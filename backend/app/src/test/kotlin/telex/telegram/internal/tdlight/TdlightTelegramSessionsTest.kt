@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.test.util.ReflectionTestUtils
 import telex.telegram.ChatType
 import telex.telegram.SessionState
 import telex.telegram.SignInOutcome
@@ -26,7 +27,12 @@ import telex.telegram.tdlib.TdlibUpdate
 import java.nio.file.Path
 import java.time.Clock
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicReference
 
 class TdlightTelegramSessionsTest {
     @TempDir
@@ -317,6 +323,13 @@ class TdlightTelegramSessionsTest {
             .isEqualTo(SignInOutcome.PhoneBanned)
         assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_NUMBER_UNOCCUPIED")))
             .isEqualTo(SignInOutcome.PhoneUnregistered)
+        assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_CODE_INVALID"))).isEqualTo(SignInOutcome.CodeWrong)
+        assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_CODE_EMPTY"))).isEqualTo(SignInOutcome.CodeWrong)
+        assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_CODE_EXPIRED"))).isEqualTo(SignInOutcome.CodeExpired)
+        assertThat(codeRefused(TdlibResponse.Failure(429, "Too Many Requests: retry after 30")))
+            .isEqualTo(SignInOutcome.WaitRequired(30))
+        assertThatThrownBy { codeRefused(TdlibResponse.Failure(500, "INTERNAL")) }
+            .isInstanceOf(TelegramUnavailable::class.java)
     }
 
     @Test
@@ -361,6 +374,65 @@ class TdlightTelegramSessionsTest {
         await().untilAsserted { assertThat(states().map { it.sessionId }).containsExactlyInAnyOrder(first, second) }
         assertThat(states().map { it.state }).containsOnly(SessionState.Ready)
         assertThat(tdlib.clients.flatMap { it.requests }.filter { it !is TdlibRequest.LoadChats }).isEmpty()
+    }
+
+    @Test
+    fun `a reopen that races one finishing opens one client and keeps the first session (AC-111)`() {
+        val firstInsideOpen = CountDownLatch(1)
+        val releaseFirst = CountDownLatch(1)
+        tdlib.onOpen = {
+            if (tdlib.clients.size == 1) {
+                firstInsideOpen.countDown()
+                releaseFirst.await()
+            }
+            it.emit(auth("authorizationStateReady"))
+        }
+        answerOnlyChatLoads()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        val virtualThreads = Executors.newVirtualThreadPerTaskExecutor()
+        // the second reopen parks when it claims the in-flight marker until the first reopen has fully finished
+        val secondClaiming = CountDownLatch(1)
+        val firstDone = CountDownLatch(1)
+        val second = AtomicReference<Thread>()
+        ReflectionTestUtils.setField(
+            sessions,
+            "opening",
+            object : ConcurrentHashMap<TelegramSessionId, CompletableFuture<Unit>>() {
+                override fun putIfAbsent(
+                    key: TelegramSessionId,
+                    value: CompletableFuture<Unit>,
+                ): CompletableFuture<Unit>? {
+                    if (Thread.currentThread() == second.get()) {
+                        secondClaiming.countDown()
+                        firstDone.await()
+                    }
+                    return super.putIfAbsent(key, value)
+                }
+            },
+        )
+        val first = CompletableFuture.runAsync({ sessions.reopen(id, key) }, virtualThreads)
+        firstInsideOpen.await()
+        val secondDone = CompletableFuture<Unit>()
+        second.set(
+            Thread.ofVirtual().unstarted {
+                runCatching { sessions.reopen(id, key) }
+                    .fold({ secondDone.complete(Unit) }, { secondDone.completeExceptionally(it) })
+            },
+        )
+        second.get().start()
+
+        assertTimeoutPreemptively(Duration.ofSeconds(5)) {
+            secondClaiming.await()
+            releaseFirst.countDown()
+            first.get()
+            firstDone.countDown()
+            secondDone.get()
+        }
+
+        assertThat(tdlib.clients).hasSize(1)
+        assertThat(tdlib.clients.single().closeCalled).isFalse()
+        await().untilAsserted { assertThat(states().map { it.state }).containsExactly(SessionState.Ready) }
     }
 
     @Test

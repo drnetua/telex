@@ -32,6 +32,7 @@ import java.time.Instant
 import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** AC-36, AC-118, AC-117, AC-122, AC-111: accounts come back after a restart and follow Telegram's session state. */
 @SpringBootTest(properties = ["telex.telegram.adapter=fake"])
@@ -185,15 +186,26 @@ class LifecycleIT {
         assertThat(state(account)).isEqualTo("connected")
     }
 
+    /**
+     * Runs [race] once, right after the boot reopen reads [account]'s sealed key. Later reads (the unlink's own
+     * reopen inside [race]) go straight to the real method, so the stub never recurses.
+     */
+    private fun afterBootReadsKey(
+        account: Linked,
+        race: () -> Unit,
+    ) {
+        val fired = AtomicBoolean()
+        Mockito
+            .doAnswer { call -> call.callRealMethod().also { if (fired.compareAndSet(false, true)) race() } }
+            .`when`(rows)
+            .sealedKey(account.id)
+    }
+
     @Test
     fun `AC-111 an account unlinked while boot reopens it keeps no open session and no directory`() {
         val account = connected(owner())
         // The unlink lands after the reopen read the key but before the reopened session is registered.
-        Mockito
-            .doAnswer { call ->
-                call.callRealMethod().also { accounts.unlink(account.owner, account.id) }
-            }.`when`(rows)
-            .sealedKey(account.id)
+        afterBootReadsKey(account) { accounts.unlink(account.owner, account.id) }
 
         restart()
 
@@ -208,11 +220,7 @@ class LifecycleIT {
         val result =
             java.util.concurrent.atomic
                 .AtomicReference<telex.messaging.UnlinkResult>()
-        Mockito
-            .doAnswer { call ->
-                call.callRealMethod().also { result.set(accounts.unlink(account.owner, account.id)) }
-            }.`when`(rows)
-            .sealedKey(account.id)
+        afterBootReadsKey(account) { result.set(accounts.unlink(account.owner, account.id)) }
 
         restart()
 
@@ -225,18 +233,14 @@ class LifecycleIT {
     fun `AC-111 a reopen that completes after an unlink could not sign out signs the session out before dropping it`() {
         val account = connected(owner())
         // The unlink cannot reach Telegram (its own reopen fails), then the boot reopen it raced succeeds.
-        Mockito
-            .doAnswer { call ->
-                call.callRealMethod().also {
-                    fake.reopenUnavailable = true
-                    try {
-                        accounts.unlink(account.owner, account.id)
-                    } finally {
-                        fake.reopenUnavailable = false
-                    }
-                }
-            }.`when`(rows)
-            .sealedKey(account.id)
+        afterBootReadsKey(account) {
+            fake.reopenUnavailable = true
+            try {
+                accounts.unlink(account.owner, account.id)
+            } finally {
+                fake.reopenUnavailable = false
+            }
+        }
 
         restart()
 
@@ -248,14 +252,10 @@ class LifecycleIT {
     @Test
     fun `AC-113 a reopen that fails after an unlink leaves no session directory`() {
         val account = connected(owner())
-        Mockito
-            .doAnswer { call ->
-                call.callRealMethod().also {
-                    fake.reopenUnavailable = true
-                    accounts.unlink(account.owner, account.id)
-                }
-            }.`when`(rows)
-            .sealedKey(account.id)
+        afterBootReadsKey(account) {
+            fake.reopenUnavailable = true
+            accounts.unlink(account.owner, account.id)
+        }
 
         restart()
 

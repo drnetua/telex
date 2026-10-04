@@ -77,7 +77,8 @@ class FakeTelegram(
         if (reopenUnavailable) throw TelegramUnavailable()
         val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
         session.syncStarted = true
-        if (endedWhileStopped.remove(id)) {
+        // like TDLib, a session teleX signed out of asks for a phone number again: the real adapter reports Closed
+        if (endedWhileStopped.remove(id) || (session.authorized && loggedOut.contains(id))) {
             session.authorized = false
             publishState(id, session, SessionState.Closed)
         } else if (session.authorized) {

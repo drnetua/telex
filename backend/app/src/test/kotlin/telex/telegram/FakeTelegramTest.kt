@@ -252,6 +252,19 @@ class FakeTelegramTest {
     }
 
     @Test
+    fun `a session teleX signed out of reopens Closed and is not signed out again, like TDLib (AC-113)`() {
+        link("9996600006")
+        assertThat(fake.logOut(id, Duration.ofMillis(10))).isTrue()
+        fake.close(id)
+        val before = states().size
+
+        fake.reopen(id, ByteArray(32))
+
+        assertThat(states().drop(before).map { it.state }).containsExactly(SessionState.Closed)
+        assertThat(fake.logOut(id, Duration.ofMillis(10))).isFalse()
+    }
+
+    @Test
     fun `an unreachable Telegram does not answer sign-in steps`() {
         fake.dropConnectivity(id)
         assertThatThrownBy { fake.sendPhone(id, "9996600005") }.isInstanceOf(TelegramUnavailable::class.java)

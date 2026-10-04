@@ -131,8 +131,8 @@ class LinkedAccounts(
         account: LinkedAccount,
         session: TelegramSessionId,
     ) {
-        val sealed = rows.sealedKeyToSignOut(account.id)
-        if (sealed == null || sessions.isOpen(session)) return
+        if (sessions.isOpen(session)) return
+        val sealed = rows.sealedKey(account.id) ?: return
         val key = ownerKeys.open(account.ownerId, sealed, account.id.keyAad())
         try {
             sessions.reopen(session, key)
