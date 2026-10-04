@@ -4,7 +4,7 @@ title: "A failed delete after the sign-out leaves the account Session lost when 
 layer: "infra"
 deps: ["T61"]
 blocks: ["T63", "T65"]
-acs: ["AC-122", "AC-121", "AC-113"]
+acs: ["AC-122", "AC-113"]
 files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt", "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt"]
 owner: "Anton Husiev"
 estimate: "S"
@@ -18,7 +18,7 @@ status: "done"
 
 Follow-up from the fifth-pass review: [`_review/review-2026-10-04-r5.md`](../_review/review-2026-10-04-r5.md), findings **K10 (and the trace reviewer's F2)** (resolved "Fix now" by the user). Read those rows in the review record first — they carry the cited `file:line` and the failure scenario. The ACs below are the source of truth for what the tests assert: read them verbatim in [spec.md §5](../spec.md).
 
-- **ACs:** AC-122, AC-121, AC-113
+- **ACs:** AC-122, AC-113
 - **Blocked by:** T61 · **Blocks:** T63, T65
 
 ## What to change

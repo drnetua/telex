@@ -71,11 +71,11 @@
 | T64 | SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again | ui | Anton Husiev | XS | — | done |
 | T65 | Sync sad, tracker, test-plan and spec with the fifth-review fixes | docs | Anton Husiev | XS | T61, T62, T63, T64 | done |
 | T66 | Boot signs out a session reopened for an account unlinked meanwhile, and a unit test pins it | infra | Anton Husiev | XS | — | done |
-| T67 | An interrupted log out unmutes the session, and the interrupt can't turn a finished unlink into a 500 | infra | Anton Husiev | XS | — | done |
+| T67 | An interrupted log out unmutes the session, and closing it on an interrupted thread doesn't throw | infra | Anton Husiev | XS | — | done |
 | T68 | SCR-02 does not focus the step heading when one step replaces another, and a test pins the guard | ui | Anton Husiev | XS | — | done |
 | T69 | Sync sad, test-plan, ux-flows, task statuses and T53's AC with the sixth-review fixes | docs | Anton Husiev | XS | T66, T67, T68 | done |
-| T70 | An unlink whose sign-out is interrupted still deletes the account and puts the interrupt back only at the end | app | Anton Husiev | XS | — | todo |
-| T71 | SCR-10 and SCR-60 each pin the start-refused toast for 503 telegram-unavailable | ui | Anton Husiev | XS | — | todo |
-| T72 | Correct the AC-121 citations and the interrupted-unlink claims after the seventh review | docs | Anton Husiev | XS | T70, T71 | todo |
+| T70 | An unlink whose sign-out is interrupted still deletes the account and puts the interrupt back only at the end | app | Anton Husiev | XS | — | done |
+| T71 | SCR-10 and SCR-60 each pin the start-refused toast for 503 telegram-unavailable | ui | Anton Husiev | XS | — | done |
+| T72 | Correct the AC-121 citations and the interrupted-unlink claims after the seventh review | docs | Anton Husiev | XS | T70, T71 | done |
 
 **Total:** 72 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69 and T70–T72 follow-ups from the seven 2026-10-04 reviews.

@@ -146,7 +146,7 @@ class TdlightLogOutTest {
     }
 
     @Test
-    fun `a logOut interrupted while TDLib finishes it leaves a later Closed announced (AC-122, AC-121)`() {
+    fun `a logOut interrupted while TDLib finishes it leaves a later Closed announced (AC-122, AC-113)`() {
         val (sessions, id) = readyForLogOut(finish = false)
         val client = tdlib.clients.single()
         val outcome = CompletableFuture<Any?>()

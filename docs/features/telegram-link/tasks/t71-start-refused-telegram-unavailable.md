@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/inbox/InboxPage.test.tsx", "frontend/src/pages/
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (seventh pass) — finding S1"
-status: "todo"
+status: "done"
 ---
 
 # T71 — SCR-10 and SCR-60 each pin the start-refused toast for 503 telegram-unavailable

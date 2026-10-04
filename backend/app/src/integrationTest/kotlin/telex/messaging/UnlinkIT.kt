@@ -245,7 +245,7 @@ class UnlinkIT {
     }
 
     @Test
-    fun `AC-122 AC-121 AC-113 a delete that fails after an unconfirmed sign-out keeps the session open`() {
+    fun `AC-122 AC-113 a delete that fails after an unconfirmed sign-out keeps the session open`() {
         val owner = owner()
         val account = connected(owner)
         val session = account.session!!

@@ -1371,7 +1371,6 @@
       ],
       "acs": [
         "AC-122",
-        "AC-121",
         "AC-113"
       ],
       "dod": "If deletion.delete throws after a confirmed sign-out, the account is Session lost (its session closed) rather than connected/reconnecting with no client; after an unconfirmed sign-out the session is not closed and keeps reporting its state; UnlinkIT asserts the row state the Owner sees, not only the adapter's isOpen.",
@@ -1454,11 +1453,10 @@
     },
     {
       "id": "T67",
-      "title": "An interrupted log out unmutes the session, and the interrupt can't turn a finished unlink into a 500",
+      "title": "An interrupted log out unmutes the session, and closing it on an interrupted thread doesn't throw",
       "layer": "infra",
       "deps": [],
       "acs": [
-        "AC-121",
         "AC-122",
         "AC-113"
       ],

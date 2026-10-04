@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/test-plan.md", "docs/features/telegram
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (seventh pass) — findings D17, D18"
-status: "todo"
+status: "done"
 ---
 
 # T72 — Correct the AC-121 citations and the interrupted-unlink claims after the seventh review
