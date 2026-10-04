@@ -1345,6 +1345,98 @@
         "docs/features/telegram-link/spec.md"
       ],
       "file": "docs/features/telegram-link/tasks/t60-docs-sync-r4.md"
+    },
+    {
+      "id": "T61",
+      "title": "An unlink whose sealed key can't be opened still deletes the account and reports the sign-out unconfirmed",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink of an account whose sealed key fails to decrypt (wrong key, tampered or truncated value) answers 200 with signOutConfirmed=false and deletes the account; no checked exception from the key path escapes unlink as a 500.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t61-unlink-with-unopenable-key.md"
+    },
+    {
+      "id": "T62",
+      "title": "A failed delete after the sign-out leaves the account Session lost when Telegram confirmed it, and keeps an unconfirmed session running",
+      "layer": "infra",
+      "deps": [
+        "T61"
+      ],
+      "acs": [
+        "AC-122",
+        "AC-121",
+        "AC-113"
+      ],
+      "dod": "If deletion.delete throws after a confirmed sign-out, the account is Session lost (its session closed) rather than connected/reconnecting with no client; after an unconfirmed sign-out the session is not closed and keeps reporting its state; UnlinkIT asserts the row state the Owner sees, not only the adapter's isOpen.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t62-failed-delete-after-sign-out-state.md"
+    },
+    {
+      "id": "T63",
+      "title": "The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out",
+      "layer": "infra",
+      "deps": [
+        "T62"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113"
+      ],
+      "dod": "FakeTelegram.reopen of a session whose directory was destroyed (or never existed) comes up unauthorized and announces Closed, matching the real adapter on an empty TDLib database; the LifecycleIT boot-race case where the unlink's own reopen fails asserts signOutConfirmed=false, no open session and no directory, instead of a sign-out the real adapter can't perform.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/test/kotlin/telex/telegram/FakeTelegramTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t63-fake-reopen-of-destroyed-session.md"
+    },
+    {
+      "id": "T64",
+      "title": "SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-109",
+        "AC-122"
+      ],
+      "dod": "A test proves the first load of SCR-02 doesn't move focus to the step heading; the heading takes focus each time a step replaces an outcome or load-failed card, including when the Status Banner's Sign in again clears an outcome card, regardless of what happened earlier on the page.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t64-scr02-step-focus-per-transition.md"
+    },
+    {
+      "id": "T65",
+      "title": "Sync sad, tracker, test-plan and spec with the fifth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T61",
+        "T62",
+        "T63",
+        "T64"
+      ],
+      "acs": [],
+      "dod": "The sad AC-107 row and Flow 6 heading include the code-check refusal; the tracker table is one table; test-plan names the shell StatusBanner instead of PageFrame; sad flow 2 / screens describe the K9–K10 failure paths and the W12 focus rule as built.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/spec.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t65-docs-sync-r5.md"
     }
   ]
 }
