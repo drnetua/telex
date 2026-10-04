@@ -56,7 +56,7 @@
 | T48 | SCR-02 survives a failed pulse, and a failed load shows an inline state with Try again and Back | ui | Anton Husiev | S | T46 | done |
 | T49 | Banner: no false generic text, Sign in again outcome survives reorder and refetch, Toasts are announced | ui | Anton Husiev | M | — | done |
 | T50 | Record the shell banner extension and the two live channels in the ADRs, and sync sad, the contract and screens.md | docs | Anton Husiev | S | T46, T47, T48, T49 | done |
-| T51 | teleX's own sign-out on unlink is not a Session lost, and is confirmed only when Telegram finishes it | infra | Anton Husiev | M | — | todo |
+| T51 | teleX's own sign-out on unlink is not a Session lost, and is confirmed only when Telegram finishes it | infra | Anton Husiev | M | — | done |
 | T52 | An unlink during boot reopen leaves no live session, and the real resendCode reports phone refusals | infra | Anton Husiev | S | T51 | todo |
 | T53 | Banner Toast keeps its node, error Toasts are not nested live regions, a pulse 403 in the shell routes again, pulse tests cover 503/504 | ui | Anton Husiev | S | — | todo |
 | T54 | SCR-02 moves focus to the outcome card, Playwright covers the refusal-ended and load-failed states, and a 401 mid-wizard reaches SCR-92 | ui | Anton Husiev | S | — | todo |

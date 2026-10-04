@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 (third pass) — findings K1, K4"
-status: "todo"
+status: "done"
 ---
 
 # T51 — teleX's own sign-out on unlink is not a Session lost, and is confirmed only when Telegram finishes it
