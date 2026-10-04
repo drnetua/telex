@@ -272,7 +272,7 @@ sequenceDiagram
         Msg-->>SPA: refusal (one Owner per account, already linked, or limit)
     else U is this Owner's account in Session lost
         Msg->>Id: seal the new TDLib key for that Linked Account
-        Msg->>Msg: swap in the new Telegram session under the same Linked Account, Connected, no limit check
+        Msg->>Msg: swap in the new Telegram session under the same Linked Account, with the name and masked phone Telegram reports now, Connected, no limit check
         Msg->>Tg: destroy the old session directory
         Msg-->>SPA: signed in again, everything attached kept
     else new account within the limit

@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/data-model.md", "docs/features/telegra
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (eighth pass) — K15, K16, K17 follow-through"
-status: "todo"
+status: "done"
 ---
 
 # T76 — Sync the data model, test plan and tracker with the eighth-review fixes

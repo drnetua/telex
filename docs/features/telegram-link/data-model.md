@@ -112,8 +112,8 @@ An unlink keeps the Owner's key: it belongs to the Owner, not to the account. Th
 | `telegram_session_id` | UUID | NULL, UNIQUE | `TelegramSessionId` of the current Telegram session (its directory on the volume). Swapped on "Sign in again" (ADR-0002). NULL only after a master-key reset |
 | `tdlib_key_sealed` | BYTEA | NULL, CHECK `octet_length = 60` | The session's 32-byte TDLib database key sealed with the Owner's key, AAD = `id` (ADR-0003). NULL together with `telegram_session_id` (CHECK `num_nonnulls IN (0, 2)`) |
 | `display_name` | VARCHAR(255) | NOT NULL | Telegram first + last name (Telegram caps each at 64 characters; 255 leaves room for the units Telegram counts in). Refreshed on each sign-in |
-| `phone_country_code` | VARCHAR(3) | NOT NULL, CHECK 1–3 digits | Calling code of the masked phone (AC-01). Never the full number (sad §8) |
-| `phone_last_digits` | CHAR(2) | NOT NULL, CHECK 2 digits | Last two digits of the masked phone (AC-01) |
+| `phone_country_code` | VARCHAR(3) | NOT NULL, CHECK 1–3 digits | Calling code of the masked phone (AC-01). Never the full number (sad §8). Refreshed on each sign-in, so a changed number shows after Sign in again (AC-108) |
+| `phone_last_digits` | CHAR(2) | NOT NULL, CHECK 2 digits | Last two digits of the masked phone (AC-01). Refreshed on each sign-in |
 | `state` | VARCHAR(16) | NOT NULL, CHECK IN (`connected`, `reconnecting`, `session_lost`) | Follows TDLib's signals (sad §4 choice 4, flows 3 and 9). A row that isn't `session_lost` must have a Telegram session (CHECK) |
 | `chats_total` | INTEGER | NULL, CHECK ≥ 0 | Telegram's total for the account, archived included (AC-116); NULL until the first batch reports it. The synced count is `COUNT(channel)` |
 | `chat_sync_completed_at` | TIMESTAMPTZ | NULL, CHECK needs `chats_total` | When the initial load finished (flow 11 "mark the sync finished"). Reset to NULL when a new Telegram session starts loading (Sign in again) |
