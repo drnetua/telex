@@ -208,6 +208,70 @@ describe("StatusBanner", () => {
     );
   });
 
+  it("AC-122: a loaded list without a Session lost account hides a condition the pulse still reports", async () => {
+    const started = stubAccounts([account("a1", "Anna", "connected")]);
+    show(["account-disconnected"]);
+    await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole("status")).toBeEmptyDOMElement());
+    expect(screen.queryByText(/disconnected from Telegram/)).toBeNull();
+    expect(started).toHaveLength(0);
+  });
+
+  it("AC-117: Sign in again still navigates and caches the attempt when connectivity outranks the line mid-request", async () => {
+    let finish: (r: Response) => void = () => undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+        url.includes("linking-attempt") && init?.method === "POST"
+          ? new Promise<Response>((r) => {
+              finish = r;
+            })
+          : Promise.resolve(json(200, { items: [account("a1", "Anna", "session_lost")] })),
+      ),
+    );
+    const c = client();
+    render(
+      <QueryClientProvider client={c}>
+        <MemoryRouter initialEntries={["/x"]}>
+          <StatusBanner conditions={["account-disconnected"]} />
+          <Routes>
+            <Route path="/x" element={<p>home</p>} />
+            <Route path="/connect-telegram" element={<h1>Wizard</h1>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Sign in again" }));
+    act(() => connectivity.reportNoAnswer());
+    expect(screen.getByRole("status")).toHaveTextContent("teleX isn't responding.");
+    await act(async () =>
+      finish(json(201, { step: "phone", origin: "accounts", targetLinkedAccountId: "a1" })),
+    );
+    expect(await screen.findByRole("heading", { name: "Wizard" })).toBeInTheDocument();
+    expect(c.getQueryData(["linking-attempt"])).toMatchObject({ targetLinkedAccountId: "a1" });
+  });
+
+  it("AC-122: a refusal still toasts when its refetch clears the lost account", async () => {
+    let lists = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (url.includes("linking-attempt") && init?.method === "POST")
+          return Promise.resolve(json(409, { code: "linked-account-limit-reached", limit: 3 }));
+        lists += 1;
+        return Promise.resolve(
+          json(200, { items: [account("a1", "Anna", lists === 1 ? "session_lost" : "connected")] }),
+        );
+      }),
+    );
+    show(["account-disconnected"]);
+    await userEvent.click(await screen.findByRole("button", { name: "Sign in again" }));
+    expect(await screen.findByText(/You've linked 3 accounts/)).toBeInTheDocument();
+    await waitFor(() => expect(lists).toBeGreaterThan(1));
+    await waitFor(() => expect(screen.getByRole("status")).toBeEmptyDOMElement());
+    expect(screen.getByText(/You've linked 3 accounts/)).toBeInTheDocument();
+  });
+
   it("shows a server condition alone with its own action", () => {
     show(["budget-exhausted"]);
     expect(screen.getByRole("status")).toHaveTextContent(/budget/i);

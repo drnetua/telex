@@ -7,6 +7,7 @@ import { refusalFor } from "../api/linkingRefusal";
 import { Toast } from "../components/Toast/Toast";
 import { messages } from "../messages";
 import type { ConditionLive } from "./conditions";
+import { PULSE_KEY } from "./pulse";
 
 /**
  * AC-122: what the shell's `account-disconnected` condition says and offers. One Session lost account is named and
@@ -14,20 +15,38 @@ import type { ConditionLive } from "./conditions";
  */
 export function useAccountDisconnected(): ConditionLive {
   const accounts = useLinkedAccounts();
-  const start = useStartLinking();
   const navigate = useNavigate();
   const client = useQueryClient();
   const [refusal, setRefusal] = useState<string | null>(null);
+  // The outcome handlers live on the mutation, not on a click: the banner line may be gone when the request ends.
+  const start = useStartLinking({
+    onSuccess: (attempt) => {
+      // The wizard shows this attempt at once, also when it is already open on an outcome card.
+      client.setQueryData(linkingAttemptKey, attempt);
+      void client.invalidateQueries({ queryKey: PULSE_KEY });
+      void navigate("/connect-telegram");
+    },
+    onError: (error) => {
+      // 404 and "already connected" both mean the list is stale: refetch (AC-03).
+      void client.invalidateQueries({ queryKey: linkedAccountsKey });
+      const message = refusalFor(error);
+      if (message) setTimeout(() => setRefusal(message), 0);
+    },
+  });
   const dismissRefusal = useCallback(() => setRefusal(null), []);
-  const lost = Array.isArray(accounts.data)
-    ? accounts.data.filter((a) => a.state === "session_lost")
-    : [];
   const t = messages.banner;
-  if (lost.length === 0) return {};
+  const notice = refusal ? (
+    <Toast message={refusal} tone="error" onDismiss={dismissRefusal} />
+  ) : undefined;
+  // Only while the list is unknown does the catalog default stand; a loaded list outranks the pulse.
+  if (!Array.isArray(accounts.data)) return { notice };
+  const lost = accounts.data.filter((a) => a.state === "session_lost");
+  if (lost.length === 0) return { inactive: true, notice };
   if (lost.length > 1) {
     return {
       message: t.several(lost.length),
       action: { kind: "button", label: t.openAccounts, onClick: () => void navigate("/accounts") },
+      notice,
     };
   }
   const only = lost[0]!;
@@ -39,26 +58,9 @@ export function useAccountDisconnected(): ConditionLive {
       busy: start.isPending,
       onClick: () => {
         setRefusal(null);
-        start.mutate(
-          { origin: "accounts", targetLinkedAccountId: only.id },
-          {
-            onSuccess: (attempt) => {
-              // The wizard shows this attempt at once, also when it is already open on an outcome card.
-              client.setQueryData(linkingAttemptKey, attempt);
-              void navigate("/connect-telegram");
-            },
-            onError: (error) => {
-              // 404 and "already connected" both mean the list is stale: refetch (AC-03).
-              void client.invalidateQueries({ queryKey: linkedAccountsKey });
-              const message = refusalFor(error);
-              if (message) setTimeout(() => setRefusal(message), 0);
-            },
-          },
-        );
+        start.mutate({ origin: "accounts", targetLinkedAccountId: only.id });
       },
     },
-    notice: refusal ? (
-      <Toast message={refusal} tone="error" onDismiss={dismissRefusal} />
-    ) : undefined,
+    notice,
   };
 }

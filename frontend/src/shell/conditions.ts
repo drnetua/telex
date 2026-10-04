@@ -15,7 +15,9 @@ export type ConditionAction =
 export interface ConditionLive {
   message?: string;
   action?: ConditionAction;
-  /** Rendered beside the line, e.g. a Toast for a refused action. */
+  /** Loaded data says the condition no longer holds, whatever the pulse still reports: the banner drops it. */
+  inactive?: boolean;
+  /** Rendered with the banner, e.g. a Toast for a refused action; it outlives the condition's line. */
   notice?: ReactNode;
 }
 
@@ -24,8 +26,6 @@ export interface Condition {
   icon: IconName;
   message: string;
   action: ConditionAction;
-  /** A hook the banner calls inside the condition's own line, so it may read queries and own state. */
-  useLive?: () => ConditionLive;
 }
 
 interface Entry extends Condition {
@@ -44,7 +44,6 @@ const catalog: readonly Entry[] = [
     icon: "alert-circle",
     message: c.conditions.accountDisconnected,
     action: { kind: "link", label: messages.banner.openAccounts, to: "/accounts" },
-    useLive: useAccountDisconnected,
   },
   {
     code: "bot-blocked",
@@ -77,6 +76,15 @@ const catalog: readonly Entry[] = [
     action: { kind: "link", label: c.actions.details, to: "/inbox" },
   },
 ].map((entry, importance) => ({ ...entry, importance }) as Entry);
+
+/**
+ * Live data per condition code. The banner calls this once, so a condition's mutation state and Toast survive the
+ * line being outranked or dropped mid-action (ADR-0006 amendment). A later epic adds its hook here.
+ */
+export function useConditionLives(): ReadonlyMap<string, ConditionLive> {
+  const accountDisconnected = useAccountDisconnected();
+  return new Map([["account-disconnected", accountDisconnected]]);
+}
 
 const byCode = new Map(catalog.map((e) => [e.code, e]));
 const logged = new Set<string>();

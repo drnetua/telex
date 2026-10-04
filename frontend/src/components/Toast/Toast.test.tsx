@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
@@ -55,5 +55,16 @@ describe("Toast action", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(act).toHaveBeenCalledOnce();
     expect(dismiss).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Toast announcement (AC-111, AC-114)", () => {
+  it("writes an info Toast's text into a polite live region that existed before it mounted", async () => {
+    const before = Array.from(document.querySelectorAll('[aria-live="polite"]'));
+    const region = before.find((el) => el.textContent === "");
+    expect(region).toBeDefined();
+    render(<Toast message="Theme saved" onDismiss={() => undefined} />);
+    await waitFor(() => expect(region).toHaveTextContent("Theme saved"));
+    expect(region?.isConnected).toBe(true);
   });
 });

@@ -16,13 +16,25 @@ interface ToastProps {
 let slot: HTMLElement | null = null;
 let users = 0;
 
+/**
+ * One empty polite live region, mounted before any Toast and kept for the app's lifetime. A live region that arrives
+ * together with its text is often not announced; info Toasts are added into this one, so they are.
+ */
+const liveRegion: HTMLElement | null =
+  typeof document === "undefined" ? null : document.createElement("div");
+if (liveRegion) {
+  liveRegion.setAttribute("aria-live", "polite");
+  document.body.appendChild(liveRegion);
+}
+
 /** One fixed container for every open Toast, so Toasts shown together stack instead of overlapping. */
 function acquireSlot(): HTMLElement {
   if (!slot) {
     slot = document.createElement("div");
     slot.className =
       "toast-container telex-toast-container position-fixed bottom-0 end-0 p-3 d-flex flex-column gap-2";
-    document.body.appendChild(slot);
+    if (liveRegion && !liveRegion.isConnected) document.body.appendChild(liveRegion);
+    (liveRegion ?? document.body).appendChild(slot);
   }
   users += 1;
   return slot;

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isBackground } from "./account";
+import { PULSE_KEY } from "../shell/pulse";
 import { apiFetch } from "./client";
 
 export type LinkedAccountState = "connected" | "reconnecting" | "session_lost";
@@ -58,6 +59,11 @@ export function useUnlinkAccount() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: unlinkMyLinkedAccount,
-    onSettled: () => client.invalidateQueries({ queryKey: linkedAccountsKey }),
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: linkedAccountsKey }),
+        // The banner's pulse condition must not outlive the last Session lost account.
+        client.invalidateQueries({ queryKey: PULSE_KEY }),
+      ]),
   });
 }

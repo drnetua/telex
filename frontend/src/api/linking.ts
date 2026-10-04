@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, type UseMutationOptions } from "@tanstack/react-query";
 import { isBackground } from "./account";
 import { apiFetch } from "./client";
 
@@ -61,8 +61,13 @@ export function useLinkingAttempt() {
   });
 }
 
-export function useStartLinking() {
-  return useMutation({ mutationFn: startMyLinkingAttempt });
+export function useStartLinking(
+  options?: Pick<
+    UseMutationOptions<LinkingAttempt, Error, StartLinkingRequest>,
+    "onSuccess" | "onError"
+  >,
+) {
+  return useMutation({ mutationFn: startMyLinkingAttempt, ...options });
 }
 
 export function useCancelLinking() {

@@ -1,10 +1,16 @@
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { Fragment, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
 import { connectivity, retryNow } from "../connectivity";
-import { orderConditions, type Condition, type ConditionAction } from "../conditions";
+import {
+  orderConditions,
+  useConditionLives,
+  type Condition,
+  type ConditionAction,
+  type ConditionLive,
+} from "../conditions";
 
 const m = messages.shell.banner;
 
@@ -38,9 +44,10 @@ function Action({
   );
 }
 
-/** One condition's line; it is keyed by code, so a condition's live hook always runs in its own instance. */
+/** One condition's line, resolved from the live data the banner holds for its code. */
 function ConditionLine({
   condition,
+  live,
   as: Tag,
   busy,
   stillDown,
@@ -48,13 +55,13 @@ function ConditionLine({
   children,
 }: {
   condition: Condition;
+  live: ConditionLive;
   as: "div" | "li";
   busy: boolean;
   stillDown: boolean;
   onRetry: () => void;
   children?: ReactNode;
 }) {
-  const live = condition.useLive?.() ?? {};
   const action = live.action ?? condition.action;
   // The still-down text belongs to a connectivity failure that survived a retry.
   const text =
@@ -65,7 +72,6 @@ function ConditionLine({
       <span className="flex-grow-1">{text}</span>
       {children}
       <Action action={action} busy={busy} onRetry={onRetry} />
-      {live.notice}
     </Tag>
   );
 }
@@ -81,13 +87,19 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
   const [busy, setBusy] = useState(false);
   const [stillDown, setStillDown] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const lives = useConditionLives();
 
   if (link === "online" && stillDown) setStillDown(false);
 
-  const codes = link === "online" ? conditions : [link, ...conditions];
+  // Loaded data that contradicts the pulse silences the condition; connectivity codes have no live data.
+  const reported = conditions.filter((code) => !lives.get(code)?.inactive);
+  const codes = link === "online" ? reported : [link, ...reported];
+  const notices = Array.from(lives, ([code, live]) => (
+    <Fragment key={code}>{live.notice}</Fragment>
+  ));
   const ordered = orderConditions(codes);
   const [top, ...rest] = ordered;
-  if (!top) return <div role="status" />;
+  if (!top) return <div role="status">{notices}</div>;
 
   const onRetry = () => {
     setBusy(true);
@@ -103,6 +115,7 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
         <ConditionLine
           key={top.code}
           condition={top}
+          live={lives.get(top.code) ?? {}}
           as="div"
           busy={busy}
           stillDown={stillDown}
@@ -124,6 +137,7 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
               <ConditionLine
                 key={condition.code}
                 condition={condition}
+                live={lives.get(condition.code) ?? {}}
                 as="li"
                 busy={busy}
                 stillDown={false}
@@ -133,6 +147,7 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
           </ul>
         ) : null}
       </div>
+      {notices}
     </div>
   );
 }
