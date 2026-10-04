@@ -141,7 +141,7 @@ class LinkedAccounts(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught") // any failure to reach Telegram means "not confirmed"
+    @Suppress("TooGenericExceptionCaught") // any failure to open the key or reach Telegram means "not confirmed"
     private fun signOut(
         sessions: TelegramSessions,
         session: TelegramSessionId,
@@ -150,7 +150,7 @@ class LinkedAccounts(
         try {
             if (reopenFor != null) reopenIfClosed(sessions, reopenFor, session)
             sessions.logOut(session, SIGN_OUT_TIMEOUT)
-        } catch (_: RuntimeException) {
+        } catch (_: Exception) {
             false
         }
 

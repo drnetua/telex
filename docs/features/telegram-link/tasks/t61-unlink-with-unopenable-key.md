@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "b
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (fifth pass) — findings K9"
-status: "todo"
+status: "done"
 ---
 
 # T61 — An unlink whose sealed key can't be opened still deletes the account and reports the sign-out unconfirmed

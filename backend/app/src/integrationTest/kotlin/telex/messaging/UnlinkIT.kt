@@ -280,6 +280,26 @@ class UnlinkIT {
     }
 
     @Test
+    fun `AC-113 AC-111 an unopenable sealed key still deletes the account, sign-out unconfirmed`() {
+        val owner = owner()
+        val account = connected(owner)
+        val session = account.session!!
+        fake.simulateStop()
+        val sealed = checkNotNull(rows.sealedKey(account.id))
+        sealed[sealed.size - 1] = (sealed[sealed.size - 1].toInt() xor 1).toByte() // tampered: the GCM tag fails
+        jdbc.update("UPDATE linked_account SET tdlib_key_sealed = ? WHERE id = ?", sealed, account.id.value)
+        val before = unlinkedCounter("unconfirmed")
+
+        val result = accounts.unlink(owner, account.id)
+
+        assertThat(result.signOutConfirmed).isFalse()
+        assertThat(fake.wasLoggedOut(session)).isFalse()
+        assertThat(count("linked_account")).isZero()
+        assertThat(count("channel")).isZero()
+        assertThat(unlinkedCounter("unconfirmed")).isEqualTo(before + 1)
+    }
+
+    @Test
     fun `AC-111 a session swapped in between the read and the delete is signed out, closed and destroyed`() {
         val owner = owner()
         val account = connected(owner)
