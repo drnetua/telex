@@ -32,6 +32,9 @@ export async function fetchPulse(): Promise<Pulse> {
         throw new ApiFailure(error.status, error.code);
       }
       connectivity.reportAnswered();
+      if (error.route !== "sign-in" && error.route !== "session-ended") {
+        throw new ApiFailure(error.status, error.code);
+      }
     }
     throw error;
   }

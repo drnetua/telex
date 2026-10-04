@@ -45,9 +45,10 @@ function mockApi(replies: Record<string, Response[]>) {
 }
 
 function Elsewhere() {
-  const state = useLocation().state as { toast?: string } | null;
+  const location = useLocation();
+  const state = location.state as { toast?: string } | null;
   return (
-    <div data-testid="elsewhere">
+    <div data-testid="elsewhere" data-path={location.pathname}>
       <span data-testid="arrival">{state?.toast}</span>
     </div>
   );
@@ -454,7 +455,7 @@ describe("SCR-02 failures", () => {
     mockApi({ [A]: [problem(418, "teapot")] });
     setup();
     await userEvent.click(await screen.findByRole("button", { name: "Back" }));
-    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
+    expect(await screen.findByTestId("elsewhere")).toHaveAttribute("data-path", "/inbox");
   });
 
   it("offers Try again on a load failure that refetches the attempt", async () => {

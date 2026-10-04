@@ -165,3 +165,27 @@ describe("a failed pulse where the shell is not mounted (AC-122, AC-176)", () =>
     failureBus.handler = () => undefined;
   });
 });
+
+describe("a pulse answered 403 (AC-122)", () => {
+  it("does not take over the screen and never reaches the failure bus", async () => {
+    vi.useFakeTimers();
+    resetConnectivity();
+    setShellActive(false);
+    setVisibility("visible");
+    const handler = vi.fn();
+    failureBus.handler = handler;
+    const client = createAppQueryClient();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ code: "forbidden" }, { status: 403 })),
+    );
+    const { result } = renderHook(() => usePulse(), { wrapper: wrapper(client) });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(result.current.error).toMatchObject({ status: 403, route: undefined });
+    expect(handler).not.toHaveBeenCalled();
+    client.clear();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    failureBus.handler = () => undefined;
+  });
+});
