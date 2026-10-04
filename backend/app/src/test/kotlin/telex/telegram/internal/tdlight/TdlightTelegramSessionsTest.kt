@@ -139,6 +139,14 @@ class TdlightTelegramSessionsTest {
             }
         }
 
+    private fun signedIn(sessions: TdlightTelegramSessions): TelegramSessionId {
+        val id = sessions.open(key)
+        sessions.sendPhone(id, "380501234564")
+        sessions.checkCode(id, "33333")
+        sessions.checkPassword(id, "secret")
+        return id
+    }
+
     private fun scriptSignIn() {
         tdlib.respond = { client, request ->
             when (request) {
@@ -372,7 +380,7 @@ class TdlightTelegramSessionsTest {
     fun `logOut is true when Telegram closes the session in time and false when it does not`() {
         scriptSignIn()
         val sessions = create()
-        val id = sessions.open(key)
+        val id = signedIn(sessions)
         tdlib.respond = { client, request ->
             if (request == TdlibRequest.LogOut) {
                 client.emit(auth("authorizationStateLoggingOut"))
@@ -384,7 +392,8 @@ class TdlightTelegramSessionsTest {
         }
         assertThat(sessions.logOut(id, Duration.ofSeconds(2))).isTrue()
 
-        val stuck = sessions.open(key)
+        scriptSignIn()
+        val stuck = signedIn(sessions)
         tdlib.respond = { _, _ -> null }
         assertThat(sessions.logOut(stuck, Duration.ofMillis(200))).isFalse()
     }
@@ -415,6 +424,28 @@ class TdlightTelegramSessionsTest {
 
         assertTimeoutPreemptively(Duration.ofSeconds(3)) { sessions.shutdown() }
         assertThat(root.toFile().listFiles().orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `logOut of a session that is registered but already closed is not confirmed (AC-113)`() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        answerOnlyChatLoads()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        client.emit(TdlibUpdate.Closed)
+
+        assertThat(sessions.logOut(id, Duration.ofMillis(200))).isFalse()
+        assertThat(client.requests).doesNotContain(TdlibRequest.LogOut)
+    }
+
+    @Test
+    fun `logOut of a session that has not signed in yet is not confirmed (AC-113)`() {
+        val sessions = create()
+        val id = sessions.open(key)
+
+        assertThat(sessions.logOut(id, Duration.ofMillis(200))).isFalse()
     }
 
     @Test
@@ -532,6 +563,7 @@ class TdlightTelegramSessionsTest {
             } else if (round == 1) {
                 client.emit(TdlibUpdate.ChatCount(TdlibChatList.Main, 5))
                 client.emit(TdlibUpdate.ChatCount(TdlibChatList.Archive, 2))
+                client.emit(TdlibUpdate.ChatCount(TdlibChatList.Folder(7), 4))
                 client.emit(TdlibUpdate.NewChat(chat(2)))
                 TdlibResponse.Ok("ok")
             } else if (request is TdlibRequest.LoadChats) {

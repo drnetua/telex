@@ -117,7 +117,8 @@ class TdlightTelegramSessions(
         id: TelegramSessionId,
         timeout: Duration,
     ): Boolean {
-        val session = sessions[id] ?: return false
+        // closed is already complete for a session that ended, so only an open one can confirm a sign-out
+        val session = sessions[id]?.takeIf { it.isAuthorized() } ?: return false
         session.client().send(TdlibRequest.LogOut)
         return try {
             session.closed.get(timeout.toMillis(), TimeUnit.MILLISECONDS)

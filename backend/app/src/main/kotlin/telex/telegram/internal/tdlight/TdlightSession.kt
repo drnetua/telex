@@ -265,12 +265,24 @@ internal class TdlightSession(
         if (loadCompleted) flush()
     }
 
-    /** Telegram's total for both lists once it said so, the loaded count once the load is done, else unknown. */
+    /**
+     * Telegram's Main + Archive total (a Folder's chats are in one of them) once it said so, the loaded count once
+     * the load is done, else unknown.
+     */
     private fun total(): Int? =
         when {
-            loadCompleted -> chats.values.count { it.visible }
-            TdlibChatList.Main in counts && TdlibChatList.Archive in counts -> counts.values.sum()
-            else -> null
+            loadCompleted -> {
+                chats.values.count { it.visible }
+            }
+
+            TdlibChatList.Main in counts && TdlibChatList.Archive in counts -> {
+                counts.getValue(TdlibChatList.Main) +
+                    counts.getValue(TdlibChatList.Archive)
+            }
+
+            else -> {
+                null
+            }
         }
 
     private fun flush(force: Boolean = false) {
