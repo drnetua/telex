@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/accounts/AccountsPage.tsx", "frontend/src/pages
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 — findings F1, F2, F3, F4, T4, T5"
-status: "todo"
+status: "done"
 ---
 
 # T44 — SPA polish: unlink focus, a dismissible SCR-02 load-failure Toast with Retry, one Toast slot, one refusal lookup, stronger tests

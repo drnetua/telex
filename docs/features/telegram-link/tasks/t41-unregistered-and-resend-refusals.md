@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/Linking.kt", "backend/
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 — findings N4, N5"
-status: "todo"
+status: "done"
 ---
 
 # T41 — Unregistered number with no replacement session answers 422, and Resend ends the attempt on every phone refusal
