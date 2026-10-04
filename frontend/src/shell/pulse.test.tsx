@@ -138,3 +138,30 @@ describe("a pulse answered 5xx (AC-176)", () => {
     failureBus.handler = () => undefined;
   });
 });
+
+describe("a failed pulse where the shell is not mounted (AC-122, AC-176)", () => {
+  it.each([
+    ["no answer", () => Promise.reject(new TypeError("network"))],
+    ["502", () => Promise.resolve(Response.json({ code: "bad-gateway" }, { status: 502 }))],
+    ["503", () => Promise.resolve(Response.json({ code: "unavailable" }, { status: 503 }))],
+    ["500", () => Promise.resolve(Response.json({ code: "internal-error" }, { status: 500 }))],
+  ])("%s reports not-responding and never reaches the failure bus", async (_name, reply) => {
+    vi.useFakeTimers();
+    resetConnectivity();
+    setShellActive(false);
+    setVisibility("visible");
+    const handler = vi.fn();
+    failureBus.handler = handler;
+    const client = createAppQueryClient();
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(reply));
+    const { result } = renderHook(() => usePulse(), { wrapper: wrapper(client) });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(result.current.error).toMatchObject({ route: undefined });
+    expect(connectivity.get()).toBe("not-responding");
+    expect(handler).not.toHaveBeenCalled();
+    client.clear();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    failureBus.handler = () => undefined;
+  });
+});

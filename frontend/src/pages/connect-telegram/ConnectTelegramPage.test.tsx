@@ -440,13 +440,21 @@ describe("SCR-02 failures", () => {
     expect(screen.queryByLabelText("Phone number")).toBeNull();
   });
 
-  it("names what failed on a load failure, lets the Toast be dismissed and stops the skeleton", async () => {
+  it("AC-109: a load failure shows an inline state with what failed, Try again and Back (no Toast to dismiss)", async () => {
     mockApi({ [A]: [problem(418, "teapot")] });
     setup();
     expect(await screen.findByText("We couldn't load your Telegram linking.")).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(screen.queryByText("We couldn't load your Telegram linking.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Back" })).toBeVisible();
     expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+  });
+
+  it("AC-109: Back from a load failure leaves the wizard for the origin", async () => {
+    mockApi({ [A]: [problem(418, "teapot")] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByTestId("elsewhere")).toBeInTheDocument();
   });
 
   it("offers Try again on a load failure that refetches the attempt", async () => {

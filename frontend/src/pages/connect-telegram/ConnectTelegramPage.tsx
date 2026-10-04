@@ -25,7 +25,7 @@ import { routeFailure } from "../auth/failure";
 import { CodeStep } from "./CodeStep";
 import { PasswordStep } from "./PasswordStep";
 import { PhoneStep } from "./PhoneStep";
-import { AttemptEndedState, RefusedState, WaitState } from "./Outcomes";
+import { AttemptEndedState, LoadFailedState, RefusedState, WaitState } from "./Outcomes";
 import { REFUSAL_CODES, type Outcome, type RefusalCode } from "./outcome";
 import { endsAttempt, type FinishedResult } from "./steps";
 
@@ -54,12 +54,6 @@ export function ConnectTelegramPage() {
   const navigate = useNavigate();
   const [notice, setNotice] = useState<Notice | null>(null);
   const dismiss = useCallback(() => setNotice(null), []);
-  // The load-failure Toast is tracked apart from `notice`: it belongs to the query's error, not to a step.
-  const [dismissedLoadError, setDismissedLoadError] = useState(0);
-  const dismissLoadError = useCallback(
-    () => setDismissedLoadError(query.errorUpdatedAt),
-    [query.errorUpdatedAt],
-  );
   const accounts = useLinkedAccounts();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [starting, setStarting] = useState(false);
@@ -239,19 +233,18 @@ export function ConnectTelegramPage() {
     );
   }
   if (!attempt) {
-    // A failed load: routable failures reach the failure bus, others get a Toast with Retry.
+    // A failed load: routable failures reach the failure bus, others get an inline state with a way forward.
     const loadFailed = query.error && !(query.error instanceof ApiFailure && query.error.route);
+    if (loadFailed && !query.isFetching) {
+      return (
+        <Card>
+          <LoadFailedState onRetry={() => void query.refetch()} onBack={() => leave(origin())} />
+        </Card>
+      );
+    }
     return (
       <Card>
-        <LoadState state="loading" rows={3} busy={!loadFailed || query.isFetching} />
-        {loadFailed && !query.isFetching && dismissedLoadError !== query.errorUpdatedAt ? (
-          <Toast
-            message={messages.linking.loadFailed}
-            tone="error"
-            onDismiss={dismissLoadError}
-            action={{ label: messages.linking.tryAgain, onClick: () => void query.refetch() }}
-          />
-        ) : null}
+        <LoadState state="loading" rows={3} />
       </Card>
     );
   }

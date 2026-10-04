@@ -24,12 +24,14 @@ export async function fetchPulse(): Promise<Pulse> {
     return pulse;
   } catch (error) {
     if (error instanceof ApiFailure) {
-      if (isConnectivityStatus(error.status)) connectivity.reportNoAnswer();
-      else if (error.status >= 500) {
-        // AC-176 limits the full page to actions: a pulse 5xx is "not responding", the screen stays.
+      // A background pulse never takes over a screen (AC-122, AC-176): connectivity failures and 5xx are
+      // "not responding" on the banner, whether or not the shell is mounted (SCR-02 has none), so the
+      // rethrown failure carries no route. Only sign-in / session-ended keep theirs.
+      if (isConnectivityStatus(error.status) || error.status >= 500) {
         connectivity.reportNoAnswer();
         throw new ApiFailure(error.status, error.code);
-      } else connectivity.reportAnswered();
+      }
+      connectivity.reportAnswered();
     }
     throw error;
   }

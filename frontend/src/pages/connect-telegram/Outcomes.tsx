@@ -159,3 +159,28 @@ export function AttemptEndedState({
     </EmptyState>
   );
 }
+
+interface LoadFailedStateProps {
+  onRetry: () => void;
+  onBack: () => void;
+}
+
+/** The attempt could not be loaded: an inline state, so the card is never a dead end (AC-109). */
+export function LoadFailedState({ onRetry, onBack }: LoadFailedStateProps) {
+  const t = messages.linking;
+  return (
+    <EmptyState
+      kind="blocked"
+      icon="cloud-off"
+      title={t.loadFailed}
+      action={
+        <div className="d-grid gap-2">
+          <Button onClick={onRetry}>{t.tryAgain}</Button>
+          <Button className="btn-ghost-secondary" onClick={onBack}>
+            {t.back}
+          </Button>
+        </div>
+      }
+    />
+  );
+}

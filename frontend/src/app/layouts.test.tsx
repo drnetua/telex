@@ -4,6 +4,9 @@ import { readFileSync, statSync } from "node:fs";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "./AppRoutes";
+import { createAppQueryClient } from "./queryClient";
+import { FailureBoundary } from "./FailureBoundary";
+import { resetConnectivity } from "../shell/connectivity";
 import { AppLayout, AuthLayout } from "./layouts";
 
 describe("layouts (AC-83, AC-100)", () => {
@@ -75,7 +78,10 @@ describe("layouts (AC-83, AC-100)", () => {
 });
 
 describe("SCR-02 onboarding layout (AC-01, S10)", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetConnectivity();
+  });
 
   const lost = {
     id: "a1",
@@ -130,6 +136,47 @@ describe("SCR-02 onboarding layout (AC-01, S10)", () => {
     expect(card).not.toBeNull();
     expect(container.querySelectorAll(".card")).toHaveLength(1);
     expect(banner.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it.each([
+    ["a pulse that gets no answer", () => Promise.reject(new TypeError("network"))],
+    ["a pulse answered 502", () => Promise.resolve(new Response("{}", { status: 502 }))],
+  ])("AC-122: %s keeps the wizard and shows the banner, never SCR-93", async (_n, pulse) => {
+    // The wizard is on screen before the pulse fails (a failed pulse pauses queries that start later).
+    let attemptLoaded: () => void = () => undefined;
+    const loaded = new Promise<void>((resolve) => (attemptLoaded = resolve));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("pulse")) return loaded.then(pulse);
+        if (url.includes("linking-attempt")) {
+          setTimeout(attemptLoaded, 100);
+          return Promise.resolve(
+            Response.json({
+              step: "phone",
+              origin: "inbox",
+              targetLinkedAccountId: null,
+              codeLength: null,
+              passwordHint: null,
+            }),
+          );
+        }
+        return Promise.resolve(Response.json({ items: [] }));
+      }),
+    );
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <MemoryRouter initialEntries={["/connect-telegram"]}>
+          <FailureBoundary>
+            <AppRoutes />
+          </FailureBoundary>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("teleX isn't responding.")).toBeVisible();
+    expect(await screen.findByLabelText("Phone number")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).toBeNull();
   });
 
   it("shows no banner on SCR-02 when the pulse reports no condition", async () => {
