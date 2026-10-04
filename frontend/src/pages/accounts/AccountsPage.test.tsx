@@ -317,4 +317,57 @@ describe("SCR-60 Accounts", () => {
       expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toHaveFocus(),
     );
   });
+
+  it("AC-111: a cancelled dialog after an earlier unlink returns focus to that row's Unlink button", async () => {
+    let accounts = [account("a1", "Ann"), account("a2", "Bob"), account("a3", "Cy")];
+    setup({
+      accounts: () => accounts,
+      unlink: () => {
+        accounts = accounts.slice(1);
+        return json(200, { signOutConfirmed: true });
+      },
+    });
+    await userEvent.click((await screen.findAllByRole("button", { name: "Unlink" }))[0]!);
+    await userEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Unlink account" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Ann")).toBeNull());
+    const second = (await screen.findAllByRole("button", { name: "Unlink" }))[1]!;
+    await userEvent.click(second);
+    await userEvent.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Keep account" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getAllByRole("button", { name: "Unlink" })[1]).toHaveFocus();
+  });
+
+  it("AC-111: unlinking an account that is already gone puts focus on the page heading", async () => {
+    let gone = false;
+    setup({
+      accounts: () =>
+        gone ? [account("a2", "Bob")] : [account("a1", "Ann"), account("a2", "Bob")],
+      unlink: () => {
+        gone = true;
+        return json(404, { code: "not-found" });
+      },
+    });
+    await userEvent.click((await screen.findAllByRole("button", { name: "Unlink" }))[0]!);
+    await userEvent.click(screen.getByRole("button", { name: "Unlink account" }));
+    await waitFor(() => expect(screen.queryByText("Ann")).toBeNull());
+    expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toHaveFocus();
+  });
+
+  it("AC-114: Toasts open together are both readable in one container", async () => {
+    setup({
+      accounts: () => [account("a1", "Ann"), account("a2", "Bob")],
+      unlink: () => json(200, { signOutConfirmed: false }),
+      state: { toast: "Bob is connected" },
+    });
+    await userEvent.click((await screen.findAllByRole("button", { name: "Unlink" }))[0]!);
+    await userEvent.click(screen.getByRole("button", { name: "Unlink account" }));
+    expect(await screen.findByText(/Telegram couldn't confirm the sign-out/)).toBeVisible();
+    expect(screen.getByText("Bob is connected")).toBeVisible();
+    expect(document.querySelectorAll(".telex-toast-container")).toHaveLength(1);
+  });
 });

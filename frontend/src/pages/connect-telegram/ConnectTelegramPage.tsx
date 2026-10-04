@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
+import { refusalFor } from "../../api/linkingRefusal";
 import {
   formatMaskedPhone,
   linkedAccountsKey,
@@ -53,6 +54,12 @@ export function ConnectTelegramPage() {
   const navigate = useNavigate();
   const [notice, setNotice] = useState<Notice | null>(null);
   const dismiss = useCallback(() => setNotice(null), []);
+  // The load-failure Toast is tracked apart from `notice`: it belongs to the query's error, not to a step.
+  const [dismissedLoadError, setDismissedLoadError] = useState(0);
+  const dismissLoadError = useCallback(
+    () => setDismissedLoadError(query.errorUpdatedAt),
+    [query.errorUpdatedAt],
+  );
   const accounts = useLinkedAccounts();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [starting, setStarting] = useState(false);
@@ -121,8 +128,7 @@ export function ConnectTelegramPage() {
       client.setQueryData(linkingAttemptKey, fresh);
       setOutcome(null);
     } catch (error) {
-      const problem = error instanceof ApiFailure ? error : undefined;
-      const text = problem ? startRefusal(problem) : undefined;
+      const text = refusalFor(error);
       if (text) show(text, "error");
       else if (!routeFailure(error, async () => startAgain())) {
         show(messages.linking.genericError, "error");
@@ -213,12 +219,18 @@ export function ConnectTelegramPage() {
     );
   }
   if (!attempt) {
-    // A failed load keeps the skeleton: routable failures reach the failure bus, others get a toast.
+    // A failed load: routable failures reach the failure bus, others get a Toast with Retry.
+    const loadFailed = query.error && !(query.error instanceof ApiFailure && query.error.route);
     return (
       <Card>
-        <LoadState state="loading" rows={3} />
-        {query.error && !(query.error instanceof ApiFailure && query.error.route) ? (
-          <Toast message={messages.linking.genericError} tone="error" onDismiss={dismiss} />
+        <LoadState state="loading" rows={3} busy={!loadFailed || query.isFetching} />
+        {loadFailed && !query.isFetching && dismissedLoadError !== query.errorUpdatedAt ? (
+          <Toast
+            message={messages.linking.loadFailed}
+            tone="error"
+            onDismiss={dismissLoadError}
+            action={{ label: messages.linking.tryAgain, onClick: () => void query.refetch() }}
+          />
         ) : null}
       </Card>
     );
@@ -242,14 +254,6 @@ export function ConnectTelegramPage() {
       {notice ? <Toast message={notice.message} tone={notice.tone} onDismiss={dismiss} /> : null}
     </Card>
   );
-}
-
-function startRefusal(error: ApiFailure): string | undefined {
-  const problems: Record<string, unknown> = messages.linking.problems;
-  const text = problems[error.code];
-  if (typeof text === "function")
-    return (text as (limit: number) => string)(error.extras.limit ?? 0);
-  return typeof text === "string" ? text : undefined;
 }
 
 function Card({ children }: { children: React.ReactNode }) {

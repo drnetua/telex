@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { FailureBoundary } from "../../app/FailureBoundary";
+import { createAppQueryClient } from "../../app/queryClient";
 import { linkingAttemptKey, type LinkingAttempt } from "../../api/linking";
 import { ConnectTelegramPage } from "./ConnectTelegramPage";
 
@@ -369,15 +371,40 @@ describe("SCR-02 password step", () => {
 });
 
 describe("SCR-02 failures", () => {
-  it("does not throw when the attempt load fails with a 503; the page stays rendered", async () => {
+  it("AC-119: a 503 on the attempt load shows SCR-93 and hides the wizard", async () => {
     mockApi({ [A]: [problem(503, "unavailable")] });
-    const client = setup();
-    await waitFor(() => expect(client.getQueryState(["linking-attempt"])?.status).toBe("error"));
-    expect(await screen.findByRole("status")).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.queryByRole("heading", { name: "Connect your Telegram" })).toBeNull(),
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <MemoryRouter initialEntries={["/connect-telegram"]}>
+          <FailureBoundary>
+            <Routes>
+              <Route path="/connect-telegram" element={<ConnectTelegramPage />} />
+            </Routes>
+          </FailureBoundary>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
-    expect(document.body).not.toBeEmptyDOMElement();
+    expect(await screen.findByRole("heading", { name: "teleX is unavailable" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Connect your Telegram" })).toBeNull();
+    expect(screen.queryByLabelText("Phone number")).toBeNull();
+  });
+
+  it("names what failed on a load failure, lets the Toast be dismissed and stops the skeleton", async () => {
+    mockApi({ [A]: [problem(418, "teapot")] });
+    setup();
+    expect(await screen.findByText("We couldn't load your Telegram linking.")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("We couldn't load your Telegram linking.")).toBeNull();
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+  });
+
+  it("offers Try again on a load failure that refetches the attempt", async () => {
+    const calls = mockApi({ [A]: [problem(418, "teapot"), json(200, attempt())] });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByLabelText("Phone number")).toBeVisible();
+    expect(calls.filter((c) => c.url.endsWith("/linking-attempt"))).toHaveLength(2);
+    expect(screen.queryByText("We couldn't load your Telegram linking.")).toBeNull();
   });
 
   it("keeps the step on screen when a later refetch fails", async () => {

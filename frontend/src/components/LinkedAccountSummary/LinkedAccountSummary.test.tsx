@@ -34,6 +34,12 @@ describe("LinkedAccountSummary", () => {
     expect(bar).toHaveAttribute("aria-valuemax", "40");
   });
 
+  it("AC-116: the line variant shows the count as x of y chats", () => {
+    show(base, "line");
+    expect(screen.getByText("12 of 40 chats")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "12");
+  });
+
   it("shows an indeterminate progress while the total is unknown", () => {
     show({ ...base, chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null } });
     expect(screen.getByText("Syncing chats")).toBeInTheDocument();

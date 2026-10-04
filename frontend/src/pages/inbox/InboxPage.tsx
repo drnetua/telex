@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
-import { ApiFailure } from "../../api/client";
+import { refusalFor } from "../../api/linkingRefusal";
 import { useLinkedAccounts } from "../../api/linkedAccounts";
 import { linkingAttemptKey, useStartLinking } from "../../api/linking";
 import { Button } from "../../components/Button/Button";
@@ -32,9 +32,8 @@ export function InboxPage() {
           void navigate("/connect-telegram");
         },
         onError: (error) => {
-          const problems: Record<string, unknown> = messages.linking.problems;
-          const message = error instanceof ApiFailure ? problems[error.code] : undefined;
-          if (typeof message === "string") setTimeout(() => setRefusal(message), 0);
+          const message = refusalFor(error);
+          if (message) setTimeout(() => setRefusal(message), 0);
         },
       },
     );

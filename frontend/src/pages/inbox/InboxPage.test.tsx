@@ -121,6 +121,21 @@ describe("SCR-10 Inbox", () => {
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 
+  it("AC-119: a refused start at the limit names the limit", async () => {
+    routed({
+      signOut: () => new Response(null, { status: 204 }),
+      start: () => json(409, { code: "linked-account-limit-reached", limit: 3 }),
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Telegram" }));
+    expect(
+      await screen.findByText(
+        "You've linked 3 accounts, the most this installation allows. Unlink an account to add another.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
+  });
+
   it("AC-01: with accounts the Inbox lists one line per account and no Connect step", async () => {
     routed({
       signOut: () => new Response(null, { status: 204 }),

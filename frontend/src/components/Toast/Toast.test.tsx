@@ -6,14 +6,37 @@ import { Toast } from "./Toast";
 
 describe("Toast placement (AC-43)", () => {
   it("uses the offset container class and the stylesheet lifts it above the phone bar", () => {
-    const { container } = render(<Toast message="Saved" onDismiss={() => undefined} />);
-    expect(container.querySelector(".telex-toast-container")).not.toBeNull();
+    render(<Toast message="Saved" onDismiss={() => undefined} />);
+    expect(document.querySelector(".telex-toast-container")).not.toBeNull();
     const css = readFileSync("src/styles.css", "utf8");
     const phone = /@media \(max-width: 767\.98px\) \{([^@]*)\}/g;
     const rules = Array.from(css.matchAll(phone)).map((match) => match[1]);
     expect(
       rules.some((r) => /\.telex-toast-container\s*\{[^}]*bottom:\s*calc\(/.test(r ?? "")),
     ).toBe(true);
+  });
+});
+
+describe("Toast slot", () => {
+  it("AC-114: Toasts open together share one container and stay readable", () => {
+    render(
+      <>
+        <Toast message="First notice" onDismiss={() => undefined} />
+        <Toast tone="error" message="Second notice" onDismiss={() => undefined} />
+      </>,
+    );
+    expect(screen.getByText("First notice")).toBeVisible();
+    expect(screen.getByText("Second notice")).toBeVisible();
+    const containers = document.querySelectorAll(".telex-toast-container");
+    expect(containers).toHaveLength(1);
+    expect(containers[0]).toContainElement(screen.getByText("First notice"));
+    expect(containers[0]).toContainElement(screen.getByText("Second notice"));
+  });
+
+  it("removes the container with the last Toast so it cannot cover the page", () => {
+    const { unmount } = render(<Toast message="Saved" onDismiss={() => undefined} />);
+    unmount();
+    expect(document.querySelector(".telex-toast-container")).toBeNull();
   });
 });
 

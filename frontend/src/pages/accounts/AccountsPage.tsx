@@ -38,6 +38,7 @@ export function AccountsPage() {
   const cancelUnlink = useCallback(() => setTarget(null), []);
   const { arrival, dismiss: dismissArrival } = useArrivalToast();
   const heading = useRef<HTMLHeadingElement>(null);
+  // True once the row the dialog was opened from is gone (unlinked, or already gone): focus goes to the heading.
   const unlinked = useRef(false);
 
   const begin = (targetLinkedAccountId?: string) => {
@@ -79,7 +80,10 @@ export function AccountsPage() {
         else setNotice(next);
       },
       onError: (error) => {
-        if (error instanceof ApiFailure && error.status === 404) setTarget(null);
+        if (error instanceof ApiFailure && error.status === 404) {
+          unlinked.current = true;
+          setTarget(null);
+        }
       },
     });
   };
@@ -140,7 +144,10 @@ export function AccountsPage() {
                       <Button
                         className="btn-ghost-secondary btn-sm"
                         icon="unlink"
-                        onClick={() => setTarget(account)}
+                        onClick={() => {
+                          unlinked.current = false;
+                          setTarget(account);
+                        }}
                       >
                         {text.unlink}
                       </Button>
