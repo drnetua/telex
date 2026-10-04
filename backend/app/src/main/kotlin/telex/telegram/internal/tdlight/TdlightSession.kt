@@ -149,6 +149,12 @@ internal class TdlightSession(
         return true
     }
 
+    /** TDLib did not finish teleX's own log out in time: a Closed that comes later is a lost session again. */
+    @Synchronized
+    fun abandonLogOut() {
+        loggingOut = false
+    }
+
     /**
      * A fresh session holds back its state and chat events until the Linked Account exists, because the listeners
      * drop events of a session no account holds; this announces the latest state and starts the chat load.

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import telex.identity.OwnerId
 import telex.messaging.internal.account.AccountDeletion
+import telex.messaging.internal.account.DeletedRow
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
@@ -75,7 +76,7 @@ class LinkedAccounts(
         var confirmed =
             account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
                 signOut(sessions, signedOut)
-        val removed = deletion.delete(owner, id) ?: throw LinkedAccountNotFound()
+        val removed = deleteOrClose(owner, id, sessions, signedOut) ?: throw LinkedAccountNotFound()
         val session = removed.session
         if (session != null && sessions != null) {
             // The row held another session than the one read: it is signed out and destroyed too.
@@ -88,6 +89,34 @@ class LinkedAccounts(
         }
         meters.counter("telex.unlink", "signout", if (confirmed) "confirmed" else "unconfirmed").increment()
         return UnlinkResult(confirmed)
+    }
+
+    @Suppress("TooGenericExceptionCaught") // whatever the delete throws, the signed-out session must not stay open
+    private fun deleteOrClose(
+        owner: OwnerId,
+        id: LinkedAccountId,
+        sessions: TelegramSessions?,
+        signedOut: TelegramSessionId?,
+    ): DeletedRow? =
+        try {
+            deletion.delete(owner, id)
+        } catch (e: RuntimeException) {
+            // the row stays: a signed-out session left open would be muted and never report again
+            if (signedOut != null && sessions != null) closeQuietly(sessions, signedOut, e)
+            throw e
+        }
+
+    @Suppress("TooGenericExceptionCaught") // a failed close must not hide the delete failure
+    private fun closeQuietly(
+        sessions: TelegramSessions,
+        session: TelegramSessionId,
+        failure: RuntimeException,
+    ) {
+        try {
+            sessions.close(session)
+        } catch (closeFailure: RuntimeException) {
+            failure.addSuppressed(closeFailure)
+        }
     }
 
     @Suppress("TooGenericExceptionCaught") // any failure to reach Telegram means "not confirmed"

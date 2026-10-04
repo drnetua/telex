@@ -63,7 +63,7 @@ class UnlinkIT {
 
     @Autowired lateinit var linking: Linking
 
-    @Autowired lateinit var deletion: AccountDeletion
+    @MockitoSpyBean lateinit var deletion: AccountDeletion
 
     @Autowired lateinit var signInSessions: SignInSessions
 
@@ -81,6 +81,7 @@ class UnlinkIT {
     @BeforeEach
     fun clean() {
         Mockito.reset(AopTestUtils.getUltimateTargetObject<LinkedAccountRows>(rows))
+        Mockito.reset(AopTestUtils.getUltimateTargetObject<AccountDeletion>(deletion))
         jdbc.execute("DELETE FROM channel")
         jdbc.execute("DELETE FROM linked_account")
     }
@@ -219,6 +220,35 @@ class UnlinkIT {
         assertThat(count("channel")).isZero()
         assertThat(Files.exists(sessionDir(session))).isFalse()
         assertThat(unlinkedCounter("unconfirmed")).isEqualTo(before + 1)
+    }
+
+    @Test
+    fun `AC-122 AC-117 AC-113 a delete that fails after the sign-out leaves no muted dead client behind`() {
+        val owner = owner()
+        val account = connected(owner)
+        val session = account.session!!
+        Mockito
+            .doThrow(IllegalStateException("db down"))
+            .doCallRealMethod()
+            .`when`(deletion)
+            .delete(owner, account.id)
+
+        assertThatThrownBy { accounts.unlink(owner, account.id) }.isInstanceOf(IllegalStateException::class.java)
+
+        // the row survived: it must be Session lost, or its signed-out session must be closed, never connected
+        await().untilAsserted {
+            val state =
+                jdbc.queryForObject(
+                    "SELECT state FROM linked_account WHERE id = ?",
+                    String::class.java,
+                    account.id.value,
+                )
+            assertThat(state == "session_lost" || !fake.isOpen(session))
+                .describedAs("account state %s, session open %s", state, fake.isOpen(session))
+                .isTrue()
+        }
+        assertThat(accounts.unlink(owner, account.id).signOutConfirmed).isNotNull()
+        assertThat(count("linked_account")).isZero()
     }
 
     @Test

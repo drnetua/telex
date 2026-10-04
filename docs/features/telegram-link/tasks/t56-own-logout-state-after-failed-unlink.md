@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (fourth pass) — findings K5"
-status: "todo"
+status: "done"
 ---
 
 # T56 — A session whose unlink failed after teleX's own sign-out still reports its state, and the fake behaves the same

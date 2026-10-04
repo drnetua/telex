@@ -231,6 +231,18 @@ class FakeTelegramTest {
     }
 
     @Test
+    fun `after a logOut Telegram did not confirm, a later termination is still announced as Closed (AC-122, AC-117)`() {
+        link("9996600009")
+        fake.dropConnectivity(id)
+        assertThat(fake.logOut(id, Duration.ofMillis(10))).isFalse()
+        fake.restoreConnectivity(id)
+
+        fake.terminate(id)
+
+        assertThat(states().last().state).isEqualTo(SessionState.Closed)
+    }
+
+    @Test
     fun `logOut of a session that is not open is not confirmed, as in the real adapter (AC-113)`() {
         link("9996600007")
         fake.close(id)

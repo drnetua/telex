@@ -128,6 +128,7 @@ class TdlightTelegramSessions(
         return try {
             session.loggedOut.get(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)
         } catch (_: TimeoutException) {
+            session.abandonLogOut()
             false
         }
     }

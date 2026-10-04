@@ -101,6 +101,19 @@ class TdlightLogOutTest {
     }
 
     @Test
+    fun `after a logOut TDLib did not finish in time, a later Closed is still announced (AC-122, AC-117)`() {
+        val (sessions, id) = readyForLogOut(finish = false)
+        val client = tdlib.clients.single()
+
+        assertThat(sessions.logOut(id, Duration.ofMillis(200))).isFalse()
+        client.emit(TdlibUpdate.Closed)
+
+        await().atMost(Duration.ofSeconds(2)).untilAsserted {
+            assertThat(states().map { it.state }).containsExactly(SessionState.Ready, SessionState.Closed)
+        }
+    }
+
+    @Test
     fun `teleX's own logOut publishes no Closed for TDLib's LoggingOut and Closed (AC-113, AC-122)`() {
         val (sessions, id) = readyForLogOut(finish = true)
 

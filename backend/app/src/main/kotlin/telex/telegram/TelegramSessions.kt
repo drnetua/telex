@@ -114,7 +114,8 @@ interface TelegramSessions {
      * Confirmed means Telegram itself finished the log out (TDLib closed the session through it); a session teleX
      * closes or releases before that is not confirmed. teleX's own log out is not a lost session: it announces no
      * [SessionState.Closed], so the account is never shown as Session lost on its way out (AC-113, AC-122). The
-     * caller still closes and destroys the session afterwards.
+     * caller still closes and destroys the session afterwards. When the log out is not confirmed in time the
+     * suppression ends: a [SessionState.Closed] that follows later is announced as usual.
      */
     fun logOut(
         id: TelegramSessionId,
