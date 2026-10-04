@@ -322,7 +322,7 @@ class TdlightTelegramSessions(
                 }
 
                 else -> {
-                    throw TelegramUnavailable()
+                    mapPhoneError(failure)
                 }
             }
 

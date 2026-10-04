@@ -298,6 +298,28 @@ class TdlightTelegramSessionsTest {
     }
 
     @Test
+    fun `a code check Telegram refuses for the phone maps to the phone step's outcome (AC-107)`() {
+        scriptSignIn()
+        val sessions = create()
+
+        fun codeRefused(failure: TdlibResponse.Failure): SignInOutcome {
+            val id = sessions.open(key)
+            sessions.sendPhone(id, "380501234564")
+            val signIn = tdlib.respond
+            tdlib.respond =
+                { client, request -> if (request is TdlibRequest.CheckCode) failure else signIn(client, request) }
+            return sessions.checkCode(id, "12345").also { tdlib.respond = signIn }
+        }
+
+        assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_NUMBER_INVALID")))
+            .isEqualTo(SignInOutcome.PhoneInvalid)
+        assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_NUMBER_BANNED")))
+            .isEqualTo(SignInOutcome.PhoneBanned)
+        assertThat(codeRefused(TdlibResponse.Failure(400, "PHONE_NUMBER_UNOCCUPIED")))
+            .isEqualTo(SignInOutcome.PhoneUnregistered)
+    }
+
+    @Test
     fun `a password step returns the hint, then authorizes with the phone reduced to code and last two digits`() {
         scriptSignIn()
         val sessions = create()

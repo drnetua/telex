@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (fourth pass) — findings K8"
-status: "todo"
+status: "done"
 ---
 
 # T58 — The real code step ends the attempt on an invalid or banned number instead of answering 503
