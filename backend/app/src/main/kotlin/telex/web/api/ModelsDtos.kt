@@ -29,7 +29,18 @@ data class ProfileRefBody(
     val kind: String,
     val key: String? = null,
     val id: UUID? = null,
-)
+) : StrictBody() {
+    // `ProfileRef` is a strict oneOf: `{kind: system, key}` or `{kind: custom, id}`; a mixed shape is unreadable (400).
+    init {
+        val exactlyOneVariant =
+            when (kind) {
+                "system" -> key != null && id == null
+                "custom" -> id != null && key == null
+                else -> false
+            }
+        require(exactlyOneVariant) { "A profile reference is either {kind: system, key} or {kind: custom, id}" }
+    }
+}
 
 data class CatalogModelBody(
     val modelId: String,

@@ -288,6 +288,29 @@ class ModelsWriteApiIT(
         assertThat(names(s)).doesNotContain("X")
     }
 
+    @Test
+    fun `a profile reference that mixes variants or has unknown properties is 400 validation-failed`() {
+        val s = signedIn()
+        val id = stored(s.owner, "Night shift")
+        val malformed =
+            listOf(
+                """{"kind":"system","key":"balanced","id":"${id.value}"}""",
+                """{"kind":"custom","id":"${id.value}","key":"balanced"}""",
+                """{"kind":"system"}""",
+                """{"kind":"custom"}""",
+                """{"kind":"other","key":"balanced"}""",
+                """{"kind":"system","key":"balanced","colour":"red"}""",
+            )
+        malformed.forEach { ref ->
+            val choice = """{"profile":$ref}"""
+            assertProblem(call("PUT", "/api/v1/models/default-profile", s.key, choice), 400, "validation-failed")
+            val copy = """{"name":"X","slots":${slots(listOf("it/main"))},"duplicatedFrom":$ref}"""
+            assertProblem(call("POST", "/api/v1/models/profiles", s.key, copy), 400, "validation-failed")
+        }
+        assertThat(names(s)).doesNotContain("X")
+        assertThat(list(s)["defaultProfile"]["key"].asString()).isEqualTo("balanced")
+    }
+
     // ---- create, AC-213
 
     @Test
