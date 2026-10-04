@@ -10,6 +10,7 @@ import telex.messaging.internal.account.AccountDeletion
 import telex.messaging.internal.account.DeletedRow
 import telex.messaging.internal.account.LinkedAccount
 import telex.messaging.internal.account.LinkedAccountRows
+import telex.messaging.internal.lifecycle.LinkedAccountStates
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
 import java.time.Duration
@@ -41,6 +42,7 @@ class LinkedAccounts(
     private val telegram: ObjectProvider<TelegramSessions>,
     private val meters: MeterRegistry,
     private val ownerKeys: OwnerKeys,
+    private val states: LinkedAccountStates,
 ) {
     @Transactional(readOnly = true)
     fun listMine(ownerId: OwnerId): List<LinkedAccountSummary> =
@@ -63,7 +65,8 @@ class LinkedAccounts(
     /**
      * Unlinks the Owner's account (AC-111, AC-113): a bounded sign-out, then one transaction that deletes the
      * account and records `AccountUnlinked`, then the session is closed and destroyed. A sign-out Telegram does not
-     * confirm never stops the delete.
+     * confirm never stops the delete. If the delete fails, the account is Session lost after a confirmed sign-out and
+     * its session is left open after an unconfirmed one.
      */
     fun unlink(
         owner: OwnerId,
@@ -79,7 +82,7 @@ class LinkedAccounts(
         var confirmed =
             account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
                 signOut(sessions, signedOut, account)
-        val removed = deleteOrClose(owner, id, sessions, signedOut) ?: throw LinkedAccountNotFound()
+        val removed = deleteOrClose(owner, id, sessions, signedOut, confirmed) ?: throw LinkedAccountNotFound()
         val session = removed.session
         if (session != null && sessions != null) {
             // The row held another session than the one read: it is signed out and destroyed too.
@@ -94,31 +97,37 @@ class LinkedAccounts(
         return UnlinkResult(confirmed)
     }
 
-    @Suppress("TooGenericExceptionCaught") // whatever the delete throws, the signed-out session must not stay open
+    /**
+     * A failed delete leaves the row. After a confirmed sign-out Telegram really ended the session, so it is closed
+     * and the account becomes Session lost (the listener's transition: same event and banner), not a connected row with
+     * no client. After an unconfirmed one the session stays open: it reports its state again and may reconnect.
+     */
+    @Suppress("TooGenericExceptionCaught") // whatever the delete throws, a confirmed sign-out must not stay connected
     private fun deleteOrClose(
         owner: OwnerId,
         id: LinkedAccountId,
         sessions: TelegramSessions?,
         signedOut: TelegramSessionId?,
+        confirmed: Boolean,
     ): DeletedRow? =
         try {
             deletion.delete(owner, id)
         } catch (e: RuntimeException) {
-            // the row stays: a signed-out session left open would be muted and never report again
-            if (signedOut != null && sessions != null) closeQuietly(sessions, signedOut, e)
+            if (confirmed && signedOut != null && sessions != null) markLost(sessions, signedOut, e)
             throw e
         }
 
-    @Suppress("TooGenericExceptionCaught") // a failed close must not hide the delete failure
-    private fun closeQuietly(
+    @Suppress("TooGenericExceptionCaught") // a failed close or transition must not hide the delete failure
+    private fun markLost(
         sessions: TelegramSessions,
         session: TelegramSessionId,
         failure: RuntimeException,
     ) {
         try {
             sessions.close(session)
-        } catch (closeFailure: RuntimeException) {
-            failure.addSuppressed(closeFailure)
+            states.transition(session, LinkedAccountState.SESSION_LOST)
+        } catch (secondary: RuntimeException) {
+            failure.addSuppressed(secondary)
         }
     }
 

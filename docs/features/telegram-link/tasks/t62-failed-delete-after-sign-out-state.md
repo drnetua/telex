@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "b
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (fifth pass) — findings K10 (and the trace reviewer's F2)"
-status: "todo"
+status: "done"
 ---
 
 # T62 — A failed delete after the sign-out leaves the account Session lost when Telegram confirmed it, and keeps an unconfirmed session running

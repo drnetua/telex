@@ -235,22 +235,37 @@ class UnlinkIT {
 
         assertThatThrownBy { accounts.unlink(owner, account.id) }.isInstanceOf(IllegalStateException::class.java)
 
-        // the row survived: it must be Session lost, or its signed-out session must be closed, never connected
+        // Telegram confirmed the sign-out: the row must be Session lost, its session closed
         await().untilAsserted {
-            val state =
-                jdbc.queryForObject(
-                    "SELECT state FROM linked_account WHERE id = ?",
-                    String::class.java,
-                    account.id.value,
-                )
-            assertThat(state == "session_lost" || !fake.isOpen(session))
-                .describedAs("account state %s, session open %s", state, fake.isOpen(session))
-                .isTrue()
+            assertThat(stateOf(account.id)).describedAs("account state").isEqualTo("session_lost")
         }
-        // the first attempt already signed the session out and closed it: the retry has nothing left to sign out
+        assertThat(fake.isOpen(session)).isFalse()
         assertThat(accounts.unlink(owner, account.id).signOutConfirmed).isFalse()
         assertThat(count("linked_account")).isZero()
     }
+
+    @Test
+    fun `AC-122 AC-121 AC-113 a delete that fails after an unconfirmed sign-out keeps the session open`() {
+        val owner = owner()
+        val account = connected(owner)
+        val session = account.session!!
+        fake.dropConnectivity(session)
+        Mockito
+            .doThrow(IllegalStateException("db down"))
+            .doCallRealMethod()
+            .`when`(deletion)
+            .delete(owner, account.id)
+
+        assertThatThrownBy { accounts.unlink(owner, account.id) }.isInstanceOf(IllegalStateException::class.java)
+
+        assertThat(fake.isOpen(session)).describedAs("session open").isTrue()
+        assertThat(stateOf(account.id)).isIn("connected", "reconnecting")
+        accounts.unlink(owner, account.id)
+        assertThat(count("linked_account")).isZero()
+    }
+
+    private fun stateOf(id: LinkedAccountId) =
+        jdbc.queryForObject("SELECT state FROM linked_account WHERE id = ?", String::class.java, id.value)
 
     @Test
     fun `AC-113 a Session lost account is deleted without a sign-out attempt`() {
