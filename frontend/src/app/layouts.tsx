@@ -76,7 +76,13 @@ export function AppFrame({ children }: { children: ReactNode }) {
   if (!me.data) return <LoadState state="loading" rows={3} />;
   return (
     <>
-      <AppShell email={me.data.email}>{children}</AppShell>
+      <AppShell email={me.data.email}>
+        {/* AC-122: the Session lost banner shows on every signed-in screen, above the page. */}
+        <div className="mb-3">
+          <AccountDisconnectedBanner />
+        </div>
+        {children}
+      </AppShell>
       <ThemeSaveToast />
     </>
   );

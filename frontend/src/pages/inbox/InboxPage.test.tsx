@@ -62,7 +62,8 @@ function routed(handlers: {
 }) {
   const fetchMock = vi.fn().mockImplementation((url: string) => {
     if (url === "/api/v1/sign-out") return Promise.resolve(handlers.signOut());
-    if (url === "/api/v1/pulse") return Promise.resolve(json(200, { inboxCount: 0, conditions: [] }));
+    if (url === "/api/v1/pulse")
+      return Promise.resolve(json(200, { inboxCount: 0, conditions: [] }));
     if (url === "/api/v1/linked-accounts")
       return Promise.resolve(json(200, { items: handlers.accounts ?? [] }));
     if (url === "/api/v1/linking-attempt")
@@ -137,7 +138,8 @@ describe("SCR-10 Inbox", () => {
   it("shows loading while linked accounts load", async () => {
     vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
     setup();
-    expect(await screen.findByRole("status")).toHaveAttribute("aria-busy", "true");
+    // The shell has its own (empty) status regions, so pick the busy one.
+    expect(await screen.findByRole("status", { busy: true })).toBeInTheDocument();
   });
 
   it("AC-95: Sign out posts, clears cached Owner data and lands on sign-in", async () => {

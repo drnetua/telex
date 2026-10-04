@@ -452,7 +452,6 @@ export const messages = {
     unlinked: (displayName: string) => `${displayName} is unlinked.`,
     unlinkedUnconfirmed: (displayName: string) =>
       `${displayName} is unlinked and teleX deleted everything it kept. Telegram couldn't confirm the sign-out, so check Active sessions in the Telegram app and end teleX there if it's listed.`,
-    frameButton: "Accounts",
   },
   banner: {
     one: (displayName: string) =>

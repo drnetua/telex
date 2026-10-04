@@ -122,3 +122,53 @@ describe("SCR-02 onboarding layout (AC-01, S10)", () => {
     expect(banner.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
+
+describe("AppLayout with Linked Accounts (AC-122)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows the Session lost banner inside the shell, above the page", async () => {
+    const lost = {
+      id: "a1",
+      displayName: "Anna",
+      phone: { countryCode: "380", lastDigits: "42" },
+      state: "session_lost",
+      chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+      linkedAt: "x",
+    };
+    const body = (url: string) =>
+      url.includes("linked-accounts")
+        ? { items: [lost] }
+        : url.includes("pulse")
+          ? { inboxCount: 0, conditions: [] }
+          : { ownerId: "o1", email: "me@example.com", theme: "system", linkedAccountCount: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) =>
+        Promise.resolve(
+          new Response(JSON.stringify(body(String(input))), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      ),
+    );
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/inbox"]}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/inbox" element={<h1>Inbox page</h1>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
+    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
+    const page = screen.getByRole("heading", { name: "Inbox page" });
+    expect(banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in again" })).toBeEnabled();
+  });
+});
