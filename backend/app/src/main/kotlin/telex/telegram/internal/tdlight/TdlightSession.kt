@@ -16,10 +16,12 @@ import telex.telegram.tdlib.TdlibClient
 import telex.telegram.tdlib.TdlibRequest
 import telex.telegram.tdlib.TdlibResponse
 import telex.telegram.tdlib.TdlibUpdate
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /** How a sign-in step ended: the next authorization state, or an error answer. */
 internal sealed interface StepResult {
@@ -61,6 +63,9 @@ internal class TdlightSession(
     /** Completes when TDLib reports `authorizationStateClosed`. */
     val closed = CompletableFuture<Unit>()
 
+    /** Completes when TDLib reaches `authorizationStateReady`. */
+    private val ready = CompletableFuture<Unit>()
+
     @Volatile var waiter: CompletableFuture<StepResult>? = null
 
     @Volatile var passwordHint: String? = null
@@ -90,6 +95,22 @@ internal class TdlightSession(
 
     /** True once TDLib reached Ready and the client has not been closed since: a close alone leaves a device. */
     @Synchronized fun isAuthorized() = authorized && !lost && !closing && !closed.isDone
+
+    /** True once the session is over for good: lost, closing or closed. Nothing can sign it out any more. */
+    @Synchronized fun isOver() = lost || closing || closed.isDone
+
+    /** A session reopened from its stored key: it was signed in before, so it reaches Ready on its own. */
+    fun wasReopened() = reopened
+
+    /** Waits up to [timeout] for Ready, or for the session to end; true only when it is authorized afterwards. */
+    fun awaitAuthorized(timeout: Duration): Boolean {
+        try {
+            CompletableFuture.anyOf(ready, closed).get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+        } catch (_: TimeoutException) {
+            return false
+        }
+        return isAuthorized()
+    }
 
     @Synchronized fun markClosing() {
         closing = true
@@ -175,6 +196,7 @@ internal class TdlightSession(
 
             STATE_READY -> {
                 authorized = true
+                ready.complete(Unit)
                 emitState(SessionState.Ready)
                 if (syncStarted) startChatLoad()
             }

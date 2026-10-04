@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
  * scripts the Linked Account's life after the link: X = 0 makes Telegram unreachable for a while, then reachable
  * again (Reconnecting, then Connected); X = 1 ends the first session of that phone a moment after the link, and the
  * session made by signing in again survives.
+ * A number in the shape `99963XYYYY` refuses the code resend: X = 0 as invalid, X = 1 as banned.
  * Like TDLib, an unregistered number closes the client.
  */
 @Suppress("TooManyFunctions") // a port implementation plus its test hooks
