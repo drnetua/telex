@@ -1437,6 +1437,72 @@
         "docs/features/telegram-link/spec.md"
       ],
       "file": "docs/features/telegram-link/tasks/t65-docs-sync-r5.md"
+    },
+    {
+      "id": "T66",
+      "title": "Boot signs out a session reopened for an account unlinked meanwhile, and a unit test pins it",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-111"
+      ],
+      "dod": "A unit test fails if BootReconnect stops signing out, closing or destroying (in that order) a session it reopened for an account that was unlinked meanwhile, and shows close and destroy still run when the sign-out throws.",
+      "files_hint": [
+        "backend/app/src/test/kotlin/telex/messaging/internal/lifecycle/BootReconnectTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t66-boot-drop-if-unlinked-signs-out.md"
+    },
+    {
+      "id": "T67",
+      "title": "An interrupted log out unmutes the session, and the interrupt can't turn a finished unlink into a 500",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-121",
+        "AC-122",
+        "AC-113"
+      ],
+      "dod": "A log out that is interrupted while waiting for TDLib leaves the session unmuted (a later Closed is announced), and closing a session on an interrupted thread disposes it without throwing.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t67-logout-interrupt-unmutes.md"
+    },
+    {
+      "id": "T68",
+      "title": "SCR-02 does not focus the step heading when one step replaces another, and a test pins the guard",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-109",
+        "AC-122"
+      ],
+      "dod": "A component test fails if SCR-02 moves focus to the step heading when one wizard step replaces another (phone to code), while Start again still focuses it.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t68-scr02-no-refocus-between-steps.md"
+    },
+    {
+      "id": "T69",
+      "title": "Sync sad, test-plan, ux-flows, task statuses and T53's AC with the sixth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T66",
+        "T67",
+        "T68"
+      ],
+      "acs": [],
+      "dod": "sad flow 3 says the boot-side sign-out can fail on a destroyed directory and holds the empty-database note; t01-t25 frontmatter matches the tracker; test-plan lists the four unlink failure paths; the ux-flows focus rule matches screens.md; T53's foreign AC is qualified as app-shell/AC-176.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/ux-flows.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t69-docs-sync-r6.md"
     }
   ]
 }
