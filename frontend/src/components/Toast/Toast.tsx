@@ -13,31 +13,34 @@ interface ToastProps {
   action?: { label: string; onClick: () => void };
 }
 
-let slot: HTMLElement | null = null;
 let users = 0;
 
 /**
- * One empty polite live region, mounted before any Toast and kept for the app's lifetime. A live region that arrives
- * together with its text is often not announced; info Toasts are added into this one, so they are.
+ * One fixed container for every open Toast, so Toasts shown together stack instead of overlapping. It lives for the
+ * app's lifetime and is empty, and takes no room, while no Toast is open.
  */
-const liveRegion: HTMLElement | null =
+const slot: HTMLElement | null =
   typeof document === "undefined" ? null : document.createElement("div");
-if (liveRegion) {
-  liveRegion.setAttribute("aria-live", "polite");
-  document.body.appendChild(liveRegion);
+/**
+ * An empty polite live region inside the container, mounted before any Toast. A live region that arrives together
+ * with its text is often not announced; info Toasts are added into this one, so they are. Error Toasts are siblings of
+ * it, each its own `role=alert`, so no live region is nested in another.
+ */
+const politeRegion: HTMLElement | null =
+  typeof document === "undefined" ? null : document.createElement("div");
+if (slot && politeRegion) {
+  slot.className =
+    "toast-container telex-toast-container position-fixed bottom-0 end-0 d-flex flex-column gap-2";
+  politeRegion.className = "d-flex flex-column gap-2 mb-0";
+  politeRegion.setAttribute("aria-live", "polite");
+  slot.appendChild(politeRegion);
+  document.body.appendChild(slot);
 }
 
-/** One fixed container for every open Toast, so Toasts shown together stack instead of overlapping. */
-function acquireSlot(): HTMLElement {
-  if (!slot) {
-    slot = document.createElement("div");
-    slot.className =
-      "toast-container telex-toast-container position-fixed bottom-0 end-0 p-3 d-flex flex-column gap-2";
-    if (liveRegion && !liveRegion.isConnected) document.body.appendChild(liveRegion);
-    (liveRegion ?? document.body).appendChild(slot);
-  }
+function acquireSlot() {
+  if (slot && !slot.isConnected) document.body.appendChild(slot);
+  slot?.classList.add("p-3");
   users += 1;
-  return slot;
 }
 
 function subscribeToSlot(): () => void {
@@ -51,10 +54,7 @@ function currentSlot(): HTMLElement | null {
 
 function releaseSlot() {
   users -= 1;
-  if (users === 0 && slot) {
-    slot.remove();
-    slot = null;
-  }
+  if (users === 0) slot?.classList.remove("p-3");
 }
 
 /** Info toast: announced politely, dismisses itself. Error toast: stays until dismissed. */
@@ -104,6 +104,6 @@ export function Toast({
         ) : null}
       </div>
     </div>,
-    container,
+    error ? container : (politeRegion ?? container),
   );
 }

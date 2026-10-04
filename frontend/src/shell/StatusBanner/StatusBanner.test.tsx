@@ -251,25 +251,32 @@ describe("StatusBanner", () => {
     expect(c.getQueryData(["linking-attempt"])).toMatchObject({ targetLinkedAccountId: "a1" });
   });
 
-  it("AC-122: a refusal still toasts when its refetch clears the lost account", async () => {
+  it("AC-122, AC-117: a refusal Toast keeps its node when the refetch that follows clears the lost account", async () => {
     let lists = 0;
+    // The refetch answers only after the Toast is up, so the banner line disappears underneath it.
+    let release: () => void = () => undefined;
+    const refetchAnswered = new Promise<void>((resolve) => (release = resolve));
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string, init?: RequestInit) => {
         if (url.includes("linking-attempt") && init?.method === "POST")
           return Promise.resolve(json(409, { code: "linked-account-limit-reached", limit: 3 }));
         lists += 1;
-        return Promise.resolve(
-          json(200, { items: [account("a1", "Anna", lists === 1 ? "session_lost" : "connected")] }),
+        if (lists === 1)
+          return Promise.resolve(json(200, { items: [account("a1", "Anna", "session_lost")] }));
+        return refetchAnswered.then(() =>
+          json(200, { items: [account("a1", "Anna", "connected")] }),
         );
       }),
     );
     show(["account-disconnected"]);
     await userEvent.click(await screen.findByRole("button", { name: "Sign in again" }));
-    expect(await screen.findByText(/You've linked 3 accounts/)).toBeInTheDocument();
-    await waitFor(() => expect(lists).toBeGreaterThan(1));
+    const toast = await screen.findByText(/You've linked 3 accounts/);
+    expect(screen.getByRole("button", { name: "Sign in again" })).toBeInTheDocument();
+    await act(async () => release());
     await waitFor(() => expect(screen.getByRole("status")).toBeEmptyDOMElement());
-    expect(screen.getByText(/You've linked 3 accounts/)).toBeInTheDocument();
+    // The same node: a remount would announce the refusal a second time.
+    expect(screen.getByText(/You've linked 3 accounts/)).toBe(toast);
   });
 
   it("shows a server condition alone with its own action", () => {

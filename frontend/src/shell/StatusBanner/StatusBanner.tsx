@@ -99,7 +99,6 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
   ));
   const ordered = orderConditions(codes);
   const [top, ...rest] = ordered;
-  if (!top) return <div role="status">{notices}</div>;
 
   const onRetry = () => {
     setBusy(true);
@@ -109,44 +108,48 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
       .finally(() => setBusy(false));
   };
 
+  // One stable structure: the notices keep their position (and so their DOM nodes) when the condition line comes or
+  // goes, so a refusal Toast is never remounted and announced twice.
   return (
     <div role="status">
-      <div className="alert alert-warning rounded-0 mb-0 border-0">
-        <ConditionLine
-          key={top.code}
-          condition={top}
-          live={lives.get(top.code) ?? {}}
-          as="div"
-          busy={busy}
-          stillDown={stillDown}
-          onRetry={onRetry}
-        >
-          {rest.length > 0 ? (
-            <Button
-              className="btn-link"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {m.more(rest.length)}
-            </Button>
+      {top ? (
+        <div className="alert alert-warning rounded-0 mb-0 border-0">
+          <ConditionLine
+            key={top.code}
+            condition={top}
+            live={lives.get(top.code) ?? {}}
+            as="div"
+            busy={busy}
+            stillDown={stillDown}
+            onRetry={onRetry}
+          >
+            {rest.length > 0 ? (
+              <Button
+                className="btn-link"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((v) => !v)}
+              >
+                {m.more(rest.length)}
+              </Button>
+            ) : null}
+          </ConditionLine>
+          {expanded && rest.length > 0 ? (
+            <ul className="list-unstyled mb-0 mt-2 d-flex flex-column gap-2">
+              {rest.map((condition) => (
+                <ConditionLine
+                  key={condition.code}
+                  condition={condition}
+                  live={lives.get(condition.code) ?? {}}
+                  as="li"
+                  busy={busy}
+                  stillDown={false}
+                  onRetry={onRetry}
+                />
+              ))}
+            </ul>
           ) : null}
-        </ConditionLine>
-        {expanded && rest.length > 0 ? (
-          <ul className="list-unstyled mb-0 mt-2 d-flex flex-column gap-2">
-            {rest.map((condition) => (
-              <ConditionLine
-                key={condition.code}
-                condition={condition}
-                live={lives.get(condition.code) ?? {}}
-                as="li"
-                busy={busy}
-                stillDown={false}
-                onRetry={onRetry}
-              />
-            ))}
-          </ul>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       {notices}
     </div>
   );

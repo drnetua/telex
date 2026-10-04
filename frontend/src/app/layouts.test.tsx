@@ -141,6 +141,8 @@ describe("SCR-02 onboarding layout (AC-01, S10)", () => {
   it.each([
     ["a pulse that gets no answer", () => Promise.reject(new TypeError("network"))],
     ["a pulse answered 502", () => Promise.resolve(new Response("{}", { status: 502 }))],
+    ["a pulse answered 503", () => Promise.resolve(new Response("{}", { status: 503 }))],
+    ["a pulse answered 504", () => Promise.resolve(new Response("{}", { status: 504 }))],
   ])("AC-122: %s keeps the wizard and shows the banner, never SCR-93", async (_n, pulse) => {
     // The wizard is on screen before the pulse fails (a failed pulse pauses queries that start later).
     let attemptLoaded: () => void = () => undefined;

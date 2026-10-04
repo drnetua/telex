@@ -115,15 +115,32 @@ describe("usePulse (AC-176)", () => {
   });
 });
 
+/** Failed-pulse blocks: the fetch stub, timers and the failure handler are restored even when an assertion fails. */
+function failedPulseSetup(shellActive: boolean) {
+  vi.useFakeTimers();
+  resetConnectivity();
+  setShellActive(shellActive);
+  setVisibility("visible");
+  const handler = vi.fn();
+  failureBus.handler = handler;
+  const client = createAppQueryClient();
+  return { handler, client };
+}
+
+function failedPulseCleanup(client: QueryClient | undefined) {
+  client?.clear();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  failureBus.handler = () => undefined;
+}
+
 describe("a pulse answered 5xx (AC-176)", () => {
+  let client: QueryClient | undefined;
+  afterEach(() => failedPulseCleanup(client));
+
   it("reports not-responding and does not route to SCR-93", async () => {
-    vi.useFakeTimers();
-    resetConnectivity();
-    setShellActive(true);
-    setVisibility("visible");
-    const handler = vi.fn();
-    failureBus.handler = handler;
-    const client = createAppQueryClient();
+    const setup = failedPulseSetup(true);
+    client = setup.client;
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(Response.json({ code: "internal-error" }, { status: 500 })),
@@ -131,50 +148,39 @@ describe("a pulse answered 5xx (AC-176)", () => {
     renderHook(() => usePulse(), { wrapper: wrapper(client) });
     await act(() => vi.advanceTimersByTimeAsync(0));
     expect(connectivity.get()).toBe("not-responding");
-    expect(handler).not.toHaveBeenCalled();
-    client.clear();
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-    failureBus.handler = () => undefined;
+    expect(setup.handler).not.toHaveBeenCalled();
   });
 });
 
 describe("a failed pulse where the shell is not mounted (AC-122, AC-176)", () => {
+  let client: QueryClient | undefined;
+  afterEach(() => failedPulseCleanup(client));
+
   it.each([
     ["no answer", () => Promise.reject(new TypeError("network"))],
     ["502", () => Promise.resolve(Response.json({ code: "bad-gateway" }, { status: 502 }))],
     ["503", () => Promise.resolve(Response.json({ code: "unavailable" }, { status: 503 }))],
+    ["504", () => Promise.resolve(Response.json({ code: "gateway-timeout" }, { status: 504 }))],
     ["500", () => Promise.resolve(Response.json({ code: "internal-error" }, { status: 500 }))],
   ])("%s reports not-responding and never reaches the failure bus", async (_name, reply) => {
-    vi.useFakeTimers();
-    resetConnectivity();
-    setShellActive(false);
-    setVisibility("visible");
-    const handler = vi.fn();
-    failureBus.handler = handler;
-    const client = createAppQueryClient();
+    const setup = failedPulseSetup(false);
+    client = setup.client;
     vi.stubGlobal("fetch", vi.fn().mockImplementation(reply));
     const { result } = renderHook(() => usePulse(), { wrapper: wrapper(client) });
     await act(() => vi.advanceTimersByTimeAsync(0));
     expect(result.current.error).toMatchObject({ route: undefined });
     expect(connectivity.get()).toBe("not-responding");
-    expect(handler).not.toHaveBeenCalled();
-    client.clear();
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-    failureBus.handler = () => undefined;
+    expect(setup.handler).not.toHaveBeenCalled();
   });
 });
 
 describe("a pulse answered 403 (AC-122)", () => {
-  it("does not take over the screen and never reaches the failure bus", async () => {
-    vi.useFakeTimers();
-    resetConnectivity();
-    setShellActive(false);
-    setVisibility("visible");
-    const handler = vi.fn();
-    failureBus.handler = handler;
-    const client = createAppQueryClient();
+  let client: QueryClient | undefined;
+  afterEach(() => failedPulseCleanup(client));
+
+  it("does not take over the screen where the shell is not mounted", async () => {
+    const setup = failedPulseSetup(false);
+    client = setup.client;
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(Response.json({ code: "forbidden" }, { status: 403 })),
@@ -182,10 +188,23 @@ describe("a pulse answered 403 (AC-122)", () => {
     const { result } = renderHook(() => usePulse(), { wrapper: wrapper(client) });
     await act(() => vi.advanceTimersByTimeAsync(0));
     expect(result.current.error).toMatchObject({ status: 403, route: undefined });
-    expect(handler).not.toHaveBeenCalled();
-    client.clear();
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-    failureBus.handler = () => undefined;
+    expect(setup.handler).not.toHaveBeenCalled();
+  });
+
+  it("goes to SCR-93 with Retry while the shell is mounted", async () => {
+    const setup = failedPulseSetup(true);
+    client = setup.client;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ code: "forbidden" }, { status: 403 })),
+    );
+    const { result } = renderHook(() => usePulse(), { wrapper: wrapper(client) });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(result.current.error).toMatchObject({ status: 403, route: "unavailable" });
+    expect(setup.handler).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 403, route: "unavailable" }),
+      expect.any(Function),
+      "query",
+    );
   });
 });

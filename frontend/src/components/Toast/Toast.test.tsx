@@ -33,10 +33,15 @@ describe("Toast slot", () => {
     expect(containers[0]).toContainElement(screen.getByText("Second notice"));
   });
 
-  it("removes the container with the last Toast so it cannot cover the page", () => {
+  it("leaves the container empty and without padding after the last Toast so it cannot cover the page", () => {
+    // The container (and its polite region) persist so the region exists before any text arrives.
     const { unmount } = render(<Toast message="Saved" onDismiss={() => undefined} />);
+    expect(document.querySelector(".telex-toast-container")).toHaveClass("p-3");
     unmount();
-    expect(document.querySelector(".telex-toast-container")).toBeNull();
+    const container = document.querySelector(".telex-toast-container");
+    expect(container).not.toHaveClass("p-3");
+    expect(container?.querySelector(".toast")).toBeNull();
+    expect(container).toHaveTextContent("");
   });
 });
 
@@ -73,5 +78,24 @@ describe("Toast announcement (AC-111, AC-114)", () => {
     const frame = screen.getByText("Fine").closest(".toast");
     expect(frame).not.toHaveAttribute("aria-live");
     expect(frame).not.toHaveAttribute("role");
+  });
+
+  it("AC-114: an error Toast is its own alert, outside every other live region", () => {
+    render(<Toast tone="error" message="Could not save" onDismiss={() => undefined} />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Could not save");
+    expect(alert.parentElement?.closest("[aria-live], [role=alert], [role=status]")).toBeNull();
+  });
+
+  it("AC-111: an error Toast shares the one container with an info Toast", () => {
+    render(
+      <>
+        <Toast message="Fine" onDismiss={() => undefined} />
+        <Toast tone="error" message="Broken" onDismiss={() => undefined} />
+      </>,
+    );
+    const container = document.querySelector(".telex-toast-container");
+    expect(container).toContainElement(screen.getByText("Fine"));
+    expect(container).toContainElement(screen.getByText("Broken"));
   });
 });
