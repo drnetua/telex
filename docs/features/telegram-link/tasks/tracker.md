@@ -70,7 +70,7 @@
 | T63 | The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out | infra | Anton Husiev | S | T62 | done |
 | T64 | SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again | ui | Anton Husiev | XS | — | done |
 | T65 | Sync sad, tracker, test-plan and spec with the fifth-review fixes | docs | Anton Husiev | XS | T61, T62, T63, T64 | done |
-| T66 | Boot signs out a session reopened for an account unlinked meanwhile, and a unit test pins it | infra | Anton Husiev | XS | — | todo |
+| T66 | Boot signs out a session reopened for an account unlinked meanwhile, and a unit test pins it | infra | Anton Husiev | XS | — | done |
 | T67 | An interrupted log out unmutes the session, and the interrupt can't turn a finished unlink into a 500 | infra | Anton Husiev | XS | — | todo |
 | T68 | SCR-02 does not focus the step heading when one step replaces another, and a test pins the guard | ui | Anton Husiev | XS | — | todo |
 | T69 | Sync sad, test-plan, ux-flows, task statuses and T53's AC with the sixth-review fixes | docs | Anton Husiev | XS | T66, T67, T68 | todo |

@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/test/kotlin/telex/messaging/internal/lifecycle/Boo
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (sixth pass) — findings K12"
-status: "todo"
+status: "done"
 ---
 
 # T66 — Boot signs out a session reopened for an account unlinked meanwhile, and a unit test pins it
