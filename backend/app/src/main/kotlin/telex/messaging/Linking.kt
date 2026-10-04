@@ -150,6 +150,7 @@ class Linking(
         by: SignInSessionId,
     ): LinkingProgress =
         step(owner, by, LinkingStep.CODE) { attempt, sessions ->
+            // Phone refusals are handled here, so codeSent's own phone-refusal branch is never reached from resend.
             when (val outcome = sessions.resendCode(attempt.sessionId)) {
                 SignInOutcome.PhoneUnregistered, SignInOutcome.PhoneInvalid, SignInOutcome.PhoneBanned -> {
                     discard(owner, "refused_phone")
