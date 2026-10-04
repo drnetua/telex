@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
+import telex.shared.Uuid7
 import telex.telegram.internal.fake.FakeTelegram
 import telex.telegram.internal.files.SessionDirectories
 import java.nio.file.Files
@@ -277,6 +278,18 @@ class FakeTelegramTest {
 
         assertThat(states().drop(before).map { it.state }).containsExactly(SessionState.Closed)
         assertThat(fake.logOut(id, Duration.ofMillis(10))).isFalse()
+    }
+
+    @Test
+    fun `a session with no directory reopens Closed and cannot be signed out (AC-111, AC-113)`() {
+        // A directory removed outside destroy (an orphan sweep, an operator) is an empty TDLib database too.
+        val unknown = TelegramSessionId(Uuid7.next())
+        val before = states().size
+
+        fake.reopen(unknown, ByteArray(32))
+
+        assertThat(states().drop(before).map { it.state }).containsExactly(SessionState.Closed)
+        assertThat(fake.logOut(unknown, Duration.ofMillis(10))).isFalse()
     }
 
     @Test

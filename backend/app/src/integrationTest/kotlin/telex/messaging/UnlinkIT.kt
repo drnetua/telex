@@ -259,7 +259,9 @@ class UnlinkIT {
         assertThatThrownBy { accounts.unlink(owner, account.id) }.isInstanceOf(IllegalStateException::class.java)
 
         assertThat(fake.isOpen(session)).describedAs("session open").isTrue()
-        assertThat(stateOf(account.id)).isIn("connected", "reconnecting")
+        // it still reports its state: once Telegram is reachable again the account is Connected
+        fake.restoreConnectivity(session)
+        await().untilAsserted { assertThat(stateOf(account.id)).isEqualTo("connected") }
         accounts.unlink(owner, account.id)
         assertThat(count("linked_account")).isZero()
     }

@@ -123,10 +123,15 @@ class LinkedAccounts(
         session: TelegramSessionId,
         failure: RuntimeException,
     ) {
+        // separate steps: a failed close must not leave the row connected
         try {
             sessions.close(session)
+        } catch (secondary: Exception) {
+            failure.addSuppressed(secondary)
+        }
+        try {
             states.transition(session, LinkedAccountState.SESSION_LOST)
-        } catch (secondary: RuntimeException) {
+        } catch (secondary: Exception) {
             failure.addSuppressed(secondary)
         }
     }
@@ -159,6 +164,9 @@ class LinkedAccounts(
         try {
             if (reopenFor != null) reopenIfClosed(sessions, reopenFor, session)
             sessions.logOut(session, SIGN_OUT_TIMEOUT)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
         } catch (_: Exception) {
             false
         }

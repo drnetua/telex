@@ -74,11 +74,12 @@ class FakeTelegram(
         id: TelegramSessionId,
         dbKey: ByteArray,
     ) {
-        directories.create(id)
+        // like TDLib opening an empty database after the directory was destroyed or removed some other way: it asks
+        // for a phone number (TdlightSession.onWaitPhone), so the real adapter reports Closed and a log out cannot
+        // succeed
+        val empty = !Files.exists(directories.create(id).resolve(MARKER_FILE))
         if (reopenUnavailable) throw TelegramUnavailable()
-        // like TDLib opening an empty database after the directory was destroyed: it asks for a phone number
-        // (TdlightSession.onWaitPhone), so the real adapter reports Closed and a log out cannot succeed
-        val wasDestroyed = destroyed.remove(id)
+        val wasDestroyed = destroyed.remove(id) || empty
         val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = !wasDestroyed } }
         session.syncStarted = true
         // like TDLib, a session teleX signed out of asks for a phone number again: the real adapter reports Closed

@@ -248,6 +248,7 @@ class LifecycleIT {
         restart()
 
         assertThat(result.get().signOutConfirmed).isFalse()
+        assertThat(fake.wasLoggedOut(account.session)).`as`("an empty database cannot be signed out").isFalse()
         assertThat(fake.isOpen(account.session)).isFalse()
         assertThat(Files.exists(sessionsRoot.resolve(account.session.value.toString()))).isFalse()
     }
