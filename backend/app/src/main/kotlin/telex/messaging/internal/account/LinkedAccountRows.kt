@@ -87,6 +87,13 @@ class LinkedAccountRows(
             .query(Int::class.java)
             .single()
 
+    fun hasSessionLost(owner: OwnerId): Boolean =
+        jdbc
+            .sql("SELECT EXISTS (SELECT 1 FROM linked_account WHERE owner_id = ? AND state = 'session_lost')")
+            .param(owner.value)
+            .query(Boolean::class.java)
+            .single()
+
     /**
      * The count for the limit check inside the insert transaction. Takes a transaction-scoped advisory lock keyed
      * by the Owner, so two wizards finishing together cannot both pass (AC-115). Needs an open transaction.

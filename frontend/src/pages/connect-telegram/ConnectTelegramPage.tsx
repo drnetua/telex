@@ -60,6 +60,13 @@ export function ConnectTelegramPage() {
   const [last, setLast] = useState<LinkingAttempt | undefined>(undefined);
   const known = attempt ?? last;
 
+  // A fresh attempt put in the cache from outside (the Status Banner's Sign in again) replaces any outcome card.
+  const [seenAttempt, setSeenAttempt] = useState(attempt);
+  if (attempt !== seenAttempt) {
+    setSeenAttempt(attempt);
+    if (attempt) setOutcome(null);
+  }
+
   const show = (message: string, tone: Notice["tone"]) => {
     setNotice(null);
     setTimeout(() => setNotice({ message, tone }), 0);

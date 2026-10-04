@@ -4,7 +4,6 @@ import logo from "../assets/telex-logo-192.png";
 import { useMe } from "../api/account";
 import { LoadState } from "../components/LoadState/LoadState";
 import { ThemeSaveToast } from "../components/ThemeSwitch/ThemeSwitch";
-import { AccountDisconnectedBanner } from "../components/StatusBanner/AccountDisconnectedBanner";
 import { messages } from "../messages";
 import { AppShell } from "../shell/AppShell/AppShell";
 import { useAccountTheme } from "../shell/theme";
@@ -49,12 +48,11 @@ export function AuthLayout() {
   );
 }
 
-/** SCR-02: the auth card without the signed-in header, with the status banner slot above the card. */
+/** SCR-02: the auth card without the signed-in header. */
 export function OnboardingLayout() {
   return (
     <div className="page page-center">
       <div className="container-tight py-4">
-        <AccountDisconnectedBanner />
         <div className="text-center mb-4">
           <img src={logo} alt={messages.appName} width={96} height={96} />
         </div>
@@ -77,10 +75,6 @@ export function AppFrame({ children }: { children: ReactNode }) {
   return (
     <>
       <AppShell email={me.data.email}>
-        {/* AC-122: the Session lost banner shows on every signed-in screen, above the page. */}
-        <div className="mb-3">
-          <AccountDisconnectedBanner />
-        </div>
         {children}
       </AppShell>
       <ThemeSaveToast />

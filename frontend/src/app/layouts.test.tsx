@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { readFileSync, statSync } from "node:fs";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -77,7 +77,7 @@ describe("layouts (AC-83, AC-100)", () => {
 describe("SCR-02 onboarding layout (AC-01, S10)", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("renders /connect-telegram in the onboarding card: logo, no app shell, banner above the card", async () => {
+  it("renders /connect-telegram in the onboarding card: logo, no app shell, no page-level banner", async () => {
     const lost = {
       id: "a1",
       displayName: "Anna",
@@ -115,18 +115,64 @@ describe("SCR-02 onboarding layout (AC-01, S10)", () => {
     expect(container.querySelector("header.navbar")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
-    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
-    const card = container.querySelector(".card");
-    expect(card).not.toBeNull();
+    // The shell's Status Banner is the one banner (ADR-0006); the onboarding card has none of its own.
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(screen.queryByText(/Anna.s Telegram is disconnected/)).toBeNull();
+    expect(container.querySelector(".alert")).toBeNull();
     expect(container.querySelectorAll(".card")).toHaveLength(1);
-    expect(banner.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
 describe("AppLayout with Linked Accounts (AC-122)", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("shows the Session lost banner inside the shell, above the page", async () => {
+  it("shows the Session lost banner from the pulse inside the shell, above the page", async () => {
+    const lost = {
+      id: "a1",
+      displayName: "Anna",
+      phone: { countryCode: "380", lastDigits: "42" },
+      state: "session_lost",
+      chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+      linkedAt: "x",
+    };
+    const body = (url: string) =>
+      url.includes("linked-accounts")
+        ? { items: [lost] }
+        : url.includes("pulse")
+          ? { inboxCount: 0, conditions: ["account-disconnected"] }
+          : { ownerId: "o1", email: "me@example.com", theme: "system", linkedAccountCount: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) =>
+        Promise.resolve(
+          new Response(JSON.stringify(body(String(input))), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      ),
+    );
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/inbox"]}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/inbox" element={<h1>Inbox page</h1>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
+    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
+    const page = screen.getByRole("heading", { name: "Inbox page" });
+    expect(banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in again" })).toBeEnabled();
+  });
+
+  it("renders no page-level banner and no empty wrapper when the pulse reports no condition", async () => {
     const lost = {
       id: "a1",
       displayName: "Anna",
@@ -165,10 +211,11 @@ describe("AppLayout with Linked Accounts (AC-122)", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
-    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
-    const page = screen.getByRole("heading", { name: "Inbox page" });
-    expect(banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Sign in again" })).toBeEnabled();
+    const page = await screen.findByRole("heading", { name: "Inbox page" });
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("pulse"), expect.anything()),
+    );
+    expect(screen.queryByText(/Anna.s Telegram is disconnected/)).toBeNull();
+    expect(page.previousElementSibling).toBeNull();
   });
 });

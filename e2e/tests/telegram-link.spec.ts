@@ -199,6 +199,10 @@ test("AC-117, AC-122: a lost session shows Session lost and a banner; sign in ag
   await expect(line).toContainText("Session lost", { timeout: 30_000 });
   const banner = page.getByText(`${displayName}'s Telegram is disconnected.`);
   await expect(banner).toBeVisible();
+  // One Status Banner (C-04) in the shell, fed by the pulse, not a second one in the page.
+  await expect(
+    page.getByRole("status").filter({ hasText: "is disconnected" }),
+  ).toHaveCount(1);
   await expectNoA11yViolations(
     page,
     "SCR-10 Inbox with Session lost and banner",

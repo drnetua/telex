@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { act } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { LinkingAttempt } from "../../api/linking";
+import { linkingAttemptKey, type LinkingAttempt } from "../../api/linking";
 import { ConnectTelegramPage } from "./ConnectTelegramPage";
 
 const json = (status: number, body: unknown) =>
@@ -525,6 +526,16 @@ describe("SCR-02 outcomes", () => {
     expect(calls.find((c) => c.method === "POST" && c.url === START.slice(5))?.body).toEqual({
       origin: "inbox",
     });
+  });
+
+  it("AC-122: a fresh attempt landing in the cache replaces an outcome card with its step", async () => {
+    mockApi(phoneReply(problem(404, "linking-attempt-not-found")));
+    const client = setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+    act(() => client.setQueryData(linkingAttemptKey, attempt({ origin: "accounts" })));
+    expect(await screen.findByLabelText("Phone number")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "This linking has ended" })).toBeNull();
   });
 
   it("toasts the start refusal and stays on the ended state", async () => {

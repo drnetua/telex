@@ -1,16 +1,31 @@
+import type { ReactNode } from "react";
 import type { IconName } from "../components/Icon/Icon";
 import { messages } from "../messages";
+import { useAccountDisconnected } from "./accountDisconnected";
 
 const c = messages.shell.banner;
 
-/** What a condition offers: retry the connection, or go somewhere to fix the cause. */
-export type ConditionAction = { kind: "retry" } | { kind: "link"; label: string; to: string };
+/** What a condition offers: retry the connection, go somewhere to fix the cause, or run its own action. */
+export type ConditionAction =
+  | { kind: "retry" }
+  | { kind: "link"; label: string; to: string }
+  | { kind: "button"; label: string; onClick: () => void; busy?: boolean };
+
+/** What a condition resolves at render time from live data; whatever it leaves out falls back to the catalog. */
+export interface ConditionLive {
+  message?: string;
+  action?: ConditionAction;
+  /** Rendered beside the line, e.g. a Toast for a refused action. */
+  notice?: ReactNode;
+}
 
 export interface Condition {
   code: string;
   icon: IconName;
   message: string;
   action: ConditionAction;
+  /** A hook the banner calls inside the condition's own line, so it may read queries and own state. */
+  useLive?: () => ConditionLive;
 }
 
 interface Entry extends Condition {
@@ -28,7 +43,8 @@ const catalog: readonly Entry[] = [
     code: "account-disconnected",
     icon: "wifi-off",
     message: c.conditions.accountDisconnected,
-    action: { kind: "link", label: c.actions.reconnect, to: "/settings" },
+    action: { kind: "link", label: messages.banner.openAccounts, to: "/accounts" },
+    useLive: useAccountDisconnected,
   },
   {
     code: "bot-blocked",
