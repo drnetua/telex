@@ -89,7 +89,7 @@ internal class TdlightSession(
     fun clientIfAttached(): TdlibClient? = clientFuture.getNow(null)
 
     /** True once TDLib reached Ready and the client has not been closed since: a close alone leaves a device. */
-    @Synchronized fun isAuthorized() = authorized && !closing && !closed.isDone
+    @Synchronized fun isAuthorized() = authorized && !lost && !closing && !closed.isDone
 
     @Synchronized fun markClosing() {
         closing = true

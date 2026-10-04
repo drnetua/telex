@@ -446,6 +446,21 @@ class TdlightTelegramSessionsTest {
         val id = sessions.open(key)
 
         assertThat(sessions.logOut(id, Duration.ofMillis(200))).isFalse()
+        assertThat(tdlib.clients.single().requests).doesNotContain(TdlibRequest.LogOut)
+    }
+
+    @Test
+    fun `logOut of a session TDLib is already logging out remotely is not confirmed (AC-113)`() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        answerOnlyChatLoads()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        client.emit(auth("authorizationStateLoggingOut"))
+
+        assertThat(sessions.logOut(id, Duration.ofMillis(200))).isFalse()
+        assertThat(client.requests).doesNotContain(TdlibRequest.LogOut)
     }
 
     @Test
