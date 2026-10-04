@@ -41,7 +41,7 @@ const catalog: readonly Entry[] = [
   { code: "not-responding", icon: "cloud-off", message: c.conditions.notResponding, action: retry },
   {
     code: "account-disconnected",
-    icon: "wifi-off",
+    icon: "alert-circle",
     message: c.conditions.accountDisconnected,
     action: { kind: "link", label: messages.banner.openAccounts, to: "/accounts" },
     useLive: useAccountDisconnected,

@@ -5,6 +5,7 @@ import { useMe } from "../api/account";
 import { LoadState } from "../components/LoadState/LoadState";
 import { ThemeSaveToast } from "../components/ThemeSwitch/ThemeSwitch";
 import { messages } from "../messages";
+import { PulseBanner } from "../shell/StatusBanner/PulseBanner";
 import { AppShell } from "../shell/AppShell/AppShell";
 import { useAccountTheme } from "../shell/theme";
 import { useSaveDetectedTimeZone } from "../shell/time";
@@ -51,18 +52,21 @@ export function AuthLayout() {
 /** SCR-02: the auth card without the signed-in header. */
 export function OnboardingLayout() {
   return (
-    <div className="page page-center">
-      <div className="container-tight py-4">
-        <div className="text-center mb-4">
-          <img src={logo} alt={messages.appName} width={96} height={96} />
-        </div>
-        <div className="card card-md">
-          <div className="card-body">
-            <Outlet />
+    <>
+      <PulseBanner />
+      <div className="page page-center">
+        <div className="container-tight py-4">
+          <div className="text-center mb-4">
+            <img src={logo} alt={messages.appName} width={96} height={96} />
+          </div>
+          <div className="card card-md">
+            <div className="card-body">
+              <Outlet />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

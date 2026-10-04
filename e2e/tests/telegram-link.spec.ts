@@ -222,6 +222,8 @@ test("AC-117, AC-122: a lost session shows Session lost and a banner; sign in ag
       name: new RegExp(`^Sign in again to ${displayName}`),
     }),
   ).toBeVisible();
+  // AC-122: SCR-02 shows the same banner above the card.
+  await expect(banner).toBeVisible();
   await expectNoA11yViolations(page, "SCR-02 sign in again");
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page).toHaveURL(/\/accounts$/);

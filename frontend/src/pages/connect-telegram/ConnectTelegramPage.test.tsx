@@ -538,6 +538,17 @@ describe("SCR-02 outcomes", () => {
     expect(screen.queryByRole("heading", { name: "This linking has ended" })).toBeNull();
   });
 
+  it("AC-122: an identical fresh attempt put in the cache still replaces the outcome card", async () => {
+    mockApi(phoneReply(problem(404, "linking-attempt-not-found")));
+    const client = setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+    // Deep-equal to the cached attempt: structural sharing keeps the old reference.
+    act(() => client.setQueryData(linkingAttemptKey, attempt()));
+    expect(await screen.findByLabelText("Phone number")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "This linking has ended" })).toBeNull();
+  });
+
   it("toasts the start refusal and stays on the ended state", async () => {
     mockApi({
       [A]: [problem(404, "linking-attempt-not-found")],

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiFailure } from "../../api/client";
 import {
@@ -61,11 +61,21 @@ export function ConnectTelegramPage() {
   const known = attempt ?? last;
 
   // A fresh attempt put in the cache from outside (the Status Banner's Sign in again) replaces any outcome card.
-  const [seenAttempt, setSeenAttempt] = useState(attempt);
-  if (attempt !== seenAttempt) {
-    setSeenAttempt(attempt);
-    if (attempt) setOutcome(null);
-  }
+  // Structural sharing keeps the old reference for an equal attempt, so listen for the write itself.
+  useEffect(
+    () =>
+      client.getQueryCache().subscribe((event) => {
+        if (
+          event.type === "updated" &&
+          event.action.type === "success" &&
+          event.action.manual &&
+          event.query.queryKey[0] === linkingAttemptKey[0] &&
+          event.action.data
+        )
+          setOutcome(null);
+      }),
+    [client],
+  );
 
   const show = (message: string, tone: Notice["tone"]) => {
     setNotice(null);

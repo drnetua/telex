@@ -77,32 +77,37 @@ describe("layouts (AC-83, AC-100)", () => {
 describe("SCR-02 onboarding layout (AC-01, S10)", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("renders /connect-telegram in the onboarding card: logo, no app shell, no page-level banner", async () => {
-    const lost = {
-      id: "a1",
-      displayName: "Anna",
-      phone: { countryCode: "380", lastDigits: "42" },
-      state: "session_lost",
-      chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
-      linkedAt: "x",
-    };
+  const lost = {
+    id: "a1",
+    displayName: "Anna",
+    phone: { countryCode: "380", lastDigits: "42" },
+    state: "session_lost",
+    chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+    linkedAt: "x",
+  };
+
+  function renderConnect(conditions: string[]) {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation((input: RequestInfo | URL) =>
-        Promise.resolve(
-          String(input).includes("linking-attempt")
-            ? new Response("{}", {
-                status: 404,
-                headers: { "Content-Type": "application/problem+json" },
-              })
-            : new Response(JSON.stringify({ items: [lost] }), {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-              }),
-        ),
-      ),
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("linking-attempt"))
+          return Promise.resolve(
+            new Response("{}", {
+              status: 404,
+              headers: { "Content-Type": "application/problem+json" },
+            }),
+          );
+        const body = url.includes("pulse") ? { inboxCount: 0, conditions } : { items: [lost] };
+        return Promise.resolve(
+          new Response(JSON.stringify(body), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }),
     );
-    const { container } = render(
+    return render(
       <QueryClientProvider
         client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
       >
@@ -111,15 +116,28 @@ describe("SCR-02 onboarding layout (AC-01, S10)", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
+  }
+
+  it("renders /connect-telegram in the onboarding card: logo, no app shell, the shell's banner above the card", async () => {
+    const { container } = renderConnect(["account-disconnected"]);
     expect(screen.getByRole("img", { name: "teleX" })).toHaveAttribute("width", "96");
     expect(container.querySelector("header.navbar")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
-    // The shell's Status Banner is the one banner (ADR-0006); the onboarding card has none of its own.
-    await waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect(screen.queryByText(/Anna.s Telegram is disconnected/)).toBeNull();
-    expect(container.querySelector(".alert")).toBeNull();
+    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
+    expect(screen.getAllByRole("status").filter((e) => e.textContent)).toHaveLength(1);
+    const card = container.querySelector(".card");
+    expect(card).not.toBeNull();
     expect(container.querySelectorAll(".card")).toHaveLength(1);
+    expect(banner.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows no banner on SCR-02 when the pulse reports no condition", async () => {
+    renderConnect([]);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("pulse"), expect.anything()),
+    );
+    expect(screen.queryByText(/Anna.s Telegram is disconnected/)).toBeNull();
   });
 });
 
