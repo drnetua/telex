@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 — findings N2, N3"
-status: "todo"
+status: "done"
 ---
 
 # T40 — Real adapter: logOut is false for a closed session, and the chat total ignores folder counts

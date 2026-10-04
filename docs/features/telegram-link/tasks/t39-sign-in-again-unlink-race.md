@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/account/Linke
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 — findings N1, T1"
-status: "todo"
+status: "done"
 ---
 
 # T39 — Sign in again racing an unlink never reports success on a deleted account or leaves an authorized session behind

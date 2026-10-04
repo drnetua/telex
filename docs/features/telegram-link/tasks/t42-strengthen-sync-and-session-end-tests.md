@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 — findings T2, T3"
-status: "todo"
+status: "done"
 ---
 
 # T42 — Make the sync-in-transaction and AC-110 tests able to fail on their regressions

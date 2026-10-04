@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/account/Sessi
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 — findings N6, N7"
-status: "todo"
+status: "done"
 ---
 
 # T43 — Report Session lost through the shell's Status Banner, with the account name and a working Sign in again

@@ -44,11 +44,11 @@
 | T37 | Reopen the live-update stream when the browser has closed it, with capped backoff | ui | Anton Husiev | S | — | done |
 | T38 | End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals | tests | Anton Husiev | M | T27, T29, T30, T35, T36, T37 | done |
 
-| T39 | Sign in again racing an unlink never reports success on a deleted account or leaves an authorized session behind | app | Anton Husiev | M | — | todo |
-| T40 | Real adapter: logOut is false for a closed session, and the chat total ignores folder counts | infra | Anton Husiev | S | — | todo |
+| T39 | Sign in again racing an unlink never reports success on a deleted account or leaves an authorized session behind | app | Anton Husiev | M | — | done |
+| T40 | Real adapter: logOut is false for a closed session, and the chat total ignores folder counts | infra | Anton Husiev | S | — | done |
 | T41 | Unregistered number with no replacement session answers 422, and Resend ends the attempt on every phone refusal | app | Anton Husiev | S | T39 | todo |
-| T42 | Make the sync-in-transaction and AC-110 tests able to fail on their regressions | tests | Anton Husiev | S | — | todo |
-| T43 | Report Session lost through the shell's Status Banner, with the account name and a working Sign in again | ui | Anton Husiev | M | — | todo |
+| T42 | Make the sync-in-transaction and AC-110 tests able to fail on their regressions | tests | Anton Husiev | S | — | done |
+| T43 | Report Session lost through the shell's Status Banner, with the account name and a working Sign in again | ui | Anton Husiev | M | — | done |
 | T44 | SPA polish: unlink focus, a dismissible SCR-02 load-failure Toast with Retry, one Toast slot, one refusal lookup, stronger tests | ui | Anton Husiev | M | T43 | todo |
 | T45 | Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code | docs | Anton Husiev | S | T39, T40, T41, T43, T44 | todo |
 
