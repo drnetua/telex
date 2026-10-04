@@ -14,6 +14,8 @@ export interface StepProps {
   onCommonFailure: (error: unknown, retry: () => void) => void;
   onInfo: (message: string) => void;
   onCancel: () => Promise<void> | void;
+  /** Telegram refused the number at the phone step; the server may have ended the attempt (AC-107). */
+  onPhoneRefused?: (error: unknown) => void;
 }
 
 /** Message of a 422 refusal for its problem code, when the catalog has one. */

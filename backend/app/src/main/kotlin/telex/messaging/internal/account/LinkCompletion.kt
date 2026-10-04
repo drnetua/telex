@@ -56,7 +56,7 @@ class LinkCompletion(
     ): Completion {
         val count = rows.countMineLocked(owner)
         val targetAccount = target?.let { rows.getMine(owner, it) }
-        if (target != null && targetAccount == null) return Completion.Refused(LinkRefusal.MISMATCH)
+        if (target != null && targetAccount == null) return Completion.Refused(LinkRefusal.TARGET_GONE)
         val existing = rows.findByTelegramUser(user.telegramUserId)
         return when (val decision = LinkRules.decide(owner, targetAccount, existing, count, limit.maxPerOwner)) {
             is LinkDecision.Refused -> {
@@ -127,8 +127,8 @@ class LinkCompletion(
             rows.swapSession(account.id, sessionId, ownerKeys.seal(owner, dbKey, account.id.keyAad()), user.displayName)
         if (swapped == 0) {
             // An unlink deleted the account since it was read. A targeted sign in again has nothing to return to, so
-            // it is refused (the new session is discarded); an untargeted add just finds the account no longer linked.
-            return if (targeted) Completion.Refused(LinkRefusal.MISMATCH) else link(owner, sessionId, dbKey, user)
+            // it ends as not found (the new session is discarded); an untargeted add just links it as new.
+            return if (targeted) Completion.Refused(LinkRefusal.TARGET_GONE) else link(owner, sessionId, dbKey, user)
         }
         events.publishEvent(LinkedAccountStateChanged(owner, account.id, LinkedAccountState.CONNECTED))
         return Completion.SignedInAgain(account.id, account.telegramSessionId)

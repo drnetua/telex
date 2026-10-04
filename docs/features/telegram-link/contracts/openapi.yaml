@@ -595,6 +595,9 @@ components:
         - `linked-account-limit-reached` — a new account, and the last place was taken during the attempt (AC-115).
         - `telegram-account-mismatch` — "Sign in again" signed in to a different Telegram account; the target
           stays Session lost (AC-117).
+        Race with an unlink (AC-117, AC-04): if the target of "Sign in again" was unlinked while the attempt ran, the
+        attempt ends as 404 `linking-attempt-not-found` (the new sign-in is logged out and destroyed), never as a
+        mismatch. An untargeted add of an account unlinked meanwhile is not refused: it is linked as new.
         Or `linking-step-mismatch`: the attempt is at another step (another tab moved it on); nothing changed,
         and `step` tells the SPA where it is.
       content:

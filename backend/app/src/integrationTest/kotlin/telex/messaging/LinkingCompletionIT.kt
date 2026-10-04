@@ -346,7 +346,7 @@ class LinkingCompletionIT {
     }
 
     @Test
-    fun `AC-111 AC-117 signing in again for an account unlinked meanwhile is refused and its new session logged out`() {
+    fun `AC-111 AC-117 signing in again for an account unlinked meanwhile ends as not found`() {
         val oldSession = fake.open(ByteArray(32))
         val target = insertAccount(owner, 9996600150L, sessionId = oldSession)
         jdbc.update(
@@ -365,7 +365,9 @@ class LinkingCompletionIT {
             }.`when`(rows)
             .findByTelegramUser(Mockito.anyLong())
 
-        assertThat(refusal { finish() }).containsEntry(CODE, "telegram-account-mismatch")
+        assertThat(refusal { finish() })
+            .containsEntry(CODE, "linking-attempt-not-found")
+            .containsEntry("status", 404)
 
         assertThat(rowsOf(owner)).isEmpty()
         assertThat(events.stream(LinkedAccountStateChanged::class.java).toList().map { it.linkedAccountId })

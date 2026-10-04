@@ -254,16 +254,50 @@ describe("SCR-02 code step", () => {
     expect(screen.getByRole("button", { name: "Send a new code" })).toBeEnabled();
   });
 
-  it("an unregistered number found at the code step ends the attempt (AC-107)", async () => {
+  const REFUSALS = [
+    ["telegram-phone-unregistered", /Telegram app first/],
+    ["telegram-phone-invalid", /isn't a valid phone number/],
+    ["telegram-phone-banned", /Telegram has banned this number/],
+  ] as const;
+
+  it.each(REFUSALS)(
+    "%s found at the code step ends the attempt and says why (AC-107)",
+    async (code, text) => {
+      mockApi({ [A]: [json(200, codeAttempt)], [CODE]: [problem(422, code)] });
+      setup();
+      await screen.findByText(/Telegram sent the code/);
+      await typeCode("12345");
+      await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+      expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+      expect(screen.getByText(text)).toBeVisible();
+      expect(screen.queryByText(/left for 15 minutes/)).toBeNull();
+      expect(screen.getByRole("button", { name: "Start again" })).toBeVisible();
+    },
+  );
+
+  it.each(REFUSALS)(
+    "%s found on Send a new code ends the attempt and says why (AC-107)",
+    async (code, text) => {
+      mockApi({ [A]: [json(200, codeAttempt)], [RESEND]: [problem(422, code)] });
+      setup();
+      await screen.findByText(/Telegram sent the code/);
+      await userEvent.click(screen.getByRole("button", { name: "Send a new code" }));
+      expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+      expect(screen.getByText(text)).toBeVisible();
+      expect(screen.queryByText(/left for 15 minutes/)).toBeNull();
+    },
+  );
+
+  it("an unregistered number at the phone step that ended the attempt shows the ended card (AC-107)", async () => {
     mockApi({
-      [A]: [json(200, codeAttempt)],
-      [CODE]: [problem(422, "telegram-phone-unregistered")],
+      [A]: [json(200, attempt()), problem(404, "linking-attempt-not-found")],
+      [PHONE]: [problem(422, "telegram-phone-unregistered")],
     });
     setup();
-    await screen.findByText(/Telegram sent the code/);
-    await typeCode("12345");
-    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
     expect(await screen.findByRole("heading", { name: "This linking has ended" })).toBeVisible();
+    expect(screen.getByText(/Telegram app first/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Start again" })).toBeVisible();
   });
 

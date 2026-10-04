@@ -147,7 +147,7 @@ export function ConnectTelegramPage() {
     } else if (error.status === 409 && REFUSAL_CODES.includes(error.code)) {
       setOutcome({ kind: "refused", code: error.code as RefusalCode, limit: error.extras.limit });
     } else if (endsAttempt(error)) {
-      setOutcome({ kind: "ended" });
+      setOutcome({ kind: "ended", reason: error.code });
     } else if (error.status === 404 && error.code === "linking-attempt-not-found") {
       setOutcome({ kind: "ended" });
     } else return false;
@@ -168,6 +168,17 @@ export function ConnectTelegramPage() {
     } else if (!routeFailure(error, async () => retry())) {
       show(messages.linking.genericError, "error");
     }
+  };
+
+  /** An unregistered number can end the attempt at the phone step (no fresh session): ask the server. */
+  const phoneRefused = (error: unknown) => {
+    if (!(error instanceof ApiFailure) || error.code !== "telegram-phone-unregistered") return;
+    getMyLinkingAttempt().catch((e: unknown) => {
+      if (e instanceof ApiFailure && e.status === 404 && e.code === "linking-attempt-not-found") {
+        setLast(attempt);
+        setOutcome({ kind: "ended", reason: error.code });
+      }
+    });
   };
 
   const cancel = async () => {
@@ -209,6 +220,7 @@ export function ConnectTelegramPage() {
         ) : null}
         {shownOutcome.kind === "ended" ? (
           <AttemptEndedState
+            reason={shownOutcome.reason}
             starting={starting}
             onBack={back}
             onStartAgain={() => void startAgain()}
@@ -243,6 +255,7 @@ export function ConnectTelegramPage() {
     onCommonFailure: common,
     onInfo: (message: string) => show(message, "info"),
     onCancel: cancel,
+    onPhoneRefused: phoneRefused,
   };
 
   return (

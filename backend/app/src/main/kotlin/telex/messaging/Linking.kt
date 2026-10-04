@@ -367,6 +367,7 @@ class Linking(
             LinkRefusal.ALREADY_LINKED -> TelegramAccountAlreadyLinked()
             LinkRefusal.LIMIT -> LinkedAccountLimitReached(limit.maxPerOwner)
             LinkRefusal.MISMATCH -> TelegramAccountMismatch()
+            LinkRefusal.TARGET_GONE -> LinkingAttemptNotFound()
         }
 
     /** A wait ends the attempt and tells the Owner when to come back; anything else is a port bug. */

@@ -34,8 +34,10 @@ export function PhoneStep(props: StepProps) {
     } catch (e) {
       setSubmitting(false);
       const refused = refusalText(e);
-      if (refused) reject(refused);
-      else if (isValidation(e)) reject(t.phoneRequired);
+      if (refused) {
+        reject(refused);
+        props.onPhoneRefused?.(e);
+      } else if (isValidation(e)) reject(t.phoneRequired);
       else props.onCommonFailure(e, () => void submit());
     }
   }

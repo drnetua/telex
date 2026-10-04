@@ -3,7 +3,8 @@ package telex.messaging.internal.account
 import telex.identity.OwnerId
 import telex.messaging.LinkedAccountState
 
-enum class LinkRefusal { OTHER_OWNER, ALREADY_LINKED, LIMIT, MISMATCH }
+/** [TARGET_GONE]: the account a sign in again was for was unlinked meanwhile, so the attempt just ended. */
+enum class LinkRefusal { OTHER_OWNER, ALREADY_LINKED, LIMIT, MISMATCH, TARGET_GONE }
 
 sealed interface LinkDecision {
     data object NewLink : LinkDecision

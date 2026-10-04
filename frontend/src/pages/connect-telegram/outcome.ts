@@ -15,4 +15,4 @@ export const REFUSAL_CODES: readonly string[] = [
 export type Outcome =
   | { kind: "wait"; retryAt: string }
   | { kind: "refused"; code: RefusalCode; limit?: number }
-  | { kind: "ended" };
+  | { kind: "ended"; reason?: string };

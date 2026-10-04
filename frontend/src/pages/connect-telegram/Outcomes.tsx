@@ -119,12 +119,25 @@ export function RefusedState({
 }
 
 interface AttemptEndedStateProps {
+  /** The problem code of the phone refusal that ended the attempt, when there was one. */
+  reason?: string;
   starting: boolean;
   onBack: () => void;
   onStartAgain: () => void;
 }
 
-export function AttemptEndedState({ starting, onBack, onStartAgain }: AttemptEndedStateProps) {
+function refusalBody(reason: string | undefined): string | undefined {
+  const known: Record<string, unknown> = messages.linking.problems;
+  const text = reason ? known[reason] : undefined;
+  return typeof text === "string" ? text : undefined;
+}
+
+export function AttemptEndedState({
+  reason,
+  starting,
+  onBack,
+  onStartAgain,
+}: AttemptEndedStateProps) {
   const t = messages.linking;
   return (
     <EmptyState
@@ -142,7 +155,7 @@ export function AttemptEndedState({ starting, onBack, onStartAgain }: AttemptEnd
         </div>
       }
     >
-      {t.endedBody}
+      {refusalBody(reason) ?? t.endedBody}
     </EmptyState>
   );
 }
