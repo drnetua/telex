@@ -709,3 +709,130 @@ describe("SCR-02 outcomes", () => {
     expect(screen.getByTestId("arrival")).toHaveTextContent(text);
   });
 });
+
+describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
+  const START = "POST /api/v1/linking-attempt";
+  const submitPhone = async () => {
+    await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+  };
+  const codeAttempt = attempt({ step: "code", codeLength: 5 });
+  const ended = "This linking has ended";
+
+  it("moves focus to the ended card that names a code refusal (AC-107)", async () => {
+    mockApi({
+      [A]: [json(200, codeAttempt)],
+      [CODE]: [problem(422, "telegram-phone-unregistered")],
+    });
+    setup();
+    await screen.findByText(/Telegram sent the code/);
+    await userEvent.click(screen.getAllByRole("textbox")[0] as HTMLElement);
+    await userEvent.paste("12345");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
+  });
+
+  it("moves focus to the ended card that names a resend refusal (AC-107)", async () => {
+    mockApi({
+      [A]: [json(200, codeAttempt)],
+      [RESEND]: [problem(422, "telegram-phone-banned")],
+    });
+    setup();
+    await screen.findByText(/Telegram sent the code/);
+    await userEvent.click(screen.getByRole("button", { name: "Send a new code" }));
+    expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
+  });
+
+  it("moves focus to the ended card after an unregistered number ended the attempt (AC-107)", async () => {
+    mockApi({
+      [A]: [json(200, attempt()), problem(404, "linking-attempt-not-found")],
+      [PHONE]: [problem(422, "telegram-phone-unregistered")],
+    });
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
+  });
+
+  it("moves focus to the wait card on 429 (AC-109)", async () => {
+    const retryAt = new Date(Date.now() + 90_000).toISOString();
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
+    });
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "Too many attempts" })).toHaveFocus();
+  });
+
+  it("moves focus to the refused card on 409 (AC-109)", async () => {
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [json(409, { code: "telegram-account-already-linked" })],
+    });
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: "Already linked" })).toHaveFocus();
+  });
+
+  it("moves focus to the ended card on a 404 (AC-109)", async () => {
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [problem(404, "linking-attempt-not-found")],
+    });
+    setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
+  });
+
+  it("moves focus to the ended card when the load answers 404 (AC-109)", async () => {
+    mockApi({ [A]: [problem(404, "linking-attempt-not-found")], [START]: [json(201, attempt())] });
+    setup();
+    expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
+  });
+
+  it("moves focus to the load-failed card (AC-109)", async () => {
+    mockApi({ [A]: [problem(418, "teapot")] });
+    setup();
+    expect(
+      await screen.findByRole("heading", { name: "We couldn't load your Telegram linking." }),
+    ).toHaveFocus();
+  });
+});
+
+describe("SCR-02 session end (AC-110)", () => {
+  it.each([
+    ["the attempt load", { [A]: [problem(401, "session-ended")] }, false],
+    [
+      "a step submit",
+      {
+        [A]: [json(200, attempt())],
+        "GET /api/v1/linked-accounts": [json(200, { items: [] })],
+        [PHONE]: [problem(401, "session-ended")],
+      },
+      true,
+    ],
+  ])(
+    "a 401 session-ended on %s reaches the session-ended screen",
+    async (_name, replies, submit) => {
+      mockApi(replies);
+      render(
+        <QueryClientProvider client={createAppQueryClient()}>
+          <MemoryRouter initialEntries={["/connect-telegram"]}>
+            <FailureBoundary>
+              <Routes>
+                <Route path="/connect-telegram" element={<ConnectTelegramPage />} />
+                <Route path="/session-ended" element={<h1>Session ended</h1>} />
+              </Routes>
+            </FailureBoundary>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      if (submit) {
+        await userEvent.type(await screen.findByLabelText("Phone number"), "+380501234567");
+        await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+      }
+      expect(await screen.findByRole("heading", { name: "Session ended" })).toBeVisible();
+      expect(screen.queryByLabelText("Phone number")).toBeNull();
+    },
+  );
+});

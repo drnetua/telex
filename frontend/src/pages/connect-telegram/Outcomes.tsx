@@ -41,6 +41,7 @@ export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitState
   return (
     <EmptyState
       kind="blocked"
+      focusTitle
       icon="clock"
       title={t.waitTitle}
       action={
@@ -112,7 +113,13 @@ export function RefusedState({
   };
   const shown = view[code];
   return (
-    <EmptyState kind="blocked" icon={shown.icon} title={shown.title} action={shown.action}>
+    <EmptyState
+      kind="blocked"
+      focusTitle
+      icon={shown.icon}
+      title={shown.title}
+      action={shown.action}
+    >
       {shown.body}
     </EmptyState>
   );
@@ -142,6 +149,7 @@ export function AttemptEndedState({
   return (
     <EmptyState
       kind="blocked"
+      focusTitle
       icon="clock"
       title={t.endedTitle}
       action={
@@ -171,6 +179,7 @@ export function LoadFailedState({ onRetry, onBack }: LoadFailedStateProps) {
   return (
     <EmptyState
       kind="blocked"
+      focusTitle
       icon="cloud-off"
       title={t.loadFailed}
       action={

@@ -399,6 +399,49 @@ test("AC-107: an invalid, unregistered or banned phone number blocks the step an
   await expectNoA11yViolations(page, "SCR-02 banned phone");
 });
 
+test("AC-107: a number Telegram finds unregistered once the code is checked ends the attempt and says why", async ({
+  page,
+}) => {
+  const { digits } = testNumber(SCENARIO.unregisteredAfterCode);
+  await signUp(page);
+  await startAndSendPhone(page, digits);
+  await expectCodeStep(page);
+  await typeCode(page, CODE);
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  const heading = page.getByRole("heading", { name: "This linking has ended" });
+  await expect(heading).toBeVisible();
+  await expect(heading).toBeFocused();
+  await expect(
+    page.getByText(
+      "No Telegram account uses this number. Create the account in the Telegram app first, then come back.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start again" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Login code" })).toHaveCount(0);
+  await expectNoA11yViolations(page, "SCR-02 ended after a code refusal");
+});
+
+test("AC-107: a refused Send a new code ends the attempt and says why", async ({
+  page,
+}) => {
+  const { digits } = testNumber(SCENARIO.resendInvalid);
+  await signUp(page);
+  await startAndSendPhone(page, digits);
+  await expectCodeStep(page);
+  await page.getByRole("button", { name: "Send a new code" }).click();
+
+  const heading = page.getByRole("heading", { name: "This linking has ended" });
+  await expect(heading).toBeVisible();
+  await expect(heading).toBeFocused();
+  await expect(
+    page.getByText(
+      "This isn't a valid phone number. Check the country code and the digits.",
+    ),
+  ).toBeVisible();
+  await expectNoA11yViolations(page, "SCR-02 ended after a resend refusal");
+});
+
 test.describe("an installation without Telegram app credentials", () => {
   // The second app of the stack, started without TELEX_TELEGRAM_API_ID / _API_HASH (compose profile `unconfigured`).
   test.use({

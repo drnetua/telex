@@ -172,7 +172,7 @@ The Operator has no screen in E02: they follow the README step that gives the in
 | AC-04 | Flow US-02 → OTH | Also reachable from US-51 REF when the other account is another Owner's |
 | AC-108 | Flow US-02 → DUP, REST | |
 | AC-109 | Flow US-02 → CAN, reload loop on CODE | The 15-min inactivity applies at every step; drawn once |
-| AC-110 | N/A: no screen change | The Linked Account simply stays on SCR-60 and SCR-10 after sign-out and the next sign-in. A Sign-in Session ending mid-wizard lands on the E01 "Session ended" page (SCR-92) and the attempt is discarded; tested as an e2e path through E01's flow |
+| AC-110 | N/A: no screen change | The Linked Account simply stays on SCR-60 and SCR-10 after sign-out and the next sign-in. A Sign-in Session ending mid-wizard lands on the E01 "Session ended" page (SCR-92) and the attempt is discarded; tested as a Vitest case (`ConnectTelegramPage.test.tsx`, "SCR-02 session end") that drives SCR-02 to SCR-92 on a 401 `session-ended` |
 | AC-03 | Flow US-03 → NF; Flow US-53 → PRIV | |
 | AC-111 | Flow US-03 → DLG, DEL, LAST | |
 | AC-112 | Flow US-03 → DEL | The announcement to other parts of teleX is not a UI step; the restart half is a `sequences` concern |

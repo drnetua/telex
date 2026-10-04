@@ -12,6 +12,10 @@ export const SCENARIO = {
   unregistered: "999664",
   /** A banned number. */
   banned: "999663",
+  /** Registered as far as the phone step knows; Telegram finds it unregistered once the code is checked. */
+  unregisteredAfterCode: "999650",
+  /** Refuses "Send a new code" as an invalid number (the attempt ends). */
+  resendInvalid: "999630",
   floodOnPhone: "999665",
   floodOnCode: "999666",
   /** Ends the session about a second after the link completed (the Owner ends it in Telegram), every time. */
