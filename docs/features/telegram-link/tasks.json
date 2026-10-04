@@ -1503,6 +1503,55 @@
         "docs/features/telegram-link/tasks/tracker.md"
       ],
       "file": "docs/features/telegram-link/tasks/t69-docs-sync-r6.md"
+    },
+    {
+      "id": "T70",
+      "title": "An unlink whose sign-out is interrupted still deletes the account and puts the interrupt back only at the end",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink whose sign-out is interrupted deletes the account, answers signOutConfirmed=false, and leaves the thread's interrupt flag set when it returns.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t70-interrupted-unlink-still-deletes.md"
+    },
+    {
+      "id": "T71",
+      "title": "SCR-10 and SCR-60 each pin the start-refused toast for 503 telegram-unavailable",
+      "layer": "ui",
+      "deps": [],
+      "acs": [],
+      "dod": "Both pages have a test that fails if the telegram-unavailable start refusal stops showing its toast or opens the wizard.",
+      "files_hint": [
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t71-start-refused-telegram-unavailable.md"
+    },
+    {
+      "id": "T72",
+      "title": "Correct the AC-121 citations and the interrupted-unlink claims after the seventh review",
+      "layer": "docs",
+      "deps": [
+        "T70",
+        "T71"
+      ],
+      "acs": [],
+      "dod": "No telegram-link artifact cites AC-121 for an unlink behaviour; the test plan, tracker and T67 describe the interrupted unlink as T70's IT proves it. tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/tasks/t62-failed-delete-after-sign-out-state.md",
+        "docs/features/telegram-link/tasks/t67-logout-interrupt-unmutes.md",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t72-docs-sync-r7.md"
     }
   ]
 }
