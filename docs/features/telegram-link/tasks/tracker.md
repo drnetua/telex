@@ -50,6 +50,6 @@
 | T42 | Make the sync-in-transaction and AC-110 tests able to fail on their regressions | tests | Anton Husiev | S | — | done |
 | T43 | Report Session lost through the shell's Status Banner, with the account name and a working Sign in again | ui | Anton Husiev | M | — | done |
 | T44 | SPA polish: unlink focus, a dismissible SCR-02 load-failure Toast with Retry, one Toast slot, one refusal lookup, stronger tests | ui | Anton Husiev | M | T43 | done |
-| T45 | Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code | docs | Anton Husiev | S | T39, T40, T41, T43, T44 | todo |
+| T45 | Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code | docs | Anton Husiev | S | T39, T40, T41, T43, T44 | done |
 
 **Total:** 45 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45 follow-ups from review 2026-10-04.

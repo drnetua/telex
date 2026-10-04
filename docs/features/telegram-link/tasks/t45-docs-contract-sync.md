@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/screens.md", "docs/features/telegram-l
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 — findings D1, D2, D3, D4, D5"
-status: "todo"
+status: "done"
 ---
 
 # T45 — Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code
