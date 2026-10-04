@@ -51,10 +51,10 @@
 | T43 | Report Session lost through the shell's Status Banner, with the account name and a working Sign in again | ui | Anton Husiev | M | — | done |
 | T44 | SPA polish: unlink focus, a dismissible SCR-02 load-failure Toast with Retry, one Toast slot, one refusal lookup, stronger tests | ui | Anton Husiev | M | T43 | done |
 | T45 | Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code | docs | Anton Husiev | S | T39, T40, T41, T43, T44 | done |
-| T46 | Say which phone refusal ended the attempt, and end a sign in again whose account was unlinked meanwhile as not found | app | Anton Husiev | M | — | todo |
-| T47 | Sign out a reopened session that has not reached Ready yet instead of skipping it | infra | Anton Husiev | S | — | todo |
+| T46 | Say which phone refusal ended the attempt, and end a sign in again whose account was unlinked meanwhile as not found | app | Anton Husiev | M | — | done |
+| T47 | Sign out a reopened session that has not reached Ready yet instead of skipping it | infra | Anton Husiev | S | — | done |
 | T48 | SCR-02 survives a failed pulse, and a failed load shows an inline state with Try again and Back | ui | Anton Husiev | S | T46 | todo |
-| T49 | Banner: no false generic text, Sign in again outcome survives reorder and refetch, Toasts are announced | ui | Anton Husiev | M | — | todo |
+| T49 | Banner: no false generic text, Sign in again outcome survives reorder and refetch, Toasts are announced | ui | Anton Husiev | M | — | done |
 | T50 | Record the shell banner extension and the two live channels in the ADRs, and sync sad, the contract and screens.md | docs | Anton Husiev | S | T46, T47, T48, T49 | todo |
 
 **Total:** 50 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45 and T46–T50 follow-ups from the two 2026-10-04 reviews.

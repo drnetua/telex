@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (second pass) — findings B6, B7"
-status: "todo"
+status: "done"
 ---
 
 # T47 — Sign out a reopened session that has not reached Ready yet instead of skipping it

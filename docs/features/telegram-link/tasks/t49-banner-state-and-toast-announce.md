@@ -9,7 +9,7 @@ files_hint: ["frontend/src/shell/accountDisconnected.tsx", "frontend/src/shell/S
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 (second pass) — findings B2, B3, B5"
-status: "todo"
+status: "done"
 ---
 
 # T49 — Banner: no false generic text, Sign in again outcome survives reorder and refetch, Toasts are announced

@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/account/LinkC
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 (second pass) — findings A1, A2"
-status: "todo"
+status: "done"
 ---
 
 # T46 — Say which phone refusal ended the attempt, and end a sign in again whose account was unlinked meanwhile as not found
