@@ -1550,6 +1550,75 @@
         "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt"
       ],
       "file": "docs/features/telegram-link/tasks/t72-docs-sync-r7.md"
+    },
+    {
+      "id": "T73",
+      "title": "Sign in again refreshes the account's masked phone along with its name",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-108",
+        "AC-117",
+        "AC-01"
+      ],
+      "dod": "After sign in again, the account row holds the masked phone Telegram reports now.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccountRows.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t73-sign-in-again-refreshes-phone.md"
+    },
+    {
+      "id": "T74",
+      "title": "An unlink deletes the account whatever way an interrupt arrives, and closes and destroys before handing it back",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink deletes the account however an interrupt reaches it during the sign-out, and the session is closed and destroyed before the interrupt is handed back.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t74-unlink-interrupt-edges.md"
+    },
+    {
+      "id": "T75",
+      "title": "The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "Both focus tests pass deterministically, without depending on the real clock. The Inbox case fails if the 503 is treated as a connection failure.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t75-wait-focus-fake-timers-and-inbox-banner.md"
+    },
+    {
+      "id": "T76",
+      "title": "Sync the data model, test plan and tracker with the eighth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "acs": [],
+      "dod": "The data model, test plan and tracker describe what T73–T75 prove. tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/data-model.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t76-docs-sync-r8.md"
     }
   ]
 }
