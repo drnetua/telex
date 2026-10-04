@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/", 
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T12 — Reconnect accounts on boot and follow Telegram's session state (Connected, Reconnecting, Session lost)

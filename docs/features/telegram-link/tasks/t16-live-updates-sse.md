@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/web/live/", "backend/app/src/mai
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T16 — Serve the live-update SSE stream of invalidation hints per Owner

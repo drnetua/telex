@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/Linking.kt", "backend/
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T9 — Run the phone, code, resend and password steps with Telegram's refusals and waits

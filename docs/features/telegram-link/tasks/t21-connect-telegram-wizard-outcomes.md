@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/"]
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T21 — Build the SCR-02 outcomes: wait countdown, refusals, attempt ended, cancel and success

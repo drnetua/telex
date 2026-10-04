@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/internal/channel/", "b
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T13 — Sync each account's chat list into channel rows with throttled progress events

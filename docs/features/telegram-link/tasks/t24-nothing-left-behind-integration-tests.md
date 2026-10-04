@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/integrationTest/kotlin/telex/messaging/NothingLeft
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T24 — Prove nothing is left behind or leaked: unlink dump, restart delivery, registry and log scans

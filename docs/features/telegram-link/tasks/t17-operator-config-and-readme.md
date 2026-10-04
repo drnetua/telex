@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/resources/application.yaml", "backend/app/src
 owner: "Anton Husiev"
 estimate: "S"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T17 — Wire the Operator config, the session volume and the README Telegram setup step

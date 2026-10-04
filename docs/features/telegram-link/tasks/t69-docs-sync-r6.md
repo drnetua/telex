@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/sad.md", "docs/features/telegram-link/
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (sixth pass) — findings D12, D13, D14, D15, D16"
-status: "todo"
+status: "done"
 ---
 
 # T69 — Sync sad, test-plan, ux-flows, task statuses and T53's AC with the sixth-review fixes

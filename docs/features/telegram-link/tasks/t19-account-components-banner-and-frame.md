@@ -9,7 +9,7 @@ files_hint: ["frontend/src/components/LinkedAccountSummary/", "frontend/src/comp
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T19 — Build LinkedAccountSummary, port StatusBanner, extend CodeInput, Icon and PageFrame

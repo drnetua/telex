@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt", "
 owner: "Anton Husiev"
 estimate: "S"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T5 — Manage Telegram session directories: per-session dir, destroy with one-minute retry, startup orphan sweep

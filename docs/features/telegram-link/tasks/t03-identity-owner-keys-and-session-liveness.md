@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/identity/OwnerKeys.kt", "backend
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T3 — Add OwnerKeys envelope encryption with the master-key check and reset, and SignInSessions.isLive

@@ -9,7 +9,7 @@ files_hint: ["gradle/libs.versions.toml", "backend/telegram-tdlib/", "Dockerfile
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T1 — Prove TDLight on JDK 25 and land the binding behind the TdlibFacade (spike)

@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/", "frontend/src/app/AppRoutes
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T20 — Build the SCR-02 wizard steps: phone, code, password with their validation and refusals

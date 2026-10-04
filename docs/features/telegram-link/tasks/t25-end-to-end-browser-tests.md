@@ -9,7 +9,7 @@ files_hint: ["e2e/tests/telegram-link.spec.ts", "e2e/support/"]
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T25 — Add Playwright end-to-end tests of linking, live state and unlink at 360 px and 1280 px with axe

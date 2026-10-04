@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/accounts/", "frontend/src/app/AppRoutes.tsx"]
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T23 — Build SCR-60 Accounts: the list with states, Add account, Sign in again and the unlink dialog

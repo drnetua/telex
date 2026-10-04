@@ -4,7 +4,7 @@ title: "Banner Toast keeps its node, error Toasts are not nested live regions, a
 layer: "ui"
 deps: []
 blocks: ["T55"]
-acs: ["AC-122", "AC-117", "AC-111", "AC-114", "AC-176"]
+acs: ["AC-122", "AC-117", "AC-111", "AC-114", "app-shell/AC-176"]
 files_hint: ["frontend/src/shell/StatusBanner/StatusBanner.tsx", "frontend/src/shell/StatusBanner/StatusBanner.test.tsx", "frontend/src/components/Toast/Toast.tsx", "frontend/src/components/Toast/Toast.test.tsx", "frontend/src/shell/pulse.ts", "frontend/src/shell/pulse.test.tsx", "frontend/src/app/layouts.test.tsx"]
 owner: "Anton Husiev"
 estimate: "S"
@@ -18,7 +18,7 @@ status: "done"
 
 Follow-up from the third-pass review: [`_review/review-2026-10-04-r3.md`](../_review/review-2026-10-04-r3.md), findings **W1, W2, W4, W6** (resolved "Fix now" by the user). Read those rows in the review record first — they carry the cited `file:line` and the failure scenario. The ACs below are the source of truth for what the tests assert: read them verbatim in [spec.md §5](../spec.md).
 
-- **ACs:** AC-122, AC-117, AC-111, AC-114, AC-176
+- **ACs:** AC-122, AC-117, AC-111, AC-114, app-shell/AC-176
 - **Blocked by:** — · **Blocks:** T55
 
 ## What to change

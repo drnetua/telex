@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/migrations/01_create_owner_key.up.sql"
 owner: "Anton Husiev"
 estimate: "S"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T2 — Promote the owner_key, linked_account and channel migrations into the live Flyway tree

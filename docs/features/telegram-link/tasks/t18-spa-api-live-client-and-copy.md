@@ -9,7 +9,7 @@ files_hint: ["frontend/src/api/linkedAccounts.ts", "frontend/src/api/linking.ts"
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T18 — Add the SPA API clients, the single SSE live-update client and all new copy

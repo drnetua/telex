@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/inbox/", "frontend/src/app/AppRoutes.tsx"]
 owner: "Anton Husiev"
 estimate: "S"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T22 — Make SCR-10 Inbox start linking and list one line per Linked Account

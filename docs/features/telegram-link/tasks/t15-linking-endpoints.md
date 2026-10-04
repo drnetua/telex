@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/web/api/LinkingController.kt", "
 owner: "Anton Husiev"
 estimate: "M"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T15 — Expose the linking-attempt endpoints with the contract's problem codes, validation and Retry-After

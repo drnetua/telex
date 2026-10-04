@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/web/api/LinkedAccountsController
 owner: "Anton Husiev"
 estimate: "S"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T14 — Expose list and unlink of my Linked Accounts, and back getMe.linkedAccountCount with messaging

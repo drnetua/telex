@@ -308,7 +308,7 @@ sequenceDiagram
         Note over Tg: a reopen already in flight (boot) is claimed by a marker, so there is never a second client; the log out waits on that marker within its 10 s
     end
     Msg->>Tg: log out session, wait up to 10 s
-    Note over Tg: teleX's own log out is marked before it is sent, so the logging-out and closed that TDLib reports for it are not a lost session. No state is announced and the account never shows Session lost on its way out. If the log out isn't confirmed within the 10 s, the mark is dropped, so a later closed is announced again
+    Note over Tg: teleX's own log out is marked before it is sent, so the logging-out and closed that TDLib reports for it are not a lost session. No state is announced and the account never shows Session lost on its way out. If the log out isn't confirmed (the 10 s run out, or the wait is interrupted), the mark is dropped, so a later closed is announced again
     alt Telegram confirms the sign-out
         TG-->>Tg: session terminated
         Tg-->>Msg: confirmed, only because TDLib itself closed the session through that log out
@@ -325,7 +325,6 @@ sequenceDiagram
             Note over Msg,Tg: the session stays open: its mark was dropped, so it reports its state again and reconnects when Telegram is reachable
         end
         Msg-->>SPA: the error; the account stays until the unlink is retried, and a retried unlink of a Session lost account deletes it without a sign-out
-        Note over Tg: a session whose directory was destroyed (or is missing) reopens on an empty TDLib database, which asks for a phone number: Closed, and a log out can't succeed (the fake matches)
     end
     Msg->>Tg: close and destroy the session directory
     Msg-->>SPA: unlinked, with the check-active-sessions warning if not confirmed
@@ -364,7 +363,8 @@ sequenceDiagram
         end
         Msg-->>Web: LinkedAccountStateChanged
     end
-    Note over Msg,Tg: an unlink can arrive while an account is still reopening. Its log out waits on the reopen in flight (flow 2), or reopens the session itself when boot hasn't reached it. When the reopen returns, Msg reads the account again, and if no Linked Account holds that session any more it logs it out (up to 10 s), then closes and destroys it, so no client keeps running and no teleX device stays in Telegram for a deleted account
+    Note over Msg,Tg: an unlink can arrive while an account is still reopening. Its log out waits on the reopen in flight (flow 2), or reopens the session itself when boot hasn't reached it. When the reopen returns, Msg reads the account again, and if no Linked Account holds that session any more it tries to log it out (up to 10 s), then closes and destroys it, so no client keeps running for a deleted account. The log out matters when the unlink gave up waiting on the reopen and TDLib still held the database: the reopen then comes up signed in, and this log out removes the teleX device from Telegram (AC-111)
+    Note over Tg: if the unlink already destroyed the directory, the reopen finds an empty TDLib database, which asks for a phone number: Closed, and the log out can't succeed (the fake matches). The Owner already got signOutConfirmed=false with the check-active-sessions warning (AC-113)
     Note over Msg,Tg: a reopen that fails after an unlink destroyed the directory has recreated it; Msg removes it when no Linked Account holds that session (the startup sweep is the backstop)
 ```
 

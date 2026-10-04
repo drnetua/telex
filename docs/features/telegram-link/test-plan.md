@@ -118,6 +118,11 @@ Every error and authorization AC (AC-02, 106, 107, 113, 117, 118, 119, 122 and A
 - Unlink of an account with an open Sign-in-again attempt → the attempt is discarded with the account, and its session is logged out (integration).
 - Two tabs unlink the same account → one succeeds; the other answers as not found and the UI removes the row (integration + component).
 - An unlink whose bounded sign-out times out → treated like unreachable (AC-113): everything is deleted and the "not confirmed" answer is given (integration).
+- An unlink whose sealed key can't be opened (wrong, tampered or truncated) → the sign-out counts as not confirmed, and the account is still deleted (AC-113, AC-111; integration).
+- An unlink whose delete fails after a confirmed sign-out → the session is closed and the account shows Session lost; a retried unlink deletes it without a sign-out (AC-122; integration).
+- An unlink whose delete fails after an unconfirmed sign-out → the session stays open and keeps reporting its state, and Reconnecting returns to Connected (AC-121; integration).
+- A sign-out interrupted while TDLib finishes it → not confirmed, and a later Closed is still announced; closing the session on that interrupted thread doesn't fail the unlink (AC-122, AC-113; unit).
+- A boot reopen of an account unlinked meanwhile → it is signed out, closed and destroyed in that order (unit). When the unlink already destroyed the directory, the reopen comes up signed out and the sign-out can't succeed; the Owner already got the "not confirmed" answer (AC-111, AC-113; integration).
 - Restart while an attempt is open → the attempt is gone (it is in memory), its session directory is swept, and SCR-02 shows "This linking attempt ended" (integration + component).
 - Live-update stream reconnects → the SPA refetches everything it shows (component).
 - A live-update stream from a Sign-in Session that ends → the stream closes and the next request routes to "Session ended" (integration + component).

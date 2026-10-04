@@ -1183,7 +1183,7 @@
         "AC-117",
         "AC-111",
         "AC-114",
-        "AC-176"
+        "app-shell/AC-176"
       ],
       "dod": "A banner refusal Toast is announced once; an error Toast has no live-region ancestor besides its own; inside the shell a pulse 403 goes to SCR-93 as app-shell screens.md says; failed-pulse tests cover 0/502/503/504 and clean up in afterEach.",
       "files_hint": [
