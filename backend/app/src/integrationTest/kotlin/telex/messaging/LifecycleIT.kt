@@ -58,6 +58,7 @@ class LifecycleIT {
     @BeforeEach
     fun clean() {
         Mockito.reset(AopTestUtils.getUltimateTargetObject<LinkedAccountRows>(rows))
+        fake.reopenUnavailable = false
         jdbc.execute("DELETE FROM channel")
         jdbc.execute("DELETE FROM linked_account")
     }
@@ -198,6 +199,67 @@ class LifecycleIT {
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM linked_account", Int::class.java)).isZero()
         assertThat(fake.isOpen(account.session)).isFalse()
+        assertThat(Files.exists(sessionsRoot.resolve(account.session.value.toString()))).isFalse()
+    }
+
+    @Test
+    fun `AC-111 an account unlinked while boot reopens it is signed out of Telegram and reports it confirmed`() {
+        val account = connected(owner())
+        val result =
+            java.util.concurrent.atomic
+                .AtomicReference<telex.messaging.UnlinkResult>()
+        Mockito
+            .doAnswer { call ->
+                call.callRealMethod().also { result.set(accounts.unlink(account.owner, account.id)) }
+            }.`when`(rows)
+            .sealedKey(account.id)
+
+        restart()
+
+        assertThat(fake.wasLoggedOut(account.session)).`as`("teleX device signed out of Telegram").isTrue()
+        assertThat(result.get().signOutConfirmed).isTrue()
+        assertThat(fake.isOpen(account.session)).isFalse()
+    }
+
+    @Test
+    fun `AC-111 a reopen that completes after an unlink could not sign out signs the session out before dropping it`() {
+        val account = connected(owner())
+        // The unlink cannot reach Telegram (its own reopen fails), then the boot reopen it raced succeeds.
+        Mockito
+            .doAnswer { call ->
+                call.callRealMethod().also {
+                    fake.reopenUnavailable = true
+                    try {
+                        accounts.unlink(account.owner, account.id)
+                    } finally {
+                        fake.reopenUnavailable = false
+                    }
+                }
+            }.`when`(rows)
+            .sealedKey(account.id)
+
+        restart()
+
+        assertThat(fake.wasLoggedOut(account.session)).`as`("teleX device signed out of Telegram").isTrue()
+        assertThat(fake.isOpen(account.session)).isFalse()
+        assertThat(Files.exists(sessionsRoot.resolve(account.session.value.toString()))).isFalse()
+    }
+
+    @Test
+    fun `AC-113 a reopen that fails after an unlink leaves no session directory`() {
+        val account = connected(owner())
+        Mockito
+            .doAnswer { call ->
+                call.callRealMethod().also {
+                    fake.reopenUnavailable = true
+                    accounts.unlink(account.owner, account.id)
+                }
+            }.`when`(rows)
+            .sealedKey(account.id)
+
+        restart()
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM linked_account", Int::class.java)).isZero()
         assertThat(Files.exists(sessionsRoot.resolve(account.session.value.toString()))).isFalse()
     }
 

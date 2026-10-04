@@ -39,6 +39,9 @@ class TdlightTelegramSessions(
 ) : TelegramSessions {
     private val sessions = ConcurrentHashMap<TelegramSessionId, TdlightSession>()
 
+    /** Reopens in flight: a session enters [sessions] only once the facade opened it, so [logOut] waits on these. */
+    private val opening = ConcurrentHashMap<TelegramSessionId, CompletableFuture<Unit>>()
+
     override fun configured() = apiId != null && !apiHash.isNullOrBlank()
 
     override fun open(dbKey: ByteArray): TelegramSessionId {
@@ -62,9 +65,18 @@ class TdlightTelegramSessions(
         dbKey: ByteArray,
     ) {
         if (sessions.containsKey(id)) return
-        directories.create(id)
-        start(id, dbKey, reopened = true)
+        val inFlight = CompletableFuture<Unit>()
+        if (opening.putIfAbsent(id, inFlight) != null) return
+        try {
+            directories.create(id)
+            start(id, dbKey, reopened = true)
+        } finally {
+            opening.remove(id)
+            inFlight.complete(Unit)
+        }
     }
+
+    override fun isOpen(id: TelegramSessionId) = sessions.containsKey(id) || opening.containsKey(id)
 
     override fun startSync(id: TelegramSessionId) {
         sessions[id]?.startSync()
@@ -117,11 +129,19 @@ class TdlightTelegramSessions(
         id: TelegramSessionId,
         timeout: Duration,
     ): Boolean {
+        val deadline = System.nanoTime() + timeout.toNanos()
+        awaitReopen(id, timeout)
         // an ended session never confirms; a reopened one that is not Ready yet is waited for, a fresh one is not
         val session = sessions[id]?.takeUnless { it.isOver() }
-        val deadline = System.nanoTime() + timeout.toNanos()
         val signedIn =
-            session != null && (session.isAuthorized() || (session.wasReopened() && session.awaitAuthorized(timeout)))
+            session != null &&
+                (
+                    session.isAuthorized() ||
+                        (
+                            session.wasReopened() &&
+                                session.awaitAuthorized(Duration.ofNanos(deadline - System.nanoTime()))
+                        )
+                )
         if (session == null || !signedIn || !session.beginLogOut()) return false
         session.client().send(TdlibRequest.LogOut)
         // only TDLib closing the session through this log out confirms it; teleX's own close does not
@@ -130,6 +150,19 @@ class TdlightTelegramSessions(
         } catch (_: TimeoutException) {
             session.abandonLogOut()
             false
+        }
+    }
+
+    /** Waits up to [timeout] for a reopen of [id] that is in flight, so an unlink during it still signs out. */
+    private fun awaitReopen(
+        id: TelegramSessionId,
+        timeout: Duration,
+    ) {
+        val inFlight = opening[id] ?: return
+        try {
+            inFlight.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+        } catch (_: TimeoutException) {
+            // not signed in time: the log out below finds no session and is not confirmed
         }
     }
 

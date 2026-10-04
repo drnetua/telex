@@ -104,6 +104,9 @@ interface TelegramSessions {
      */
     fun startSync(id: TelegramSessionId)
 
+    /** True while a client is open for [id], or a reopen of it is in flight. */
+    fun isOpen(id: TelegramSessionId): Boolean
+
     /** True while Telegram has authorized the session and it is still open: closing it alone would leave a device. */
     fun authorized(id: TelegramSessionId): Boolean
 

@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "M"
 source: "review 2026-10-04 (fourth pass) — findings K6, K7"
-status: "todo"
+status: "done"
 ---
 
 # T57 — An unlink during the boot reopen window still signs teleX out of Telegram, and a failed reopen leaves no directory

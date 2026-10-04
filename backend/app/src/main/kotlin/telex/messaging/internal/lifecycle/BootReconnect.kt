@@ -13,6 +13,7 @@ import telex.messaging.keyAad
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
 import telex.telegram.TelegramUnavailable
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
@@ -68,6 +69,17 @@ class BootReconnect(
             // Not a Telegram confirmation, so never Session lost (AC-122); only a failure to reach Telegram is shown.
             log.warn("Could not reopen Linked Account {}", account.id.value, e)
             if (e is TelegramUnavailable) states.transition(session, LinkedAccountState.RECONNECTING)
+            removeIfUnlinked(session)
+        }
+    }
+
+    /** A reopen that failed after an unlink recreated the directory of a session no account holds any more. */
+    @Suppress("TooGenericExceptionCaught") // cleanup after a failure must not throw
+    private fun removeIfUnlinked(session: TelegramSessionId) {
+        try {
+            if (rows.findBySession(session) == null) telegram.destroy(session)
+        } catch (e: Exception) {
+            log.warn("Could not remove the directory of an unlinked session {}", session.value, e)
         }
     }
 
@@ -83,9 +95,14 @@ class BootReconnect(
         if (rows.findBySession(session) != null) return
         log.info("Linked Account {} was unlinked while it reopened; closing its session", account.id.value)
         try {
-            telegram.close(session)
+            // the unlink found no session to sign out; the teleX device must not stay among Telegram's sessions
+            telegram.logOut(session, SIGN_OUT_TIMEOUT)
         } finally {
-            telegram.destroy(session)
+            try {
+                telegram.close(session)
+            } finally {
+                telegram.destroy(session)
+            }
         }
     }
 
@@ -94,5 +111,6 @@ class BootReconnect(
 
     private companion object {
         val log = LoggerFactory.getLogger(BootReconnect::class.java)
+        val SIGN_OUT_TIMEOUT: Duration = Duration.ofSeconds(10)
     }
 }

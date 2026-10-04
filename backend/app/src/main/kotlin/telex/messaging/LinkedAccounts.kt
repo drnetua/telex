@@ -5,8 +5,10 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import telex.identity.OwnerId
+import telex.identity.OwnerKeys
 import telex.messaging.internal.account.AccountDeletion
 import telex.messaging.internal.account.DeletedRow
+import telex.messaging.internal.account.LinkedAccount
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
@@ -38,6 +40,7 @@ class LinkedAccounts(
     private val linking: Linking,
     private val telegram: ObjectProvider<TelegramSessions>,
     private val meters: MeterRegistry,
+    private val ownerKeys: OwnerKeys,
 ) {
     @Transactional(readOnly = true)
     fun listMine(ownerId: OwnerId): List<LinkedAccountSummary> =
@@ -75,7 +78,7 @@ class LinkedAccounts(
         // A Session lost account has no open session to sign out; Telegram already ended it.
         var confirmed =
             account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
-                signOut(sessions, signedOut)
+                signOut(sessions, signedOut, account)
         val removed = deleteOrClose(owner, id, sessions, signedOut) ?: throw LinkedAccountNotFound()
         val session = removed.session
         if (session != null && sessions != null) {
@@ -119,12 +122,33 @@ class LinkedAccounts(
         }
     }
 
+    /**
+     * A session the port does not know (boot has not reached it yet) is reopened with the account's key, so the
+     * sign-out can reach Telegram and no teleX device stays among its active sessions (AC-111).
+     */
+    private fun reopenIfClosed(
+        sessions: TelegramSessions,
+        account: LinkedAccount,
+        session: TelegramSessionId,
+    ) {
+        val sealed = rows.sealedKeyToSignOut(account.id)
+        if (sealed == null || sessions.isOpen(session)) return
+        val key = ownerKeys.open(account.ownerId, sealed, account.id.keyAad())
+        try {
+            sessions.reopen(session, key)
+        } finally {
+            key.fill(0)
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught") // any failure to reach Telegram means "not confirmed"
     private fun signOut(
         sessions: TelegramSessions,
         session: TelegramSessionId,
+        reopenFor: LinkedAccount? = null,
     ): Boolean =
         try {
+            if (reopenFor != null) reopenIfClosed(sessions, reopenFor, session)
             sessions.logOut(session, SIGN_OUT_TIMEOUT)
         } catch (_: RuntimeException) {
             false

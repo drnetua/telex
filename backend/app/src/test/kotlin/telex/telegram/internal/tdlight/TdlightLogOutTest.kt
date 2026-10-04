@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.context.ApplicationEventPublisher
+import telex.shared.Uuid7
 import telex.telegram.SessionState
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessionStateChanged
@@ -19,6 +20,7 @@ import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
 
 /** The tdlight adapter's `logOut` (AC-111, AC-113, AC-122): when it signs out, and what only TDLib can confirm. */
 class TdlightLogOutTest {
@@ -70,9 +72,8 @@ class TdlightLogOutTest {
         return result
     }
 
-    /** A reopened, Ready session whose LogOut TDLib answers with LoggingOut, then [finish] (Closed when true). */
-    private fun readyForLogOut(finish: Boolean): Pair<TdlightTelegramSessions, TelegramSessionId> {
-        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+    /** TDLib answers a LogOut with LoggingOut, then [finish] (Closed when true). */
+    private fun scriptLogOut(finish: Boolean) {
         tdlib.respond = { client, request ->
             when (request) {
                 TdlibRequest.LogOut -> {
@@ -93,11 +94,42 @@ class TdlightLogOutTest {
                 }
             }
         }
+    }
+
+    /** A reopened, Ready session whose LogOut TDLib answers with LoggingOut, then [finish] (Closed when true). */
+    private fun readyForLogOut(finish: Boolean): Pair<TdlightTelegramSessions, TelegramSessionId> {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        scriptLogOut(finish)
         val sessions = create()
         val id = TelegramSessionId(telex.shared.Uuid7.next())
         sessions.reopen(id, key)
         await().untilAsserted { assertThat(states().map { it.state }).containsExactly(SessionState.Ready) }
         return sessions to id
+    }
+
+    @Test
+    fun `a logOut while the reopen is in flight waits for it, then signs out (AC-111)`() {
+        val opened = CountDownLatch(1)
+        scriptLogOut(finish = true)
+        // the reopen is still inside facade.open when the logOut arrives
+        tdlib.onOpen = {
+            opened.await()
+            it.emit(auth("authorizationStateReady"))
+        }
+        val sessions = create()
+        val id = TelegramSessionId(Uuid7.next())
+        val reopen = inBackground { sessions.reopen(id, key) }
+        await().until { sessions.isOpen(id) }
+
+        val confirmed = inBackground { sessions.logOut(id, Duration.ofSeconds(5)) }
+        await().during(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).until { !confirmed.isDone }
+        opened.countDown()
+
+        assertTimeoutPreemptively(Duration.ofSeconds(5)) {
+            reopen.get()
+            assertThat(confirmed.get()).isTrue()
+        }
+        assertThat(tdlib.clients.single().requests).contains(TdlibRequest.LogOut)
     }
 
     @Test

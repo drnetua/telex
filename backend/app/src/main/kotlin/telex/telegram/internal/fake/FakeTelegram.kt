@@ -56,6 +56,9 @@ class FakeTelegram(
     /** Test hook: while true, a sign-in Telegram authorizes then fails, as when `GetMe` fails after Ready. */
     @Volatile var failAfterAuthorization = false
 
+    /** Test hook: while true, [reopen] recreates the directory, then fails as if TDLib could not open the client. */
+    @Volatile var reopenUnavailable = false
+
     override fun configured() = configured
 
     override fun open(dbKey: ByteArray): TelegramSessionId {
@@ -70,9 +73,10 @@ class FakeTelegram(
         id: TelegramSessionId,
         dbKey: ByteArray,
     ) {
+        directories.create(id)
+        if (reopenUnavailable) throw TelegramUnavailable()
         val session = sessions.computeIfAbsent(id) { Session().also { it.authorized = true } }
         session.syncStarted = true
-        directories.create(id)
         if (endedWhileStopped.remove(id)) {
             session.authorized = false
             publishState(id, session, SessionState.Closed)
@@ -227,8 +231,7 @@ class FakeTelegram(
     /** Test hook: how many sessions Telegram confirmed a log out of, to tell that an HTTP refusal logged one out. */
     fun loggedOutCount() = loggedOut.size
 
-    /** Test hook: true while a client is open for [id]. */
-    fun isOpen(id: TelegramSessionId) = sessions.containsKey(id)
+    override fun isOpen(id: TelegramSessionId) = sessions.containsKey(id)
 
     /** Test hook: Telegram pushes [chats] for [id], only while that session is open and authorized. */
     fun pushChats(
