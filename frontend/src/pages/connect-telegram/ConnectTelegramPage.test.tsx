@@ -820,6 +820,21 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     back.focus();
     const again = await screen.findByRole("button", { name: "Start again" }, { timeout: 4000 });
     expect(again).not.toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Too many attempts" })).toHaveFocus();
+  });
+
+  it("leaves focus alone at 0:00 when Back was not focused (AC-02)", async () => {
+    const retryAt = new Date(Date.now() + 1500).toISOString();
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
+    });
+    setup();
+    await submitPhone();
+    const heading = await screen.findByRole("heading", { name: "Too many attempts" });
+    (document.activeElement as HTMLElement | null)?.blur();
+    await screen.findByRole("button", { name: "Start again" }, { timeout: 4000 });
+    expect(heading).not.toHaveFocus();
   });
 
   it("moves focus to the load-failed card (AC-109)", async () => {

@@ -31,17 +31,22 @@ export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitState
   const [text] = useState(() => t.waitBody(clock(retryAt), minutesSeconds(remaining)));
   const over = remaining === 0;
   const card = useRef<HTMLDivElement>(null);
+  const backHadFocus = useRef(false);
 
   // Back is replaced by Start again at 0:00; when that drops the focused button, focus returns to the heading.
   useEffect(() => {
-    if (over && document.activeElement === document.body) {
+    if (over && backHadFocus.current) {
       card.current?.querySelector<HTMLElement>("[tabindex='-1']")?.focus();
     }
   }, [over]);
 
   useEffect(() => {
     if (over) return;
-    const timer = setInterval(() => setRemaining(secondsUntil(retryAt)), 1000);
+    const timer = setInterval(() => {
+      // Sampled before the swap: removing the focused Back moves focus to <body> and loses this fact.
+      backHadFocus.current = card.current?.contains(document.activeElement) ?? false;
+      setRemaining(secondsUntil(retryAt));
+    }, 1000);
     return () => clearInterval(timer);
   }, [retryAt, over]);
 
