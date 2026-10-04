@@ -53,7 +53,7 @@
 | T45 | Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code | docs | Anton Husiev | S | T39, T40, T41, T43, T44 | done |
 | T46 | Say which phone refusal ended the attempt, and end a sign in again whose account was unlinked meanwhile as not found | app | Anton Husiev | M | — | done |
 | T47 | Sign out a reopened session that has not reached Ready yet instead of skipping it | infra | Anton Husiev | S | — | done |
-| T48 | SCR-02 survives a failed pulse, and a failed load shows an inline state with Try again and Back | ui | Anton Husiev | S | T46 | todo |
+| T48 | SCR-02 survives a failed pulse, and a failed load shows an inline state with Try again and Back | ui | Anton Husiev | S | T46 | done |
 | T49 | Banner: no false generic text, Sign in again outcome survives reorder and refetch, Toasts are announced | ui | Anton Husiev | M | — | done |
 | T50 | Record the shell banner extension and the two live channels in the ADRs, and sync sad, the contract and screens.md | docs | Anton Husiev | S | T46, T47, T48, T49 | todo |
 

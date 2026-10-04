@@ -9,7 +9,7 @@ files_hint: ["frontend/src/shell/pulse.ts", "frontend/src/shell/pulse.test.tsx",
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (second pass) — findings B1, B4"
-status: "todo"
+status: "done"
 ---
 
 # T48 — SCR-02 survives a failed pulse, and a failed load shows an inline state with Try again and Back
