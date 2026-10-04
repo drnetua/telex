@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx", "fro
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (fifth pass) — findings W11, W12"
-status: "todo"
+status: "done"
 ---
 
 # T64 — SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again

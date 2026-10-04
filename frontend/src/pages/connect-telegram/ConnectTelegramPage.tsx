@@ -34,10 +34,10 @@ interface Notice {
   tone: "info" | "error";
 }
 
-function Title({ attempt, focus }: { attempt: LinkingAttempt; focus: boolean }) {
+function Title({ attempt, focus }: { attempt: LinkingAttempt; focus: number }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (focus) heading.current?.focus();
+    if (focus > 0) heading.current?.focus();
   }, [focus]);
   const accounts = useLinkedAccounts();
   const target = attempt.targetLinkedAccountId
@@ -61,14 +61,20 @@ export function ConnectTelegramPage() {
   const accounts = useLinkedAccounts();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [starting, setStarting] = useState(false);
-  // Set once an outcome or load-failed card was left, so the step that replaces it takes focus (not the first load).
-  const [refocus, setRefocus] = useState(false);
+  // Bumped each time an outcome or load-failed card is left, so the step that replaces it takes focus (not the first load).
+  const [refocus, setRefocus] = useState(0);
+  const bumpRefocus = useCallback(() => setRefocus((n) => n + 1), []);
+  // The subscription below must know whether an outcome card is on screen, without re-subscribing.
+  const outcomeShown = useRef(false);
   const attempt = query.data;
   const [last, setLast] = useState<LinkingAttempt | undefined>(undefined);
   const known = attempt ?? last;
 
   // A fresh attempt put in the cache from outside (the Status Banner's Sign in again) replaces any outcome card.
   // Structural sharing keeps the old reference for an equal attempt, so listen for the write itself.
+  useEffect(() => {
+    outcomeShown.current = outcome !== null;
+  }, [outcome]);
   useEffect(
     () =>
       client.getQueryCache().subscribe((event) => {
@@ -78,10 +84,12 @@ export function ConnectTelegramPage() {
           event.action.manual &&
           event.query.queryKey[0] === linkingAttemptKey[0] &&
           event.action.data
-        )
+        ) {
+          if (outcomeShown.current) bumpRefocus();
           setOutcome(null);
+        }
       }),
-    [client],
+    [client, bumpRefocus],
   );
 
   const show = (message: string, tone: Notice["tone"]) => {
@@ -124,7 +132,7 @@ export function ConnectTelegramPage() {
         ...(target ? { targetLinkedAccountId: target } : {}),
       });
       client.setQueryData(linkingAttemptKey, fresh);
-      setRefocus(true);
+      bumpRefocus();
       setOutcome(null);
     } catch (error) {
       const text = refusalFor(error);
@@ -247,7 +255,7 @@ export function ConnectTelegramPage() {
         <Card>
           <LoadFailedState
             onRetry={() => {
-              setRefocus(true);
+              bumpRefocus();
               void query.refetch();
             }}
             onBack={() => leave(origin())}

@@ -837,6 +837,26 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     expect(heading).not.toHaveFocus();
   });
 
+  it("leaves focus off the step heading on the first load (AC-109)", async () => {
+    mockApi({ [A]: [json(200, attempt())] });
+    setup();
+    const heading = await screen.findByRole("heading", { name: "Connect your Telegram" });
+    await screen.findByLabelText("Phone number");
+    expect(heading).not.toHaveFocus();
+  });
+
+  it("moves focus to the step heading when the banner's Sign in again clears an outcome card (AC-122)", async () => {
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [problem(404, "linking-attempt-not-found")],
+    });
+    const client = setup();
+    await submitPhone();
+    expect(await screen.findByRole("heading", { name: ended })).toHaveFocus();
+    act(() => client.setQueryData(linkingAttemptKey, attempt({ origin: "accounts" })));
+    expect(await screen.findByRole("heading", { name: "Connect your Telegram" })).toHaveFocus();
+  });
+
   it("moves focus to the load-failed card (AC-109)", async () => {
     mockApi({ [A]: [problem(418, "teapot")] });
     setup();

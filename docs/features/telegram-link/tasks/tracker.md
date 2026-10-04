@@ -69,7 +69,7 @@
 | T61 | An unlink whose sealed key can't be opened still deletes the account and reports the sign-out unconfirmed | infra | Anton Husiev | XS | — | done |
 | T62 | A failed delete after the sign-out leaves the account Session lost when Telegram confirmed it, and keeps an unconfirmed session running | infra | Anton Husiev | S | T61 | done |
 | T63 | The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out | infra | Anton Husiev | S | T62 | done |
-| T64 | SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again | ui | Anton Husiev | XS | — | todo |
+| T64 | SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again | ui | Anton Husiev | XS | — | done |
 | T65 | Sync sad, tracker, test-plan and spec with the fifth-review fixes | docs | Anton Husiev | XS | T61, T62, T63, T64 | todo |
 
 **Total:** 65 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60 and T61–T65 follow-ups from the five 2026-10-04 reviews.
