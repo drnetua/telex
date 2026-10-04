@@ -38,6 +38,8 @@ private const val NO_HINT = "9996620005"
 private const val BANNED = "9996630005"
 private const val UNREGISTERED = "9996640005"
 private const val UNREGISTERED_AFTER_CODE = "9996500005"
+private const val INVALID_ON_RESEND = "9996300005"
+private const val BANNED_ON_RESEND = "9996310005"
 private const val FLOOD_PHONE = "9996650005"
 private const val FLOOD_CODE = "9996660005"
 private const val FLOOD_PASSWORD = "9996680005"
@@ -152,6 +154,36 @@ class LinkingStepsIT {
             .containsEntry("status", 422)
         assertThat(refusal { linking.get(owner) }).containsEntry(CODE, "linking-attempt-not-found")
         assertThat(attempts.find(owner)).isNull()
+    }
+
+    @Test
+    fun `AC-107 an unregistered number with no replacement session is refused as unregistered, attempt ended`() {
+        val fake = telegram as FakeTelegram
+        fake.openUnavailable = true
+        try {
+            assertThat(refusal { toCodeStep(UNREGISTERED) })
+                .containsEntry(CODE, "telegram-phone-unregistered")
+                .containsEntry("status", 422)
+        } finally {
+            fake.openUnavailable = false
+        }
+        assertThat(attempts.find(owner)).isNull()
+        assertThat(refusal { linking.get(owner) }).containsEntry(CODE, "linking-attempt-not-found")
+    }
+
+    @Test
+    fun `AC-107 a phone refused on resend ends the attempt, as at the code step`() {
+        listOf(INVALID_ON_RESEND to "telegram-phone-invalid", BANNED_ON_RESEND to "telegram-phone-banned")
+            .forEach { (phone, reason) ->
+                toCodeStep(phone)
+
+                assertThat(refusal { linking.resendCode(owner, session) })
+                    .containsEntry(CODE, reason)
+                    .containsEntry("status", 422)
+                assertThat(attempts.find(owner)).isNull()
+                assertThat(refusal { linking.get(owner) }).containsEntry(CODE, "linking-attempt-not-found")
+                linking.start(owner, session, LinkingOrigin.INBOX, null)
+            }
     }
 
     @Test

@@ -144,13 +144,22 @@ class Linking(
             }
         }
 
-    /** Asks Telegram for a new code; the attempt stays at the code step. */
+    /** Asks Telegram for a new code; the attempt stays at the code step unless Telegram refuses the phone. */
     fun resendCode(
         owner: OwnerId,
         by: SignInSessionId,
     ): LinkingProgress =
         step(owner, by, LinkingStep.CODE) { attempt, sessions ->
-            codeSent(owner, attempt, sessions.resendCode(attempt.sessionId)) { discard(owner, "refused_phone") }
+            when (val outcome = sessions.resendCode(attempt.sessionId)) {
+                SignInOutcome.PhoneUnregistered, SignInOutcome.PhoneInvalid, SignInOutcome.PhoneBanned -> {
+                    discard(owner, "refused_phone")
+                    throw phoneRefusal(outcome)
+                }
+
+                else -> {
+                    codeSent(owner, attempt, outcome) {}
+                }
+            }
         }
 
     /** The code goes straight to Telegram; it is never stored or echoed. */
@@ -271,7 +280,8 @@ class Linking(
 
     /**
      * Telegram closes the client of an unregistered number, so the attempt, which stays at the phone step, gets a
-     * fresh session; when none can be opened the attempt ends rather than stay on a dead client.
+     * fresh session; when none can be opened the attempt ends rather than stay on a dead client, and the Owner is
+     * still told the number is unregistered.
      */
     private fun replaceSession(
         owner: OwnerId,
@@ -286,11 +296,10 @@ class Linking(
         }
         try {
             attempt.sessionId = sessions.open(attempt.dbKey)
-        } catch (e: TelegramUnavailable) {
+        } catch (_: TelegramUnavailable) {
             attempts.remove(owner)
             attempt.wipeKey()
             meters.counter("telex.linking.attempts", "outcome", "refused_phone").increment()
-            throw e
         }
     }
 

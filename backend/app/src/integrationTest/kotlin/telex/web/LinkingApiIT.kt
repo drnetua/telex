@@ -42,6 +42,8 @@ private const val PLAIN = "+999 66 0 0005"
 private const val HINT_PHONE = "9996610005"
 private const val BANNED = "9996630005"
 private const val UNREGISTERED = "9996640005"
+private const val INVALID_ON_RESEND = "9996300005"
+private const val BANNED_ON_RESEND = "9996310005"
 private const val FLOOD_PHONE = "9996650005"
 private const val CODE = "\"code\":\""
 private const val SEALED_BYTES = 60
@@ -331,6 +333,37 @@ class LinkingApiIT(
 
         assertThat(r.statusCode()).isEqualTo(422)
         assertThat(r.body()).contains("${CODE}telegram-phone-unregistered\"")
+        assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
+    }
+
+    @Test
+    fun `AC-107 a phone refused on resend is 422 and the attempt has ended`() {
+        listOf(INVALID_ON_RESEND to "invalid", BANNED_ON_RESEND to "banned").forEach { (number, reason) ->
+            val (_, s) = session()
+            api.call("POST", BASE, s.key, INBOX)
+            assertThat(phone(s.key, number).statusCode()).isEqualTo(200)
+
+            val r = api.call("POST", "$BASE/code/resend", s.key)
+
+            assertThat(r.statusCode()).isEqualTo(422)
+            assertThat(r.body()).contains("${CODE}telegram-phone-$reason\"")
+            assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
+        }
+    }
+
+    @Test
+    fun `AC-107 an unregistered number with no replacement session is 422 and the attempt has ended`() {
+        val (_, s) = session()
+        api.call("POST", BASE, s.key, INBOX)
+        fake.openUnavailable = true
+        try {
+            val r = phone(s.key, UNREGISTERED)
+
+            assertThat(r.statusCode()).isEqualTo(422)
+            assertThat(r.body()).contains("${CODE}telegram-phone-unregistered\"")
+        } finally {
+            fake.openUnavailable = false
+        }
         assertThat(api.call("GET", BASE, s.key).statusCode()).isEqualTo(404)
     }
 

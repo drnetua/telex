@@ -124,8 +124,12 @@ class FakeTelegram(
 
     override fun resendCode(id: TelegramSessionId): SignInOutcome {
         val session = reachable(id)
-        check(session.phone != null) { "No phone sent" }
-        return SignInOutcome.CodeSent(CODE.length)
+        val phone = checkNotNull(session.phone) { "No phone sent" }
+        return when (scenarioOf(phone)) {
+            INVALID_ON_RESEND -> SignInOutcome.PhoneInvalid
+            BANNED_ON_RESEND -> SignInOutcome.PhoneBanned
+            else -> SignInOutcome.CodeSent(CODE.length)
+        }
     }
 
     override fun checkCode(
@@ -292,10 +296,18 @@ class FakeTelegram(
                 when {
                     it.startsWith(PHONE_PREFIX) -> it[PHONE_PREFIX.length]
                     it.startsWith(UNREGISTERED_AFTER_CODE_PREFIX) -> UNREGISTERED_AFTER_CODE
+                    it.startsWith(RESEND_PREFIX) -> resendScenario(it[RESEND_PREFIX.length])
                     it.startsWith(LIFE_PREFIX) -> lifeScenario(it[LIFE_PREFIX.length])
                     else -> null
                 }
             }
+
+    private fun resendScenario(digit: Char): Char? =
+        when (digit) {
+            '0' -> INVALID_ON_RESEND
+            '1' -> BANNED_ON_RESEND
+            else -> null
+        }
 
     private fun lifeScenario(digit: Char): Char? =
         when (digit) {
@@ -363,6 +375,9 @@ class FakeTelegram(
         private const val PHONE_PREFIX = "99966"
         private const val UNREGISTERED_AFTER_CODE_PREFIX = "99965"
         private const val UNREGISTERED_AFTER_CODE = 'u'
+        private const val RESEND_PREFIX = "99963"
+        private const val INVALID_ON_RESEND = 'i'
+        private const val BANNED_ON_RESEND = 'b'
         private const val LIFE_PREFIX = "99964"
         private const val OUTAGE = 'o'
         private const val TERMINATE_ONCE = 'r'
