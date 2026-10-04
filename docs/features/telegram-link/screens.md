@@ -26,20 +26,20 @@ updated_at: "2026-10-03"
 - **Contract change made here:** `LinkingAttempt.codeLength` was added to `contracts/openapi.yaml`, so that `CodeInput` sizes itself to the code Telegram sent. It's recorded in `api-sync-report.md` §A.
 - **Decisions confirmed with the user (2026-10-03):**
   - SCR-02 uses the onboarding card layout.
-  - Accounts is reached through E06's `AppShell` (Settings registry), not a `PageFrame` button (deviation, see New components).
+  - ~~Accounts is reached through a `PageFrame` "Accounts" button.~~ Superseded (T43/T45): Accounts is a Settings registry entry under E06's `AppShell`, see New components deviation.
   - NEW `LinkedAccountSummary` is shared by SCR-10 and SCR-60.
-  - E02 ports `StatusBanner` (C-04) now, and E06 extends it.
+  - ~~E02 ports `StatusBanner` (C-04) now, and E06 extends it.~~ Superseded: E06 landed first and ported C-04; E02 only adds the condition.
 
 ## Shared conventions
 
 These apply to every screen below. Each table lists only what differs from them. The platform-skeleton conventions (busy buttons, copy rules, status never by color alone) still hold.
 
-- **Signed-in frame.** SCR-10 and SCR-60 render inside E06's `AppShell`. The `PageFrame` this document first specified was never built past E01 and is deleted (deviation, see New components). Accounts is not a header button: SCR-60 is the "Accounts" entry in the Settings registry (`settingsRegistry.ts`, path `/accounts`, owned by the Settings section), and SCR-10 lines link to it. The banner is the shell's C-04 condition (below), placed by `AppShell` under the header.
+- **Signed-in frame.** SCR-10 and SCR-60 render inside E06's `AppShell`. The `PageFrame` this document first specified was never built past E01 and is deleted (deviation, see New components). Accounts is not a header button: SCR-60 is the "Accounts" entry in the Settings registry (`settingsRegistry.ts`, path `/accounts`, owned by the Settings section), and SCR-10 lines link to it. The banner is the shell's C-04 condition (below), at the top of `AppShell`'s main column: under the header on phone, beside the side menu on desktop.
 - **Onboarding card layout.** SCR-02 uses the platform-skeleton auth layout: Tabler `page-center`, the logo asset 96 px (the README allows the logo on onboarding), and a `card` at most 420 px wide, padded `space-4`, `radius-lg`, `shadow-sm`. On phone the card fills the width inside a 16 px gutter with padding `space-3`. Above the card sits the same pulse-fed `StatusBanner` as the shell (`PulseBanner` in `OnboardingLayout`).
 - **Account disconnected banner** (not a screen; ux-flows "Status Banner node"; AC-122). Every signed-in screen (SCR-02, SCR-10, SCR-60, SCR-64) shows the shell's `StatusBanner` (C-04) whenever the `account-disconnected` condition is active. A `StatusConditionSource` in `messaging` reports it in the pulse while an account is `session_lost` (app-shell ADR-0006), and the shell catalog entry (`shell/accountDisconnected.tsx`) names the account and offers the action from `listMyLinkedAccounts`. It has no close button and stays until no account is Session lost (the Owner signed in again or unlinked).
   - **One lost account:** icon `alert-circle` + "`<displayName>`'s Telegram is disconnected. teleX can't work with it until you sign in again." The action "Sign in again" calls `startMyLinkingAttempt` with `origin: accounts` and `targetLinkedAccountId`, and opens SCR-02. Refusals from that call follow SCR-60's `start-refused` row.
   - **Several lost accounts:** "`<n>` Telegram accounts are disconnected." The action "Open Accounts" goes to SCR-60.
-  - **Priority:** while it's the only C-04 condition in E02, the "most severe + '+N more'" rule of C-04 isn't exercised. E06 adds "offline" above it (app-shell OQ on the priority order).
+  - **Priority:** `account-disconnected` is one entry in the shell's condition catalog (`conditions.ts`); the shell's `StatusBanner` owns ordering and "+N more", with importance set by app-shell ADR-0006 (below offline / not responding).
 - **Live state.** The SPA keeps one `openLiveUpdates` stream per tab. On a `linked-accounts` hint it refetches `listMyLinkedAccounts` in the background (`X-Telex-Background: 1`), and on a stream reconnect it refetches everything it shows (ADR-0005). The refetch replaces the data in place: no loading skeleton and no Toast. Status changes in a row are announced politely (`aria-live="polite"` on the state badge), and progress ticks aren't announced.
 - **Masked phone.** `+<countryCode> ••• ••<lastDigits>`, e.g. `+999 ••• ••00`. Only the country code and the last two digits are real (AC-01). The middle is fixed decoration, not the real digit count.
 - **Failure routing** (as in platform-skeleton, through the fetch client):
@@ -198,7 +198,7 @@ E02 replaces E01's placeholder with the real thing. "Connect Telegram" now start
 ```text
 W-10a  SCR-10 default (empty) — E01 layout, action now real
 +--------------------------------------------------------------------+
-| teleX     Inbox  Chats  Assistants  Tasks  Settings   (user) (logout) |  AppShell
+| AppShell: side menu on desktop, header + bottom nav on phone (see app-shell screens.md) |
 +--------------------------------------------------------------------+
 |  Inbox                                                             |
 |  +--------------------------------------------------------------+  |
@@ -208,9 +208,9 @@ W-10a  SCR-10 default (empty) — E01 layout, action now real
 |  +--------------------------------------------------------------+  |
 +--------------------------------------------------------------------+
 
-W-10b  SCR-10 with-accounts, one account Session lost (desktop; phone: one column, header icon-only)
+W-10b  SCR-10 with-accounts, one account Session lost (desktop; phone: one column, the shell's header and bottom nav)
 +--------------------------------------------------------------------+
-| teleX     Inbox  Chats  Assistants  Tasks  Settings   (user) (logout) |
+| AppShell: side menu on desktop, header + bottom nav on phone (see app-shell screens.md) |
 +--------------------------------------------------------------------+
 | (!) Test User's Telegram is disconnected. teleX can't work   [Sign in again] |  StatusBanner
 |     with it until you sign in again.                               |
@@ -254,7 +254,7 @@ The page lists the Owner's Linked Accounts, oldest first (`listMyLinkedAccounts`
 ```text
 W-60a  SCR-60 default (desktop; on phone the row actions drop below the text, full width)
 +--------------------------------------------------------------------+
-| teleX     Inbox  Chats  Assistants  Tasks  Settings   (user) (logout) |
+| AppShell: side menu on desktop, header + bottom nav on phone (see app-shell screens.md) |
 +--------------------------------------------------------------------+
 | (!) Test User's Telegram is disconnected. ...        [Sign in again] |  StatusBanner
 +--------------------------------------------------------------------+
@@ -307,7 +307,7 @@ W-60c  unlink-confirm (ConfirmDialog, shadow-lg; full-width sheet on phone)
 | Component | Why no existing primitive fits | Registered in design-system |
 |---|---|---|
 | `LinkedAccountSummary` | One Linked Account's name, masked phone, state `Badge` (connected / reconnecting / session lost, icon + words) and chat-sync line (Tabler `progress` + count, or the chat count once synced). The same state-to-presentation mapping is needed in two places: `variant="line"` (SCR-10, compact, the whole row links to SCR-60, no actions) and `variant="row"` (SCR-60, with an actions slot). No inventory component shows an account; `AccountSwitcher` (C-02) chooses one and is hidden with a single account. The badge region is `aria-live="polite"`, so live state changes are announced. | registered in `docs/design-system.md` |
-| `StatusBanner` (C-04) — **ported reference**, not new | Ported from `docs/docs/design-system/components/StatusBanner/README.md`: one condition, or the most severe plus "+N more"; one action; no close button while its cause holds; icon + words; `role="status"`. E02 ships the mechanism with one condition (account disconnected), and E06 adds "offline" and moves the slot into `AppShell`. Already listed in the inventory as "not yet ported", so `implement` updates its row to the built file. | registered in `docs/design-system.md` |
+| `StatusBanner` (C-04) — **ported reference**, not new | Ported from `docs/docs/design-system/components/StatusBanner/README.md`: one condition, or the most severe plus "+N more"; one action; no close button while its cause holds; icon + words; `role="status"`. E06 ported it into `AppShell` with the shell's condition catalog; E02 only adds the account-disconnected condition with its live text and action (`accountDisconnected.tsx`). Already listed in the inventory as "not yet ported", so `implement` updates its row to the built file. | registered in `docs/design-system.md` |
 | `CodeInput` — `length` prop (extension) | The built `CodeInput` is fixed at 6 digits for the E01 Sign-in Code. A Telegram login code has the length Telegram reports (`codeLength`, usually 5). Adds `length?: number` (default 6, so E01 is unchanged) and a `label` prop, because the built label text is the E01 "Sign-in code" string. The reference C-32 states "resend timer" and "Telegram rate limit" aren't used: Telegram's resend timing isn't in the contract, and a rate limit ends the attempt (`wait`). | registered in `docs/design-system.md` |
 | ~~`PageFrame` — "Accounts" button + banner slot (extension)~~ | **Deviation (T43, T45):** not built. E06's `AppShell` landed first, so Accounts sits under Settings and the banner is the shell's `account-disconnected` condition (app-shell ADR-0006); `PageFrame` is deleted. | n/a |
 | `Icon` — `unlink` (extension) | The "Unlink" action needs `IconUnlink` from `@tabler/icons-react`; it's added to the Icon subset. | registered in `docs/design-system.md` |

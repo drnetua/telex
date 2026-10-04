@@ -846,7 +846,7 @@ sequenceDiagram
   - `telex.linking.step.duration{step=phone|code|password}` (the p95 ≤ 3 s target);
   - `telex.linked_accounts.reconnect.duration`;
   - `telex.unlink{signout=confirmed|unconfirmed}`;
-  - `telex.chat_sync.duration`, recorded once per completed chat-list load: the first link, and each Sign in again (which clears `chat_sync_completed_at`, so the next completion counts as a first one).
+  - `telex.chat_sync.duration`, recorded when an account's chat list first completes after it was cleared: the first link and each Sign in again (which nulls `chat_sync_completed_at`). Reloads on restart are not recorded.
 - KPIs (spec §7): link completion and time to link come from the `telex.linking.*` metrics, restart survival from `telex.linked_accounts.reconnect.*`, and unlink completeness from the recorded dump. There is no analytics pipeline.
 - Health: `/actuator/health` stays green when Telegram is unreachable, because a Telegram outage is an account state, not an app failure. Incomplete `AccountUnlinked` publications are visible in `event_publication`.
 - Alerts and tracing: none in E02 (no SLO). OpenTelemetry arrives with the agent epics.
