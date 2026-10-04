@@ -66,6 +66,9 @@ internal class TdlightSession(
     /** Completes when TDLib reaches `authorizationStateReady`. */
     private val ready = CompletableFuture<Unit>()
 
+    /** Completes when the session is over for good (lost, closing or closed), so a waiter need not wait it out. */
+    private val over = CompletableFuture<Unit>()
+
     @Volatile var waiter: CompletableFuture<StepResult>? = null
 
     @Volatile var passwordHint: String? = null
@@ -105,7 +108,7 @@ internal class TdlightSession(
     /** Waits up to [timeout] for Ready, or for the session to end; true only when it is authorized afterwards. */
     fun awaitAuthorized(timeout: Duration): Boolean {
         try {
-            CompletableFuture.anyOf(ready, closed).get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+            CompletableFuture.anyOf(ready, over).get(timeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (_: TimeoutException) {
             return false
         }
@@ -114,6 +117,7 @@ internal class TdlightSession(
 
     @Synchronized fun markClosing() {
         closing = true
+        over.complete(Unit)
     }
 
     /**
@@ -217,6 +221,7 @@ internal class TdlightSession(
         if (!closing) {
             emitState(SessionState.Closed)
             closing = true
+            over.complete(Unit)
             publisher.execute { client().close() }
         }
     }
@@ -231,6 +236,7 @@ internal class TdlightSession(
         waitingForPhone.completeExceptionally(IllegalStateException("closed"))
         waiter?.completeExceptionally(IllegalStateException("closed"))
         closed.complete(Unit)
+        over.complete(Unit)
     }
 
     private fun onFailed(update: TdlibUpdate.Failed) {
@@ -242,7 +248,10 @@ internal class TdlightSession(
     private fun emitState(state: SessionState) {
         if (state == lastState || lost) return
         lastState = state
-        if (state == SessionState.Closed) lost = true
+        if (state == SessionState.Closed) {
+            lost = true
+            over.complete(Unit)
+        }
         if (syncStarted) publish(stateEvent(state))
     }
 

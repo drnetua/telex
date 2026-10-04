@@ -103,7 +103,11 @@ interface TelegramSessions {
     /** True while Telegram has authorized the session and it is still open: closing it alone would leave a device. */
     fun authorized(id: TelegramSessionId): Boolean
 
-    /** True when Telegram confirmed the log out within [timeout]; false for a session that is not open. */
+    /**
+     * True when Telegram confirmed the log out within [timeout]; the whole call is bounded by it. A reopened session
+     * that is not Ready yet is waited for, then signed out. A fresh session that never signed in, and any ended one
+     * (lost, closing or closed), is never confirmed and gets no LogOut; neither is a session that is not open.
+     */
     fun logOut(
         id: TelegramSessionId,
         timeout: Duration,

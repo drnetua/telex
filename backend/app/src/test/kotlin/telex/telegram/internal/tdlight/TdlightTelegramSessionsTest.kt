@@ -450,6 +450,40 @@ class TdlightTelegramSessionsTest {
     }
 
     @Test
+    fun `logOut of a fresh session returns false at once even when Ready arrives, and sends no LogOut (AC-113)`() {
+        val sessions = create()
+        val id = sessions.open(key)
+        val client = tdlib.clients.single()
+        val confirmed =
+            java.util.concurrent.CompletableFuture
+                .supplyAsync { sessions.logOut(id, Duration.ofSeconds(5)) }
+
+        Thread.sleep(100)
+        client.emit(auth("authorizationStateReady"))
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2)) { assertThat(confirmed.get()).isFalse() }
+        assertThat(client.requests).doesNotContain(TdlibRequest.LogOut)
+    }
+
+    @Test
+    fun `logOut of a reopened session that ends while waiting returns false promptly (AC-113)`() {
+        tdlib.onOpen = {}
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        val confirmed =
+            java.util.concurrent.CompletableFuture
+                .supplyAsync { sessions.logOut(id, Duration.ofSeconds(5)) }
+
+        Thread.sleep(100)
+        client.emit(auth("authorizationStateWaitPhoneNumber"))
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2)) { assertThat(confirmed.get()).isFalse() }
+        assertThat(client.requests).doesNotContain(TdlibRequest.LogOut)
+    }
+
+    @Test
     fun `logOut of a session TDLib is already logging out remotely is not confirmed (AC-113)`() {
         tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
         answerOnlyChatLoads()
