@@ -129,11 +129,12 @@ Kotlin `telex.telegram.TelegramSessionStateChanged(sessionId: TelegramSessionId,
 
 ### Event: `telegram.chats-changed`
 
-Kotlin `telex.telegram.TelegramChatsChanged(sessionId: TelegramSessionId, upserted: List<ChatSnapshot>, removedChatIds: List<Long>, total: Int?, loadCompleted: Boolean)`, where `ChatSnapshot(chatId, type, title, folderIds, archived, unreadCount, order)` mirrors the `channel` columns.
+Kotlin `telex.telegram.TelegramChatsChanged(sessionId: TelegramSessionId, upserted: List<ChatSnapshot>, removedChatIds: List<Long>, total: Int?, loadCompleted: Boolean, loadedChatIds: Set<Long>? = null)`, where `ChatSnapshot(chatId, type, title, folderIds, archived, unreadCount, order)` mirrors the `channel` columns.
 
 - **Origin:** Critical flow 1 ("chats changed with batch and total"), Flow 11 ("a batch plus the account's total", "a chat joined, left or renamed").
 - **Effect in `messaging`:**
   - upsert or delete `channel` rows by `(linked_account_id, telegram_chat_id)`;
+  - when `loadedChatIds` is set (the complete set a finished load found), delete the account's `channel` rows not in it;
   - set `linked_account.chats_total`, and `chat_sync_completed_at` when `loadCompleted`;
   - then publish `LinkedAccountSyncProgressed` (channel 1, throttled).
 - **Carries Telegram data** (titles, chat ids), which is why it must never be persisted.

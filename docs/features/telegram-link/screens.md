@@ -26,7 +26,7 @@ updated_at: "2026-10-03"
 - **Contract change made here:** `LinkingAttempt.codeLength` was added to `contracts/openapi.yaml`, so that `CodeInput` sizes itself to the code Telegram sent. It's recorded in `api-sync-report.md` §A.
 - **Decisions confirmed with the user (2026-10-03):**
   - SCR-02 uses the onboarding card layout.
-  - `PageFrame` gains an "Accounts" button until E06.
+  - Accounts is reached through E06's `AppShell` (Settings registry), not a `PageFrame` button (deviation, see New components).
   - NEW `LinkedAccountSummary` is shared by SCR-10 and SCR-60.
   - E02 ports `StatusBanner` (C-04) now, and E06 extends it.
 
@@ -34,13 +34,9 @@ updated_at: "2026-10-03"
 
 These apply to every screen below. Each table lists only what differs from them. The platform-skeleton conventions (busy buttons, copy rules, status never by color alone) still hold.
 
-- **Signed-in frame.** SCR-10 and SCR-60 render inside `PageFrame`. E02 makes two changes to it:
-  - an **"Accounts"** `Button` ghost `icon="brand-telegram"` before "Profile and security", icon-only with `ariaLabel` on phone and 44 px targets, which opens SCR-60;
-  - a **banner slot** directly under the header, which holds `StatusBanner` (see below).
-
-  Both are temporary like the frame: E06's `AppShell` places SCR-60 under Settings and keeps the banner slot (C-01 "slot for C-04 banners").
-- **Onboarding card layout.** SCR-02 uses the platform-skeleton auth layout: Tabler `page-center`, the logo asset 96 px (the README allows the logo on onboarding), and a `card` at most 420 px wide, padded `space-4`, `radius-lg`, `shadow-sm`. On phone the card fills the width inside a 16 px gutter with padding `space-3`. Above the card sits the same banner slot as `PageFrame`.
-- **Account disconnected banner** (not a screen; ux-flows "Status Banner node"; AC-122). Every signed-in screen (SCR-02, SCR-10, SCR-60, SCR-64) shows a `StatusBanner` (C-04, ported by E02) whenever `listMyLinkedAccounts` has an account in `session_lost`. It has no close button and stays until no account is Session lost (the Owner signed in again or unlinked).
+- **Signed-in frame.** SCR-10 and SCR-60 render inside E06's `AppShell`. The `PageFrame` this document first specified was never built past E01 and is deleted (deviation, see New components). Accounts is not a header button: SCR-60 is the "Accounts" entry in the Settings registry (`settingsRegistry.ts`, path `/accounts`, owned by the Settings section), and SCR-10 lines link to it. The banner is the shell's C-04 condition (below), placed by `AppShell` under the header.
+- **Onboarding card layout.** SCR-02 uses the platform-skeleton auth layout: Tabler `page-center`, the logo asset 96 px (the README allows the logo on onboarding), and a `card` at most 420 px wide, padded `space-4`, `radius-lg`, `shadow-sm`. On phone the card fills the width inside a 16 px gutter with padding `space-3`. Above the card sits the same pulse-fed `StatusBanner` as the shell (`PulseBanner` in `OnboardingLayout`).
+- **Account disconnected banner** (not a screen; ux-flows "Status Banner node"; AC-122). Every signed-in screen (SCR-02, SCR-10, SCR-60, SCR-64) shows the shell's `StatusBanner` (C-04) whenever the `account-disconnected` condition is active. A `StatusConditionSource` in `messaging` reports it in the pulse while an account is `session_lost` (app-shell ADR-0006), and the shell catalog entry (`shell/accountDisconnected.tsx`) names the account and offers the action from `listMyLinkedAccounts`. It has no close button and stays until no account is Session lost (the Owner signed in again or unlinked).
   - **One lost account:** icon `alert-circle` + "`<displayName>`'s Telegram is disconnected. teleX can't work with it until you sign in again." The action "Sign in again" calls `startMyLinkingAttempt` with `origin: accounts` and `targetLinkedAccountId`, and opens SCR-02. Refusals from that call follow SCR-60's `start-refused` row.
   - **Several lost accounts:** "`<n>` Telegram accounts are disconnected." The action "Open Accounts" goes to SCR-60.
   - **Priority:** while it's the only C-04 condition in E02, the "most severe + '+N more'" rule of C-04 isn't exercised. E06 adds "offline" above it (app-shell OQ on the priority order).
@@ -187,22 +183,22 @@ E02 replaces E01's placeholder with the real thing. "Connect Telegram" now start
 
 | State | Trigger / condition | Components (from the inventory) | Source-ref |
 |---|---|---|---|
-| loading | `listMyLinkedAccounts` in flight | `PageFrame` + `LoadState state="loading"` | — |
-| default (empty) | 0 Linked Accounts (AC-01 precondition; AC-111 after the last unlink) | `PageFrame`, h1 "Inbox", `EmptyState kind="first"` (icon `brand-telegram`) "Connect your Telegram account to start.", action `Button` primary "Connect Telegram" | W-10a |
+| loading | `listMyLinkedAccounts` in flight | `AppShell` + `LoadState state="loading"` | — |
+| default (empty) | 0 Linked Accounts (AC-01 precondition; AC-111 after the last unlink) | `AppShell`, h1 "Inbox", `EmptyState kind="first"` (icon `brand-telegram`) "Connect your Telegram account to start.", action `Button` primary "Connect Telegram" | W-10a |
 | starting | "Connect Telegram" chosen; `startMyLinkingAttempt { origin: inbox }` | Busy `Button` ("Starting") | — |
-| start-refused | `503 telegram-linking-not-set-up` (AC-119) | `Toast` error "Telegram linking isn't set up on this installation yet. The person who runs teleX has to finish the setup." The wizard doesn't open | — |
+| start-refused | `503 telegram-linking-not-set-up` (AC-119); `503 telegram-unavailable` (Telegram didn't answer the start) | `Toast` error, per code: `telegram-linking-not-set-up` "Telegram linking isn't set up on this installation yet. The person who runs teleX has to finish the setup."; `telegram-unavailable` "Telegram didn't answer. Check your connection and try again." The wizard doesn't open | — |
 | resumed | `200` (an open attempt, e.g. from another tab or a Sign in again) or `201` | → SCR-02, which renders the attempt's own step and origin | — |
-| with-accounts | ≥ 1 Linked Account (AC-01, AC-114) | `PageFrame`, h1 "Inbox", Tabler `card` with a `list-group`: one `LinkedAccountSummary variant="line"` per account, each row a link to SCR-60. Nothing else in E02; the Inbox content is later epics | W-10b |
+| with-accounts | ≥ 1 Linked Account (AC-01, AC-114) | `AppShell`, h1 "Inbox", Tabler `card` with a `list-group`: one `LinkedAccountSummary variant="line"` per account, each row a link to SCR-60. Nothing else in E02; the Inbox content is later epics | W-10b |
 | linked | Arrived from SCR-02 `success` (origin `inbox`) | `with-accounts` + the SCR-02 success `Toast` | — |
 | live | `linked-accounts` hint | Background refetch, rows update in place (Shared conventions) | — |
-| banner | Any account `session_lost` | `StatusBanner` in the `PageFrame` slot (Shared conventions) | W-10b |
+| banner | Any account `session_lost` | `StatusBanner` from the shell (Shared conventions) | W-10b |
 | start-refused-limit | N/A: the "Connect Telegram" step shows only with 0 accounts, and the limit is ≥ 1 | — | — |
 | error | `401` → SCR-01 (path remembered) / SCR-92; `5xx` or no answer within 10 s → SCR-93 | Shared failure routing | — |
 
 ```text
 W-10a  SCR-10 default (empty) — E01 layout, action now real
 +--------------------------------------------------------------------+
-| teleX     (tg) Accounts   (user) Profile and security   (logout) Sign out |  PageFrame
+| teleX     Inbox  Chats  Assistants  Tasks  Settings   (user) (logout) |  AppShell
 +--------------------------------------------------------------------+
 |  Inbox                                                             |
 |  +--------------------------------------------------------------+  |
@@ -214,7 +210,7 @@ W-10a  SCR-10 default (empty) — E01 layout, action now real
 
 W-10b  SCR-10 with-accounts, one account Session lost (desktop; phone: one column, header icon-only)
 +--------------------------------------------------------------------+
-| teleX     (tg) Accounts   (user) Profile and security   (logout) Sign out |
+| teleX     Inbox  Chats  Assistants  Tasks  Settings   (user) (logout) |
 +--------------------------------------------------------------------+
 | (!) Test User's Telegram is disconnected. teleX can't work   [Sign in again] |  StatusBanner
 |     with it until you sign in again.                               |
@@ -231,19 +227,19 @@ W-10b  SCR-10 with-accounts, one account Session lost (desktop; phone: one colum
 
 ### SCR-60 — Accounts
 
-The page lists the Owner's Linked Accounts, oldest first (`listMyLinkedAccounts`). It is reached from the `PageFrame` "Accounts" button, an SCR-10 line, the banner's "Open Accounts", or the end of an attempt started here.
+The page lists the Owner's Linked Accounts, oldest first (`listMyLinkedAccounts`). It is reached from the Settings section's "Accounts" entry, an SCR-10 line, the banner's "Open Accounts", or the end of an attempt started here.
 
 | State | Trigger / condition | Components (from the inventory) | Source-ref |
 |---|---|---|---|
-| loading | `listMyLinkedAccounts` in flight | `PageFrame` + `LoadState state="loading"` (`rows=2`) | — |
-| default (list) | ≥ 1 account (AC-114) | `PageFrame`, h1 "Accounts", `text-secondary` "Telegram accounts teleX works with. Each one syncs its own chats."; Tabler `card` with header "Linked accounts" and `Button` secondary `icon="plus"` "Add account", and a `list-group` of `LinkedAccountSummary variant="row"`, each with its actions (below) | W-60a |
+| loading | `listMyLinkedAccounts` in flight | `AppShell` + `LoadState state="loading"` (`rows=2`) | — |
+| default (list) | ≥ 1 account (AC-114) | `AppShell`, h1 "Accounts", `text-secondary` "Telegram accounts teleX works with. Each one syncs its own chats."; Tabler `card` with header "Linked accounts" and `Button` secondary `icon="plus"` "Add account", and a `list-group` of `LinkedAccountSummary variant="row"`, each with its actions (below) | W-60a |
 | row: connected-syncing | `state: connected`, `chatSync.completedAt` null (AC-01, AC-116) | `LinkedAccountSummary`: `Badge tone="success" icon="check"` "Connected"; with `chatsTotal` set, Tabler `progress` + `small` "Syncing chats: `<chatsSynced>` of `<chatsTotal>`"; while `chatsTotal` is null, an indeterminate `progress` + "Syncing chats"; action `Button` ghost `icon="unlink"` "Unlink" | W-60a |
 | row: connected-synced | `state: connected`, `completedAt` set (AC-116, AC-121) | `Badge tone="success" icon="check"` "Connected"; `small` "`<chatsSynced>` chats" (follows joins and leaves, AC-121); "Unlink" | W-60a |
 | row: reconnecting | `state: reconnecting` (AC-122) | `Badge tone="neutral" icon="refresh"` "Reconnecting"; `small` "Telegram can't be reached right now. teleX reconnects by itself."; the sync line keeps its last values; "Unlink" | W-60a |
 | row: session-lost | `state: session_lost` (AC-117, AC-118, AC-122) | `Badge tone="danger" icon="alert-circle"` "Session lost"; `small` "The session was ended in Telegram. Sign in again to bring this account back with everything attached."; `Button` primary small "Sign in again"; "Unlink" | W-60a |
 | empty | 0 accounts, reached directly (the last unlink goes to SCR-10 instead) | `EmptyState kind="first"` (icon `brand-telegram`) "No Telegram accounts linked yet.", action "Add account"; the header button is hidden | W-60b |
 | starting | "Add account" (`origin: accounts`) or "Sign in again" (`origin: accounts`, `targetLinkedAccountId`) | Busy `Button` ("Starting") | — |
-| start-refused | `startMyLinkingAttempt` refused before the wizard (Flow 4, AC-115, AC-119) | `Toast` error, per code: `linked-account-limit-reached` "You've linked `<limit>` accounts, the most this installation allows. Unlink an account to add another."; `telegram-linking-not-set-up` as in SCR-10 `start-refused`; `telegram-account-already-linked` (Sign in again on an account that is no longer Session lost) "This account is already connected." + background refetch; `404 not-found` → background refetch, the row disappears with no message (AC-03) | — |
+| start-refused | `startMyLinkingAttempt` refused before the wizard (Flow 4, AC-115, AC-119) | `Toast` error, per code: `linked-account-limit-reached` "You've linked `<limit>` accounts, the most this installation allows. Unlink an account to add another."; `telegram-linking-not-set-up` as in SCR-10 `start-refused`; `telegram-unavailable` as in SCR-10 `start-refused`; `telegram-account-already-linked` (Sign in again on an account that is no longer Session lost) "This account is already connected." + background refetch; `404 not-found` → background refetch, the row disappears with no message (AC-03) | — |
 | resumed | `200` / `201` | → SCR-02 | — |
 | unlink-confirm | "Unlink" on a row (AC-111) | `ConfirmDialog tone="danger"` (the ordinary C-33 variant, spec §1 deviation): title "Unlink `<displayName>`?"; consequence "teleX will sign out of this Telegram account and delete its session and the `<chatsSynced>` chats it synced. To use it in teleX again, you'll link it from the start."; confirm "Unlink account"; cancel "Keep account" | W-60c |
 | unlinking | Confirmed; `unlinkMyLinkedAccount` (up to 10 s waiting for Telegram, Critical flow 2) | Busy confirm `Button` (`busyLabel` "Unlinking"); cancel disabled | — |
@@ -252,13 +248,13 @@ The page lists the Owner's Linked Accounts, oldest first (`listMyLinkedAccounts`
 | unlink-gone | `404 not-found` on unlink: another tab unlinked it, or it was never the caller's (AC-03) | Dialog closes and the list refetches; the row is gone; no message | — |
 | linked | Arrived from SCR-02 `success` (origin `accounts`) | `default` + the SCR-02 success `Toast` | — |
 | live | `linked-accounts` hint (Flows 9, 11, 12) | Background refetch; a row's badge, sync line and actions change in place; a row unlinked in another tab disappears | — |
-| banner | Any account `session_lost` | `StatusBanner` in the `PageFrame` slot | W-60a |
+| banner | Any account `session_lost` | `StatusBanner` from the shell | W-60a |
 | error | `401` → SCR-01 (path remembered) / SCR-92; `5xx`, `403` or no answer within 10 s → SCR-93 | Shared failure routing | — |
 
 ```text
 W-60a  SCR-60 default (desktop; on phone the row actions drop below the text, full width)
 +--------------------------------------------------------------------+
-| teleX     (tg) Accounts   (user) Profile and security   (logout) Sign out |
+| teleX     Inbox  Chats  Assistants  Tasks  Settings   (user) (logout) |
 +--------------------------------------------------------------------+
 | (!) Test User's Telegram is disconnected. ...        [Sign in again] |  StatusBanner
 +--------------------------------------------------------------------+
@@ -313,7 +309,7 @@ W-60c  unlink-confirm (ConfirmDialog, shadow-lg; full-width sheet on phone)
 | `LinkedAccountSummary` | One Linked Account's name, masked phone, state `Badge` (connected / reconnecting / session lost, icon + words) and chat-sync line (Tabler `progress` + count, or the chat count once synced). The same state-to-presentation mapping is needed in two places: `variant="line"` (SCR-10, compact, the whole row links to SCR-60, no actions) and `variant="row"` (SCR-60, with an actions slot). No inventory component shows an account; `AccountSwitcher` (C-02) chooses one and is hidden with a single account. The badge region is `aria-live="polite"`, so live state changes are announced. | registered in `docs/design-system.md` |
 | `StatusBanner` (C-04) — **ported reference**, not new | Ported from `docs/docs/design-system/components/StatusBanner/README.md`: one condition, or the most severe plus "+N more"; one action; no close button while its cause holds; icon + words; `role="status"`. E02 ships the mechanism with one condition (account disconnected), and E06 adds "offline" and moves the slot into `AppShell`. Already listed in the inventory as "not yet ported", so `implement` updates its row to the built file. | registered in `docs/design-system.md` |
 | `CodeInput` — `length` prop (extension) | The built `CodeInput` is fixed at 6 digits for the E01 Sign-in Code. A Telegram login code has the length Telegram reports (`codeLength`, usually 5). Adds `length?: number` (default 6, so E01 is unchanged) and a `label` prop, because the built label text is the E01 "Sign-in code" string. The reference C-32 states "resend timer" and "Telegram rate limit" aren't used: Telegram's resend timing isn't in the contract, and a rate limit ends the attempt (`wait`). | registered in `docs/design-system.md` |
-| `PageFrame` — "Accounts" button + banner slot (extension) | The temporary E01 frame has no way to reach SCR-60 and no place for C-04 (user decision 2026-10-03). E06's `AppShell` takes both over and deletes `PageFrame`. | registered in `docs/design-system.md` |
+| ~~`PageFrame` — "Accounts" button + banner slot (extension)~~ | **Deviation (T43, T45):** not built. E06's `AppShell` landed first, so Accounts sits under Settings and the banner is the shell's `account-disconnected` condition (app-shell ADR-0006); `PageFrame` is deleted. | n/a |
 | `Icon` — `unlink` (extension) | The "Unlink" action needs `IconUnlink` from `@tabler/icons-react`; it's added to the Icon subset. | registered in `docs/design-system.md` |
 
 ## Noted gaps
@@ -322,4 +318,4 @@ The pipeline should close these. Each one has a default that `implement` follows
 
 1. **The two api sequence gaps** (`linking-step-mismatch`, `telegram-unavailable`) are drawn here as `step-mismatch` and `telegram-unavailable` on SCR-02. Both branches are now in sad §6 Flows 5–7 (T33).
 2. **Toast vs StatusBanner on SCR-02 for `telegram-unavailable`.** It's treated as a failed action (error Toast), not a system-wide condition, because the account isn't linked yet and nothing else is affected. If E06's "offline" banner lands first, a browser that is offline shows that banner instead.
-3. **Where the "Accounts" entry sits once E06 lands** (under Settings, per ux-flows) is for `/sdd:screens app-shell`. Whichever of E02 and E06 lands second moves it (sad §11 "E06 designed in parallel").
+3. **Where the "Accounts" entry sits once E06 lands.** Closed: E06 landed first, and Accounts is a Settings registry entry (`/accounts`, owned by the Settings section) with no header button.

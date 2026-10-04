@@ -841,12 +841,12 @@ sequenceDiagram
 
 **Monitoring:**
 - Metrics (Micrometer, with no phone numbers, names or Telegram ids in tags):
-  - `telex.telegram.sessions.active{state=ready|connecting|closed}`;
+  - `telex.telegram.sessions.active{state=connected|reconnecting|session_lost}`, the count of `linked_account` rows in each state (`LifecycleMetrics`);
   - `telex.linking.attempts{outcome=linked|signed_in_again|cancelled|expired|refused_other_owner|refused_already_linked|refused_limit|refused_mismatch|refused_phone|flood_wait|failed}` (`refused_phone` is an attempt ended by an unregistered or banned number or a client that could not be opened; `failed` is an attempt ended by an error after Telegram authorized it);
   - `telex.linking.step.duration{step=phone|code|password}` (the p95 ≤ 3 s target);
   - `telex.linked_accounts.reconnect.duration`;
   - `telex.unlink{signout=confirmed|unconfirmed}`;
-  - `telex.chat_sync.duration`, recorded once per account, when its first chat-list load completes.
+  - `telex.chat_sync.duration`, recorded once per completed chat-list load: the first link, and each Sign in again (which clears `chat_sync_completed_at`, so the next completion counts as a first one).
 - KPIs (spec §7): link completion and time to link come from the `telex.linking.*` metrics, restart survival from `telex.linked_accounts.reconnect.*`, and unlink completeness from the recorded dump. There is no analytics pipeline.
 - Health: `/actuator/health` stays green when Telegram is unreachable, because a Telegram outage is an account state, not an app failure. Incomplete `AccountUnlinked` publications are visible in `event_publication`.
 - Alerts and tracing: none in E02 (no SLO). OpenTelemetry arrives with the agent epics.
