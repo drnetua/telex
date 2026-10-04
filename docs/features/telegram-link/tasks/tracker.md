@@ -79,7 +79,7 @@
 | T72 | Correct the AC-121 citations and the interrupted-unlink claims after the seventh review | docs | Anton Husiev | XS | T70, T71 | done |
 | T73 | Sign in again refreshes the account's masked phone along with its name | app | Anton Husiev | XS | — | done |
 | T74 | An unlink deletes the account whatever way an interrupt arrives, and closes and destroys before handing it back | app | Anton Husiev | XS | — | done |
-| T75 | The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows | ui | Anton Husiev | XS | — | todo |
+| T75 | The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows | ui | Anton Husiev | XS | — | done |
 | T76 | Sync the data model, test plan and tracker with the eighth-review fixes | docs | Anton Husiev | XS | T73, T74, T75 | todo |
 
 **Total:** 76 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews.

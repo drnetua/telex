@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (eighth pass) — findings W14, S2"
-status: "todo"
+status: "done"
 ---
 
 # T75 — The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows

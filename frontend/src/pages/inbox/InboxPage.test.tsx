@@ -133,6 +133,8 @@ describe("SCR-10 Inbox", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
+    // the screen handles this 503: it is not a connection failure, so the shell shows no banner for it
+    expect(screen.queryByText("teleX isn't responding.")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 

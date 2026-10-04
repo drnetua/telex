@@ -76,7 +76,18 @@ const PASSWORD = "POST /api/v1/linking-attempt/password";
 
 const problem = (status: number, code: string) => json(status, { code });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+// The wait card ticks on a 1 s interval against the clock: both are faked, so a slow run can't tick before the test acts.
+function fakeWaitClock() {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+  return new Date(Date.now() + 1500).toISOString();
+}
+
+const passWait = () => act(() => vi.advanceTimersByTime(2000));
 
 describe("SCR-02 phone step", () => {
   it("renders the step the server answers, with tel semantics (AC-01)", async () => {
@@ -823,7 +834,7 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
   });
 
   it("does not turn the focused Back into Start again at 0:00 on the wait card (AC-02)", async () => {
-    const retryAt = new Date(Date.now() + 1500).toISOString();
+    const retryAt = fakeWaitClock();
     mockApi({
       [A]: [json(200, attempt())],
       [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
@@ -833,13 +844,14 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     await screen.findByRole("heading", { name: "Too many attempts" });
     const back = screen.getByRole("button", { name: "Back" });
     back.focus();
-    const again = await screen.findByRole("button", { name: "Start again" }, { timeout: 4000 });
+    passWait();
+    const again = screen.getByRole("button", { name: "Start again" });
     expect(again).not.toHaveFocus();
     expect(screen.getByRole("heading", { name: "Too many attempts" })).toHaveFocus();
   });
 
   it("leaves focus alone at 0:00 when Back was not focused (AC-02)", async () => {
-    const retryAt = new Date(Date.now() + 1500).toISOString();
+    const retryAt = fakeWaitClock();
     mockApi({
       [A]: [json(200, attempt())],
       [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
@@ -848,7 +860,8 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     await submitPhone();
     const heading = await screen.findByRole("heading", { name: "Too many attempts" });
     (document.activeElement as HTMLElement | null)?.blur();
-    await screen.findByRole("button", { name: "Start again" }, { timeout: 4000 });
+    passWait();
+    expect(screen.getByRole("button", { name: "Start again" })).toBeInTheDocument();
     expect(heading).not.toHaveFocus();
   });
 
