@@ -1128,6 +1128,116 @@
         "docs/design-system.md"
       ],
       "file": "docs/features/telegram-link/tasks/t50-adr-and-docs-sync.md"
+    },
+    {
+      "id": "T51",
+      "title": "teleX's own sign-out on unlink is not a Session lost, and is confirmed only when Telegram finishes it",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111",
+        "AC-122"
+      ],
+      "dod": "Unlinking never flips the account to Session lost or closes the client mid-logout; signOutConfirmed is true only when TDLib finished the logout; the logOut tests have no sleeps.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t51-own-logout-is-not-session-lost.md"
+    },
+    {
+      "id": "T52",
+      "title": "An unlink during boot reopen leaves no live session, and the real resendCode reports phone refusals",
+      "layer": "infra",
+      "deps": [
+        "T51"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113",
+        "AC-107"
+      ],
+      "dod": "No TDLib client keeps running for an account unlinked while boot was reopening it; real resend refusals for invalid/banned numbers end the attempt as AC-107 says; port KDoc lists the outcomes.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/BootReconnect.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t52-unlink-during-reopen-and-resend-refusals.md"
+    },
+    {
+      "id": "T53",
+      "title": "Banner Toast keeps its node, error Toasts are not nested live regions, a pulse 403 in the shell routes again, pulse tests cover 503/504",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117",
+        "AC-111",
+        "AC-114",
+        "AC-176"
+      ],
+      "dod": "A banner refusal Toast is announced once; an error Toast has no live-region ancestor besides its own; inside the shell a pulse 403 goes to SCR-93 as app-shell screens.md says; failed-pulse tests cover 0/502/503/504 and clean up in afterEach.",
+      "files_hint": [
+        "frontend/src/shell/StatusBanner/StatusBanner.tsx",
+        "frontend/src/shell/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/components/Toast/Toast.tsx",
+        "frontend/src/components/Toast/Toast.test.tsx",
+        "frontend/src/shell/pulse.ts",
+        "frontend/src/shell/pulse.test.tsx",
+        "frontend/src/app/layouts.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t53-banner-toast-and-pulse-polish.md"
+    },
+    {
+      "id": "T54",
+      "title": "SCR-02 moves focus to the outcome card, Playwright covers the refusal-ended and load-failed states, and a 401 mid-wizard reaches SCR-92",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-107",
+        "AC-109",
+        "AC-110"
+      ],
+      "dod": "A keyboard/screen-reader user hears the outcome card that replaces a step; the ended card naming the refusal runs in Playwright at both widths; a Vitest case drives SCR-02 to the session-ended screen on 401.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "e2e/tests/telegram-link.spec.ts",
+        "e2e/support/telegram.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t54-scr02-focus-e2e-and-ac110.md"
+    },
+    {
+      "id": "T55",
+      "title": "Sync sad §7 tags, ux-flows, the sad coverage row and screens.md with the code, and record the third-review changes",
+      "layer": "docs",
+      "deps": [
+        "T51",
+        "T52",
+        "T53",
+        "T54"
+      ],
+      "acs": [],
+      "dod": "sad, ux-flows, screens.md, the contract and spec §8 describe the code as built after T51–T54.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/ux-flows.md",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/spec.md",
+        "docs/features/app-shell/screens.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t55-docs-sync-r3.md"
     }
   ]
 }
