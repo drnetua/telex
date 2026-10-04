@@ -67,4 +67,11 @@ describe("Toast announcement (AC-111, AC-114)", () => {
     await waitFor(() => expect(region).toHaveTextContent("Theme saved"));
     expect(region?.isConnected).toBe(true);
   });
+
+  it("gives an info Toast no live region of its own inside the persistent polite one", () => {
+    render(<Toast message="Fine" onDismiss={() => undefined} />);
+    const frame = screen.getByText("Fine").closest(".toast");
+    expect(frame).not.toHaveAttribute("aria-live");
+    expect(frame).not.toHaveAttribute("role");
+  });
 });

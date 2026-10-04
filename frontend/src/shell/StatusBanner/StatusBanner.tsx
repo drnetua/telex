@@ -87,7 +87,7 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
   const [busy, setBusy] = useState(false);
   const [stillDown, setStillDown] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const lives = useConditionLives();
+  const lives = useConditionLives(conditions);
 
   if (link === "online" && stillDown) setStillDown(false);
 

@@ -13,8 +13,8 @@ import { PULSE_KEY } from "./pulse";
  * AC-122: what the shell's `account-disconnected` condition says and offers. One Session lost account is named and
  * signed in again against its target (AC-117); several open Accounts. Until the list arrives the catalog default stands.
  */
-export function useAccountDisconnected(): ConditionLive {
-  const accounts = useLinkedAccounts();
+export function useAccountDisconnected(reported: boolean): ConditionLive {
+  const accounts = useLinkedAccounts({ enabled: reported });
   const navigate = useNavigate();
   const client = useQueryClient();
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -41,7 +41,8 @@ export function useAccountDisconnected(): ConditionLive {
   // Only while the list is unknown does the catalog default stand; a loaded list outranks the pulse.
   if (!Array.isArray(accounts.data)) return { notice };
   const lost = accounts.data.filter((a) => a.state === "session_lost");
-  if (lost.length === 0) return { inactive: true, notice };
+  // A list that is being refetched may predate the pulse: do not trust "all connected" until it answers.
+  if (lost.length === 0) return accounts.isFetching ? { notice } : { inactive: true, notice };
   if (lost.length > 1) {
     return {
       message: t.several(lost.length),

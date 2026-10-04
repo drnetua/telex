@@ -76,11 +76,8 @@ export function Toast({
   }, [message, onDismiss, durationMs, sticky]);
   if (!container) return null;
   return createPortal(
-    <div
-      className="toast show"
-      role={error ? "alert" : "status"}
-      aria-live={error ? "assertive" : "polite"}
-    >
+    // An info Toast sits inside the persistent polite region, which announces it; its own live attributes would nest.
+    <div className="toast show" {...(error ? { role: "alert", "aria-live": "assertive" } : {})}>
       <div className="toast-body d-flex align-items-center gap-2">
         <Icon name={error ? "alert-circle" : "info-circle"} size={18} />
         {message}

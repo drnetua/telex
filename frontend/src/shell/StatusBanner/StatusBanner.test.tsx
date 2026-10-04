@@ -53,9 +53,9 @@ function stubAccounts(accounts: unknown[], start?: () => Response) {
 const client = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false, networkMode: "always" } } });
 
-function show(conditions: string[] = []) {
+function show(conditions: string[] = [], queryClient: QueryClient = client()) {
   return render(
-    <QueryClientProvider client={client()}>
+    <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/x"]}>
         <StatusBanner conditions={conditions} />
         <Routes>
@@ -282,5 +282,38 @@ describe("StatusBanner", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     show(["foo-bar"]);
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("AC-176: does not fetch the Linked Accounts list while the pulse reports no account-disconnected", async () => {
+    stubAccounts([account("a1", "Anna", "session_lost")]);
+    show(["offline-ish-unknown"]);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled();
+  });
+
+  it("AC-122: a stale all-connected list is refetched when the pulse starts reporting the condition", async () => {
+    stubAccounts([account("a1", "Anna", "session_lost")]);
+    const c = client();
+    c.setQueryData(["linked-accounts"], [account("a1", "Anna", "connected")]);
+    const view = show([], c);
+    view.rerender(
+      <QueryClientProvider client={c}>
+        <MemoryRouter initialEntries={["/x"]}>
+          <StatusBanner conditions={["account-disconnected"]} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/Anna's Telegram is disconnected/)).toBeInTheDocument();
+  });
+
+  it("AC-117: a started Sign in again invalidates the pulse", async () => {
+    stubAccounts([account("a1", "Anna", "session_lost")]);
+    const c = client();
+    const spy = vi.spyOn(c, "invalidateQueries");
+    show(["account-disconnected"], c);
+    await userEvent.click(await screen.findByRole("button", { name: "Sign in again" }));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ["pulse"] }));
   });
 });

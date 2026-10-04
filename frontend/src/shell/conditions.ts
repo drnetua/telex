@@ -81,8 +81,9 @@ const catalog: readonly Entry[] = [
  * Live data per condition code. The banner calls this once, so a condition's mutation state and Toast survive the
  * line being outranked or dropped mid-action (ADR-0006 amendment). A later epic adds its hook here.
  */
-export function useConditionLives(): ReadonlyMap<string, ConditionLive> {
-  const accountDisconnected = useAccountDisconnected();
+export function useConditionLives(codes: readonly string[]): ReadonlyMap<string, ConditionLive> {
+  // The list is fetched only while the pulse reports the condition, so other screens never depend on it.
+  const accountDisconnected = useAccountDisconnected(codes.includes("account-disconnected"));
   return new Map([["account-disconnected", accountDisconnected]]);
 }
 

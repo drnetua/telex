@@ -48,10 +48,11 @@ export function unlinkMyLinkedAccount(id: string): Promise<UnlinkResult> {
   });
 }
 
-export function useLinkedAccounts() {
+export function useLinkedAccounts({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: linkedAccountsKey,
     queryFn: () => listMyLinkedAccounts(isBackground()),
+    enabled,
   });
 }
 
