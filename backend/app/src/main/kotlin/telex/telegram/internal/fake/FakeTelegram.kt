@@ -225,6 +225,15 @@ class FakeTelegram(
     /** Test hook: true while a client is open for [id]. */
     fun isOpen(id: TelegramSessionId) = sessions.containsKey(id)
 
+    /** Test hook: Telegram pushes [chats] for [id], only while that session is open and authorized. */
+    fun pushChats(
+        id: TelegramSessionId,
+        chats: List<ChatSnapshot>,
+    ) {
+        if (sessions[id]?.authorized != true) return
+        events.publishEvent(TelegramChatsChanged(id, chats, emptyList(), chats.size, true, null))
+    }
+
     /** Test hook: Telegram becomes unreachable. Emits Connecting, never Closed (AC-122). */
     fun dropConnectivity(id: TelegramSessionId) {
         val session = session(id)

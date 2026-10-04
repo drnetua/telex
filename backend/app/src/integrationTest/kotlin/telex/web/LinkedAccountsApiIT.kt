@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -29,7 +28,6 @@ import telex.shared.Uuid7
 import telex.telegram.ChatSnapshot
 import telex.telegram.ChatType
 import telex.telegram.SignInOutcome
-import telex.telegram.TelegramChatsChanged
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
 import telex.telegram.internal.fake.FakeTelegram
@@ -67,8 +65,6 @@ class LinkedAccountsApiIT(
     @Autowired lateinit var ownerKeys: OwnerKeys
 
     @Autowired lateinit var rows: LinkedAccountRows
-
-    @Autowired lateinit var events: ApplicationEventPublisher
 
     private val fake get() = telegram as FakeTelegram
     private val http = HttpClient.newHttpClient()
@@ -290,7 +286,7 @@ class LinkedAccountsApiIT(
         assertThat(telegram.authorized(session)).isTrue()
         assertThat(fake.wasLoggedOut(session)).isFalse()
         val chat = ChatSnapshot(4_242L, ChatType.Supergroup, "After sign-out", listOf(1), false, 0, 1L)
-        events.publishEvent(TelegramChatsChanged(session, listOf(chat), emptyList(), 1, true, null))
+        fake.pushChats(session, listOf(chat))
         assertThat(
             jdbc.queryForObject(
                 "SELECT count(*) FROM channel WHERE linked_account_id = ? AND telegram_chat_id = 4242",

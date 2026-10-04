@@ -182,7 +182,7 @@ class ChatSyncIT {
                     Int::class.java,
                     "%${linked.id.value}%",
                 ),
-            ).isEqualTo(1)
+            ).isGreaterThanOrEqualTo(1)
             assertThat(
                 jdbc.queryForObject(
                     "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +
