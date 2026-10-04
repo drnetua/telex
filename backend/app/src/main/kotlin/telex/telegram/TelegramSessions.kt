@@ -78,10 +78,14 @@ interface TelegramSessions {
         digits: String,
     ): SignInOutcome
 
+    /** Returns [SignInOutcome.CodeSent], or Telegram's refusal of the phone it was sent to on resend:
+     *  [SignInOutcome.PhoneInvalid], [SignInOutcome.PhoneUnregistered], [SignInOutcome.PhoneBanned] or
+     *  [SignInOutcome.WaitRequired] (AC-107). */
     fun resendCode(id: TelegramSessionId): SignInOutcome
 
     /** Returns [SignInOutcome.PasswordNeeded], [SignInOutcome.Authorized], [SignInOutcome.CodeWrong],
-     *  [SignInOutcome.CodeExpired] or [SignInOutcome.WaitRequired]. */
+     *  [SignInOutcome.CodeExpired], [SignInOutcome.PhoneUnregistered] (Telegram asks to register the number) or
+     *  [SignInOutcome.WaitRequired]. */
     fun checkCode(
         id: TelegramSessionId,
         code: String,

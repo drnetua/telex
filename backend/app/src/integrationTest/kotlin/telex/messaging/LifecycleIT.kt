@@ -3,14 +3,17 @@ package telex.messaging
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.event.ApplicationEvents
 import org.springframework.test.context.event.RecordApplicationEvents
+import org.springframework.test.util.AopTestUtils
 import org.springframework.test.util.ReflectionTestUtils
 import telex.TestcontainersConfiguration
 import telex.identity.OwnerId
@@ -30,7 +33,7 @@ import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** AC-36, AC-118, AC-117, AC-122: accounts come back after a restart and follow Telegram's session state. */
+/** AC-36, AC-118, AC-117, AC-122, AC-111: accounts come back after a restart and follow Telegram's session state. */
 @SpringBootTest(properties = ["telex.telegram.adapter=fake"])
 @Import(TestcontainersConfiguration::class)
 @RecordApplicationEvents
@@ -41,7 +44,9 @@ class LifecycleIT {
 
     @Autowired lateinit var ownerKeys: OwnerKeys
 
-    @Autowired lateinit var rows: LinkedAccountRows
+    @MockitoSpyBean lateinit var rows: LinkedAccountRows
+
+    @Autowired lateinit var accounts: LinkedAccounts
 
     @Autowired lateinit var jdbc: JdbcTemplate
 
@@ -52,6 +57,7 @@ class LifecycleIT {
 
     @BeforeEach
     fun clean() {
+        Mockito.reset(AopTestUtils.getUltimateTargetObject<LinkedAccountRows>(rows))
         jdbc.execute("DELETE FROM channel")
         jdbc.execute("DELETE FROM linked_account")
     }
@@ -176,6 +182,23 @@ class LifecycleIT {
 
         assertThat(changes()).isEmpty()
         assertThat(state(account)).isEqualTo("connected")
+    }
+
+    @Test
+    fun `AC-111 an account unlinked while boot reopens it keeps no open session and no directory`() {
+        val account = connected(owner())
+        // The unlink lands after the reopen read the key but before the reopened session is registered.
+        Mockito
+            .doAnswer { call ->
+                call.callRealMethod().also { accounts.unlink(account.owner, account.id) }
+            }.`when`(rows)
+            .sealedKey(account.id)
+
+        restart()
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM linked_account", Int::class.java)).isZero()
+        assertThat(fake.isOpen(account.session)).isFalse()
+        assertThat(Files.exists(sessionsRoot.resolve(account.session.value.toString()))).isFalse()
     }
 
     @Test

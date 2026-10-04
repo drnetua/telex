@@ -84,7 +84,7 @@ class TdlightTelegramSessions(
     override fun resendCode(id: TelegramSessionId): SignInOutcome {
         val session = session(id)
         return when (val result = step(session, TdlibRequest.ResendCode)) {
-            is StepResult.Error -> mapFlood(result.failure) ?: throw TelegramUnavailable()
+            is StepResult.Error -> mapPhoneError(result.failure)
             is StepResult.State -> afterState(session, result.update)
         }
     }

@@ -10,6 +10,7 @@ import telex.messaging.LinkedAccountState
 import telex.messaging.internal.account.LinkedAccount
 import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.keyAad
+import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
 import telex.telegram.TelegramUnavailable
 import java.util.concurrent.CompletableFuture
@@ -62,10 +63,29 @@ class BootReconnect(
             } finally {
                 key.fill(0)
             }
+            dropIfUnlinked(account, session)
         } catch (e: Exception) {
             // Not a Telegram confirmation, so never Session lost (AC-122); only a failure to reach Telegram is shown.
             log.warn("Could not reopen Linked Account {}", account.id.value, e)
             if (e is TelegramUnavailable) states.transition(session, LinkedAccountState.RECONNECTING)
+        }
+    }
+
+    /**
+     * An unlink that ran while the session was still being reopened found no open session, so it could neither sign
+     * it out nor close it, and its directory deletion raced the reopen (AC-111, AC-113). The session is registered
+     * now: if no account holds it any more, it is closed and destroyed here, so no client runs for a deleted account.
+     */
+    private fun dropIfUnlinked(
+        account: LinkedAccount,
+        session: TelegramSessionId,
+    ) {
+        if (rows.findBySession(session) != null) return
+        log.info("Linked Account {} was unlinked while it reopened; closing its session", account.id.value)
+        try {
+            telegram.close(session)
+        } finally {
+            telegram.destroy(session)
         }
     }
 
