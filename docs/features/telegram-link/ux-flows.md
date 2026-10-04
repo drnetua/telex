@@ -44,6 +44,7 @@ flowchart TD
     PH -->|submit number| NUM{"Number usable?"}
     NUM -->|invalid, no Telegram account or banned| PHE["SCR-02: says which, stays on phone step (AC-107)"]
     PHE -->|fix number| PH
+    PHE -->|no Telegram account and no fresh session could be opened| REFE["SCR-02: attempt ended, card shows the refusal text, Start again (AC-107)"]
     NUM -->|Telegram wait still running| WAIT["SCR-02: try again after time, countdown (AC-02)"]
     NUM -->|ok| TG(["Telegram app: code arrives"])
     TG --> CODE["SCR-02 step: code"]
@@ -51,6 +52,12 @@ flowchart TD
     CK -->|wrong or expired| CODEE["SCR-02: wrong or expired, try again or new code (AC-02)"]
     CODEE -->|retry or new code| CODE
     CK -->|too many attempts| WAIT
+    CK -->|Telegram refuses the number: invalid, no account or banned| REFE
+    CODE -->|Send a new code| RS{"Number still accepted?"}
+    RS -->|yes| CODE
+    RS -->|invalid, no account or banned| REFE
+    REFE -->|Start again| PH
+    REFE -->|Back| IN
     WAIT -->|attempt ended| IN
     CK -->|ok, no 2-step verification| WHO{"Whose Telegram account?"}
     CK -->|ok, 2-step verification on| PW["SCR-02 step: password"]
@@ -76,7 +83,7 @@ flowchart TD
     CODE -->|reload or other tab| CODE
 ```
 
-The Owner chooses "Connect Telegram" on the empty Inbox. If the Operator hasn't set up linking, the Inbox says so and the wizard doesn't open (AC-119). Otherwise SCR-02 asks for the phone number. If the number is invalid, has no Telegram account or is banned, the wizard says which and stays on that step. If Telegram's wait from earlier attempts on this number is still running, it shows when to try again. Next, the code arrives in the Telegram app and the Owner types it. A wrong or expired code can be retried or a new one requested. When Telegram limits the attempts, the attempt ends with a "try again after" countdown. With two-step verification on, a password step follows: a wrong password shows the hint and explains that a reset happens only in the Telegram app. Once the sign-in succeeds, teleX checks whose Telegram account it is. Another Owner's account is refused with the one-owner rule, and the extra sign-in is ended. If the account is already this Owner's and connected, the wizard says "already linked" and ends the sign-in. If it is this Owner's and has lost its session, the same Linked Account comes back. A new account is checked against the limit again: if the last place was taken meanwhile, the sign-in is ended. Otherwise the Owner lands on the Inbox, where the "Connect Telegram" step has become the account's line with "Connected" and sync progress. Cancel, or 15 minutes without a step, discards the attempt. A reload or another tab continues the open attempt at its step (shown on the code step, where it happens most).
+The Owner chooses "Connect Telegram" on the empty Inbox. If the Operator hasn't set up linking, the Inbox says so and the wizard doesn't open (AC-119). Otherwise SCR-02 asks for the phone number. If the number is invalid, has no Telegram account or is banned, the wizard says which and stays on that step; the exception is a number with no Telegram account when no fresh Telegram session can be opened, which ends the attempt, and the ended card shows that same text with "Start again". A refusal of the number that Telegram gives later, when the code is checked or a new code is asked for, ends the attempt the same way, because the Telegram session behind it is closed (AC-107). If Telegram's wait from earlier attempts on this number is still running, it shows when to try again. Next, the code arrives in the Telegram app and the Owner types it. A wrong or expired code can be retried or a new one requested. When Telegram limits the attempts, the attempt ends with a "try again after" countdown. With two-step verification on, a password step follows: a wrong password shows the hint and explains that a reset happens only in the Telegram app. Once the sign-in succeeds, teleX checks whose Telegram account it is. Another Owner's account is refused with the one-owner rule, and the extra sign-in is ended. If the account is already this Owner's and connected, the wizard says "already linked" and ends the sign-in. If it is this Owner's and has lost its session, the same Linked Account comes back. A new account is checked against the limit again: if the last place was taken meanwhile, the sign-in is ended. Otherwise the Owner lands on the Inbox, where the "Connect Telegram" step has become the account's line with "Connected" and sync progress. Cancel, or 15 minutes without a step, discards the attempt. A reload or another tab continues the open attempt at its step (shown on the code step, where it happens most).
 
 ### Flow: US-03 — Unlink an account for good
 
@@ -130,9 +137,12 @@ flowchart TD
     WIZ -->|same Telegram account| DONE
     WIZ -->|different Telegram account| REF["SCR-02: refused, sign-in ended, link it as a new account (AC-117)"]
     REF --> LOST
+    WIZ -->|account unlinked meanwhile| GONE["SCR-02: attempt ended, This linking has ended (AC-117)"]
+    GONE -->|Start again| PLAIN["SCR-02 wizard as a plain add of a new account"]
+    GONE -->|Back| IN["SCR-10 or SCR-60"]
 ```
 
-Right after linking, the account is already "Connected" and shows its sync progress as chats synced out of the total (archived chats included). The Owner can leave and come back without stopping the sync, and at the end the account shows its number of chats. Later changes in Telegram (a joined, left or renamed chat) update that number within a minute. If Telegram can't be reached, the account shows "Reconnecting" and recovers by itself, with no banner and nothing for the Owner to do. When Telegram confirms the session has ended, the account shows "Session lost" with "Sign in again", and every signed-in screen shows the "account disconnected" Status Banner. "Sign in again", from the page or from the banner, opens the wizard for that account. The same Telegram account brings the account back with everything attached, and the banner goes away. A different account is refused, its sign-in is ended, and the Owner is told to link it as a new account (or sees the one-owner rule if it belongs to someone else).
+Right after linking, the account is already "Connected" and shows its sync progress as chats synced out of the total (archived chats included). The Owner can leave and come back without stopping the sync, and at the end the account shows its number of chats. Later changes in Telegram (a joined, left or renamed chat) update that number within a minute. If Telegram can't be reached, the account shows "Reconnecting" and recovers by itself, with no banner and nothing for the Owner to do. When Telegram confirms the session has ended, the account shows "Session lost" with "Sign in again", and every signed-in screen shows the "account disconnected" Status Banner. "Sign in again", from the page or from the banner, opens the wizard for that account. The same Telegram account brings the account back with everything attached, and the banner goes away. A different account is refused, its sign-in is ended, and the Owner is told to link it as a new account (or sees the one-owner rule if it belongs to someone else). If the account was unlinked while the wizard ran (for example in another tab), the sign-in is ended and the card says "This linking has ended"; "Start again" then begins a plain add of a new account, never a refusal for a mismatch.
 
 ### Flow: US-52 — Stay connected across restarts
 
@@ -168,11 +178,11 @@ The Operator has no screen in E02: they follow the README step that gives the in
 | AC-01 | Flow US-02 → OK | Password step only on the 2-step branch |
 | AC-02 | Flow US-02 → CODEE, WAIT | WAIT ends the attempt; the same number before the time shows the remaining wait |
 | AC-106 | Flow US-02 → PWE | |
-| AC-107 | Flow US-02 → PHE | |
+| AC-107 | Flow US-02 → PHE, REFE | REFE is reached from the phone step (no fresh session), from the code step and from Send a new code; the card shows the refusal's own text |
 | AC-04 | Flow US-02 → OTH | Also reachable from US-51 REF when the other account is another Owner's |
 | AC-108 | Flow US-02 → DUP, REST | |
 | AC-109 | Flow US-02 → CAN, reload loop on CODE | The 15-min inactivity applies at every step; drawn once |
-| AC-110 | N/A: no screen change | The Linked Account simply stays on SCR-60 and SCR-10 after sign-out and the next sign-in. A Sign-in Session ending mid-wizard lands on the E01 "Session ended" page (SCR-92) and the attempt is discarded; tested as a Vitest case (`ConnectTelegramPage.test.tsx`, "SCR-02 session end") that drives SCR-02 to SCR-92 on a 401 `session-ended` |
+| AC-110 | N/A: no screen change | The Linked Account simply stays on SCR-60 and SCR-10 after sign-out and the next sign-in. A Sign-in Session ending mid-wizard lands on the E01 "Session ended" page (SCR-92) and the attempt is discarded; the UI half is the Vitest cases in `ConnectTelegramPage.test.tsx` ("SCR-02 session end (AC-110)"), which drive SCR-02 to SCR-92 on a 401 `session-ended` at the attempt load and at a step submit; the backend halves are `LinkingAttemptIT` ("a Sign-in Session that ends mid-wizard discards the attempt…") and `LinkedAccountsApiIT` ("the accounts are still listed after sign-out and a new sign-in"). There is no e2e for it |
 | AC-03 | Flow US-03 → NF; Flow US-53 → PRIV | |
 | AC-111 | Flow US-03 → DLG, DEL, LAST | |
 | AC-112 | Flow US-03 → DEL | The announcement to other parts of teleX is not a UI step; the restart half is a `sequences` concern |
@@ -180,7 +190,7 @@ The Operator has no screen in E02: they follow the README step that gives the in
 | AC-114 | Flow US-50 → BOTH | |
 | AC-115 | Flow US-50 → LIMR, LIMR2; Flow US-02 → LIMR | Checked at the start and at the end |
 | AC-116 | Flow US-51 → ACC, DONE; Flow US-52 → RES | |
-| AC-117 | Flow US-51 → LOST, WIZ, REF | |
+| AC-117 | Flow US-51 → LOST, WIZ, REF, GONE | GONE is the race where the account was unlinked while the wizard ran; Start again is a plain add |
 | AC-121 | Flow US-51 → UPD | |
 | AC-122 | Flow US-51 → REC, BAN | |
 | AC-36 | Flow US-52 → CON | |

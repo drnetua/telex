@@ -303,11 +303,12 @@ sequenceDiagram
     SPA->>Web: unlink account
     Web->>Msg: unlink my account A
     Msg->>Tg: log out session, wait up to 10 s
+    Note over Tg: teleX's own log out is marked before it is sent, so the logging-out and closed that TDLib reports for it are not a lost session. No state is announced and the account never shows Session lost on its way out
     alt Telegram confirms the sign-out
         TG-->>Tg: session terminated
-        Tg-->>Msg: confirmed
+        Tg-->>Msg: confirmed, only because TDLib itself closed the session through that log out
     else unreachable, timed out or session already lost
-        Tg-->>Msg: not confirmed
+        Tg-->>Msg: not confirmed, also when teleX closes or releases the session first
     end
     Msg->>Msg: one transaction deletes the account, its sealed key and its chat list, records AccountUnlinked
     Msg->>Tg: close and destroy the session directory
@@ -347,6 +348,7 @@ sequenceDiagram
         end
         Msg-->>Web: LinkedAccountStateChanged
     end
+    Note over Msg,Tg: an unlink can arrive while an account is still reopening and find no open session to log out. When the reopen returns, Msg reads the account again, and if no Linked Account holds that session any more it closes and destroys it, so no client keeps running for a deleted account
 ```
 
 The flows below were added by `/sdd:sequences`. They use the generic participants: `<user>` is the Owner, `<ui>` is the SPA, `<service>` is the teleX app (the `messaging`, `telegram`, `identity` and `web` modules together), `<data-store>` is the database, `<external-system>` is Telegram and `<message-bus>` is the event publication registry. The linking attempt is held in memory and is never persisted (§8).
@@ -464,6 +466,7 @@ sequenceDiagram
             X-->>S: new code sent
             S-->>U: attempt at the code step
         end
+        Note over S,X: the real adapter reads the resend answer the way it reads the phone step. An invalid, unregistered or banned number is a phone refusal, a flood wait is wait required, and any other Telegram error is telegram unavailable
     end
     O->>U: type the code
     U->>S: submit code
@@ -813,7 +816,7 @@ sequenceDiagram
 | AC-01 | flow 1 (2FA path, new-account branch), flow 6 (no-2FA path goes straight to flow 1's outcome) |
 | AC-02 | flow 5 (wait still running), flow 6 (wrong, expired, new code, attempts limited), flow 7 (attempts limited) |
 | AC-106 | flow 7 |
-| AC-107 | flow 5 |
+| AC-107 | flow 5, flow 6 (resend) |
 | AC-04 | flow 1 (refusal branch), flow 10 (another Owner's account on Sign in again) |
 | AC-108 | flow 1 (refusal and Session lost branches), flow 10 |
 | AC-109 | flow 4 (resume in another tab or device), flow 8 (cancel, 15-min sweep) |
@@ -860,12 +863,12 @@ sequenceDiagram
 
   When the API credentials are missing, or the master key is missing on an installation that has never stored an Owner key, linking reports "isn't set up" (AC-119), and the app still starts. Once any Owner key exists, `identity` keeps a key-check value (a known constant encrypted under the master key). If `TELEX_MASTER_KEY` is then missing or doesn't match it, the app **refuses to start** with an error that names the setting, so no Linked Account is ever shown in a false state. Recovery from a truly lost key is explicit: start once with `TELEX_MASTER_KEY_RESET=true` and the new key. That deletes every Owner key, sealed TDLib key and session directory, puts every Linked Account in "Session lost" (kept, with "Sign in again"), and records a new key-check value (§1 ¶4 override).
 - **Local and CI.** `compose.yaml` gains the volume and passes the variables. Integration tests and Playwright run `telex.telegram.adapter=fake`. `bootRun --spring.profiles.active=local` uses `fake` unless real credentials are set. Real-Telegram checks (spec §6 manual rows) run against Telegram's test servers or a test account, as the spec states.
-- **Boot order.** The app starts, Flyway migrates, the session sweeper runs, then `messaging` reopens every non-lost Linked Account in parallel on virtual threads. Readiness doesn't wait for the reconnects. The spec's "≤ 60 s after teleX is ready" counts from there.
+- **Boot order.** The app starts, Flyway migrates, the session sweeper runs, then `messaging` reopens every non-lost Linked Account in parallel on virtual threads. Readiness doesn't wait for the reconnects. An account unlinked while its reopen is still running is closed and destroyed as soon as the reopen returns (flow 3). The spec's "≤ 60 s after teleX is ready" counts from there.
 
 **Monitoring:**
 - Metrics (Micrometer, with no phone numbers, names or Telegram ids in tags):
   - `telex.telegram.sessions.active{state=connected|reconnecting|session_lost}`, the count of `linked_account` rows in each state (`LifecycleMetrics`);
-  - `telex.linking.attempts{outcome=linked|signed_in_again|cancelled|expired|refused_other_owner|refused_already_linked|refused_limit|refused_mismatch|refused_phone|flood_wait|failed}` (`refused_phone` is an attempt ended by an invalid, unregistered or banned number, at the code step, on a new code request or at the phone step with no replacement session, or by a client that could not be opened; `failed` is an attempt ended by an error after Telegram authorized it);
+  - `telex.linking.attempts{outcome=linked|signed_in_again|cancelled|expired|refused_other_owner|refused_already_linked|refused_limit|refused_mismatch|refused_phone|refused_target_gone|flood_wait|failed}` (`refused_phone` is an attempt ended by an invalid, unregistered or banned number, at the code step, on a new code request or at the phone step with no replacement session, or by a client that could not be opened; `refused_target_gone` is a Sign in again whose Linked Account was unlinked while the attempt ran, so the attempt ended and the answer is `linking-attempt-not-found` (AC-117, flow 10); `failed` is an attempt ended by an error after Telegram authorized it);
   - `telex.linking.step.duration{step=phone|code|password}` (the p95 ≤ 3 s target);
   - `telex.linked_accounts.reconnect.duration`;
   - `telex.unlink{signout=confirmed|unconfirmed}`;
