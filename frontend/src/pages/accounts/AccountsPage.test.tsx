@@ -153,6 +153,19 @@ describe("SCR-60 Accounts", () => {
     expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
   });
 
+  it("start refused as telegram-unavailable shows its toast and does not open the wizard", async () => {
+    setup({
+      accounts: () => [account("a1", "Ann")],
+      start: () => json(503, { code: "telegram-unavailable" }),
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Add account" }));
+    expect(
+      await screen.findByText("Telegram didn't answer. Check your connection and try again."),
+    ).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
+  });
+
   it("start refused as already linked shows the toast and refetches", async () => {
     let lost = true;
     const fetchMock = setup({

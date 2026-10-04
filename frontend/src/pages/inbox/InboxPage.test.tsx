@@ -121,6 +121,21 @@ describe("SCR-10 Inbox", () => {
     expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
   });
 
+  it("a start refused as telegram-unavailable shows its toast and does not open the wizard", async () => {
+    routed({
+      signOut: () => new Response(null, { status: 204 }),
+      start: () => json(503, { code: "telegram-unavailable" }),
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Telegram" }));
+    expect(
+      await screen.findByText("Telegram didn't answer. Check your connection and try again."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect Telegram" })).toBeEnabled();
+  });
+
   it("AC-115: a refused start at the limit names the limit (F4 refusalFor)", async () => {
     routed({
       signOut: () => new Response(null, { status: 204 }),
