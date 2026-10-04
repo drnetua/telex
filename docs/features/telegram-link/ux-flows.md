@@ -19,6 +19,7 @@ updated_at: "2026-10-03"
 - **The wizard is one full page with steps** (phone → code → password), not a dialog. On a phone, a dialog would be lost when the browser reloads the tab after the Owner switches to Telegram. The password step appears only for accounts with two-step verification. There is at most one open attempt per Owner, and SCR-02 always opens at that attempt's current step (AC-109).
 - **Where the wizard returns:** an attempt started from the Inbox's "Connect Telegram" step returns to SCR-10. One started from SCR-60 ("Add account" or "Sign in again") returns to SCR-60. On SCR-10, the "Connect Telegram" step is replaced by a short line per Linked Account with its state and sync progress, which links to SCR-60. The chat list itself is E04.
 - **Refusals that come before the wizard stay in place.** "Linking isn't set up" (AC-119) and "limit reached" (AC-115) show on the screen where the Owner chose the action, and SCR-02 doesn't open.
+- **Focus follows the card on SCR-02.** When a step is replaced by an outcome card (ended, wait, refusal) or the load-failed state, focus moves to that card's heading. When the Owner leaves the card ("Start again" on the ended or wait card, "Try again" on load-failed), focus moves to the heading of the step that replaces it, so the new step is announced. On the wait card, "Back" and "Start again" are separate buttons: at 0:00, if "Back" had focus, focus moves to the card heading instead of landing on "Start again" (AC-02, AC-107, AC-109).
 - **The unlink confirmation is a dialog on SCR-60** (the ordinary C-33 variant, per the spec §1 deviation), not a separate page.
 - **The Status Banner is not a screen.** "Account disconnected" is a condition of the E06 Status Banner mechanism shown on every signed-in screen. It is drawn as a node without an SCR id, and its "Sign in again" action opens SCR-02 for that account.
 - **Outside teleX:** the Telegram app (where the code arrives and where sessions can be ended) and the installation config (the Operator's README step) are external nodes without an SCR id.
@@ -178,7 +179,7 @@ The Operator has no screen in E02: they follow the README step that gives the in
 | AC-01 | Flow US-02 → OK | Password step only on the 2-step branch |
 | AC-02 | Flow US-02 → CODEE, WAIT | WAIT ends the attempt; the same number before the time shows the remaining wait |
 | AC-106 | Flow US-02 → PWE | |
-| AC-107 | Flow US-02 → PHE, REFE | REFE is reached from the phone step (no fresh session), from the code step and from Send a new code; the card shows the refusal's own text |
+| AC-107 | Flow US-02 → PHE, REFE | REFE is reached from the phone step (no fresh session), from the code step and from Send a new code; the card shows the refusal's own text. At the code step every number refusal (invalid, no account, banned) ends the attempt, as on Send a new code; none of them is a "Telegram didn't answer" |
 | AC-04 | Flow US-02 → OTH | Also reachable from US-51 REF when the other account is another Owner's |
 | AC-108 | Flow US-02 → DUP, REST | |
 | AC-109 | Flow US-02 → CAN, reload loop on CODE | The 15-min inactivity applies at every step; drawn once |

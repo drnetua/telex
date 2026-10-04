@@ -302,15 +302,25 @@ sequenceDiagram
     Owner->>SPA: Unlink and confirm in the dialog
     SPA->>Web: unlink account
     Web->>Msg: unlink my account A
+    opt A's session isn't open yet (boot hasn't reopened it)
+        Msg->>Tg: reopen it with A's sealed key, so the log out can reach Telegram (AC-111)
+        Note over Tg: a reopen already in flight (boot) is claimed by a marker, so there is never a second client; the log out waits on that marker within its 10 s
+    end
     Msg->>Tg: log out session, wait up to 10 s
-    Note over Tg: teleX's own log out is marked before it is sent, so the logging-out and closed that TDLib reports for it are not a lost session. No state is announced and the account never shows Session lost on its way out
+    Note over Tg: teleX's own log out is marked before it is sent, so the logging-out and closed that TDLib reports for it are not a lost session. No state is announced and the account never shows Session lost on its way out. If the log out isn't confirmed within the 10 s, the mark is dropped, so a later closed is announced again
     alt Telegram confirms the sign-out
         TG-->>Tg: session terminated
         Tg-->>Msg: confirmed, only because TDLib itself closed the session through that log out
     else unreachable, timed out or session already lost
         Tg-->>Msg: not confirmed, also when teleX closes or releases the session first
     end
+    Note over Msg,Tg: known residual: after a log out that timed out, a Closed that TDLib reports late, before the unlink closes the session, can briefly show the account being unlinked as Session lost (spec §8)
     Msg->>Msg: one transaction deletes the account, its sealed key and its chat list, records AccountUnlinked
+    alt the delete fails (for example a database error)
+        Msg->>Tg: close the session, so a signed-out client never stays open and muted
+        Msg-->>SPA: the error; the account stays, with a closed session, until the unlink is retried
+        Note over Msg,Tg: a reopened session teleX signed out of is reported Closed by TDLib: after a restart the account shows Session lost, and a retried unlink reopens it, gets not confirmed and deletes the account
+    end
     Msg->>Tg: close and destroy the session directory
     Msg-->>SPA: unlinked, with the check-active-sessions warning if not confirmed
     Note over Msg: AccountUnlinked stays in the event registry until every listener has run, also across a restart
@@ -348,7 +358,8 @@ sequenceDiagram
         end
         Msg-->>Web: LinkedAccountStateChanged
     end
-    Note over Msg,Tg: an unlink can arrive while an account is still reopening and find no open session to log out. When the reopen returns, Msg reads the account again, and if no Linked Account holds that session any more it closes and destroys it, so no client keeps running for a deleted account
+    Note over Msg,Tg: an unlink can arrive while an account is still reopening. Its log out waits on the reopen in flight (flow 2), or reopens the session itself when boot hasn't reached it. When the reopen returns, Msg reads the account again, and if no Linked Account holds that session any more it logs it out (up to 10 s), then closes and destroys it, so no client keeps running and no teleX device stays in Telegram for a deleted account
+    Note over Msg,Tg: a reopen that fails after an unlink destroyed the directory has recreated it; Msg removes it when no Linked Account holds that session (the startup sweep is the backstop)
 ```
 
 The flows below were added by `/sdd:sequences`. They use the generic participants: `<user>` is the Owner, `<ui>` is the SPA, `<service>` is the teleX app (the `messaging`, `telegram`, `identity` and `web` modules together), `<data-store>` is the database, `<external-system>` is Telegram and `<message-bus>` is the event publication registry. The linking attempt is held in memory and is never persisted (§8).
@@ -466,7 +477,7 @@ sequenceDiagram
             X-->>S: new code sent
             S-->>U: attempt at the code step
         end
-        Note over S,X: the real adapter reads the resend answer the way it reads the phone step. An invalid, unregistered or banned number is a phone refusal, a flood wait is wait required, and any other Telegram error is telegram unavailable
+        Note over S,X: the real adapter reads the resend answer, and a code check error that isn't about the code, the way it reads the phone step. An invalid, unregistered or banned number is a phone refusal, a flood wait is wait required, and any other Telegram error is telegram unavailable
     end
     O->>U: type the code
     U->>S: submit code
@@ -490,6 +501,11 @@ sequenceDiagram
         S->>S: discard the attempt and destroy its Telegram session
         S-->>U: refusal wait required, with the retry time
         U-->>O: end the attempt and count down to the retry time
+    else Telegram refuses the phone at the code check (invalid, unregistered or banned)
+        X-->>S: phone refusal
+        S->>S: discard the attempt and destroy its Telegram session (outcome refused_phone)
+        S-->>U: refusal for that phone problem, the attempt has ended
+        U-->>O: show that refusal's text on the ended card, with Start again
     else Telegram doesn't answer within the 8 s step timeout
         S-->>U: refusal telegram unavailable, attempt stays at the code step
         U-->>O: say Telegram isn't answering and offer to try again
@@ -863,7 +879,7 @@ sequenceDiagram
 
   When the API credentials are missing, or the master key is missing on an installation that has never stored an Owner key, linking reports "isn't set up" (AC-119), and the app still starts. Once any Owner key exists, `identity` keeps a key-check value (a known constant encrypted under the master key). If `TELEX_MASTER_KEY` is then missing or doesn't match it, the app **refuses to start** with an error that names the setting, so no Linked Account is ever shown in a false state. Recovery from a truly lost key is explicit: start once with `TELEX_MASTER_KEY_RESET=true` and the new key. That deletes every Owner key, sealed TDLib key and session directory, puts every Linked Account in "Session lost" (kept, with "Sign in again"), and records a new key-check value (§1 ¶4 override).
 - **Local and CI.** `compose.yaml` gains the volume and passes the variables. Integration tests and Playwright run `telex.telegram.adapter=fake`. `bootRun --spring.profiles.active=local` uses `fake` unless real credentials are set. Real-Telegram checks (spec §6 manual rows) run against Telegram's test servers or a test account, as the spec states.
-- **Boot order.** The app starts, Flyway migrates, the session sweeper runs, then `messaging` reopens every non-lost Linked Account in parallel on virtual threads. Readiness doesn't wait for the reconnects. An account unlinked while its reopen is still running is closed and destroyed as soon as the reopen returns (flow 3). The spec's "≤ 60 s after teleX is ready" counts from there.
+- **Boot order.** The app starts, Flyway migrates, the session sweeper runs, then `messaging` reopens every non-lost Linked Account in parallel on virtual threads. Readiness doesn't wait for the reconnects. An unlink during a reopen waits on it and signs the session out; an account unlinked before its reopen returns is signed out, closed and destroyed as soon as it returns, and a failed reopen of an unlinked account leaves no directory (flow 3). The spec's "≤ 60 s after teleX is ready" counts from there.
 
 **Monitoring:**
 - Metrics (Micrometer, with no phone numbers, names or Telegram ids in tags):
@@ -901,7 +917,7 @@ Repo conventions are inherited by default (`CLAUDE.md`, `docs/architecture-map.m
 | ID strategy | UUIDv7 typed ids: `LinkedAccountId`, `ChannelId` (messaging) and `TelegramSessionId` (telegram). Telegram's own user and chat ids are stored as `bigint` attributes, never as keys of our aggregates | foundation ADR-0003 |
 | Events | Modulith JDBC registry. `messaging` publishes `AccountLinked`, `AccountUnlinked` (durable, survives restart, NFR-06), `LinkedAccountStateChanged` and `LinkedAccountSyncProgressed` (throttled to one per second per account). `telegram` publishes `TelegramSessionStateChanged` and `TelegramChatsChanged` in-process and non-durably (not through the JDBC registry; state is re-read on restart). Payloads carry ids and states only, with no names, phones or titles | ADR-0002 |
 | Live updates | Two channels. One SSE stream per tab carries invalidation hints only (`linked-accounts`) for the Accounts page, the SCR-10 lines and sync progress. It counts as background, so it never bumps session activity. A heartbeat runs every 25 s, and the SPA refetches everything after a reconnect. The Status Banner condition `account-disconnected` comes from app-shell's 3 s pulse: `SessionLostConditions` (a `StatusConditionSource` in `messaging`) reports it, and the SPA fetches the list only while it is reported, for the name and the Sign in again action | ADR-0005 (amended), app-shell ADR-0002 and ADR-0006 |
-| Concurrency | Telegram callbacks arrive on TDLib's threads. The adapter hands each one to a virtual thread, and `messaging` applies state changes per account in order (state changes carry TDLib's sequence, and stale ones are dropped). Attempt steps are serialized per Owner | here |
+| Concurrency | Telegram callbacks arrive on TDLib's threads. The adapter hands each one to a virtual thread, and `messaging` applies state changes per account in order (state changes carry TDLib's sequence, and stale ones are dropped). Attempt steps are serialized per Owner. A session reopen claims an in-flight marker before it checks for an open client, so boot and an unlink never open two clients on one directory, and teleX's log out waits on that marker within its timeout | here |
 | Time | The injectable `java.time.Clock` bean drives the 15-min attempt expiry, the sweeps and the countdown base. The integration tests use a fixed clock with the `fake` adapter (AC-109, AC-117 within 5 min) | platform-skeleton §8 |
 | Internationalisation | English only. Copy in `frontend/src/messages.ts`, sentence case, no emoji. Telegram's own error texts are never shown raw; each maps to a code above | design-system README |
 | Observability | Micrometer metrics listed in §7 | §7 |

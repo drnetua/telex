@@ -126,6 +126,7 @@ Kotlin `telex.telegram.TelegramSessionStateChanged(sessionId: TelegramSessionId,
 
 - **Origin:** Critical flow 3 ("state Ready / Connecting / Closed"), Flow 9 ("session state changed, with TDLib's sequence").
 - **Mapping in `messaging`:** Ready → `connected`, Connecting → `reconnecting`, Closed → `session_lost`. Only Closed means Session lost, so an outage never looks like a lost session (AC-122).
+- **Never emitted for teleX's own log out** (an unlink, a discarded attempt): `telegram` marks the log out before sending it and announces no state for it, so `Closed` always means Telegram ended the session. The one exception: when teleX's log out is not confirmed within its timeout, the mark is dropped, and a `Closed` TDLib reports later for that log out is announced like any other (AC-113, AC-122, sad flow 2).
 
 ### Event: `telegram.chats-changed`
 

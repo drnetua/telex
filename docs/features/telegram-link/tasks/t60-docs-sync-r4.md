@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/screens.md", "docs/features/telegram-l
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (fourth pass) — findings D6, D7, D8, plus the doc side of K5–K8 and W7–W8"
-status: "todo"
+status: "done"
 ---
 
 # T60 — Sync screens.md, events.md, the T54 record, sad, ux-flows and spec with the fourth-review fixes

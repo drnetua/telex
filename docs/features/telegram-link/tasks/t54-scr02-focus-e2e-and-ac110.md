@@ -35,4 +35,8 @@ Vitest: `toHaveFocus()` on the outcome-card heading (red today); the 401 → SCR
 
 A keyboard/screen-reader user hears the outcome card that replaces a step; the ended card naming the refusal runs in Playwright at both widths; a Vitest case drives SCR-02 to the session-ended screen on 401. Per-task gate clean (unit + integration + detekt/ktlint for backend; `pnpm run check` for frontend/e2e). No test weakened; tests that asserted the buggy behaviour are corrected, not deleted.
 
+## As built (note added by T60)
+
+The load-failed Playwright case was not added: load-failed needs a failed `getMyLinkingAttempt` that isn't a 401, 5xx, connectivity or 403, which the e2e stack can only produce by mocking the request. Vitest covers it instead (`ConnectTelegramPage.test.tsx`, "moves focus to the load-failed card (AC-109)", and the AC-109 load-failure cases). The title and the tracker row still name it; they are kept as written (review 2026-10-04 fourth pass, D7).
+
 **Fallback:** [spec.md](../spec.md) · [sad.md](../sad.md) · [data-model.md](../data-model.md) · [openapi.yaml](../contracts/openapi.yaml) · [events.md](../contracts/events.md) · [screens.md](../screens.md) · [adr/](../adr/)
