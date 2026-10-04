@@ -45,8 +45,9 @@ class ProfileCommands(
         duplicatedFrom: ProfileRef?,
     ): ModelProfileView {
         requireAiConfigured()
-        val baseline = duplicatedFrom?.let { source(owner, it) }.orEmpty()
+        // Lock first, so reading the duplicate's source is serialized with a concurrent delete of it.
         profiles.lockOwner(owner)
+        val baseline = duplicatedFrom?.let { source(owner, it) }.orEmpty()
         if (!ProfileRules.canCreate(profiles.count(owner))) throw ProfileLimitReached()
         val draft = draftOf(name, slots)
         check(draft, profiles.names(owner), baseline)
