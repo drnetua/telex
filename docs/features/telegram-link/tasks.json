@@ -852,6 +852,165 @@
         "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt"
       ],
       "file": "docs/features/telegram-link/tasks/t38-e2e-missing-paths.md"
+    },
+    {
+      "id": "T39",
+      "title": "Sign in again racing an unlink never reports success on a deleted account or leaves an authorized session behind",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-111",
+        "AC-117",
+        "AC-04"
+      ],
+      "dod": "The race leaves nothing behind and never reports success; the UnlinkIT race test fails if the replacement-session branch is removed.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccountRows.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/AccountDeletion.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t39-sign-in-again-unlink-race.md"
+    },
+    {
+      "id": "T40",
+      "title": "Real adapter: logOut is false for a closed session, and the chat total ignores folder counts",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-116"
+      ],
+      "dod": "Fake and real adapters agree on `logOut` for every not-open session; the total is Telegram's Main + Archive count.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/fake/FakeTelegramTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t40-tdlight-logout-and-total.md"
+    },
+    {
+      "id": "T41",
+      "title": "Unregistered number with no replacement session answers 422, and Resend ends the attempt on every phone refusal",
+      "layer": "app",
+      "deps": [
+        "T39"
+      ],
+      "acs": [
+        "AC-107"
+      ],
+      "dod": "No 503 on an attempt that has already ended; server and SPA agree that every phone refusal ends the attempt.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingStepsIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t41-unregistered-and-resend-refusals.md"
+    },
+    {
+      "id": "T42",
+      "title": "Make the sync-in-transaction and AC-110 tests able to fail on their regressions",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-110"
+      ],
+      "dod": "Each test fails when its guarded behaviour is removed and passes on the current code.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkedAccountsApiIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t42-strengthen-sync-and-session-end-tests.md"
+    },
+    {
+      "id": "T43",
+      "title": "Report Session lost through the shell's Status Banner, with the account name and a working Sign in again",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117"
+      ],
+      "dod": "One C-04 banner in the shell for every condition including Session lost; AC-122 banner behaviour unchanged for the Owner; N6 fixed; e2e green at both widths.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/SessionLostConditions.kt",
+        "backend/app/src/main/kotlin/telex/shared/StatusConditionSource.kt",
+        "backend/app/src/main/kotlin/telex/web/api/PulseController.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PulseIT.kt",
+        "frontend/src/shell/conditions.ts",
+        "frontend/src/shell/conditions.test.ts",
+        "frontend/src/shell/StatusBanner/StatusBanner.tsx",
+        "frontend/src/shell/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/shell/AppShell/AppShell.tsx",
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/app/layouts.test.tsx",
+        "frontend/src/components/StatusBanner/AccountDisconnectedBanner.tsx",
+        "frontend/src/components/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/messages.ts",
+        "e2e/tests/telegram-link.spec.ts",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t43-session-lost-banner-in-shell.md"
+    },
+    {
+      "id": "T44",
+      "title": "SPA polish: unlink focus, a dismissible SCR-02 load-failure Toast with Retry, one Toast slot, one refusal lookup, stronger tests",
+      "layer": "ui",
+      "deps": [
+        "T43"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-114",
+        "AC-119",
+        "AC-116"
+      ],
+      "dod": "All four UI defects fixed with tests; the two tests can fail on their regressions; `pnpm run check` clean.",
+      "files_hint": [
+        "frontend/src/pages/accounts/AccountsPage.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/components/Toast/Toast.tsx",
+        "frontend/src/components/Toast/Toast.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/api/linkingRefusal.ts",
+        "frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.test.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t44-spa-focus-toasts-and-tests.md"
+    },
+    {
+      "id": "T45",
+      "title": "Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code",
+      "layer": "docs",
+      "deps": [
+        "T39",
+        "T40",
+        "T41",
+        "T43",
+        "T44"
+      ],
+      "acs": [],
+      "dod": "Every D1–D5 item matches the code; no stale PageFrame reference remains in screens.md.",
+      "files_hint": [
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/data-model.md",
+        "docs/features/telegram-link/contracts/events.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/spec.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t45-docs-contract-sync.md"
     }
   ]
 }
