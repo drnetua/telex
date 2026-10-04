@@ -800,6 +800,21 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     expect(await screen.findByRole("heading", { name: "Connect your Telegram" })).toHaveFocus();
   });
 
+  it("leaves focus off the step heading when the code step replaces the phone step (AC-109)", async () => {
+    mockApi({
+      [A]: [problem(404, "linking-attempt-not-found")],
+      [START]: [json(201, attempt())],
+      [PHONE]: [json(200, codeAttempt)],
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Start again" }));
+    const heading = await screen.findByRole("heading", { name: "Connect your Telegram" });
+    expect(heading).toHaveFocus();
+    await submitPhone();
+    await screen.findByText(/Telegram sent the code to your other devices/);
+    expect(heading).not.toHaveFocus();
+  });
+
   it("moves focus to the step heading after load-failed Try again (AC-109)", async () => {
     mockApi({ [A]: [problem(418, "teapot"), json(200, attempt())] });
     setup();

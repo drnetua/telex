@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"]
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (sixth pass) — findings W13"
-status: "todo"
+status: "done"
 ---
 
 # T68 — SCR-02 does not focus the step heading when one step replaces another, and a test pins the guard
