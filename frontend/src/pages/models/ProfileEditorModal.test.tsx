@@ -5,6 +5,7 @@ import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "../../app/AppRoutes";
 import { createAppQueryClient } from "../../app/queryClient";
+import { resetConnectivity } from "../../shell/connectivity";
 
 // SCR-34: profile editor modal + ChainEditor + ModelChooser, exercised through the two child routes.
 // ChainEditor and ModelChooser are covered here through their DOM contract (roles/names below), not prop APIs.
@@ -20,7 +21,14 @@ const problem = (status: number, code: string, errors?: unknown[]) =>
     code,
     ...(errors ? { errors } : {}),
   });
-const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
+const me = {
+  ownerId: "o1",
+  email: "me@example.com",
+  linkedAccountCount: 0,
+  theme: "system",
+  timeZone: "UTC",
+  timeZoneIsFallback: false,
+};
 
 const cat = (modelId: string, name: string, slots: string[], over = {}) => ({
   modelId,
@@ -117,6 +125,7 @@ function stubApi(api: Api = {}) {
       calls.push({ url, method, body: init?.body ? JSON.parse(init.body as string) : undefined });
       const r = (res: Response) => Promise.resolve(res);
       if (url === "/api/v1/me") return r(json(200, me));
+      if (url === "/api/v1/pulse") return r(json(200, { inboxCount: 0, conditions: [] }));
       if (url === "/api/v1/models/catalog") return r(json(200, catalog));
       if (url === "/api/v1/models/profiles" && method === "GET") return r(json(200, listBody));
       if (url === "/api/v1/models/profiles" && method === "POST")
@@ -185,7 +194,11 @@ async function add(
 const save = (user: ReturnType<typeof userEvent.setup>, d: HTMLElement) =>
   user.click(within(d).getByRole("button", { name: "Save profile" }));
 
-afterEach(() => vi.unstubAllGlobals());
+// The shell's connectivity state is module-wide; a request left hanging by one test must not pause the next.
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetConnectivity();
+});
 
 describe("SCR-34 profile editor: opening", () => {
   it("new: titled Create profile, modal-lg + fullscreen below tablet, Name then Text/Vision/Image, Save profile and Cancel", async () => {

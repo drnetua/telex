@@ -146,12 +146,10 @@ export const messages = {
       title: "Profile and security",
       hint: "Passkeys, sign-in sessions, theme and time zone",
     },
-  },
-  /** PageFrame (E01, temporary) until the Models page moves into the AppShell. */
-  frame: {
-    profile: "Profile and security",
-    signOut: "Sign out",
-    models: "Models",
+    models: {
+      title: "Models",
+      hint: "Model profiles, the model catalog and your default profile",
+    },
   },
   inbox: {
     title: "Inbox",

@@ -5,10 +5,18 @@ import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "../../app/AppRoutes";
 import { createAppQueryClient } from "../../app/queryClient";
+import { resetConnectivity } from "../../shell/connectivity";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
+const me = {
+  ownerId: "o1",
+  email: "me@example.com",
+  linkedAccountCount: 0,
+  theme: "system",
+  timeZone: "UTC",
+  timeZoneIsFallback: false,
+};
 
 type Ref = { kind: "system"; key: string } | { kind: "custom"; id: string };
 const slot = (
@@ -57,6 +65,8 @@ function stubApi(api: Api) {
       const method = init?.method ?? "GET";
       calls.push({ url, method, body: init?.body as string | undefined });
       if (url === "/api/v1/me") return Promise.resolve(json(200, me));
+      if (url === "/api/v1/pulse")
+        return Promise.resolve(json(200, { inboxCount: 0, conditions: [] }));
       if (url === "/api/v1/models/catalog")
         return Promise.resolve(
           json(200, { state: "current", lastRefreshedAt: null, lastFailedAt: null, models: [] }),
@@ -107,7 +117,11 @@ const card = (name: string) =>
     .find((h) => h.textContent?.startsWith(name))
     ?.closest(".card") as HTMLElement;
 
-afterEach(() => vi.unstubAllGlobals());
+// The shell's connectivity state is module-wide; a request left hanging by one test must not pause the next.
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetConnectivity();
+});
 
 describe("SCR-66 Profiles tab", () => {
   it("loading: a LoadState skeleton while the list is requested", async () => {

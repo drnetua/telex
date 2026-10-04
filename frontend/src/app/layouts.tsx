@@ -48,17 +48,24 @@ export function AuthLayout() {
   );
 }
 
-export function AppLayout() {
+/** Signed-in frame: the AppShell around a page. Pages that sometimes render bare (Models, SCR-91) use it directly. */
+export function AppFrame({ children }: { children: ReactNode }) {
   const me = useMe();
   useAccountTheme(me.data);
   useSaveDetectedTimeZone(me.data);
   if (!me.data) return <LoadState state="loading" rows={3} />;
   return (
     <>
-      <AppShell email={me.data.email}>
-        <Outlet />
-      </AppShell>
+      <AppShell email={me.data.email}>{children}</AppShell>
       <ThemeSaveToast />
     </>
+  );
+}
+
+export function AppLayout() {
+  return (
+    <AppFrame>
+      <Outlet />
+    </AppFrame>
   );
 }

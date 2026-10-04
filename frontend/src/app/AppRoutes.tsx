@@ -61,7 +61,7 @@ export function AppRoutes() {
         ))}
         <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
       </Route>
-      {/* ModelsPage frames itself so that SCR-91 can render bare, outside the app frame. */}
+      {/* ModelsPage frames itself (AppFrame) so that SCR-91 can render bare, outside the app frame. */}
       <Route path="/settings/models" element={<ModelsPage />} />
       <Route path="/settings/models/profiles/new" element={<ModelsPage />} />
       <Route path="/settings/models/profiles/:id" element={<ModelsPage />} />

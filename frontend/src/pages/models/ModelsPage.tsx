@@ -9,9 +9,8 @@ import {
 } from "react";
 import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { SYSTEM_KEYS, useModelCatalog, useModelProfiles } from "../../api/models";
-import { BareSystemFrame } from "../../app/layouts";
+import { AppFrame, BareSystemFrame } from "../../app/layouts";
 import { Icon } from "../../components/Icon/Icon";
-import { PageFrame } from "../../components/PageFrame/PageFrame";
 import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
 import { CatalogTab } from "./CatalogTab";
@@ -54,9 +53,6 @@ export function ModelsPage() {
   );
   const editing = id !== undefined || location.pathname.endsWith("/profiles/new");
   const tab: TabId = params.get("tab") === "catalog" ? "catalog" : "profiles";
-  // Both lists are requested when the page opens; each tab renders from its own query.
-  const profiles = useModelProfiles();
-  const catalog = useModelCatalog();
   const tabsId = useId();
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
 
@@ -101,19 +97,11 @@ export function ModelsPage() {
   if (id !== undefined && SYSTEM_KEYS.includes(id))
     return <Navigate to="/settings/models" replace />;
 
-  const notConfigured =
-    profiles.data?.aiConfigured === false || catalog.data?.state === "not-configured";
-
   return (
-    <PageFrame>
+    <AppFrame>
       <NoticeContext.Provider value={notices}>
         <h1 className="page-title mb-3">{m.title}</h1>
-        {notConfigured ? (
-          <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
-            <Icon name="alert-triangle" size={20} />
-            {m.notConfiguredAlert}
-          </div>
-        ) : null}
+        <NotConfiguredAlert />
         <ul className="nav nav-tabs mb-3" role="tablist" aria-label={m.tabsLabel}>
           {TABS.map((t) => (
             <li className="nav-item" role="presentation" key={t.id}>
@@ -160,6 +148,20 @@ export function ModelsPage() {
           />
         ) : null}
       </NoticeContext.Provider>
-    </PageFrame>
+    </AppFrame>
+  );
+}
+
+/** Above the tabs on both tabs. Mounted inside the frame, so both lists are requested once, after the shell loads. */
+function NotConfiguredAlert() {
+  const profiles = useModelProfiles();
+  const catalog = useModelCatalog();
+  if (profiles.data?.aiConfigured !== false && catalog.data?.state !== "not-configured")
+    return null;
+  return (
+    <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
+      <Icon name="alert-triangle" size={20} />
+      {m.notConfiguredAlert}
+    </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   IconChevronRight,
   IconCircleOff,
   IconCloudOff,
+  IconCpu,
   IconClock,
   IconDeviceDesktop,
   IconDots,
@@ -66,6 +67,7 @@ const icons = {
   "layout-dashboard": IconLayoutDashboard,
   dots: IconDots,
   "chevron-right": IconChevronRight,
+  cpu: IconCpu,
   x: IconX,
 } satisfies Record<string, TablerIcon>;
 

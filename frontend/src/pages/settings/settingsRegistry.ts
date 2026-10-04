@@ -18,4 +18,11 @@ export const settingsEntries: readonly SettingsEntry[] = [
     title: messages.settings.profile.title,
     hint: messages.settings.profile.hint,
   },
+  {
+    id: "models",
+    path: "/settings/models",
+    icon: "cpu",
+    title: messages.settings.models.title,
+    hint: messages.settings.models.hint,
+  },
 ];

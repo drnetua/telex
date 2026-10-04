@@ -5,11 +5,19 @@ import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppRoutes } from "../../app/AppRoutes";
 import { createAppQueryClient } from "../../app/queryClient";
+import { resetConnectivity } from "../../shell/connectivity";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const pending = () => new Promise<Response>(() => undefined);
-const me = { ownerId: "o1", email: "me@example.com", linkedAccountCount: 0 };
+const me = {
+  ownerId: "o1",
+  email: "me@example.com",
+  linkedAccountCount: 0,
+  theme: "system",
+  timeZone: "UTC",
+  timeZoneIsFallback: false,
+};
 
 const model = (over: Record<string, unknown>) => ({
   modelId: "test/x",
@@ -85,6 +93,8 @@ function stubApi(
     vi.fn((url: string) => {
       calls.push(url);
       if (url === "/api/v1/me") return Promise.resolve(json(200, me));
+      if (url === "/api/v1/pulse")
+        return Promise.resolve(json(200, { inboxCount: 0, conditions: [] }));
       if (url === "/api/v1/models/catalog") return Promise.resolve(catalogResponse());
       if (url.startsWith("/api/v1/models/profiles")) return Promise.resolve(json(200, profiles));
       return Promise.resolve(new Response(null, { status: 204 }));
@@ -112,13 +122,17 @@ function setup(entry = "/settings/models?tab=catalog") {
 const rowOf = (name: string) =>
   screen.getByText(name).closest("tr, [role=row], li, article") as HTMLElement;
 
-afterEach(() => vi.unstubAllGlobals());
+// The shell's connectivity state is module-wide; a request left hanging by one test must not pause the next.
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetConnectivity();
+});
 
 describe("SCR-66 route, tabs and navigation", () => {
-  it("PageFrame has an interim Models link to /settings/models", async () => {
+  it("Settings lists Models, linking to /settings/models", async () => {
     stubApi(() => json(200, catalog()));
-    setup("/inbox");
-    const link = await screen.findByRole("link", { name: "Models" });
+    setup("/settings");
+    const link = await screen.findByRole("link", { name: /^Models/ });
     expect(link).toHaveAttribute("href", "/settings/models");
   });
 
@@ -163,9 +177,13 @@ describe("SCR-66 Model catalog tab", () => {
   it("loading: a LoadState skeleton of 6 rows", async () => {
     stubApi(pending);
     setup();
-    const status = await screen.findByRole("status");
+    // The app frame loads first; the catalog's own skeleton sits under the page heading.
+    await screen.findByRole("heading", { level: 1, name: "Models" });
+    const status = (await screen.findAllByRole("status")).find((el) =>
+      el.hasAttribute("aria-busy"),
+    );
     expect(status).toHaveAttribute("aria-busy", "true");
-    expect(status.querySelectorAll(".placeholder")).toHaveLength(6);
+    expect(status?.querySelectorAll(".placeholder")).toHaveLength(6);
   });
 
   it("AC-211 default: Updated line with absolute time tooltip, columns, rows ordered by name, no pagination", async () => {
