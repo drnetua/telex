@@ -146,6 +146,52 @@ class TdlightLogOutTest {
     }
 
     @Test
+    fun `a logOut interrupted while TDLib finishes it leaves a later Closed announced (AC-122, AC-121)`() {
+        val (sessions, id) = readyForLogOut(finish = false)
+        val client = tdlib.clients.single()
+        val outcome = CompletableFuture<Any?>()
+        val caller =
+            Thread.ofVirtual().start {
+                try {
+                    outcome.complete(sessions.logOut(id, Duration.ofSeconds(5)))
+                } catch (e: InterruptedException) {
+                    outcome.complete(e)
+                }
+            }
+        await().untilAsserted { assertThat(client.requests).contains(TdlibRequest.LogOut) }
+
+        caller.interrupt()
+        assertTimeoutPreemptively(Duration.ofSeconds(2)) { assertThat(outcome.get()).isNotEqualTo(true) }
+        client.emit(TdlibUpdate.Closed)
+
+        await().atMost(Duration.ofSeconds(2)).untilAsserted {
+            assertThat(states().map { it.state }).containsExactly(SessionState.Ready, SessionState.Closed)
+        }
+    }
+
+    @Test
+    fun `closing a session on an interrupted thread disposes it without throwing (AC-113)`() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        answerOnlyChatLoads()
+        val sessions = create()
+        val id = TelegramSessionId(Uuid7.next())
+        sessions.reopen(id, key)
+        tdlib.closeEmitsClosed = false
+
+        val closed =
+            inBackground {
+                Thread.currentThread().interrupt()
+                sessions.close(id)
+                Thread.currentThread().isInterrupted
+            }
+
+        // the unlink already deleted the account; its closing must not turn into an error, and the flag is kept
+        assertTimeoutPreemptively(Duration.ofSeconds(2)) { assertThat(closed.get()).isTrue() }
+        assertThat(sessions.isOpen(id)).isFalse()
+        assertThat(tdlib.clients.single().closeCalled).isTrue()
+    }
+
+    @Test
     fun `teleX's own logOut publishes no Closed for TDLib's LoggingOut and Closed (AC-113, AC-122)`() {
         val (sessions, id) = readyForLogOut(finish = true)
 

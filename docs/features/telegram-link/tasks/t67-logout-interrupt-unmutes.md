@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (sixth pass) — findings K13"
-status: "todo"
+status: "done"
 ---
 
 # T67 — An interrupted log out unmutes the session, and the interrupt can't turn a finished unlink into a 500

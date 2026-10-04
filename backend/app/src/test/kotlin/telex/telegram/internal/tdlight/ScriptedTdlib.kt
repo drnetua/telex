@@ -19,6 +19,9 @@ class ScriptedTdlib(
 ) : TdlibFacade {
     /** When set, [open] throws it before any client exists. */
     @Volatile var openFailure: RuntimeException? = null
+
+    /** When false, [Client.close] reports nothing, as TDLib does until it has shut the client down. */
+    @Volatile var closeEmitsClosed = true
     val clients = CopyOnWriteArrayList<Client>()
 
     inner class Client(
@@ -39,7 +42,7 @@ class ScriptedTdlib(
 
         override fun close() {
             closeCalled = true
-            emit(TdlibUpdate.Closed)
+            if (closeEmitsClosed) emit(TdlibUpdate.Closed)
         }
     }
 

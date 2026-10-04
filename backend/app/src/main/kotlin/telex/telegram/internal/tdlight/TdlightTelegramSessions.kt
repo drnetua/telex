@@ -147,12 +147,16 @@ class TdlightTelegramSessions(
         if (session == null || !signedIn || !session.beginLogOut()) return false
         session.client().send(TdlibRequest.LogOut)
         // only TDLib closing the session through this log out confirms it; teleX's own close does not
-        return try {
-            session.loggedOut.get(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)
+        var confirmed = false
+        try {
+            confirmed = session.loggedOut.get(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)
         } catch (_: TimeoutException) {
-            session.abandonLogOut()
-            false
+            // not finished in time: not confirmed
+        } finally {
+            // whatever ended the wait (a timeout, an interrupt), a Closed that comes later is a lost session again
+            if (!confirmed) session.abandonLogOut()
         }
+        return confirmed
     }
 
     /** Waits up to [timeout] for a reopen of [id] that is in flight, so an unlink during it still signs out. */
@@ -220,6 +224,10 @@ class TdlightTelegramSessions(
             session.closed.get(stepTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (_: TimeoutException) {
             log.warn("TDLib client {} did not report closed in time", session.id.value)
+        } catch (_: InterruptedException) {
+            // the caller's work is done (an unlink already deleted the account); keep the flag, don't fail it
+            Thread.currentThread().interrupt()
+            log.warn("Interrupted while TDLib client {} closed", session.id.value)
         } finally {
             session.dispose()
         }
