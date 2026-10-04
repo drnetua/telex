@@ -167,12 +167,22 @@ class ChatSyncIT {
     }
 
     @Test
-    fun `AC-116 progress is published in a transaction so no publication stays incomplete`() {
+    fun `AC-116 progress is published in a transaction so its publication is recorded and completed`() {
         val linked = link()
 
         deliver(linked, listOf(chat(1)), total = 1, completed = true)
 
+        // A publication row exists only when the event was published inside a transaction; it completes once
+        // the listener has handled it. Zero incomplete rows alone would also hold when no row was written.
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
+            assertThat(
+                jdbc.queryForObject(
+                    "SELECT count(*) FROM event_publication WHERE completion_date IS NOT NULL " +
+                        "AND event_type LIKE '%SyncProgressed' AND serialized_event LIKE ?",
+                    Int::class.java,
+                    "%${linked.id.value}%",
+                ),
+            ).isEqualTo(1)
             assertThat(
                 jdbc.queryForObject(
                     "SELECT count(*) FROM event_publication WHERE completion_date IS NULL " +

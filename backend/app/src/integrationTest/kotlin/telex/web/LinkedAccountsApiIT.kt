@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -25,7 +26,10 @@ import telex.messaging.internal.account.LinkedAccountRows
 import telex.messaging.internal.account.NewLinkedAccount
 import telex.messaging.keyAad
 import telex.shared.Uuid7
+import telex.telegram.ChatSnapshot
+import telex.telegram.ChatType
 import telex.telegram.SignInOutcome
+import telex.telegram.TelegramChatsChanged
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessions
 import telex.telegram.internal.fake.FakeTelegram
@@ -41,6 +45,7 @@ import java.util.Base64
 import java.util.UUID
 
 private const val KEY_BYTES = 32
+private const val SESSION_OF = "SELECT telegram_session_id FROM linked_account WHERE id = ?"
 private val SESSIONS_DIR: Path = Files.createTempDirectory("telex-linked-accounts-api-it")
 
 /** AC-03, AC-110, AC-113, AC-114: list and unlink my Linked Accounts, Owner-scoped, and the real count in `me`. */
@@ -62,6 +67,8 @@ class LinkedAccountsApiIT(
     @Autowired lateinit var ownerKeys: OwnerKeys
 
     @Autowired lateinit var rows: LinkedAccountRows
+
+    @Autowired lateinit var events: ApplicationEventPublisher
 
     private val fake get() = telegram as FakeTelegram
     private val http = HttpClient.newHttpClient()
@@ -269,7 +276,8 @@ class LinkedAccountsApiIT(
     fun `AC-110 the accounts are still listed after sign-out and a new sign-in`() {
         val o = owner("a@mail.com")
         val first = start(o)
-        link(o, "Mine", Instant.parse("2026-10-01T10:00:00Z"))
+        val id = link(o, "Mine", Instant.parse("2026-10-01T10:00:00Z"))
+        val session = TelegramSessionId(checkNotNull(jdbc.queryForObject(SESSION_OF, UUID::class.java, id.value)))
         sessions.endMine(o, first.sessionId)
         assertThat(call("GET", "/api/v1/linked-accounts", first.key).statusCode()).isEqualTo(401)
 
@@ -277,6 +285,19 @@ class LinkedAccountsApiIT(
 
         assertThat(names(call("GET", "/api/v1/linked-accounts", second.key))).containsExactly("Mine")
         assertThat(jdbc.queryForObject("SELECT state FROM linked_account", String::class.java)).isEqualTo("connected")
+        // The Telegram session outlives the Sign-in Session: still open and authorized, and sync keeps writing.
+        assertThat(fake.isOpen(session)).isTrue()
+        assertThat(telegram.authorized(session)).isTrue()
+        assertThat(fake.wasLoggedOut(session)).isFalse()
+        val chat = ChatSnapshot(4_242L, ChatType.Supergroup, "After sign-out", listOf(1), false, 0, 1L)
+        events.publishEvent(TelegramChatsChanged(session, listOf(chat), emptyList(), 1, true, null))
+        assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM channel WHERE linked_account_id = ? AND telegram_chat_id = 4242",
+                Int::class.java,
+                id.value,
+            ),
+        ).isEqualTo(1)
     }
 
     companion object {
