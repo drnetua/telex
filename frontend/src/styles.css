@@ -58,7 +58,9 @@
   --tblr-alert-bg: var(--telex-warning-subtle);
 }
 
-.alert-warning .btn-link {
+/* .btn included so this outranks the .btn.btn-link primary colour below. */
+.alert-warning .btn-link,
+.alert-warning .btn.btn-link {
   color: inherit;
   text-decoration: underline;
 }
