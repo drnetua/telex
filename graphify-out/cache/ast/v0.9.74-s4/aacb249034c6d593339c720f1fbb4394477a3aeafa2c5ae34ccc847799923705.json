@@ -1,0 +1,1 @@
+{"nodes": [{"id": "$graphify-root$_docs_features_model_profiles_migrations_04_create_model_call_down_sql", "label": "04_create_model_call.down.sql", "file_type": "code", "source_file": "docs/features/model-profiles/migrations/04_create_model_call.down.sql", "source_location": null}], "edges": []}

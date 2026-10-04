@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_model_profiles_adr_0004", "label": "ADR 0004: Call Records in Agents Table", "file_type": "document", "source_file": "docs/features/model-profiles/adr/0004-call-records-in-agents-table.md", "rationale": "Synchronous writes in the call path ensure immediate visibility for future Run details and KPIs."}], "edges": [], "hyperedges": []}

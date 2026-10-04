@@ -1,0 +1,1 @@
+{"nodes": [{"id": "$graphify-root$_docs_features_model_profiles_migrations_03_create_default_model_profile_down_sql", "label": "03_create_default_model_profile.down.sql", "file_type": "code", "source_file": "docs/features/model-profiles/migrations/03_create_default_model_profile.down.sql", "source_location": null}], "edges": []}

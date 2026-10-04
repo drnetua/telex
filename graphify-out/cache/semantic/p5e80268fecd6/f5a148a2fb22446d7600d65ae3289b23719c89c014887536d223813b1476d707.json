@@ -1,1 +1,0 @@
-{"nodes": [{"id": "compose_e2e_yaml", "label": "Docker Compose E2E Override", "file_type": "code", "source_file": "compose.e2e.yaml", "rationale": "Enables e2e Spring profile and fixture sources."}], "edges": [], "hyperedges": []}
