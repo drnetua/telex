@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/sad.md", "docs/features/telegram-link/
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (third pass) — findings D1–D5 (doc halves), plus the doc side of K1–K3 and W4"
-status: "todo"
+status: "done"
 ---
 
 # T55 — Sync sad §7 tags, ux-flows, the sad coverage row and screens.md with the code, and record the third-review changes
