@@ -9,7 +9,7 @@ files_hint: ["docs/features/app-shell/adr/0006-extend-the-shell-through-client-s
 owner: "Anton Husiev"
 estimate: "S"
 source: "review 2026-10-04 (second pass) — findings D-a, D-b, D-c"
-status: "todo"
+status: "done"
 ---
 
 # T50 — Record the shell banner extension and the two live channels in the ADRs, and sync sad, the contract and screens.md
