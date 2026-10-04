@@ -57,12 +57,8 @@ class ProfileCallService(
             } ?: return ProfileCallResult.Failed(id, SlotFailure.PROFILE_NOT_FOUND, emptyList())
         val chain = chains[slot].orEmpty()
         val startedAt = clock.instant()
-        val result =
-            if (chain.isEmpty()) {
-                ModelCallResult.Failed(ModelCallFailure.NO_MODEL_ANSWERED, emptyList())
-            } else {
-                modelCalls.call(chain, slot.toLlm(), request)
-            }
+        // An empty chain goes to `llm` too, so a missing provider key wins (AI_NOT_CONFIGURED) over an empty slot.
+        val result = modelCalls.call(chain, slot.toLlm(), request)
         val finishedAt = clock.instant()
         val outcome = outcomeOf(result, chain)
         val answered = result as? ModelCallResult.Answered
