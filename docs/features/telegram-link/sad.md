@@ -304,6 +304,7 @@ sequenceDiagram
     Web->>Msg: unlink my account A
     opt A's session isn't open yet (boot hasn't reopened it)
         Msg->>Tg: reopen it with A's sealed key, so the log out can reach Telegram (AC-111)
+        Note over Msg: a sealed key that can't be opened (wrong, tampered or truncated) counts as not confirmed; the unlink still deletes the account (AC-113)
         Note over Tg: a reopen already in flight (boot) is claimed by a marker, so there is never a second client; the log out waits on that marker within its 10 s
     end
     Msg->>Tg: log out session, wait up to 10 s
@@ -317,9 +318,14 @@ sequenceDiagram
     Note over Msg,Tg: known residual: after a log out that timed out, a Closed that TDLib reports late, before the unlink closes the session, can briefly show the account being unlinked as Session lost (spec §8)
     Msg->>Msg: one transaction deletes the account, its sealed key and its chat list, records AccountUnlinked
     alt the delete fails (for example a database error)
-        Msg->>Tg: close the session, so a signed-out client never stays open and muted
-        Msg-->>SPA: the error; the account stays, with a closed session, until the unlink is retried
-        Note over Msg,Tg: a reopened session teleX signed out of is reported Closed by TDLib: after a restart the account shows Session lost, and a retried unlink reopens it, gets not confirmed and deletes the account
+        alt the sign-out was confirmed
+            Msg->>Tg: close the session (Telegram already ended it)
+            Msg->>Msg: set A Session lost, the same transition and banner as a Closed from Telegram
+        else not confirmed
+            Note over Msg,Tg: the session stays open: its mark was dropped, so it reports its state again and reconnects when Telegram is reachable
+        end
+        Msg-->>SPA: the error; the account stays until the unlink is retried, and a retried unlink of a Session lost account deletes it without a sign-out
+        Note over Tg: a session whose directory was destroyed (or is missing) reopens on an empty TDLib database, which asks for a phone number: Closed, and a log out can't succeed (the fake matches)
     end
     Msg->>Tg: close and destroy the session directory
     Msg-->>SPA: unlinked, with the check-active-sessions warning if not confirmed
@@ -453,7 +459,7 @@ sequenceDiagram
     Note over O,S: Postcondition: teleX never creates a Telegram account, sends no code while Telegram's wait runs, and stores nothing about the number
 ```
 
-### Flow 6: code step errors and a new code (AC-02)
+### Flow 6: code step errors and a new code (AC-02, AC-107)
 
 ```mermaid
 sequenceDiagram
@@ -832,7 +838,7 @@ sequenceDiagram
 | AC-01 | flow 1 (2FA path, new-account branch), flow 6 (no-2FA path goes straight to flow 1's outcome) |
 | AC-02 | flow 5 (wait still running), flow 6 (wrong, expired, new code, attempts limited), flow 7 (attempts limited) |
 | AC-106 | flow 7 |
-| AC-107 | flow 5, flow 6 (resend) |
+| AC-107 | flow 5, flow 6 (resend and code check) |
 | AC-04 | flow 1 (refusal branch), flow 10 (another Owner's account on Sign in again) |
 | AC-108 | flow 1 (refusal and Session lost branches), flow 10 |
 | AC-109 | flow 4 (resume in another tab or device), flow 8 (cancel, 15-min sweep) |

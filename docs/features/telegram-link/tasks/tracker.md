@@ -43,7 +43,6 @@
 | T36 | Render SCR-02 in the confirmed onboarding card layout | ui | Anton Husiev | S | T35 | done |
 | T37 | Reopen the live-update stream when the browser has closed it, with capped backoff | ui | Anton Husiev | S | — | done |
 | T38 | End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals | tests | Anton Husiev | M | T27, T29, T30, T35, T36, T37 | done |
-
 | T39 | Sign in again racing an unlink never reports success on a deleted account or leaves an authorized session behind | app | Anton Husiev | M | — | done |
 | T40 | Real adapter: logOut is false for a closed session, and the chat total ignores folder counts | infra | Anton Husiev | S | — | done |
 | T41 | Unregistered number with no replacement session answers 422, and Resend ends the attempt on every phone refusal | app | Anton Husiev | S | T39 | done |
@@ -70,6 +69,6 @@
 | T62 | A failed delete after the sign-out leaves the account Session lost when Telegram confirmed it, and keeps an unconfirmed session running | infra | Anton Husiev | S | T61 | done |
 | T63 | The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out | infra | Anton Husiev | S | T62 | done |
 | T64 | SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again | ui | Anton Husiev | XS | — | done |
-| T65 | Sync sad, tracker, test-plan and spec with the fifth-review fixes | docs | Anton Husiev | XS | T61, T62, T63, T64 | todo |
+| T65 | Sync sad, tracker, test-plan and spec with the fifth-review fixes | docs | Anton Husiev | XS | T61, T62, T63, T64 | done |
 
 **Total:** 65 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60 and T61–T65 follow-ups from the five 2026-10-04 reviews.

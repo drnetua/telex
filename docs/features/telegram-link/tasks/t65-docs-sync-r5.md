@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/sad.md", "docs/features/telegram-link/
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-04 (fifth pass) — findings D9, D10, D11, plus the doc side of K9–K11 and W12"
-status: "todo"
+status: "done"
 ---
 
 # T65 — Sync sad, tracker, test-plan and spec with the fifth-review fixes
