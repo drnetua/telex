@@ -64,17 +64,14 @@ export function ConnectTelegramPage() {
   // Bumped each time an outcome or load-failed card is left, so the step that replaces it takes focus (not the first load).
   const [refocus, setRefocus] = useState(0);
   const bumpRefocus = useCallback(() => setRefocus((n) => n + 1), []);
-  // The subscription below must know whether an outcome card is on screen, without re-subscribing.
-  const outcomeShown = useRef(false);
+  // The subscription below must know whether an outcome or load-failed card is on screen, without re-subscribing.
+  const cardShown = useRef(false);
   const attempt = query.data;
   const [last, setLast] = useState<LinkingAttempt | undefined>(undefined);
   const known = attempt ?? last;
 
   // A fresh attempt put in the cache from outside (the Status Banner's Sign in again) replaces any outcome card.
   // Structural sharing keeps the old reference for an equal attempt, so listen for the write itself.
-  useEffect(() => {
-    outcomeShown.current = outcome !== null;
-  }, [outcome]);
   useEffect(
     () =>
       client.getQueryCache().subscribe((event) => {
@@ -85,7 +82,7 @@ export function ConnectTelegramPage() {
           event.query.queryKey[0] === linkingAttemptKey[0] &&
           event.action.data
         ) {
-          if (outcomeShown.current) bumpRefocus();
+          if (cardShown.current) bumpRefocus();
           setOutcome(null);
         }
       }),
@@ -213,6 +210,13 @@ export function ConnectTelegramPage() {
     query.error.status === 404 &&
     query.error.code === "linking-attempt-not-found";
   const shownOutcome: Outcome | null = outcome ?? (ended && !attempt ? { kind: "ended" } : null);
+  // A failed load: routable failures reach the failure bus, others get an inline state with a way forward.
+  const loadFailed =
+    !attempt && query.error && !(query.error instanceof ApiFailure && query.error.route);
+  const loadFailedShown = Boolean(loadFailed) && !query.isFetching;
+  useEffect(() => {
+    cardShown.current = shownOutcome !== null || loadFailedShown;
+  });
   if (shownOutcome) {
     const back = () => leave(origin());
     const target = known?.targetLinkedAccountId;
@@ -248,9 +252,7 @@ export function ConnectTelegramPage() {
     );
   }
   if (!attempt) {
-    // A failed load: routable failures reach the failure bus, others get an inline state with a way forward.
-    const loadFailed = query.error && !(query.error instanceof ApiFailure && query.error.route);
-    if (loadFailed && !query.isFetching) {
+    if (loadFailedShown) {
       return (
         <Card>
           <LoadFailedState
