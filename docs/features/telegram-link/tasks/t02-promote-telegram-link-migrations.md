@@ -48,13 +48,15 @@ The schema makes "one Telegram account belongs to one Owner" and "an unlink dele
 
 ## Data delta
 
-Staged pairs (promote in this order; suggested versions after the latest live `V202610021600`):
+Staged pairs (promote in this order; suggested versions after the latest live `V202610021600`). Promoted as
+`V202610031200`…`1202`, then renumbered to `V202610051800`…`1802` after the rebase onto master, because
+model-profiles took `V202610031200`…`1203` first (Flyway rejects two migrations with one version):
 
 | Staged pair | Live up / rollback |
 |---|---|
-| `migrations/01_create_owner_key.{up,down}.sql` | `V202610031200__create_owner_key.sql` / `U202610031200__create_owner_key.sql` |
-| `migrations/02_create_linked_account.{up,down}.sql` | `V202610031201__create_linked_account.sql` / `U…1201__…` |
-| `migrations/03_create_channel.{up,down}.sql` | `V202610031202__create_channel.sql` / `U…1202__…` |
+| `migrations/01_create_owner_key.{up,down}.sql` | `V202610051800__create_owner_key.sql` / `U202610051800__create_owner_key.sql` |
+| `migrations/02_create_linked_account.{up,down}.sql` | `V202610051801__create_linked_account.sql` / `U…1801__…` |
+| `migrations/03_create_channel.{up,down}.sql` | `V202610051802__create_channel.sql` / `U…1802__…` |
 
 | Table | Key constraints / indexes | Change |
 |---|---|---|
