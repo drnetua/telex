@@ -9,7 +9,7 @@ files_hint: ["e2e/tests/telegram-link.spec.ts"]
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (ninth pass) — E1"
-status: "todo"
+status: "done"
 ---
 
 # T78 — An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram

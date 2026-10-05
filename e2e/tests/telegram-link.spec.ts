@@ -182,7 +182,35 @@ test("AC-109: reloading and a second tab continue the wizard at its step; cancel
   await expectNoA11yViolations(page, "SCR-02 phone step after cancel");
 });
 
-test("AC-117, AC-122: a lost session shows Session lost and a banner; sign in again; unlink returns to Connect Telegram", async ({
+test("AC-111: unlinking a connected account signs it out, says so and returns to Connect Telegram", async ({
+  page,
+}) => {
+  const { digits, displayName } = testNumber(SCENARIO.plain);
+  await signUp(page);
+  await startAndSendPhone(page, digits);
+  await expectCodeStep(page);
+  await typeCode(page, CODE);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page).toHaveURL(/\/inbox$/);
+
+  await accountLine(page, displayName).click();
+  await expect(page).toHaveURL(/\/accounts$/);
+  await expect(page.getByText("Connected")).toBeVisible();
+  await page.getByRole("button", { name: "Unlink" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText(`Unlink ${displayName}?`);
+  await dialog.getByRole("button", { name: "Unlink account" }).click();
+
+  // Telegram confirmed the sign-out: the info Toast, not the "couldn't confirm" one.
+  await expect(page.getByText(`${displayName} is unlinked.`, { exact: true })).toBeVisible();
+  await expect(page.getByText("Telegram couldn't confirm the sign-out", { exact: false })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/inbox$/);
+  await expect(connectButton(page)).toBeVisible();
+  await expect(accountLine(page, displayName)).toHaveCount(0);
+  await expectNoA11yViolations(page, "SCR-10 Inbox after unlinking a connected account");
+});
+
+test("AC-117, AC-122, AC-113: a lost session shows Session lost and a banner; sign in again; unlink returns to Connect Telegram", async ({
   page,
 }) => {
   // This number makes the fake end the session a moment after the link.
@@ -234,6 +262,13 @@ test("AC-117, AC-122: a lost session shows Session lost and a banner; sign in ag
   await expectNoA11yViolations(page, "SCR-60 unlink dialog");
   await dialog.getByRole("button", { name: "Unlink account" }).click();
 
+  // AC-113: a Session lost account gets no sign-out, so the error Toast says Telegram couldn't confirm it.
+  await expect(
+    page.getByText(
+      `${displayName} is unlinked and teleX deleted everything it kept. Telegram couldn't confirm the sign-out`,
+      { exact: false },
+    ),
+  ).toBeVisible();
   await expect(page).toHaveURL(/\/inbox$/);
   await expect(connectButton(page)).toBeVisible();
   await expect(banner).toHaveCount(0);
