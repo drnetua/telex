@@ -9,6 +9,8 @@
 #   DEPLOY_SSH=lhost  LHOST_IP=10.10.10.3  COOLIFY_URL=http://$LHOST_IP:8000
 #   APP_PORT=8090  MAIL_UI_PORT=8091  TELEX_PUBLIC_URL=http://$LHOST_IP:$APP_PORT
 #   TELEX_MAIL_HOST/_PORT/_STARTTLS/_USERNAME/_PASSWORD/_FROM (unset host → the bundled Mailpit)
+#   TELEX_OPENROUTER_API_KEY (unset → AI off)
+#   TELEX_TELEGRAM_API_ID/_API_HASH + TELEX_MASTER_KEY (README "Telegram setup"; unset → linking not set up)
 #   COOLIFY_PROJECT=teleX  COOLIFY_SERVICE=telex  DEPLOY_TIMEOUT=600 (s)
 # Later, behind the Cloudflare tunnel: TELEX_PUBLIC_URL=https://tele-x.online (passkeys are bound to its host).
 set -euo pipefail
@@ -78,12 +80,14 @@ else
 fi
 [ -n "$SERVICE_UUID" ] || fail "no service uuid"
 
-# Service variables: the public URL always, mail settings only when set (unset TELEX_MAIL_HOST → Mailpit).
+# Service variables: the public URL always; mail, AI and Telegram settings only when set (unset TELEX_MAIL_HOST →
+# Mailpit, unset OpenRouter key → AI off, unset Telegram credentials or master key → linking not set up).
 # Literal, so a password or "teleX <...>" is never interpolated by Coolify.
 export TELEX_PUBLIC_URL
 ENVS=$(for k in TELEX_PUBLIC_URL TELEX_MAIL_HOST TELEX_MAIL_PORT TELEX_MAIL_STARTTLS TELEX_MAIL_USERNAME \
-    TELEX_MAIL_PASSWORD TELEX_MAIL_FROM; do
-  [ -n "${!k:-}" ] && jq -nc --arg k "$k" --arg v "${!k}" '{key: $k, value: $v, is_literal: true}'
+    TELEX_MAIL_PASSWORD TELEX_MAIL_FROM TELEX_OPENROUTER_API_KEY TELEX_TELEGRAM_API_ID TELEX_TELEGRAM_API_HASH \
+    TELEX_MASTER_KEY; do
+  if [ -n "${!k:-}" ]; then jq -nc --arg k "$k" --arg v "${!k}" '{key: $k, value: $v, is_literal: true}'; fi
 done | jq -sc '{data: .}')
 step "setting service variables: $(jq -r '[.data[].key] | join(" ")' <<<"$ENVS")"
 api PATCH "/services/$SERVICE_UUID/envs/bulk" "$ENVS" >/dev/null
