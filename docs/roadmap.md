@@ -23,7 +23,7 @@ Step ids 1–29 are the epic numbers of `docs/docs/02-epics.md` (E01–E29); 0 i
 |---|---|---|:---:|---|
 | 0 | Skeleton — 13 empty Modulith modules + `verify()`, CI, Compose with Postgres + pgvector, Flyway baseline with rollback, React build served by Spring ([`_scaffold`](features/_scaffold/)) | `docs/architecture-map.md` §Constraints & known tech-debt | S | shipped |
 | 1 | Platform skeleton — Owner signs up and signs in with magic link + passkey, one-command README ([`platform-skeleton`](features/platform-skeleton/)) | `docs/docs/02-epics.md` §E01 · platform-skeleton | M | shipped |
-| 2 | Telegram link — Owner links (and fully unlinks) Telegram accounts; sessions survive restart ([`telegram-link`](features/telegram-link/)) | `docs/docs/02-epics.md` §E02 · telegram-link | M | spec'd |
+| 2 | Telegram link — Owner links (and fully unlinks) Telegram accounts; sessions survive restart ([`telegram-link`](features/telegram-link/)) | `docs/docs/02-epics.md` §E02 · telegram-link | M | shipped |
 | 3 | AI consent — Owner grants, sees and revokes consent before any text reaches AI | `docs/docs/02-epics.md` §E03 · ai-consent | S | idea |
 | 4 | Chat reading — chat list with folders, history with media, live updates in the web | `docs/docs/02-epics.md` §E04 · chat-reading | M | idea |
 | 5 | Chat sending — reply, quote-reply and forward from the web with delivery status | `docs/docs/02-epics.md` §E05 · chat-sending | S | idea |
@@ -172,3 +172,4 @@ Zones: `telex/<m>` = `backend/app/src/main/kotlin/telex/<m>/`, `pages/<x>` = `fr
 | 1 | 2026-10-02 | [changelog](features/platform-skeleton/_ship/changelog.md) · PR `scaffold/skeleton` → `master` |
 | 6 | 2026-10-03 | [changelog](features/app-shell/_ship/changelog.md) · [PR #3](https://github.com/drnetua/telex/pull/3) `app-shell` → `master` |
 | 10 | 2026-10-04 | [changelog](features/model-profiles/_ship/changelog.md) · [PR #4](https://github.com/drnetua/telex/pull/4) `model-profiles` → `master` |
+| 2 | 2026-10-05 | [changelog](features/telegram-link/_ship/changelog.md) · [PR #5](https://github.com/drnetua/telex/pull/5) `telegram-link` → `master` |
