@@ -27,8 +27,11 @@ interface Call {
   body: unknown;
 }
 
+/** A reply that never arrives: the request stays in flight. */
+const HOLD = null;
+
 /** Routes fetches by "METHOD url"; a queue is consumed until its last reply, which then repeats. */
-function mockApi(replies: Record<string, Response[]>) {
+function mockApi(replies: Record<string, (Response | typeof HOLD)[]>) {
   const calls: Call[] = [];
   vi.stubGlobal(
     "fetch",
@@ -38,6 +41,7 @@ function mockApi(replies: Record<string, Response[]>) {
       const queue = replies[`${method} ${url}`];
       if (!queue) return Promise.reject(new Error(`unexpected ${method} ${url}`));
       const next = queue.length > 1 ? queue.shift() : queue[0];
+      if (next === HOLD) return new Promise<Response>(() => undefined);
       return Promise.resolve(next?.clone());
     }),
   );
@@ -351,6 +355,18 @@ describe("SCR-02 code step", () => {
     expect(calls.some((c) => c.url.endsWith("/code/resend"))).toBe(true);
   });
 
+  it("shows Sending a new code, busy, and holds Continue and Cancel while the resend is in flight (AC-02)", async () => {
+    mockApi({ [A]: [json(200, codeAttempt)], [RESEND]: [HOLD] });
+    setup();
+    await screen.findByText(/Telegram sent the code/);
+    await userEvent.click(screen.getByRole("button", { name: "Send a new code" }));
+    const busy = await screen.findByRole("button", { name: "Sending a new code" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  });
+
   it("keeps the step on telegram-unavailable", async () => {
     mockApi({ [A]: [json(200, codeAttempt)], [CODE]: [problem(503, "telegram-unavailable")] });
     setup();
@@ -624,6 +640,34 @@ describe("SCR-02 outcomes", () => {
     expect(calls.find((c) => c.method === "POST" && c.url === START.slice(5))?.body).toEqual({
       origin: "inbox",
     });
+  });
+
+  it("shows Starting, busy, and holds Back while Start again is in flight on the ended card (AC-109)", async () => {
+    mockApi({ ...phoneReply(problem(404, "linking-attempt-not-found")), [START]: [HOLD] });
+    setup();
+    await submitPhone();
+    await userEvent.click(await screen.findByRole("button", { name: "Start again" }));
+    const busy = await screen.findByRole("button", { name: "Starting" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+  });
+
+  it("shows Starting, busy, when Start again is chosen at the end of the wait (AC-02)", async () => {
+    const retryAt = fakeWaitClock();
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
+      [START]: [HOLD],
+    });
+    setup();
+    await submitPhone();
+    await screen.findByRole("heading", { name: "Too many attempts" });
+    passWait();
+    await act(async () => screen.getByRole("button", { name: "Start again" }).click());
+    const busy = screen.getByRole("button", { name: "Starting" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
   });
 
   it("starts again without the target when the account was unlinked meanwhile (AC-117)", async () => {

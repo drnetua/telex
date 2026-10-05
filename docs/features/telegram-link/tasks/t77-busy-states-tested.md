@@ -4,12 +4,12 @@ title: "The SCR-10, SCR-60 and SCR-02 busy states each have a test of their labe
 layer: "ui"
 deps: []
 blocks: ["T82"]
-acs: ["AC-01", "AC-111", "AC-02"]
+acs: ["AC-01", "AC-114", "AC-117", "AC-111", "AC-02", "AC-109"]
 files_hint: ["frontend/src/pages/inbox/InboxPage.test.tsx", "frontend/src/pages/accounts/AccountsPage.test.tsx", "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"]
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (ninth pass) — S3"
-status: "todo"
+status: "done"
 ---
 
 # T77 — The SCR-10, SCR-60 and SCR-02 busy states each have a test of their label
@@ -18,7 +18,7 @@ status: "todo"
 
 Follow-up from the ninth-pass review: [`_review/review-2026-10-05.md`](../_review/review-2026-10-05.md), S3 (resolved "Fix now" by the user). Read those rows first. The ACs below are the source of truth: read them verbatim in [spec.md §5](../spec.md).
 
-- **ACs:** AC-01, AC-111, AC-02
+- **ACs:** AC-01, AC-114, AC-117, AC-111, AC-02, AC-109
 - **Blocked by:** — · **Blocks:** T82
 
 ## What to change

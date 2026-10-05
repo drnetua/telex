@@ -57,7 +57,7 @@ afterEach(() => vi.unstubAllGlobals());
 /** Answers by URL: the shell also reads the pulse and linked accounts for its banners. */
 function routed(handlers: {
   signOut: () => Response;
-  start?: () => Response;
+  start?: () => Response | Promise<Response>;
   accounts?: unknown[];
 }) {
   const fetchMock = vi.fn().mockImplementation((url: string) => {
@@ -100,6 +100,19 @@ describe("SCR-10 Inbox", () => {
     expect(call[1].method).toBe("POST");
     expect(JSON.parse(call[1].body as string)).toEqual({ origin: "inbox" });
     expect(screen.queryByText("Telegram linking is coming next.")).not.toBeInTheDocument();
+  });
+
+  it("AC-01: Connect Telegram shows Starting, busy, while the start is in flight", async () => {
+    routed({
+      signOut: () => new Response(null, { status: 204 }),
+      start: () => new Promise<Response>(() => undefined),
+    });
+    setup();
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Telegram" }));
+    const busy = await screen.findByRole("button", { name: "Starting" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(screen.queryByRole("heading", { name: "Wizard page" })).not.toBeInTheDocument();
   });
 
   it("AC-119: a refused start shows the not-set-up toast and does not open the wizard", async () => {

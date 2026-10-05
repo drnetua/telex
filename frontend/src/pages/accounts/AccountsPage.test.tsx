@@ -20,8 +20,8 @@ const account = (id: string, displayName: string, state = "connected") => ({
 
 interface Handlers {
   accounts: () => unknown[];
-  start?: () => Response;
-  unlink?: () => Response;
+  start?: () => Response | Promise<Response>;
+  unlink?: () => Response | Promise<Response>;
   state?: unknown;
 }
 
@@ -230,6 +230,37 @@ describe("SCR-60 Accounts", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Unlink" }));
     const dialog = screen.getByRole("dialog", { name: "Unlink Ann?" });
     expect(within(dialog).getByText(body)).toBeInTheDocument();
+  });
+
+  const hold = () => new Promise<Response>(() => undefined);
+
+  it("AC-114: Add account shows Starting, busy, and holds Sign in again while the start is in flight", async () => {
+    setup({ accounts: () => [account("a1", "Ann", "session_lost")], start: hold });
+    await userEvent.click(await screen.findByRole("button", { name: "Add account" }));
+    const busy = await screen.findByRole("button", { name: "Starting" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sign in again" })).toBeDisabled();
+  });
+
+  it("AC-117: Sign in again shows Starting, busy, and holds Add account while the start is in flight", async () => {
+    setup({ accounts: () => [account("a1", "Ann", "session_lost")], start: hold });
+    await userEvent.click(await screen.findByRole("button", { name: "Sign in again" }));
+    const busy = await screen.findByRole("button", { name: "Starting" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add account" })).toBeDisabled();
+  });
+
+  it("AC-111: the confirm shows Unlinking, busy, and Keep account is disabled while the unlink is in flight", async () => {
+    setup({ accounts: () => [account("a1", "Ann")], unlink: hold });
+    await userEvent.click(await screen.findByRole("button", { name: "Unlink" }));
+    await userEvent.click(screen.getByRole("button", { name: "Unlink account" }));
+    const dialog = screen.getByRole("dialog", { name: "Unlink Ann?" });
+    const busy = await within(dialog).findByRole("button", { name: "Unlinking" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Keep account" })).toBeDisabled();
   });
 
   it("AC-111: confirmed unlink deletes, refetches and shows an info toast", async () => {
