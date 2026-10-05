@@ -1947,6 +1947,25 @@
         "docs/features/telegram-link/tasks/tracker.md"
       ],
       "file": "docs/features/telegram-link/tasks/t95-docs-sync-r12.md"
+    },
+    {
+      "id": "T96",
+      "title": "The chat-load retry's Telegram retry-after, doubling and caps each have a test",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "Ignoring Telegram's retry-after, removing the doubling, or removing the 1–300 s clamp each turns a tdlight test red; test-plan row 88 claims only what the tests show; tasks.json matches every task file.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t96-chat-load-retry-delay-tested.md"
     }
   ]
 }
