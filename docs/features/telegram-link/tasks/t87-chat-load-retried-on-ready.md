@@ -36,3 +36,9 @@ Unit, in `TdlightTelegramSessionsTest`: the first `LoadChats` fails (or times ou
 A chat-list load that times out or fails is started again on the next connection Ready while the account is authorized; once it completes, later chat changes are stored. Per-task gate clean. No test weakened.
 
 **Fallback:** [spec.md](../spec.md) · [sad.md](../sad.md) · [data-model.md](../data-model.md) · [openapi.yaml](../contracts/openapi.yaml) · [events.md](../contracts/events.md) · [screens.md](../screens.md) · [adr/](../adr/)
+
+## How it was done
+
+- `loadChats` clears `loadStarted` (under the session lock) when a load stops without completing; `onConnection` calls `resumeChatLoad()` on `connectionStateReady`, which starts the load again while sync has started, the load is not complete and the session is authorized. `startChatLoad` still keeps at most one load running.
+- Deviation from files_hint: adding the RED test pushed `TdlightTelegramSessionsTest` over detekt's `LargeClass` limit, so the five existing chat-list tests and the new one moved, unchanged, into a new `TdlightChatSyncTest.kt` with its own copy of the small fixture. No test was weakened; the two classes run the same 28 tests.
+- sad Flow 11's outage text is left to the docs-sync task (T91), as the orchestrator keeps sad.md out of this task.

@@ -267,7 +267,9 @@ internal class TdlightSession(
 
     private fun onConnection(update: TdlibUpdate.ConnectionState) {
         if (!authorized || lost) return
-        emitState(if (update.state == CONNECTION_READY) SessionState.Ready else SessionState.Connecting)
+        val connected = update.state == CONNECTION_READY
+        emitState(if (connected) SessionState.Ready else SessionState.Connecting)
+        if (connected) resumeChatLoad()
     }
 
     private fun onClosed() {
@@ -408,7 +410,15 @@ internal class TdlightSession(
         Thread.ofVirtual().name("telegram-chat-load-", 0).start { loadChats() }
     }
 
-    /** Loads the main and archived lists; TDLib answers 404 when a list is fully loaded. */
+    /** A load that stopped during an outage starts again once Telegram is reachable (AC-116, AC-121). */
+    private fun resumeChatLoad() {
+        if (syncStarted && !loadCompleted && isAuthorized()) startChatLoad()
+    }
+
+    /**
+     * Loads the main and archived lists; TDLib answers 404 when a list is fully loaded. A load that stops without
+     * completing can be started again by the next connection Ready.
+     */
     @Suppress("TooGenericExceptionCaught") // a failed load is logged; the list stays incomplete until the next start
     private fun loadChats() {
         try {
@@ -433,6 +443,7 @@ internal class TdlightSession(
             }
         } catch (e: Exception) {
             log.warn("Chat list load for {} stopped: {}", id.value, e.javaClass.simpleName)
+            synchronized(this) { loadStarted = false }
         }
     }
 
