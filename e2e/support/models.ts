@@ -29,8 +29,9 @@ export function slotFieldset(page: Page, slot: "Text" | "Vision" | "Image"): Loc
   return page.getByRole("dialog").locator(`fieldset[data-slot="${slot}"]`);
 }
 
+/** A Toast: info Toasts are written into the persistent polite live region, error Toasts are `role=alert`. */
 export function toast(page: Page): Locator {
-  return page.locator("[role=status], [role=alert]").filter({ hasText: /\S/ });
+  return page.locator("[role=status], [role=alert], [aria-live=polite]").filter({ hasText: /\S/ });
 }
 
 /** Adds a catalog model to a slot through the chooser. */
