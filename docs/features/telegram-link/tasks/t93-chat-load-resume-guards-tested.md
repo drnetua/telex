@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (twelfth pass) — T5, H-T5, D25"
-status: "todo"
+status: "done"
 ---
 
 # T93 — The chat-load restart's guards and the Updating resume each have a test, and the moved tests leave no dead code

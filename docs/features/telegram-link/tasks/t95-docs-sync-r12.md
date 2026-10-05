@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/test-plan.md", "docs/features/telegram
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (twelfth pass) — W23, W24, H-T5"
-status: "todo"
+status: "done"
 ---
 
 # T95 — Sync the test plan, sad, screens and task files with the twelfth-review fixes

@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx", "fro
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (twelfth pass) — W24"
-status: "todo"
+status: "done"
 ---
 
 # T94 — The SCR-02 wait card announces through a live region that the wizard renders from mount

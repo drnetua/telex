@@ -740,7 +740,7 @@ sequenceDiagram
     S-->>U: hint linked-accounts
     U-->>O: the number of chats
     Note over O,S: the sync runs in the service whether or not a page is open, and a page opened later reads the current counts
-    Note over S,X: a restart mid-sync resumes from the stored counts, not from zero, and a chat-list load that failed (an outage of over 60 s) starts again on the next connection Ready
+    Note over S,X: a restart mid-sync resumes from the stored counts, not from zero, and a chat-list load that failed is retried while the session stays connected (after Telegram's retry-after, else a backoff from 5 s to 300 s) and started again on the next connection Ready or Updating, never after a close or during teleX's own log out
     loop while the account is connected
         X-->>S: a chat joined, left or renamed, or new messages changed a chat's order or unread count
         S->>D: upsert or remove the chat-list row and update the count

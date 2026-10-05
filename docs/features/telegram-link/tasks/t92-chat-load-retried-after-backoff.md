@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (twelfth pass) — W23"
-status: "todo"
+status: "done"
 ---
 
 # T92 — A chat-list load that fails while the connection stays up is retried after a bounded backoff
