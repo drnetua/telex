@@ -42,7 +42,7 @@ Built components (`frontend/src/components/`) plus the reference components the 
 |---|---|---|---|
 | Button | `frontend/src/components/Button/Button.tsx:10` | default / hover / focus / disabled / busy (spinner, label kept) | Variant via Tabler class (`btn-primary` default, `btn-ghost-dark`, `btn-danger`); optional icon |
 | Badge | `frontend/src/components/Badge/Badge.tsx:11` | neutral / success / danger | Always icon plus words, never color alone |
-| Icon | `frontend/src/components/Icon/Icon.tsx:66` | sizes (24 default) | Tabler Icons subset by name; telegram-link adds `unlink` |
+| Icon | `frontend/src/components/Icon/Icon.tsx:78` | sizes (24 default) | Tabler Icons subset by name; telegram-link adds `unlink` |
 | CodeInput | `frontend/src/components/CodeInput/CodeInput.tsx:16` | empty / typing / invalid / disabled | Sign-in Code entry; `length` (default 6) and `label` props (telegram-link uses the Telegram code length) |
 | LinkedAccountSummary | `frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.tsx` | variant `line` (SCR-10) / `row` (SCR-60, actions slot); connected-syncing / connected-synced / reconnecting / session lost | NEW (telegram-link): name, masked phone, state Badge (aria-live polite) and chat-sync line |
 | EmptyState | `frontend/src/components/EmptyState/EmptyState.tsx:14` | kind: none / blocked / first | One sentence and one action |
