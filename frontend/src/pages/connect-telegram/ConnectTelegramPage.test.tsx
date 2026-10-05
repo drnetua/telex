@@ -355,6 +355,20 @@ describe("SCR-02 code step", () => {
     expect(calls.some((c) => c.url.endsWith("/code/resend"))).toBe(true);
   });
 
+  it("shows Checking the code, busy, with read-only digits and Cancel held while the code is in flight (AC-01)", async () => {
+    mockApi({ [A]: [json(200, codeAttempt)], [CODE]: [HOLD] });
+    setup();
+    await screen.findByText(/Telegram sent the code/);
+    await typeCode("12345");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const busy = await screen.findByRole("button", { name: "Checking the code" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(digits().every((d) => d.readOnly)).toBe(true);
+    expect(screen.getByRole("button", { name: "Send a new code" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  });
+
   it("shows Sending a new code, busy, and holds Continue and Cancel while the resend is in flight (AC-02)", async () => {
     mockApi({ [A]: [json(200, codeAttempt)], [RESEND]: [HOLD] });
     setup();
@@ -394,6 +408,19 @@ describe("SCR-02 password step", () => {
     expect(
       screen.getByText("Forgot your password? It can only be reset in the Telegram app."),
     ).toBeVisible();
+  });
+
+  it("shows Checking the password, busy, with a read-only field and Cancel held while it is in flight (AC-106)", async () => {
+    mockApi({ [A]: [json(200, pw)], [PASSWORD]: [HOLD] });
+    setup();
+    const field = await screen.findByLabelText("Password");
+    await userEvent.type(field, "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const busy = await screen.findByRole("button", { name: "Checking the password" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    expect(busy).toBeDisabled();
+    expect(field).toHaveAttribute("readonly");
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   });
 
   it("shows no hint line when there is none", async () => {
