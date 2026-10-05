@@ -57,4 +57,5 @@ Run the review/fix loop for the SDD feature `$1` until a review is clean. Stop a
   - A red gate that isn't caused by the code (MODULE_NOT_FOUND, ZipException, Docker) is an environment problem. Fix it and rerun once. Don't loop on it.
   - A red that survives one fix attempt: stop the loop and report it.
 - **Never commit with a red or skipped gate.** Never weaken a test to pass.
+- **Never push, or ask the user to push, without a green local `./gradlew build integrationTest` on the exact commit.** Quote the BUILD SUCCESSFUL line, and say when Playwright e2e couldn't run locally.
 - **Check in after each pass** with one short status line: findings, verdicts, commits.
