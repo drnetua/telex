@@ -1,1239 +1,1239 @@
 {
   ".claude/settings.json": {
-    "mtime": 1791225781.8320522,
-    "seen": 1791225860.1340387,
+    "mtime": 1791232539.3963542,
+    "seen": 1791232561.85855,
     "ast_hash": "925dd354ec6719be8bf1eb8363cafa17",
     "semantic_hash": "925dd354ec6719be8bf1eb8363cafa17"
   },
   "backend/app/build.gradle.kts": {
-    "mtime": 1791225781.8324642,
-    "seen": 1791225860.1340442,
+    "mtime": 1791232539.3967605,
+    "seen": 1791232561.8585536,
     "ast_hash": "1d9a78e8bb6f3c1f5a83b802bc67592e",
     "semantic_hash": "1d9a78e8bb6f3c1f5a83b802bc67592e"
   },
   "backend/app/src/integrationTest/kotlin/telex/ApplicationSmokeIT.kt": {
-    "mtime": 1791225781.83253,
-    "seen": 1791225860.1340466,
+    "mtime": 1791232539.3968718,
+    "seen": 1791232561.858555,
     "ast_hash": "c25386a795e072cfbf2f5fbef087771e",
     "semantic_hash": "c25386a795e072cfbf2f5fbef087771e"
   },
   "backend/app/src/integrationTest/kotlin/telex/IdentitySchemaIT.kt": {
-    "mtime": 1791225781.8325784,
-    "seen": 1791225860.1340482,
+    "mtime": 1791232539.396942,
+    "seen": 1791232561.8585556,
     "ast_hash": "d7c289fb4e45067769f18b5996860866",
     "semantic_hash": "d7c289fb4e45067769f18b5996860866"
   },
   "backend/app/src/integrationTest/kotlin/telex/MigrationRollbackIT.kt": {
-    "mtime": 1791225781.8325784,
-    "seen": 1791225860.13405,
+    "mtime": 1791232539.396942,
+    "seen": 1791232561.8585565,
     "ast_hash": "f80d921c40d9e2916884bec41f1948c8",
     "semantic_hash": "f80d921c40d9e2916884bec41f1948c8"
   },
   "backend/app/src/integrationTest/kotlin/telex/TestcontainersConfiguration.kt": {
-    "mtime": 1791225781.8325784,
-    "seen": 1791225860.1340559,
+    "mtime": 1791232539.396942,
+    "seen": 1791232561.8585584,
     "ast_hash": "cb859de72e7f9f23f483188fec607f9c",
     "semantic_hash": "cb859de72e7f9f23f483188fec607f9c"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/NewSignInNoticeIT.kt": {
-    "mtime": 1791225781.8331382,
-    "seen": 1791225860.1340744,
+    "mtime": 1791232539.3974671,
+    "seen": 1791232561.8585644,
     "ast_hash": "099509d487fcfb8404ad7ba42705caa7",
     "semantic_hash": "099509d487fcfb8404ad7ba42705caa7"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/PasskeysIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340797,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585672,
     "ast_hash": "f55f1304f4d6fac1f93b41b2aa6f7fe1",
     "semantic_hash": "f55f1304f4d6fac1f93b41b2aa6f7fe1"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/SecretsHygieneIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340816,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585677,
     "ast_hash": "cdb5cf69bdad83f99c94d87c60a1b715",
     "semantic_hash": "cdb5cf69bdad83f99c94d87c60a1b715"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/SignInIssueIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340828,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585682,
     "ast_hash": "5c1361eb16277a69a86afda42af6f9c2",
     "semantic_hash": "5c1361eb16277a69a86afda42af6f9c2"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/SignInMailFailureIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340845,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585687,
     "ast_hash": "f7e87369d0a527ffdebe3620c048d090",
     "semantic_hash": "f7e87369d0a527ffdebe3620c048d090"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/SignInRedeemIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340857,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585691,
     "ast_hash": "2286a82de9e7808fc759038e3b1476bb",
     "semantic_hash": "2286a82de9e7808fc759038e3b1476bb"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/SignInSessionsIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.134087,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585696,
     "ast_hash": "9fcc082e58c031d8b51f694da71d9cbf",
     "semantic_hash": "9fcc082e58c031d8b51f694da71d9cbf"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/TestCredentialRecords.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.134089,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585703,
     "ast_hash": "5b9083e9d5fd35747b40072abab3e984",
     "semantic_hash": "5b9083e9d5fd35747b40072abab3e984"
   },
   "backend/app/src/integrationTest/kotlin/telex/mail/RecordingMailer.kt": {
-    "mtime": 1791225781.8338609,
-    "seen": 1791225860.1340966,
+    "mtime": 1791232539.3981502,
+    "seen": 1791232561.8585727,
     "ast_hash": "26f1093e6e9352ec2ca57a837913d2cd",
     "semantic_hash": "26f1093e6e9352ec2ca57a837913d2cd"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/ContractValidator.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341126,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585806,
     "ast_hash": "6ab7abd7b755f881fb88c155e7a73e22",
     "semantic_hash": "6ab7abd7b755f881fb88c155e7a73e22"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/PasskeyCeremoniesIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.134122,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585844,
     "ast_hash": "e7225f778a0c5c46d0703e123e57c87c",
     "semantic_hash": "e7225f778a0c5c46d0703e123e57c87c"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/PasskeysApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341233,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585846,
     "ast_hash": "d3836d85d98ee8121c8ce2187a2a0bc4",
     "semantic_hash": "d3836d85d98ee8121c8ce2187a2a0bc4"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/SecurityChainIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341271,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585863,
     "ast_hash": "dda31ee5401b972eab13323f2c3c5276",
     "semantic_hash": "dda31ee5401b972eab13323f2c3c5276"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/SessionsApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341283,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585868,
     "ast_hash": "492cb99b1c42a1a8d6048fa881ac022f",
     "semantic_hash": "492cb99b1c42a1a8d6048fa881ac022f"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/SignInApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.13413,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585875,
     "ast_hash": "e26558b46274b40bc01b119113990cef",
     "semantic_hash": "e26558b46274b40bc01b119113990cef"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/SoftwareAuthenticator.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341312,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585877,
     "ast_hash": "21d5ae3feab9c57d7b4515f95f157815",
     "semantic_hash": "21d5ae3feab9c57d7b4515f95f157815"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/SpaHostingIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341324,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585885,
     "ast_hash": "5ac217f1319c4f0074914ebbdfc00026",
     "semantic_hash": "5ac217f1319c4f0074914ebbdfc00026"
   },
   "backend/app/src/main/kotlin/telex/ClockConfiguration.kt": {
-    "mtime": 1791225781.835817,
-    "seen": 1791225860.1341338,
+    "mtime": 1791232539.3998737,
+    "seen": 1791232561.858589,
     "ast_hash": "4d0c6132f5e17b5b36d0c4924468f378",
     "semantic_hash": "4d0c6132f5e17b5b36d0c4924468f378"
   },
   "backend/app/src/main/kotlin/telex/TelexApplication.kt": {
-    "mtime": 1791225781.835871,
-    "seen": 1791225860.1341348,
+    "mtime": 1791232539.3999398,
+    "seen": 1791232561.8585894,
     "ast_hash": "e4ab36aa85dd8ad4d29a60794f5827c1",
     "semantic_hash": "e4ab36aa85dd8ad4d29a60794f5827c1"
   },
   "backend/app/src/main/kotlin/telex/agents/package-info.java": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.134175,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8586025,
     "ast_hash": "4f4e04f284f5e20e3316009d51246c1c",
     "semantic_hash": "4f4e04f284f5e20e3316009d51246c1c"
   },
   "backend/app/src/main/kotlin/telex/audit/package-info.java": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341763,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.858603,
     "ast_hash": "d20138bafc62c1f1c077b0883f356974",
     "semantic_hash": "d20138bafc62c1f1c077b0883f356974"
   },
   "backend/app/src/main/kotlin/telex/bot/package-info.java": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341774,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8586035,
     "ast_hash": "308a09364d3e3e81debf45aa6ef045a6",
     "semantic_hash": "308a09364d3e3e81debf45aa6ef045a6"
   },
   "backend/app/src/main/kotlin/telex/decision/package-info.java": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.134179,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8586042,
     "ast_hash": "9deb24c24c795d34251e91e58b514f02",
     "semantic_hash": "9deb24c24c795d34251e91e58b514f02"
   },
   "backend/app/src/main/kotlin/telex/identity/Ids.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.13418,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.858605,
     "ast_hash": "03cb856240fc0701866fdaa128a218df",
     "semantic_hash": "03cb856240fc0701866fdaa128a218df"
   },
   "backend/app/src/main/kotlin/telex/identity/OwnerProfiles.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.134185,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586066,
     "ast_hash": "c4bcac3aec25e443d9548a8abdb7dc11",
     "semantic_hash": "c4bcac3aec25e443d9548a8abdb7dc11"
   },
   "backend/app/src/main/kotlin/telex/identity/Passkeys.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.1341867,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.858607,
     "ast_hash": "ca52c2642f651edfb4d2a601a1832032",
     "semantic_hash": "ca52c2642f651edfb4d2a601a1832032"
   },
   "backend/app/src/main/kotlin/telex/identity/PublicUrl.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.134188,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586073,
     "ast_hash": "2e4c4ec8dcfe29e48b2e527510a8f17e",
     "semantic_hash": "2e4c4ec8dcfe29e48b2e527510a8f17e"
   },
   "backend/app/src/main/kotlin/telex/identity/SignIn.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.1341896,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586078,
     "ast_hash": "1427ec583ed1c332d1e0fb9d9712a887",
     "semantic_hash": "1427ec583ed1c332d1e0fb9d9712a887"
   },
   "backend/app/src/main/kotlin/telex/identity/SignInSessionStarted.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.134191,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586087,
     "ast_hash": "0c512f7b47ff417755fa3e71cdf5813d",
     "semantic_hash": "0c512f7b47ff417755fa3e71cdf5813d"
   },
   "backend/app/src/main/kotlin/telex/identity/SignInSessions.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.1341932,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586092,
     "ast_hash": "741b328dfee0683bab02217004851cba",
     "semantic_hash": "741b328dfee0683bab02217004851cba"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/device/DeviceLabel.kt": {
-    "mtime": 1791225781.8370476,
-    "seen": 1791225860.1341972,
+    "mtime": 1791232539.401188,
+    "seen": 1791232561.8586106,
     "ast_hash": "afda85e1861c8ea769d3abad89d86cb1",
     "semantic_hash": "afda85e1861c8ea769d3abad89d86cb1"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/email/NewSignInNotice.kt": {
-    "mtime": 1791225781.8370476,
-    "seen": 1791225860.1341987,
+    "mtime": 1791232539.401188,
+    "seen": 1791232561.858611,
     "ast_hash": "c902731137faddabf1d885cd38a7239e",
     "semantic_hash": "c902731137faddabf1d885cd38a7239e"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/email/SignInEmail.kt": {
-    "mtime": 1791225781.8371282,
-    "seen": 1791225860.1342003,
+    "mtime": 1791232539.4012825,
+    "seen": 1791232561.8586118,
     "ast_hash": "6e6ad5e396ea72df3deaadf2e7777c25",
     "semantic_hash": "6e6ad5e396ea72df3deaadf2e7777c25"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/grant/GrantRefusals.kt": {
-    "mtime": 1791225781.8371282,
-    "seen": 1791225860.1342015,
+    "mtime": 1791232539.4012825,
+    "seen": 1791232561.8586123,
     "ast_hash": "52043b259ee24db778fa8b40965c0346",
     "semantic_hash": "52043b259ee24db778fa8b40965c0346"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/grant/GrantRows.kt": {
-    "mtime": 1791225781.8371875,
-    "seen": 1791225860.1342032,
+    "mtime": 1791232539.4013522,
+    "seen": 1791232561.8586125,
     "ast_hash": "bc415eb3f0f23af986c3482d03b30308",
     "semantic_hash": "bc415eb3f0f23af986c3482d03b30308"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/owner/EmailAddress.kt": {
-    "mtime": 1791225781.8372626,
-    "seen": 1791225860.134209,
+    "mtime": 1791232539.4014347,
+    "seen": 1791232561.8586156,
     "ast_hash": "2c05c46653362117eff7c944ea4bd4db",
     "semantic_hash": "2c05c46653362117eff7c944ea4bd4db"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/owner/Owners.kt": {
-    "mtime": 1791225781.8373737,
-    "seen": 1791225860.1342103,
+    "mtime": 1791232539.4015577,
+    "seen": 1791232561.858616,
     "ast_hash": "4b35eae9184cfdec6b08d4cf06a880fb",
     "semantic_hash": "4b35eae9184cfdec6b08d4cf06a880fb"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/passkey/NeverUsedTolerantJdbcOperations.kt": {
-    "mtime": 1791225781.8373737,
-    "seen": 1791225860.1342113,
+    "mtime": 1791232539.4015577,
+    "seen": 1791232561.8586164,
     "ast_hash": "ffdc961277e5838bd18571dce7e691eb",
     "semantic_hash": "ffdc961277e5838bd18571dce7e691eb"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/passkey/PasskeyRepositories.kt": {
-    "mtime": 1791225781.837447,
-    "seen": 1791225860.134213,
+    "mtime": 1791232539.4016395,
+    "seen": 1791232561.8586168,
     "ast_hash": "36924457734c838dcd6ca355237b30e3",
     "semantic_hash": "36924457734c838dcd6ca355237b30e3"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/passkey/PasskeyRows.kt": {
-    "mtime": 1791225781.837447,
-    "seen": 1791225860.1342142,
+    "mtime": 1791232539.4016395,
+    "seen": 1791232561.8586173,
     "ast_hash": "b582fe478cebeb520ac4fdc7d5b39786",
     "semantic_hash": "b582fe478cebeb520ac4fdc7d5b39786"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/secret/Secrets.kt": {
-    "mtime": 1791225781.837447,
-    "seen": 1791225860.1342154,
+    "mtime": 1791232539.4016395,
+    "seen": 1791232561.8586178,
     "ast_hash": "aee8abf87754f493c8f4ca9f26f7ef17",
     "semantic_hash": "aee8abf87754f493c8f4ca9f26f7ef17"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/session/SessionRows.kt": {
-    "mtime": 1791225781.837447,
-    "seen": 1791225860.1342168,
+    "mtime": 1791232539.4016395,
+    "seen": 1791232561.8586183,
     "ast_hash": "a9e1ea7a600e325951fe73681889b36a",
     "semantic_hash": "a9e1ea7a600e325951fe73681889b36a"
   },
   "backend/app/src/main/kotlin/telex/identity/package-info.java": {
-    "mtime": 1791225781.837447,
-    "seen": 1791225860.1342182,
+    "mtime": 1791232539.4016395,
+    "seen": 1791232561.858619,
     "ast_hash": "4cdc72231a13c66285b03403470b0a55",
     "semantic_hash": "4cdc72231a13c66285b03403470b0a55"
   },
   "backend/app/src/main/kotlin/telex/llm/package-info.java": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.1342535,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586311,
     "ast_hash": "4ebe27f8207659f618c426c6c6dddea1",
     "semantic_hash": "4ebe27f8207659f618c426c6c6dddea1"
   },
   "backend/app/src/main/kotlin/telex/mail/Mailer.kt": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.134255,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586316,
     "ast_hash": "c74fe515ec92492371990658a45ffcbc",
     "semantic_hash": "c74fe515ec92492371990658a45ffcbc"
   },
   "backend/app/src/main/kotlin/telex/mail/internal/SmtpMailer.kt": {
-    "mtime": 1791225781.838282,
-    "seen": 1791225860.1342561,
+    "mtime": 1791232539.4025903,
+    "seen": 1791232561.8586326,
     "ast_hash": "368b2a560821961e80d801e89ef0a528",
     "semantic_hash": "368b2a560821961e80d801e89ef0a528"
   },
   "backend/app/src/main/kotlin/telex/mail/package-info.java": {
-    "mtime": 1791225781.838282,
-    "seen": 1791225860.134257,
+    "mtime": 1791232539.4025903,
+    "seen": 1791232561.8586328,
     "ast_hash": "54b8cbd6e09d987f15257f82e33bdd81",
     "semantic_hash": "54b8cbd6e09d987f15257f82e33bdd81"
   },
   "backend/app/src/main/kotlin/telex/messaging/package-info.java": {
-    "mtime": 1791225781.8391266,
-    "seen": 1791225860.134291,
+    "mtime": 1791232539.4034836,
+    "seen": 1791232561.8586478,
     "ast_hash": "1e55816f7274cfd21d7f8bc97e429bc5",
     "semantic_hash": "1e55816f7274cfd21d7f8bc97e429bc5"
   },
   "backend/app/src/main/kotlin/telex/scheduling/package-info.java": {
-    "mtime": 1791225781.8391266,
-    "seen": 1791225860.1342921,
+    "mtime": 1791232539.4034836,
+    "seen": 1791232561.8586483,
     "ast_hash": "a9e0eca11fa5f70e50f5d4399cad2768",
     "semantic_hash": "a9e0eca11fa5f70e50f5d4399cad2768"
   },
   "backend/app/src/main/kotlin/telex/shared/Ids.kt": {
-    "mtime": 1791225781.8391266,
-    "seen": 1791225860.1342938,
+    "mtime": 1791232539.4034836,
+    "seen": 1791232561.8586488,
     "ast_hash": "9d584319c8d42f8b4787110948dbe807",
     "semantic_hash": "9d584319c8d42f8b4787110948dbe807"
   },
   "backend/app/src/main/kotlin/telex/shared/Problems.kt": {
-    "mtime": 1791225781.8392873,
-    "seen": 1791225860.1342945,
+    "mtime": 1791232539.403671,
+    "seen": 1791232561.8586493,
     "ast_hash": "6791bb3082b9fad62911daf0a5b42a0f",
     "semantic_hash": "6791bb3082b9fad62911daf0a5b42a0f"
   },
   "backend/app/src/main/kotlin/telex/shared/package-info.java": {
-    "mtime": 1791225781.8392873,
-    "seen": 1791225860.1342971,
+    "mtime": 1791232539.403671,
+    "seen": 1791232561.8586507,
     "ast_hash": "c06e056e7e4f14f9c66de7e01df2b144",
     "semantic_hash": "c06e056e7e4f14f9c66de7e01df2b144"
   },
   "backend/app/src/main/kotlin/telex/tasks/package-info.java": {
-    "mtime": 1791225781.8392873,
-    "seen": 1791225860.134298,
+    "mtime": 1791232539.403671,
+    "seen": 1791232561.8586512,
     "ast_hash": "bad4fd230ed19aa2fce773e66d18d9ea",
     "semantic_hash": "bad4fd230ed19aa2fce773e66d18d9ea"
   },
   "backend/app/src/main/kotlin/telex/telegram/package-info.java": {
-    "mtime": 1791225781.8397021,
-    "seen": 1791225860.1343105,
+    "mtime": 1791232539.4041305,
+    "seen": 1791232561.858657,
     "ast_hash": "ac626740cb19507f123db68023b1b6a5",
     "semantic_hash": "ac626740cb19507f123db68023b1b6a5"
   },
   "backend/app/src/main/kotlin/telex/tools/package-info.java": {
-    "mtime": 1791225781.8397021,
-    "seen": 1791225860.1343117,
+    "mtime": 1791232539.4041305,
+    "seen": 1791232561.8586574,
     "ast_hash": "ca8033ba9d0580a31560af49ab5a21ce",
     "semantic_hash": "ca8033ba9d0580a31560af49ab5a21ce"
   },
   "backend/app/src/main/kotlin/telex/triage/package-info.java": {
-    "mtime": 1791225781.8397021,
-    "seen": 1791225860.1343126,
+    "mtime": 1791232539.4041305,
+    "seen": 1791232561.858658,
     "ast_hash": "929e2ef5f301be96e63110f50dee7a9d",
     "semantic_hash": "929e2ef5f301be96e63110f50dee7a9d"
   },
   "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt": {
-    "mtime": 1791225781.8397021,
-    "seen": 1791225860.1343145,
+    "mtime": 1791232539.4041305,
+    "seen": 1791232561.8586586,
     "ast_hash": "a9cb693de92392a1737080b7153e115d",
     "semantic_hash": "a9cb693de92392a1737080b7153e115d"
   },
   "backend/app/src/main/kotlin/telex/web/SpaHosting.kt": {
-    "mtime": 1791225781.8400016,
-    "seen": 1791225860.134316,
+    "mtime": 1791232539.4044118,
+    "seen": 1791232561.8586593,
     "ast_hash": "0893f16df00610ea7102e897888012ea",
     "semantic_hash": "0893f16df00610ea7102e897888012ea"
   },
   "backend/app/src/main/kotlin/telex/web/api/MeController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.13432,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586612,
     "ast_hash": "0324ed249b22084594b3f89cc82266c5",
     "semantic_hash": "0324ed249b22084594b3f89cc82266c5"
   },
   "backend/app/src/main/kotlin/telex/web/api/PasskeysController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343255,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586638,
     "ast_hash": "8ef62ec6938fdd74cd8f30d3081519c2",
     "semantic_hash": "8ef62ec6938fdd74cd8f30d3081519c2"
   },
   "backend/app/src/main/kotlin/telex/web/api/SessionsController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343288,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586648,
     "ast_hash": "4b6117f74628acab56ea50c011e5288f",
     "semantic_hash": "4b6117f74628acab56ea50c011e5288f"
   },
   "backend/app/src/main/kotlin/telex/web/api/SignInController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343303,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586655,
     "ast_hash": "a29ea9a488741775a11eb1decb7b2601",
     "semantic_hash": "a29ea9a488741775a11eb1decb7b2601"
   },
   "backend/app/src/main/kotlin/telex/web/package-info.java": {
-    "mtime": 1791225781.8404653,
-    "seen": 1791225860.134339,
+    "mtime": 1791232539.4048965,
+    "seen": 1791232561.8586688,
     "ast_hash": "595c91e6ac7f196a92823e1cfedf9665",
     "semantic_hash": "595c91e6ac7f196a92823e1cfedf9665"
   },
   "backend/app/src/main/kotlin/telex/web/security/PasskeyCeremonies.kt": {
-    "mtime": 1791225781.8404653,
-    "seen": 1791225860.1343403,
+    "mtime": 1791232539.4048965,
+    "seen": 1791232561.8586693,
     "ast_hash": "c902ed208e426d67236e56d8e50d6d4e",
     "semantic_hash": "c902ed208e426d67236e56d8e50d6d4e"
   },
   "backend/app/src/main/kotlin/telex/web/security/SecurityConfiguration.kt": {
-    "mtime": 1791225781.8406365,
-    "seen": 1791225860.1343417,
+    "mtime": 1791232539.4050665,
+    "seen": 1791232561.8586702,
     "ast_hash": "134950482ded96aa0227211c36bc4b26",
     "semantic_hash": "134950482ded96aa0227211c36bc4b26"
   },
   "backend/app/src/main/kotlin/telex/web/security/SessionCookieSecurityContextRepository.kt": {
-    "mtime": 1791225781.8406365,
-    "seen": 1791225860.134343,
+    "mtime": 1791232539.4050665,
+    "seen": 1791232561.8586705,
     "ast_hash": "7f6168703c6fa5b6113ab9305b5c25a5",
     "semantic_hash": "7f6168703c6fa5b6113ab9305b5c25a5"
   },
   "backend/app/src/main/kotlin/telex/web/security/SessionCookies.kt": {
-    "mtime": 1791225781.8406365,
-    "seen": 1791225860.1343439,
+    "mtime": 1791232539.4050665,
+    "seen": 1791232561.8586714,
     "ast_hash": "8500b5be11b14b781814271239712afe",
     "semantic_hash": "8500b5be11b14b781814271239712afe"
   },
   "backend/app/src/main/resources/db/migration/V202609300000__baseline.sql": {
-    "mtime": 1791225781.840808,
-    "seen": 1791225860.1343458,
+    "mtime": 1791232539.405261,
+    "seen": 1791232561.858672,
     "ast_hash": "bac6ace30c26a5e1bea94202522e3104",
     "semantic_hash": "bac6ace30c26a5e1bea94202522e3104"
   },
   "backend/app/src/main/resources/db/migration/V202610021200__create_owner.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.134347,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586724,
     "ast_hash": "df1d0a503abcd570da71b0c4488ddd2b",
     "semantic_hash": "df1d0a503abcd570da71b0c4488ddd2b"
   },
   "backend/app/src/main/resources/db/migration/V202610021201__create_sign_in_grant.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343484,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586729,
     "ast_hash": "12be843f474e3d8529a9f78186ce71ec",
     "semantic_hash": "12be843f474e3d8529a9f78186ce71ec"
   },
   "backend/app/src/main/resources/db/migration/V202610021202__create_sign_in_session.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343493,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586736,
     "ast_hash": "5ee8541f2420bd39e08f884c35df0aba",
     "semantic_hash": "5ee8541f2420bd39e08f884c35df0aba"
   },
   "backend/app/src/main/resources/db/migration/V202610021203__create_passkey_tables.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343505,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586743,
     "ast_hash": "331a2a53fa760e9f6421d47306f60503",
     "semantic_hash": "331a2a53fa760e9f6421d47306f60503"
   },
   "backend/app/src/main/resources/db/migration/V202610021600__widen_user_entity_display_name.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.134352,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586748,
     "ast_hash": "7b965a3d970610bc52b4195f55becd41",
     "semantic_hash": "7b965a3d970610bc52b4195f55becd41"
   },
   "backend/app/src/main/resources/db/rollback/U202609300000__baseline.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343637,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.85868,
     "ast_hash": "4fdc10816b33b3ec58367482ce72d47a",
     "semantic_hash": "4fdc10816b33b3ec58367482ce72d47a"
   },
   "backend/app/src/main/resources/db/rollback/U202610021200__create_owner.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.134365,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586805,
     "ast_hash": "ae1f003b3b8da6bbf74f7429fb595ffb",
     "semantic_hash": "ae1f003b3b8da6bbf74f7429fb595ffb"
   },
   "backend/app/src/main/resources/db/rollback/U202610021201__create_sign_in_grant.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.134367,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586814,
     "ast_hash": "e2375c308010ffd344f0ecb7f543de67",
     "semantic_hash": "e2375c308010ffd344f0ecb7f543de67"
   },
   "backend/app/src/main/resources/db/rollback/U202610021202__create_sign_in_session.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.134368,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.858682,
     "ast_hash": "bae7ecf3c0835420ab0d7efb79d60afb",
     "semantic_hash": "bae7ecf3c0835420ab0d7efb79d60afb"
   },
   "backend/app/src/main/resources/db/rollback/U202610021203__create_passkey_tables.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343699,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586824,
     "ast_hash": "c3812ee9d7515f191fb4b765fa937418",
     "semantic_hash": "c3812ee9d7515f191fb4b765fa937418"
   },
   "backend/app/src/main/resources/db/rollback/U202610021600__widen_user_entity_display_name.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343713,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.858683,
     "ast_hash": "c98554d55589aa714544766687cf305a",
     "semantic_hash": "c98554d55589aa714544766687cf305a"
   },
   "backend/app/src/test/kotlin/telex/ClockConfigurationTest.kt": {
-    "mtime": 1791225781.8413796,
-    "seen": 1791225860.134383,
+    "mtime": 1791232539.4059372,
+    "seen": 1791232561.8586876,
     "ast_hash": "a9c485e7761e32d093cadc0924cac8ae",
     "semantic_hash": "a9c485e7761e32d093cadc0924cac8ae"
   },
   "backend/app/src/test/kotlin/telex/ModularityTest.kt": {
-    "mtime": 1791225781.8414235,
-    "seen": 1791225860.134384,
+    "mtime": 1791232539.4059958,
+    "seen": 1791232561.8586886,
     "ast_hash": "2e46e184fa5207866b1bd400714daa4b",
     "semantic_hash": "2e46e184fa5207866b1bd400714daa4b"
   },
   "backend/app/src/test/kotlin/telex/identity/IdsTest.kt": {
-    "mtime": 1791225781.8415582,
-    "seen": 1791225860.134392,
+    "mtime": 1791232539.40615,
+    "seen": 1791232561.8586922,
     "ast_hash": "197494014598a35cb35041522ab40c45",
     "semantic_hash": "197494014598a35cb35041522ab40c45"
   },
   "backend/app/src/test/kotlin/telex/identity/PublicUrlTest.kt": {
-    "mtime": 1791225781.8417168,
-    "seen": 1791225860.134393,
+    "mtime": 1791232539.4063194,
+    "seen": 1791232561.8586926,
     "ast_hash": "19e9247a67a6a20c60899ee799935fd7",
     "semantic_hash": "19e9247a67a6a20c60899ee799935fd7"
   },
   "backend/app/src/test/kotlin/telex/identity/internal/device/DeviceLabelTest.kt": {
-    "mtime": 1791225781.8418021,
-    "seen": 1791225860.1343975,
+    "mtime": 1791232539.4064183,
+    "seen": 1791232561.8586943,
     "ast_hash": "1e35e8c7487994714da6b67f9a4b679f",
     "semantic_hash": "1e35e8c7487994714da6b67f9a4b679f"
   },
   "backend/app/src/test/kotlin/telex/identity/internal/owner/EmailAddressTest.kt": {
-    "mtime": 1791225781.8418021,
-    "seen": 1791225860.1343994,
+    "mtime": 1791232539.4064183,
+    "seen": 1791232561.8586953,
     "ast_hash": "cf37fd421434c180017169746537e811",
     "semantic_hash": "cf37fd421434c180017169746537e811"
   },
   "backend/app/src/test/kotlin/telex/identity/internal/secret/SecretsTest.kt": {
-    "mtime": 1791225781.8418021,
-    "seen": 1791225860.1344008,
+    "mtime": 1791232539.4064183,
+    "seen": 1791232561.8586957,
     "ast_hash": "56c9f4fa96705e4b63e0c0f13a98d981",
     "semantic_hash": "56c9f4fa96705e4b63e0c0f13a98d981"
   },
   "backend/app/src/test/kotlin/telex/mail/internal/SmtpMailerTest.kt": {
-    "mtime": 1791225781.8422034,
-    "seen": 1791225860.1344085,
+    "mtime": 1791232539.4068618,
+    "seen": 1791232561.858699,
     "ast_hash": "5a6d1d2cff7611b45b444efd7bcbe48e",
     "semantic_hash": "5a6d1d2cff7611b45b444efd7bcbe48e"
   },
   "backend/app/src/test/kotlin/telex/shared/IdsTest.kt": {
-    "mtime": 1791225781.842261,
-    "seen": 1791225860.134413,
+    "mtime": 1791232539.4069328,
+    "seen": 1791232561.8587012,
     "ast_hash": "ad4775cc11f8aaf20a5cfc561ce9b1ce",
     "semantic_hash": "ad4775cc11f8aaf20a5cfc561ce9b1ce"
   },
   "backend/app/src/test/kotlin/telex/web/PasskeyRegistrationFilterTest.kt": {
-    "mtime": 1791225781.8426232,
-    "seen": 1791225860.1344223,
+    "mtime": 1791232539.40734,
+    "seen": 1791232561.8587058,
     "ast_hash": "862a9bba0036cb9c006253adc37a7b33",
     "semantic_hash": "862a9bba0036cb9c006253adc37a7b33"
   },
   "backend/app/src/test/kotlin/telex/web/ProblemHandlerTest.kt": {
-    "mtime": 1791225781.8428967,
-    "seen": 1791225860.1344237,
+    "mtime": 1791232539.4075859,
+    "seen": 1791232561.8587062,
     "ast_hash": "e0081c3c7f6e654a31f3efe05678fd24",
     "semantic_hash": "e0081c3c7f6e654a31f3efe05678fd24"
   },
   "backend/telegram-tdlib/build.gradle.kts": {
-    "mtime": 1791225781.843022,
-    "seen": 1791225860.1344278,
+    "mtime": 1791232539.4076977,
+    "seen": 1791232561.858708,
     "ast_hash": "5ea597acafdbc844ef8f1d961716f815",
     "semantic_hash": "5ea597acafdbc844ef8f1d961716f815"
   },
   "backend/telegram-tdlib/src/main/kotlin/telex/telegram/tdlib/TdlibFacade.kt": {
-    "mtime": 1791225781.843165,
-    "seen": 1791225860.134429,
+    "mtime": 1791232539.4078896,
+    "seen": 1791232561.8587086,
     "ast_hash": "29bc7e059fc24cceba3b1d291f9446e5",
     "semantic_hash": "29bc7e059fc24cceba3b1d291f9446e5"
   },
   "build-logic/build.gradle.kts": {
-    "mtime": 1791225781.8433366,
-    "seen": 1791225860.1344328,
+    "mtime": 1791232539.4080946,
+    "seen": 1791232561.8587108,
     "ast_hash": "9b9720bb0eec35aa4170b85fd2b22413",
     "semantic_hash": "9b9720bb0eec35aa4170b85fd2b22413"
   },
   "build-logic/settings.gradle.kts": {
-    "mtime": 1791225781.8434224,
-    "seen": 1791225860.1344337,
+    "mtime": 1791232539.4082084,
+    "seen": 1791232561.8587112,
     "ast_hash": "6d5d5101d1188d15e842d375d9d03af4",
     "semantic_hash": "6d5d5101d1188d15e842d375d9d03af4"
   },
   "build-logic/src/main/kotlin/VersionCatalogExtensions.kt": {
-    "mtime": 1791225781.843457,
-    "seen": 1791225860.1344354,
+    "mtime": 1791232539.4082572,
+    "seen": 1791232561.8587117,
     "ast_hash": "9be105115b9259252eca78b7305d8733",
     "semantic_hash": "9be105115b9259252eca78b7305d8733"
   },
   "build-logic/src/main/kotlin/common.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344366,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587124,
     "ast_hash": "7edf41b0078967b1e128c2368be293ed",
     "semantic_hash": "7edf41b0078967b1e128c2368be293ed"
   },
   "build-logic/src/main/kotlin/integration.test.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344376,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587132,
     "ast_hash": "005a56fe2cfae468a017cb18fadfc52a",
     "semantic_hash": "005a56fe2cfae468a017cb18fadfc52a"
   },
   "build-logic/src/main/kotlin/java.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.134439,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587136,
     "ast_hash": "64f73b3c3bccb0aa65a736bd1eb66994",
     "semantic_hash": "64f73b3c3bccb0aa65a736bd1eb66994"
   },
   "build-logic/src/main/kotlin/kotlin.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344404,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587143,
     "ast_hash": "a78d19cf3c4b9ef70ef9bce9d476999e",
     "semantic_hash": "a78d19cf3c4b9ef70ef9bce9d476999e"
   },
   "build-logic/src/main/kotlin/kotlin.detekt.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344416,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587146,
     "ast_hash": "0c57c79658c6ec3acb2fca3d7071d2c8",
     "semantic_hash": "0c57c79658c6ec3acb2fca3d7071d2c8"
   },
   "build-logic/src/main/kotlin/pnpm.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344433,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587153,
     "ast_hash": "9e97f2bcce58266186d117a827cc1e44",
     "semantic_hash": "9e97f2bcce58266186d117a827cc1e44"
   },
   "build-logic/src/main/kotlin/spotless.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344445,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.858716,
     "ast_hash": "755705e7235c8ea610107e3f5168e9ab",
     "semantic_hash": "755705e7235c8ea610107e3f5168e9ab"
   },
   "build-logic/src/main/kotlin/spring.ai.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.134446,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587165,
     "ast_hash": "4830649acc80f83018908fcf28ee073b",
     "semantic_hash": "4830649acc80f83018908fcf28ee073b"
   },
   "build-logic/src/main/kotlin/spring.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.134447,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.858717,
     "ast_hash": "441501ab10de6797ac39d4c574bc2c0e",
     "semantic_hash": "441501ab10de6797ac39d4c574bc2c0e"
   },
   "build-logic/src/main/kotlin/spring.kotlin.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.134448,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587174,
     "ast_hash": "7748ca252f806f6ce4fdcd9bb9ac3276",
     "semantic_hash": "7748ca252f806f6ce4fdcd9bb9ac3276"
   },
   "build-logic/src/main/kotlin/spring.kotlin.module.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344492,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.858718,
     "ast_hash": "4f601355b28c8cb1589cfaaaf7d9b1aa",
     "semantic_hash": "4f601355b28c8cb1589cfaaaf7d9b1aa"
   },
   "build-logic/src/main/kotlin/spring.kotlin.service.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344504,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587186,
     "ast_hash": "1793cf524dfc10ad40cc797ff52ad2b0",
     "semantic_hash": "1793cf524dfc10ad40cc797ff52ad2b0"
   },
   "build-logic/src/main/kotlin/spring.modulith.conventions.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344514,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587189,
     "ast_hash": "b03692ea15c0c5c447af161694987800",
     "semantic_hash": "b03692ea15c0c5c447af161694987800"
   },
   "build.gradle.kts": {
-    "mtime": 1791225781.843504,
-    "seen": 1791225860.1344526,
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.8587196,
     "ast_hash": "e6c89a0ec8b115062b3f67dc8bc07f0c",
     "semantic_hash": "e6c89a0ec8b115062b3f67dc8bc07f0c"
   },
   "docs/designs/scr-80-overview/canvas.json": {
-    "mtime": 1791225781.8443425,
-    "seen": 1791225860.1344538,
+    "mtime": 1791232539.409196,
+    "seen": 1791232561.8587203,
     "ast_hash": "7b6a6b908135b79e4aa784cbf10839bc",
     "semantic_hash": "7b6a6b908135b79e4aa784cbf10839bc"
   },
   "docs/designs/scr-80-overview/ds/telex/components/bundle.js": {
-    "mtime": 1791225781.8445497,
-    "seen": 1791225860.134455,
+    "mtime": 1791232539.4094174,
+    "seen": 1791232561.8587208,
     "ast_hash": "4d994aef19e4f422aee429c18bb89b77",
     "semantic_hash": "4d994aef19e4f422aee429c18bb89b77"
   },
   "docs/docs/design-system/components/bundle.js": {
-    "mtime": 1791225781.8512323,
-    "seen": 1791225860.1344562,
+    "mtime": 1791232539.4161847,
+    "seen": 1791232561.8587213,
     "ast_hash": "4d994aef19e4f422aee429c18bb89b77",
     "semantic_hash": "4d994aef19e4f422aee429c18bb89b77"
   },
   "docs/docs/design-system/components/index.d.ts": {
-    "mtime": 1791225781.8512323,
-    "seen": 1791225860.134457,
+    "mtime": 1791232539.4161847,
+    "seen": 1791232561.8587217,
     "ast_hash": "0fc6e56ee45a19b7db95dc1157ce0c81",
     "semantic_hash": "0fc6e56ee45a19b7db95dc1157ce0c81"
   },
   "docs/docs/design-system/design-system.json": {
-    "mtime": 1791225781.8512323,
-    "seen": 1791225860.1344583,
+    "mtime": 1791232539.4161847,
+    "seen": 1791232561.8587222,
     "ast_hash": "30811f4eaaed4244a70a1a2b7d81de6e",
     "semantic_hash": "30811f4eaaed4244a70a1a2b7d81de6e"
   },
   "docs/features/_scaffold/tasks.json": {
-    "mtime": 1791225781.8623872,
-    "seen": 1791225860.1344595,
+    "mtime": 1791232539.424354,
+    "seen": 1791232561.858723,
     "ast_hash": "9ccff541dec56f707ef095e2c27b8334",
     "semantic_hash": "9ccff541dec56f707ef095e2c27b8334"
   },
   "docs/features/platform-skeleton/migrations/01_create_owner.down.sql": {
-    "mtime": 1791225781.8703978,
-    "seen": 1791225860.134478,
+    "mtime": 1791232539.4314396,
+    "seen": 1791232561.8587303,
     "ast_hash": "ae1f003b3b8da6bbf74f7429fb595ffb",
     "semantic_hash": "ae1f003b3b8da6bbf74f7429fb595ffb"
   },
   "docs/features/platform-skeleton/migrations/01_create_owner.up.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.134479,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.858731,
     "ast_hash": "df1d0a503abcd570da71b0c4488ddd2b",
     "semantic_hash": "df1d0a503abcd570da71b0c4488ddd2b"
   },
   "docs/features/platform-skeleton/migrations/02_create_sign_in_grant.down.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.1344807,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587315,
     "ast_hash": "e2375c308010ffd344f0ecb7f543de67",
     "semantic_hash": "e2375c308010ffd344f0ecb7f543de67"
   },
   "docs/features/platform-skeleton/migrations/02_create_sign_in_grant.up.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.134482,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587322,
     "ast_hash": "12be843f474e3d8529a9f78186ce71ec",
     "semantic_hash": "12be843f474e3d8529a9f78186ce71ec"
   },
   "docs/features/platform-skeleton/migrations/03_create_sign_in_session.down.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.134483,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.858733,
     "ast_hash": "bae7ecf3c0835420ab0d7efb79d60afb",
     "semantic_hash": "bae7ecf3c0835420ab0d7efb79d60afb"
   },
   "docs/features/platform-skeleton/migrations/03_create_sign_in_session.up.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.1344845,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587337,
     "ast_hash": "5ee8541f2420bd39e08f884c35df0aba",
     "semantic_hash": "5ee8541f2420bd39e08f884c35df0aba"
   },
   "docs/features/platform-skeleton/migrations/04_create_passkey_tables.down.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.1344857,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587341,
     "ast_hash": "c3812ee9d7515f191fb4b765fa937418",
     "semantic_hash": "c3812ee9d7515f191fb4b765fa937418"
   },
   "docs/features/platform-skeleton/migrations/04_create_passkey_tables.up.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.1344876,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587346,
     "ast_hash": "331a2a53fa760e9f6421d47306f60503",
     "semantic_hash": "331a2a53fa760e9f6421d47306f60503"
   },
   "docs/features/platform-skeleton/migrations/05_widen_user_entity_display_name.down.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.1344886,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587348,
     "ast_hash": "c98554d55589aa714544766687cf305a",
     "semantic_hash": "c98554d55589aa714544766687cf305a"
   },
   "docs/features/platform-skeleton/migrations/05_widen_user_entity_display_name.up.sql": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.13449,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587353,
     "ast_hash": "7b965a3d970610bc52b4195f55becd41",
     "semantic_hash": "7b965a3d970610bc52b4195f55becd41"
   },
   "docs/features/platform-skeleton/tasks.json": {
-    "mtime": 1791225781.8706825,
-    "seen": 1791225860.1344914,
+    "mtime": 1791232539.431686,
+    "seen": 1791232561.8587358,
     "ast_hash": "65ccbe5d0677657ee7a7608f80fbd5b4",
     "semantic_hash": "65ccbe5d0677657ee7a7608f80fbd5b4"
   },
   "e2e/build.gradle.kts": {
-    "mtime": 1791225781.8811734,
-    "seen": 1791225860.1344993,
+    "mtime": 1791232539.4409425,
+    "seen": 1791232561.8587399,
     "ast_hash": "114542e09595b739df60cf113e5a76a5",
     "semantic_hash": "114542e09595b739df60cf113e5a76a5"
   },
   "e2e/package.json": {
-    "mtime": 1791225781.8823056,
-    "seen": 1791225860.1345005,
+    "mtime": 1791232539.4419599,
+    "seen": 1791232561.8587408,
     "ast_hash": "990f67584d174e0f34221c13f2ca28e9",
     "semantic_hash": "990f67584d174e0f34221c13f2ca28e9"
   },
   "e2e/playwright.config.ts": {
-    "mtime": 1791225781.8823056,
-    "seen": 1791225860.1345024,
+    "mtime": 1791232539.4419599,
+    "seen": 1791232561.8587415,
     "ast_hash": "9eb65ec62a2cba0bc9d0ecea25d75bc7",
     "semantic_hash": "9eb65ec62a2cba0bc9d0ecea25d75bc7"
   },
   "e2e/support/flows.ts": {
-    "mtime": 1791225781.8823056,
-    "seen": 1791225860.1345036,
+    "mtime": 1791232539.4419599,
+    "seen": 1791232561.858742,
     "ast_hash": "15bd312ab803b9fe72604cd86051fc05",
     "semantic_hash": "15bd312ab803b9fe72604cd86051fc05"
   },
   "e2e/support/mailpit.ts": {
-    "mtime": 1791225781.8823943,
-    "seen": 1791225860.1345062,
+    "mtime": 1791232539.442055,
+    "seen": 1791232561.858743,
     "ast_hash": "f4774d38b2d829705d6570118156411b",
     "semantic_hash": "f4774d38b2d829705d6570118156411b"
   },
   "e2e/tests/sessions-and-passkeys.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345155,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587475,
     "ast_hash": "1c61fc40217081d01c5406d407c40913",
     "semantic_hash": "1c61fc40217081d01c5406d407c40913"
   },
   "e2e/tests/sign-up-and-in.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345198,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.858749,
     "ast_hash": "45bee1a70905110ae2fb8d36a50c5998",
     "semantic_hash": "45bee1a70905110ae2fb8d36a50c5998"
   },
   "e2e/tests/system-pages.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.134521,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587494,
     "ast_hash": "2949ea9a32864f29e74bf5649757a6fd",
     "semantic_hash": "2949ea9a32864f29e74bf5649757a6fd"
   },
   "e2e/tests/touch-targets.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345236,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587506,
     "ast_hash": "f390aaafd3ff4c16be459700409b64a7",
     "semantic_hash": "f390aaafd3ff4c16be459700409b64a7"
   },
   "e2e/tsconfig.json": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345248,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587513,
     "ast_hash": "4ef5c12243211063117e101eb6221397",
     "semantic_hash": "4ef5c12243211063117e101eb6221397"
   },
   "frontend/.prettierrc.json": {
-    "mtime": 1791225781.8832998,
-    "seen": 1791225860.1345303,
+    "mtime": 1791232539.442907,
+    "seen": 1791232561.8587532,
     "ast_hash": "11160f7901b95cd0c7b103b3ef4a793e",
     "semantic_hash": "11160f7901b95cd0c7b103b3ef4a793e"
   },
   "frontend/build.gradle.kts": {
-    "mtime": 1791225781.8832998,
-    "seen": 1791225860.1345315,
+    "mtime": 1791232539.442907,
+    "seen": 1791232561.8587534,
     "ast_hash": "3c30f9b36802cc9dc3ada891376bbe63",
     "semantic_hash": "3c30f9b36802cc9dc3ada891376bbe63"
   },
   "frontend/eslint.config.js": {
-    "mtime": 1791225781.8832998,
-    "seen": 1791225860.134533,
+    "mtime": 1791232539.442907,
+    "seen": 1791232561.8587544,
     "ast_hash": "328d41ecf04ed6f4962ea907acc9e753",
     "semantic_hash": "328d41ecf04ed6f4962ea907acc9e753"
   },
   "frontend/package.json": {
-    "mtime": 1791225781.8832998,
-    "seen": 1791225860.134534,
+    "mtime": 1791232539.442907,
+    "seen": 1791232561.8587549,
     "ast_hash": "0c0bf6533950b7e7143dda94bd8dbd2d",
     "semantic_hash": "0c0bf6533950b7e7143dda94bd8dbd2d"
   },
   "frontend/src/App.test.tsx": {
-    "mtime": 1791225781.8832998,
-    "seen": 1791225860.1345353,
+    "mtime": 1791232539.442907,
+    "seen": 1791232561.8587554,
     "ast_hash": "7ab163e62d6969345439cf54d2379ea9",
     "semantic_hash": "7ab163e62d6969345439cf54d2379ea9"
   },
   "frontend/src/App.tsx": {
-    "mtime": 1791225781.8834238,
-    "seen": 1791225860.1345365,
+    "mtime": 1791232539.4430525,
+    "seen": 1791232561.8587556,
     "ast_hash": "0f30644e4c4a7a4902a5acb49ef5aa07",
     "semantic_hash": "0f30644e4c4a7a4902a5acb49ef5aa07"
   },
   "frontend/src/api/account.test.tsx": {
-    "mtime": 1791225781.8834238,
-    "seen": 1791225860.1345382,
+    "mtime": 1791232539.4430525,
+    "seen": 1791232561.858756,
     "ast_hash": "460d2d27b93b48221faf2873c42412bf",
     "semantic_hash": "460d2d27b93b48221faf2873c42412bf"
   },
   "frontend/src/api/account.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345396,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587565,
     "ast_hash": "855a174c30f4dce7cf2897ba82eb781e",
     "semantic_hash": "855a174c30f4dce7cf2897ba82eb781e"
   },
   "frontend/src/api/client.test.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134541,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587573,
     "ast_hash": "1eab6ed7816f25e4858786c794d5b260",
     "semantic_hash": "1eab6ed7816f25e4858786c794d5b260"
   },
   "frontend/src/api/client.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345422,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.858758,
     "ast_hash": "a0d3492b232b7f13bf1744b42b76d44c",
     "semantic_hash": "a0d3492b232b7f13bf1744b42b76d44c"
   },
   "frontend/src/api/destination.test.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345437,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587584,
     "ast_hash": "d9a31d037f9a29e24833b965bc41555a",
     "semantic_hash": "d9a31d037f9a29e24833b965bc41555a"
   },
   "frontend/src/api/destination.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345453,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587592,
     "ast_hash": "bd02b9b33a7c49371b7b6d3442970d63",
     "semantic_hash": "bd02b9b33a7c49371b7b6d3442970d63"
   },
   "frontend/src/api/signIn.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345606,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587651,
     "ast_hash": "dd7401b8b5c2486639b4cd4e01ea8543",
     "semantic_hash": "dd7401b8b5c2486639b4cd4e01ea8543"
   },
   "frontend/src/api/webauthn.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345623,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587656,
     "ast_hash": "51f767c92c555ee89f5f742c2e231ba7",
     "semantic_hash": "51f767c92c555ee89f5f742c2e231ba7"
   },
   "frontend/src/app/AppRoutes.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.134565,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587666,
     "ast_hash": "54da671d85bd6f3ff8fc1b2908d8c6b0",
     "semantic_hash": "54da671d85bd6f3ff8fc1b2908d8c6b0"
   },
   "frontend/src/app/FailureBoundary.test.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.1345663,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.858767,
     "ast_hash": "aa6d343a59946ded465b6c7848ddc44f",
     "semantic_hash": "aa6d343a59946ded465b6c7848ddc44f"
   },
   "frontend/src/app/FailureBoundary.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.1345677,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587675,
     "ast_hash": "64a66119078e1f7469faff31e00b15a5",
     "semantic_hash": "64a66119078e1f7469faff31e00b15a5"
   },
   "frontend/src/app/landing.test.ts": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.1345713,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587692,
     "ast_hash": "9bc8dbda87345cdb8ad8c3566b71e0c5",
     "semantic_hash": "9bc8dbda87345cdb8ad8c3566b71e0c5"
   },
   "frontend/src/app/landing.ts": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.1345725,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587697,
     "ast_hash": "8682a59d7c71bcb797e75d060269a17d",
     "semantic_hash": "8682a59d7c71bcb797e75d060269a17d"
   },
   "frontend/src/app/layouts.test.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.1345735,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587704,
     "ast_hash": "926cb0d764980f69e3ae4a42cae9e7db",
     "semantic_hash": "926cb0d764980f69e3ae4a42cae9e7db"
   },
   "frontend/src/app/layouts.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.134575,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587706,
     "ast_hash": "3b7eb6f887a5f108b96c40dfe18268dd",
     "semantic_hash": "3b7eb6f887a5f108b96c40dfe18268dd"
   },
   "frontend/src/app/queryClient.ts": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.1345758,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587716,
     "ast_hash": "f736d68dcb69dc5eb186b4637bbd5c7b",
     "semantic_hash": "f736d68dcb69dc5eb186b4637bbd5c7b"
   },
   "frontend/src/components/Badge/Badge.tsx": {
-    "mtime": 1791225781.8861318,
-    "seen": 1791225860.134577,
+    "mtime": 1791232539.4452252,
+    "seen": 1791232561.8587718,
     "ast_hash": "ec1def0b9b59472e469a89d971178495",
     "semantic_hash": "ec1def0b9b59472e469a89d971178495"
   },
   "frontend/src/components/Button/Button.tsx": {
-    "mtime": 1791225781.8861318,
-    "seen": 1791225860.1345782,
+    "mtime": 1791232539.4452252,
+    "seen": 1791232561.8587723,
     "ast_hash": "15ec4b7560bbf0654f102e2527ea5111",
     "semantic_hash": "15ec4b7560bbf0654f102e2527ea5111"
   },
   "frontend/src/components/CodeInput/CodeInput.tsx": {
-    "mtime": 1791225781.8863437,
-    "seen": 1791225860.1345835,
+    "mtime": 1791232539.445445,
+    "seen": 1791232561.858775,
     "ast_hash": "d28f193d4412c6cf811e2577ef33197d",
     "semantic_hash": "d28f193d4412c6cf811e2577ef33197d"
   },
   "frontend/src/components/ConfirmDialog/ConfirmDialog.test.tsx": {
-    "mtime": 1791225781.8863437,
-    "seen": 1791225860.1345851,
+    "mtime": 1791232539.445445,
+    "seen": 1791232561.8587754,
     "ast_hash": "9ba4c5d6393cb52ae9372bd45fc5f263",
     "semantic_hash": "9ba4c5d6393cb52ae9372bd45fc5f263"
   },
   "frontend/src/components/ConfirmDialog/ConfirmDialog.tsx": {
-    "mtime": 1791225781.886418,
-    "seen": 1791225860.1345863,
+    "mtime": 1791232539.4455318,
+    "seen": 1791232561.858776,
     "ast_hash": "84b650d6255b55b6a528aadfbfadcc65",
     "semantic_hash": "84b650d6255b55b6a528aadfbfadcc65"
   },
   "frontend/src/components/EmptyState/EmptyState.tsx": {
-    "mtime": 1791225781.8865619,
-    "seen": 1791225860.1345935,
+    "mtime": 1791232539.4456975,
+    "seen": 1791232561.8587794,
     "ast_hash": "351dd8532e4ba5e3842b27b862756577",
     "semantic_hash": "351dd8532e4ba5e3842b27b862756577"
   },
   "frontend/src/components/Icon/Icon.tsx": {
-    "mtime": 1791225781.8866587,
-    "seen": 1791225860.1345973,
+    "mtime": 1791232539.4458115,
+    "seen": 1791232561.858781,
     "ast_hash": "a3be56e795be6c050571fc1ca37332c6",
     "semantic_hash": "a3be56e795be6c050571fc1ca37332c6"
   },
   "frontend/src/components/LoadState/LoadState.tsx": {
-    "mtime": 1791225781.8867683,
-    "seen": 1791225860.1346009,
+    "mtime": 1791232539.4459455,
+    "seen": 1791232561.8587828,
     "ast_hash": "52ea1441509e4462830b3e93260d9892",
     "semantic_hash": "52ea1441509e4462830b3e93260d9892"
   },
   "frontend/src/components/Toast/Toast.tsx": {
-    "mtime": 1791225781.8874397,
-    "seen": 1791225860.1346211,
+    "mtime": 1791232539.4466355,
+    "seen": 1791232561.858791,
     "ast_hash": "1bdf01534bd0f75ef67f0e1306c5644b",
     "semantic_hash": "1bdf01534bd0f75ef67f0e1306c5644b"
   },
   "frontend/src/main.tsx": {
-    "mtime": 1791225781.8874397,
-    "seen": 1791225860.134622,
+    "mtime": 1791232539.4466355,
+    "seen": 1791232561.8587916,
     "ast_hash": "d3bd659b8ed2944ed9126878056a5e5e",
     "semantic_hash": "d3bd659b8ed2944ed9126878056a5e5e"
   },
   "frontend/src/messages.ts": {
-    "mtime": 1791225781.8874397,
-    "seen": 1791225860.1346238,
+    "mtime": 1791232539.4466355,
+    "seen": 1791232561.8587923,
     "ast_hash": "767a805131f4e112139a4cb84dbe6276",
     "semantic_hash": "767a805131f4e112139a4cb84dbe6276"
   },
   "frontend/src/pages/auth/RefusalCard.tsx": {
-    "mtime": 1791225781.887691,
-    "seen": 1791225860.134627,
+    "mtime": 1791232539.4468799,
+    "seen": 1791232561.8587942,
     "ast_hash": "19a22e9c6c099a4c4484c16deb12703d",
     "semantic_hash": "19a22e9c6c099a4c4484c16deb12703d"
   },
   "frontend/src/pages/auth/failure.ts": {
-    "mtime": 1791225781.8877738,
-    "seen": 1791225860.1346283,
+    "mtime": 1791232539.4469657,
+    "seen": 1791232561.8587947,
     "ast_hash": "566ba4c0117d5800dccede2b5f0aca69",
     "semantic_hash": "566ba4c0117d5800dccede2b5f0aca69"
   },
   "frontend/src/pages/check-email/CheckEmailPage.test.tsx": {
-    "mtime": 1791225781.8877738,
-    "seen": 1791225860.1346295,
+    "mtime": 1791232539.4469657,
+    "seen": 1791232561.8587954,
     "ast_hash": "1a2da7741b6e14989367a47b1f2e186d",
     "semantic_hash": "1a2da7741b6e14989367a47b1f2e186d"
   },
   "frontend/src/pages/check-email/CheckEmailPage.tsx": {
-    "mtime": 1791225781.8878798,
-    "seen": 1791225860.1346304,
+    "mtime": 1791232539.4470685,
+    "seen": 1791232561.8587964,
     "ast_hash": "f57bf2522531932d09af5252d9c447c0",
     "semantic_hash": "f57bf2522531932d09af5252d9c447c0"
   },
   "frontend/src/pages/confirm-link/ConfirmLinkPage.test.tsx": {
-    "mtime": 1791225781.8878798,
-    "seen": 1791225860.134633,
+    "mtime": 1791232539.4470685,
+    "seen": 1791232561.8587976,
     "ast_hash": "006bfb41ab069c666e47b162d8e4e428",
     "semantic_hash": "006bfb41ab069c666e47b162d8e4e428"
   },
   "frontend/src/pages/confirm-link/ConfirmLinkPage.tsx": {
-    "mtime": 1791225781.887996,
-    "seen": 1791225860.1346343,
+    "mtime": 1791232539.4471958,
+    "seen": 1791232561.858798,
     "ast_hash": "4f5af58e6aef695b6ac4ac2a93b60515",
     "semantic_hash": "4f5af58e6aef695b6ac4ac2a93b60515"
   },
   "frontend/src/pages/create-passkey/CreatePasskeyPage.test.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.1346462,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.858804,
     "ast_hash": "16d0a020bb94378f128daa64aa2354e7",
     "semantic_hash": "16d0a020bb94378f128daa64aa2354e7"
   },
   "frontend/src/pages/create-passkey/CreatePasskeyPage.tsx": {
-    "mtime": 1791225781.8885398,
-    "seen": 1791225860.1346474,
+    "mtime": 1791232539.4477067,
+    "seen": 1791232561.8588045,
     "ast_hash": "6ba86eed4b5c9f5d7470aaca5a77cf54",
     "semantic_hash": "6ba86eed4b5c9f5d7470aaca5a77cf54"
   },
   "frontend/src/pages/inbox/InboxPage.test.tsx": {
-    "mtime": 1791225781.8885398,
-    "seen": 1791225860.1346483,
+    "mtime": 1791232539.4477067,
+    "seen": 1791232561.8588052,
     "ast_hash": "813a25a7cee537b87955dfded3c472da",
     "semantic_hash": "813a25a7cee537b87955dfded3c472da"
   },
   "frontend/src/pages/inbox/InboxPage.tsx": {
-    "mtime": 1791225781.8886805,
-    "seen": 1791225860.1346493,
+    "mtime": 1791232539.4478316,
+    "seen": 1791232561.8588057,
     "ast_hash": "9cc1a2e1fc2a4a6c754068b60dcde4c0",
     "semantic_hash": "9cc1a2e1fc2a4a6c754068b60dcde4c0"
   },
   "frontend/src/pages/profile-security/PasskeysCard.tsx": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.1346629,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.858812,
     "ast_hash": "ca7b8affd96e58d5290c0c12f7f35459",
     "semantic_hash": "ca7b8affd96e58d5290c0c12f7f35459"
   },
   "frontend/src/pages/profile-security/ProfileSecurityPage.test.tsx": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.1346638,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.8588126,
     "ast_hash": "7ca227372533e3074b12ff4a6b2d6900",
     "semantic_hash": "7ca227372533e3074b12ff4a6b2d6900"
   },
   "frontend/src/pages/profile-security/ProfileSecurityPage.tsx": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.134665,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.8588135,
     "ast_hash": "51fbe10ca006e53133f51ee6606f5352",
     "semantic_hash": "51fbe10ca006e53133f51ee6606f5352"
   },
   "frontend/src/pages/profile-security/SessionsCard.tsx": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.134666,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.8588142,
     "ast_hash": "2dac2bcdc23594fea8f4adbbffdb8c37",
     "semantic_hash": "2dac2bcdc23594fea8f4adbbffdb8c37"
   },
   "frontend/src/pages/profile-security/relativeTime.ts": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.1346684,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.8588154,
     "ast_hash": "36f1190726f0aa24cc17e2bba7cdf46b",
     "semantic_hash": "36f1190726f0aa24cc17e2bba7cdf46b"
   },
   "frontend/src/pages/sign-in/SignInPage.test.tsx": {
-    "mtime": 1791225781.8896122,
-    "seen": 1791225860.134673,
+    "mtime": 1791232539.4486618,
+    "seen": 1791232561.8588176,
     "ast_hash": "c151637d974a6b46e2dc405f69c7f926",
     "semantic_hash": "c151637d974a6b46e2dc405f69c7f926"
   },
   "frontend/src/pages/sign-in/SignInPage.tsx": {
-    "mtime": 1791225781.8897243,
-    "seen": 1791225860.1346745,
+    "mtime": 1791232539.448776,
+    "seen": 1791232561.858818,
     "ast_hash": "a308b25923984fcc3f02ec138f7f7d2f",
     "semantic_hash": "a308b25923984fcc3f02ec138f7f7d2f"
   },
   "frontend/src/pages/sign-in/SignInPasskey.test.tsx": {
-    "mtime": 1791225781.8897243,
-    "seen": 1791225860.1346755,
+    "mtime": 1791232539.448776,
+    "seen": 1791232561.8588188,
     "ast_hash": "44eac39e32aed59c5e5eb3d1b9346bcc",
     "semantic_hash": "44eac39e32aed59c5e5eb3d1b9346bcc"
   },
   "frontend/src/pages/system/NotFoundPage.tsx": {
-    "mtime": 1791225781.8897243,
-    "seen": 1791225860.1346767,
+    "mtime": 1791232539.448776,
+    "seen": 1791232561.8588192,
     "ast_hash": "e8accd84d48ce6e6374093c9645af532",
     "semantic_hash": "e8accd84d48ce6e6374093c9645af532"
   },
   "frontend/src/pages/system/SessionEndedPage.tsx": {
-    "mtime": 1791225781.8898282,
-    "seen": 1791225860.1346784,
+    "mtime": 1791232539.4488935,
+    "seen": 1791232561.8588197,
     "ast_hash": "3ff8130c9040d9bbfab2852f9d212a93",
     "semantic_hash": "3ff8130c9040d9bbfab2852f9d212a93"
   },
   "frontend/src/pages/system/SystemPages.test.tsx": {
-    "mtime": 1791225781.8898282,
-    "seen": 1791225860.1346796,
+    "mtime": 1791232539.4488935,
+    "seen": 1791232561.8588204,
     "ast_hash": "f71924df42b10eb264ecda1ba8a6c879",
     "semantic_hash": "f71924df42b10eb264ecda1ba8a6c879"
   },
   "frontend/src/pages/system/UnavailablePage.tsx": {
-    "mtime": 1791225781.8898282,
-    "seen": 1791225860.1346805,
+    "mtime": 1791232539.4488935,
+    "seen": 1791232561.858821,
     "ast_hash": "0cb7555808935f52d5a4e06970bb14e5",
     "semantic_hash": "0cb7555808935f52d5a4e06970bb14e5"
   },
   "frontend/src/test/setup.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1347058,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588316,
     "ast_hash": "522e3714e0d342c9b24b23367d8a85b2",
     "semantic_hash": "522e3714e0d342c9b24b23367d8a85b2"
   },
   "frontend/tsconfig.json": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1347072,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588321,
     "ast_hash": "104099ecaf8537413d71c4b58de55f24",
     "semantic_hash": "104099ecaf8537413d71c4b58de55f24"
   },
   "frontend/vite.config.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1347082,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588326,
     "ast_hash": "dfa0252d544eed35c1a206cd312b408d",
     "semantic_hash": "dfa0252d544eed35c1a206cd312b408d"
   },
   "gradlew": {
-    "mtime": 1791225781.8910449,
-    "seen": 1791225860.1347094,
+    "mtime": 1791232539.4500525,
+    "seen": 1791232561.8588333,
     "ast_hash": "a43be8432bac3ffd05b3769aa42fe996",
     "semantic_hash": "a43be8432bac3ffd05b3769aa42fe996"
   },
   "package.json": {
-    "mtime": 1791225781.9251728,
-    "seen": 1791225860.1347103,
+    "mtime": 1791232539.4869435,
+    "seen": 1791232561.858834,
     "ast_hash": "4e9d33cfa3665c9676bae4942514632c",
     "semantic_hash": "4e9d33cfa3665c9676bae4942514632c"
   },
   "scripts/deploy-coolify.sh": {
-    "mtime": 1791225781.9261727,
-    "seen": 1791225860.1347113,
-    "ast_hash": "9fda9a48f9d98d1f06d37ecabf2934ea",
-    "semantic_hash": "9fda9a48f9d98d1f06d37ecabf2934ea"
+    "mtime": 1791232539.4879434,
+    "seen": 1791232561.8588347,
+    "ast_hash": "ddd68a1154a25f814984aff1cd31338c",
+    "semantic_hash": "ddd68a1154a25f814984aff1cd31338c"
   },
   "scripts/smoke.sh": {
-    "mtime": 1791225781.9273179,
-    "seen": 1791225860.1347134,
+    "mtime": 1791232539.4879434,
+    "seen": 1791232561.8588357,
     "ast_hash": "2a39cc22a4ec03a2d47a510008538d23",
     "semantic_hash": "2a39cc22a4ec03a2d47a510008538d23"
   },
   "settings.gradle.kts": {
-    "mtime": 1791225781.9273179,
-    "seen": 1791225860.1347144,
+    "mtime": 1791232539.4879434,
+    "seen": 1791232561.8588362,
     "ast_hash": "455ca8ba9ea80376de762e2d3f7e987a",
     "semantic_hash": "455ca8ba9ea80376de762e2d3f7e987a"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1791058516.2465909,
-    "seen": 1791058544.683283,
-    "ast_hash": "eb9590807cfc8d4cd76d13248a89d9f1",
-    "semantic_hash": ""
+    "mtime": 1791232539.3964753,
+    "seen": 1791232561.8588388,
+    "ast_hash": "41203ca6602147cfe21aad69ec0294a7",
+    "semantic_hash": "41203ca6602147cfe21aad69ec0294a7"
   },
   "CLAUDE.md": {
     "mtime": 1791225781.8322117,
@@ -1254,10 +1254,10 @@
     "semantic_hash": "0fc4da4b43b834eda43c5c858ec18cf5"
   },
   "backend/app/src/main/resources/application-local.yaml": {
-    "mtime": 1790939801.2239242,
-    "seen": 1790957799.904282,
-    "ast_hash": "77501effcb5ee02d05e416aee9d74d00",
-    "semantic_hash": ""
+    "mtime": 1791232539.4050665,
+    "seen": 1791232561.8588395,
+    "ast_hash": "176e977c546110881e3838d9def3579e",
+    "semantic_hash": "176e977c546110881e3838d9def3579e"
   },
   "backend/app/src/main/resources/application.yaml": {
     "mtime": 1791225781.8407605,
@@ -1266,10 +1266,10 @@
     "semantic_hash": "278903936fc933b72d592af12df3d17b"
   },
   "compose.yaml": {
-    "mtime": 1790946269.7228389,
-    "seen": 1790957799.9042828,
-    "ast_hash": "9c341576f2b18eddd4b772dc368f37ae",
-    "semantic_hash": ""
+    "mtime": 1791232539.4083166,
+    "seen": 1791232561.85884,
+    "ast_hash": "6c7fd26b50c5d9879f3ca7705331deb7",
+    "semantic_hash": "6c7fd26b50c5d9879f3ca7705331deb7"
   },
   "config/detekt/detekt.yml": {
     "mtime": 1790800136.2945585,
@@ -1278,10 +1278,10 @@
     "semantic_hash": "c8903a29ef58630dca7006df19ea5e4f"
   },
   "deploy/coolify/compose.yaml": {
-    "mtime": 1790956129.998834,
-    "seen": 1790957799.904284,
-    "ast_hash": "796d89721d734fe85615d8e378fafed4",
-    "semantic_hash": "796d89721d734fe85615d8e378fafed4"
+    "mtime": 1791232539.4087572,
+    "seen": 1791232561.8588405,
+    "ast_hash": "a63c6959d92d42ee2922dd7ee7f9e80f",
+    "semantic_hash": "a63c6959d92d42ee2922dd7ee7f9e80f"
   },
   "docs/README.md": {
     "mtime": 1790795651.0,
@@ -2928,8 +2928,8 @@
     "semantic_hash": "f8557b5c3b0aadf1573c352a192daeb0"
   },
   "scripts/graph-update.sh": {
-    "mtime": 1791225781.9273179,
-    "seen": 1791225860.1347122,
+    "mtime": 1791232539.4879434,
+    "seen": 1791232561.8588352,
     "ast_hash": "afb247f7272b6070b540b4093aad437b",
     "semantic_hash": "afb247f7272b6070b540b4093aad437b"
   },
@@ -2946,356 +2946,356 @@
     "semantic_hash": "07864081f2d8dd22ef8739b748aa8d64"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/OwnerPreferencesIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340783,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585668,
     "ast_hash": "420ae5d464744405cbe1c0ff4937a83f",
     "semantic_hash": "420ae5d464744405cbe1c0ff4937a83f"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/PreferencesApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341245,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585854,
     "ast_hash": "ea5df3203d6228b317575ab2fa2bb2d1",
     "semantic_hash": "ea5df3203d6228b317575ab2fa2bb2d1"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/PulseApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341257,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585858,
     "ast_hash": "27170fadf20e1b677f69968bb9e8ecee",
     "semantic_hash": "27170fadf20e1b677f69968bb9e8ecee"
   },
   "backend/app/src/main/kotlin/telex/identity/OwnerPreferences.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.1341834,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.858606,
     "ast_hash": "bb3ea67b873790171f9b568fe91be05f",
     "semantic_hash": "bb3ea67b873790171f9b568fe91be05f"
   },
   "backend/app/src/main/kotlin/telex/identity/Theme.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.1341949,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586097,
     "ast_hash": "484f35bddc3d514bcd3f5b6591aa8ce7",
     "semantic_hash": "484f35bddc3d514bcd3f5b6591aa8ce7"
   },
   "backend/app/src/main/kotlin/telex/identity/TimeZones.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.134196,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586102,
     "ast_hash": "fbd1a4fd08e95204430adc00fb25dc51",
     "semantic_hash": "fbd1a4fd08e95204430adc00fb25dc51"
   },
   "backend/app/src/main/kotlin/telex/inbox/Inbox.kt": {
-    "mtime": 1791225781.837447,
-    "seen": 1791225860.1342194,
+    "mtime": 1791232539.4016395,
+    "seen": 1791232561.8586195,
     "ast_hash": "80d403543b29966841862c65ba05d999",
     "semantic_hash": "80d403543b29966841862c65ba05d999"
   },
   "backend/app/src/main/kotlin/telex/inbox/InboxSource.kt": {
-    "mtime": 1791225781.8376331,
-    "seen": 1791225860.134221,
+    "mtime": 1791232539.4018574,
+    "seen": 1791232561.85862,
     "ast_hash": "c7ea06c8bd2f243bdbae07261e95aa27",
     "semantic_hash": "c7ea06c8bd2f243bdbae07261e95aa27"
   },
   "backend/app/src/main/kotlin/telex/inbox/package-info.java": {
-    "mtime": 1791225781.8376331,
-    "seen": 1791225860.1342225,
+    "mtime": 1791232539.4018574,
+    "seen": 1791232561.8586204,
     "ast_hash": "4e0fd01f44283cbb529c10169494a95e",
     "semantic_hash": "4e0fd01f44283cbb529c10169494a95e"
   },
   "backend/app/src/main/kotlin/telex/shared/StatusConditionSource.kt": {
-    "mtime": 1791225781.8392873,
-    "seen": 1791225860.1342957,
+    "mtime": 1791232539.403671,
+    "seen": 1791232561.8586502,
     "ast_hash": "e1a0ce04d975c57049652dedea90b8ae",
     "semantic_hash": "e1a0ce04d975c57049652dedea90b8ae"
   },
   "backend/app/src/main/kotlin/telex/web/api/PulseController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343277,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586643,
     "ast_hash": "6544f5e3d400df09b1e8efa295041243",
     "semantic_hash": "6544f5e3d400df09b1e8efa295041243"
   },
   "backend/app/src/main/kotlin/telex/web/api/TimeZonesController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343317,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.858666,
     "ast_hash": "3f7ebf2503f9a3214ace28f9d54565a4",
     "semantic_hash": "3f7ebf2503f9a3214ace28f9d54565a4"
   },
   "backend/app/src/main/kotlin/telex/web/e2e/PulseFixtures.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343331,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586664,
     "ast_hash": "76d90390e9a44b09c48ebde12ed5d81a",
     "semantic_hash": "76d90390e9a44b09c48ebde12ed5d81a"
   },
   "backend/app/src/main/resources/db/migration/V202610031152__add_owner_preferences.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343539,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586755,
     "ast_hash": "b22422d0c5e200030d33bfecee9450a8",
     "semantic_hash": "b22422d0c5e200030d33bfecee9450a8"
   },
   "backend/app/src/main/resources/db/rollback/U202610031152__add_owner_preferences.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343727,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586836,
     "ast_hash": "a720a00200542f828534f5085ef98cf1",
     "semantic_hash": "a720a00200542f828534f5085ef98cf1"
   },
   "backend/app/src/test/kotlin/telex/identity/ThemeTest.kt": {
-    "mtime": 1791225781.8417168,
-    "seen": 1791225860.1343944,
+    "mtime": 1791232539.4063194,
+    "seen": 1791232561.8586931,
     "ast_hash": "d6951f96c8967f078248081a06e081b8",
     "semantic_hash": "d6951f96c8967f078248081a06e081b8"
   },
   "backend/app/src/test/kotlin/telex/identity/TimeZonesTest.kt": {
-    "mtime": 1791225781.8417168,
-    "seen": 1791225860.1343958,
+    "mtime": 1791232539.4063194,
+    "seen": 1791232561.8586936,
     "ast_hash": "635855fa29c99249827acd4c2b4460e8",
     "semantic_hash": "635855fa29c99249827acd4c2b4460e8"
   },
   "backend/app/src/test/kotlin/telex/inbox/InboxTest.kt": {
-    "mtime": 1791225781.8418021,
-    "seen": 1791225860.1344018,
+    "mtime": 1791232539.4064183,
+    "seen": 1791232561.8586962,
     "ast_hash": "8c7c28d895cd802f2a9f01c2cee13f96",
     "semantic_hash": "8c7c28d895cd802f2a9f01c2cee13f96"
   },
   "docs/features/app-shell/migrations/01_add_owner_preferences.down.sql": {
-    "mtime": 1791225781.8633564,
-    "seen": 1791225860.1344614,
+    "mtime": 1791232539.4252589,
+    "seen": 1791232561.8587236,
     "ast_hash": "a720a00200542f828534f5085ef98cf1",
     "semantic_hash": "a720a00200542f828534f5085ef98cf1"
   },
   "docs/features/app-shell/migrations/01_add_owner_preferences.up.sql": {
-    "mtime": 1791225781.8635466,
-    "seen": 1791225860.134463,
+    "mtime": 1791232539.4254344,
+    "seen": 1791232561.8587244,
     "ast_hash": "b22422d0c5e200030d33bfecee9450a8",
     "semantic_hash": "b22422d0c5e200030d33bfecee9450a8"
   },
   "docs/features/app-shell/tasks.json": {
-    "mtime": 1791225781.8635466,
-    "seen": 1791225860.134464,
+    "mtime": 1791232539.4254344,
+    "seen": 1791232561.8587248,
     "ast_hash": "dcbc003e50c47eae2fec78f49df40cf8",
     "semantic_hash": "dcbc003e50c47eae2fec78f49df40cf8"
   },
   "e2e/support/shell.ts": {
-    "mtime": 1791225781.8823943,
-    "seen": 1791225860.1345088,
+    "mtime": 1791232539.442055,
+    "seen": 1791232561.8587444,
     "ast_hash": "d4ac5865f667523c6656861e1c2651c5",
     "semantic_hash": "d4ac5865f667523c6656861e1c2651c5"
   },
   "e2e/tests/live-signals.spec.ts": {
-    "mtime": 1791225781.8823943,
-    "seen": 1791225860.1345115,
+    "mtime": 1791232539.442055,
+    "seen": 1791232561.8587453,
     "ast_hash": "6f921a7f277cd556797b2f33c11d8782",
     "semantic_hash": "6f921a7f277cd556797b2f33c11d8782"
   },
   "e2e/tests/preferences.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345139,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587468,
     "ast_hash": "d3d2ac7cfecafd81893110a0f6e7db4e",
     "semantic_hash": "d3d2ac7cfecafd81893110a0f6e7db4e"
   },
   "e2e/tests/shell-navigation.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.134517,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.858748,
     "ast_hash": "59e0a66eb18022adb6bbf5a577e8f86c",
     "semantic_hash": "59e0a66eb18022adb6bbf5a577e8f86c"
   },
   "e2e/tests/shell-sweep.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345186,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587484,
     "ast_hash": "866170555cffdeb4baeea7cbcadfcb46",
     "semantic_hash": "866170555cffdeb4baeea7cbcadfcb46"
   },
   "frontend/src/api/preferences.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134559,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587646,
     "ast_hash": "c0b10fd7c84807115c010d2e040621c8",
     "semantic_hash": "c0b10fd7c84807115c010d2e040621c8"
   },
   "frontend/src/app/AppRoutes.test.tsx": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134564,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.858766,
     "ast_hash": "15f3d3539066028a53291d6efac3dd8f",
     "semantic_hash": "15f3d3539066028a53291d6efac3dd8f"
   },
   "frontend/src/app/SectionRoute.test.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.134569,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587682,
     "ast_hash": "cc437fed585276c8c6c8b650063996df",
     "semantic_hash": "cc437fed585276c8c6c8b650063996df"
   },
   "frontend/src/app/SectionRoute.tsx": {
-    "mtime": 1791225781.8840482,
-    "seen": 1791225860.13457,
+    "mtime": 1791232539.4436893,
+    "seen": 1791232561.8587687,
     "ast_hash": "9611a6724656723fb78236fcd9311a48",
     "semantic_hash": "9611a6724656723fb78236fcd9311a48"
   },
   "frontend/src/components/ThemeSwitch/ThemeSwitch.test.tsx": {
-    "mtime": 1791225781.8870773,
-    "seen": 1791225860.1346133,
+    "mtime": 1791232539.4462605,
+    "seen": 1791232561.8587875,
     "ast_hash": "70358827c83c8e562a4f46df83e484a8",
     "semantic_hash": "70358827c83c8e562a4f46df83e484a8"
   },
   "frontend/src/components/ThemeSwitch/ThemeSwitch.tsx": {
-    "mtime": 1791225781.8872347,
-    "seen": 1791225860.1346142,
+    "mtime": 1791232539.446421,
+    "seen": 1791232561.858788,
     "ast_hash": "0c3f2798ba73e9c791f9d0529cfb8e1a",
     "semantic_hash": "0c3f2798ba73e9c791f9d0529cfb8e1a"
   },
   "frontend/src/components/TimeZonePicker/TimeZonePicker.test.tsx": {
-    "mtime": 1791225781.8872347,
-    "seen": 1791225860.1346157,
+    "mtime": 1791232539.446421,
+    "seen": 1791232561.8587885,
     "ast_hash": "fb39dfaa4e53b6d5c6a6b9826efdd31c",
     "semantic_hash": "fb39dfaa4e53b6d5c6a6b9826efdd31c"
   },
   "frontend/src/components/TimeZonePicker/TimeZonePicker.tsx": {
-    "mtime": 1791225781.8873243,
-    "seen": 1791225860.1346173,
+    "mtime": 1791232539.4465163,
+    "seen": 1791232561.8587894,
     "ast_hash": "dcfccbeb0925cab4369af63d146a21b1",
     "semantic_hash": "dcfccbeb0925cab4369af63d146a21b1"
   },
   "frontend/src/components/TimeZonePicker/zoneNames.ts": {
-    "mtime": 1791225781.8873243,
-    "seen": 1791225860.1346183,
+    "mtime": 1791232539.4465163,
+    "seen": 1791232561.85879,
     "ast_hash": "d77aee9e4fd86616f2eef367d6a8bc35",
     "semantic_hash": "d77aee9e4fd86616f2eef367d6a8bc35"
   },
   "frontend/src/components/Toast/Toast.test.tsx": {
-    "mtime": 1791225781.8873243,
-    "seen": 1791225860.1346197,
+    "mtime": 1791232539.4465163,
+    "seen": 1791232561.8587906,
     "ast_hash": "72d1a19f1f6159e6fb6e9195f45ded1c",
     "semantic_hash": "72d1a19f1f6159e6fb6e9195f45ded1c"
   },
   "frontend/src/pages/coming-soon/ComingSoonPage.tsx": {
-    "mtime": 1791225781.8878798,
-    "seen": 1791225860.1346316,
+    "mtime": 1791232539.4470685,
+    "seen": 1791232561.8587968,
     "ast_hash": "a22c856f8159be145ffca645573366d0",
     "semantic_hash": "a22c856f8159be145ffca645573366d0"
   },
   "frontend/src/pages/profile-security/AppearanceCard.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.134662,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588114,
     "ast_hash": "3d7ecd4d5e981b2fb82666e0abd39894",
     "semantic_hash": "3d7ecd4d5e981b2fb82666e0abd39894"
   },
   "frontend/src/pages/profile-security/TimeZoneCard.tsx": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.1346672,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.8588147,
     "ast_hash": "cdbc388f497a3851403b0054f41c2675",
     "semantic_hash": "cdbc388f497a3851403b0054f41c2675"
   },
   "frontend/src/pages/settings/SettingsPage.tsx": {
-    "mtime": 1791225781.8896122,
-    "seen": 1791225860.1346705,
+    "mtime": 1791232539.4486618,
+    "seen": 1791232561.8588166,
     "ast_hash": "534d9e7fd11ec4f9edd0af74b6f6e39b",
     "semantic_hash": "534d9e7fd11ec4f9edd0af74b6f6e39b"
   },
   "frontend/src/pages/settings/settingsRegistry.ts": {
-    "mtime": 1791225781.8896122,
-    "seen": 1791225860.134672,
+    "mtime": 1791232539.4486618,
+    "seen": 1791232561.858817,
     "ast_hash": "429e302af2dd189a6c1ca316cf0c89eb",
     "semantic_hash": "429e302af2dd189a6c1ca316cf0c89eb"
   },
   "frontend/src/shell/AppShell/AppShell.test.tsx": {
-    "mtime": 1791225781.889942,
-    "seen": 1791225860.134683,
+    "mtime": 1791232539.449017,
+    "seen": 1791232561.8588216,
     "ast_hash": "355f3a0e675eabb95a73c69972d9d48c",
     "semantic_hash": "355f3a0e675eabb95a73c69972d9d48c"
   },
   "frontend/src/shell/AppShell/AppShell.tsx": {
-    "mtime": 1791225781.890013,
-    "seen": 1791225860.134684,
+    "mtime": 1791232539.4490776,
+    "seen": 1791232561.858822,
     "ast_hash": "cddeae0745509e83c749e2320436770f",
     "semantic_hash": "cddeae0745509e83c749e2320436770f"
   },
   "frontend/src/shell/InboxCounter.test.tsx": {
-    "mtime": 1791225781.890013,
-    "seen": 1791225860.1346853,
+    "mtime": 1791232539.4490776,
+    "seen": 1791232561.8588226,
     "ast_hash": "0b7159bef67fe1eee0858b040d21be64",
     "semantic_hash": "0b7159bef67fe1eee0858b040d21be64"
   },
   "frontend/src/shell/InboxCounter.tsx": {
-    "mtime": 1791225781.890013,
-    "seen": 1791225860.1346862,
+    "mtime": 1791232539.4490776,
+    "seen": 1791232561.858823,
     "ast_hash": "a4d9b28dd7f17552397473ca26ee85e0",
     "semantic_hash": "a4d9b28dd7f17552397473ca26ee85e0"
   },
   "frontend/src/shell/StatusBanner/StatusBanner.test.tsx": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1346881,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588243,
     "ast_hash": "965b1865e06989a81d42d5c79049af75",
     "semantic_hash": "965b1865e06989a81d42d5c79049af75"
   },
   "frontend/src/shell/StatusBanner/StatusBanner.tsx": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.13469,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588247,
     "ast_hash": "933d15379cd5593df7c2f831402fa34c",
     "semantic_hash": "933d15379cd5593df7c2f831402fa34c"
   },
   "frontend/src/shell/conditions.test.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1346922,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588254,
     "ast_hash": "363490b1d8371bd92ddeda2895116f33",
     "semantic_hash": "363490b1d8371bd92ddeda2895116f33"
   },
   "frontend/src/shell/conditions.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1346934,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.858826,
     "ast_hash": "ff5767a925bf33983a855a4b14bc0f21",
     "semantic_hash": "ff5767a925bf33983a855a4b14bc0f21"
   },
   "frontend/src/shell/connectivity.load.test.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1346943,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588264,
     "ast_hash": "3f6d7b434bbc76c0b8b129e618d85483",
     "semantic_hash": "3f6d7b434bbc76c0b8b129e618d85483"
   },
   "frontend/src/shell/connectivity.test.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1346955,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588274,
     "ast_hash": "551104fb3802ffc6c0ccda07a46de497",
     "semantic_hash": "551104fb3802ffc6c0ccda07a46de497"
   },
   "frontend/src/shell/connectivity.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134697,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588278,
     "ast_hash": "3271dc6f7c4f7b38bb50a66311d8272e",
     "semantic_hash": "3271dc6f7c4f7b38bb50a66311d8272e"
   },
   "frontend/src/shell/pulse.test.tsx": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134698,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588283,
     "ast_hash": "6bb742b9df3dac1e44edc747a2fad352",
     "semantic_hash": "6bb742b9df3dac1e44edc747a2fad352"
   },
   "frontend/src/shell/pulse.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134699,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588288,
     "ast_hash": "7113db673e495983795bc75fc2d4dc57",
     "semantic_hash": "7113db673e495983795bc75fc2d4dc57"
   },
   "frontend/src/shell/sections.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1347,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.858829,
     "ast_hash": "54c7f0ebb6c67853ad8cb8a232834ef0",
     "semantic_hash": "54c7f0ebb6c67853ad8cb8a232834ef0"
   },
   "frontend/src/shell/theme.test.tsx": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134701,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588295,
     "ast_hash": "bca9125c6c8c509eb9a215fe79810974",
     "semantic_hash": "bca9125c6c8c509eb9a215fe79810974"
   },
   "frontend/src/shell/theme.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134702,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.85883,
     "ast_hash": "1dc1ea8883bc542faaf09a6cb4e2b485",
     "semantic_hash": "1dc1ea8883bc542faaf09a6cb4e2b485"
   },
   "frontend/src/shell/time.test.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134703,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588307,
     "ast_hash": "66f3a96f126b59b8d8ab3309100110bd",
     "semantic_hash": "66f3a96f126b59b8d8ab3309100110bd"
   },
   "frontend/src/shell/time.ts": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.1347039,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.8588312,
     "ast_hash": "6ec818f71fb2ceeb573fa6287eec3fab",
     "semantic_hash": "6ec818f71fb2ceeb573fa6287eec3fab"
   },
@@ -3522,746 +3522,746 @@
     "semantic_hash": "698d5b879f11741cb32a491923c19c38"
   },
   "docs/features/telegram-link/ux-flows.md": {
-    "mtime": 1791058516.2791457,
-    "seen": 1791058544.6833222,
-    "ast_hash": "d86933554f738d327a2690896d38c20b",
-    "semantic_hash": ""
+    "mtime": 1791232539.4389427,
+    "seen": 1791232561.8588662,
+    "ast_hash": "3581b7ee93f5279dd7e6af015fc70155",
+    "semantic_hash": "3581b7ee93f5279dd7e6af015fc70155"
   },
   "backend/app/src/integrationTest/kotlin/telex/ModelProfilesSchemaIT.kt": {
-    "mtime": 1791225781.8325784,
-    "seen": 1791225860.1340518,
+    "mtime": 1791232539.396942,
+    "seen": 1791232561.8585572,
     "ast_hash": "5b04dd912e9256075becc9b7808d5550",
     "semantic_hash": "5b04dd912e9256075becc9b7808d5550"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/RealProviderSmokeIT.kt": {
-    "mtime": 1791225781.8325784,
-    "seen": 1791225860.1340575,
+    "mtime": 1791232539.396942,
+    "seen": 1791232561.858559,
     "ast_hash": "5335c236f5011990eead18af578a0e61",
     "semantic_hash": "5335c236f5011990eead18af578a0e61"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/call/ModelCallFinishedSerializationIT.kt": {
-    "mtime": 1791225781.8328004,
-    "seen": 1791225860.1340592,
+    "mtime": 1791232539.3971713,
+    "seen": 1791232561.8585598,
     "ast_hash": "5ade20702331aed4ade09a60d5154ecd",
     "semantic_hash": "5ade20702331aed4ade09a60d5154ecd"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/call/ProfileCallsIT.kt": {
-    "mtime": 1791225781.832838,
-    "seen": 1791225860.1340609,
+    "mtime": 1791232539.3972175,
+    "seen": 1791232561.8585603,
     "ast_hash": "9945ef917f8b847653b320b96377243a",
     "semantic_hash": "9945ef917f8b847653b320b96377243a"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/call/ProfileCallsNoKeyIT.kt": {
-    "mtime": 1791225781.832838,
-    "seen": 1791225860.1340625,
+    "mtime": 1791232539.3972175,
+    "seen": 1791232561.8585608,
     "ast_hash": "bfba5706c585884b178747541510b2a7",
     "semantic_hash": "bfba5706c585884b178747541510b2a7"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/call/ProfileCallsStalledIT.kt": {
-    "mtime": 1791225781.832838,
-    "seen": 1791225860.1340644,
+    "mtime": 1791232539.3972175,
+    "seen": 1791232561.8585613,
     "ast_hash": "4896fb9c1c4ae3a6422d79b392a3c56b",
     "semantic_hash": "4896fb9c1c4ae3a6422d79b392a3c56b"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/profile/ModelProfilesReadIT.kt": {
-    "mtime": 1791225781.832838,
-    "seen": 1791225860.134066,
+    "mtime": 1791232539.3972175,
+    "seen": 1791232561.858562,
     "ast_hash": "304fbfc6606705d9ee82833634c02081",
     "semantic_hash": "304fbfc6606705d9ee82833634c02081"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/profile/ModelProfilesWriteIT.kt": {
-    "mtime": 1791225781.8331382,
-    "seen": 1791225860.1340683,
+    "mtime": 1791232539.3974671,
+    "seen": 1791232561.8585625,
     "ast_hash": "982984543b3381202b55b8ab47c726f3",
     "semantic_hash": "982984543b3381202b55b8ab47c726f3"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/profile/OverrideRefreshIT.kt": {
-    "mtime": 1791225781.8331382,
-    "seen": 1791225860.1340697,
+    "mtime": 1791232539.3974671,
+    "seen": 1791232561.8585632,
     "ast_hash": "eea84e9aaab050a833182035c566385f",
     "semantic_hash": "eea84e9aaab050a833182035c566385f"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/profile/ProfileRepositoriesIT.kt": {
-    "mtime": 1791225781.8331382,
-    "seen": 1791225860.1340714,
+    "mtime": 1791232539.3974671,
+    "seen": 1791232561.8585637,
     "ast_hash": "f4681c09080631562cf7c5962991e57e",
     "semantic_hash": "f4681c09080631562cf7c5962991e57e"
   },
   "backend/app/src/integrationTest/kotlin/telex/agents/profile/SystemProfilesIT.kt": {
-    "mtime": 1791225781.8331382,
-    "seen": 1791225860.1340728,
+    "mtime": 1791232539.3974671,
+    "seen": 1791232561.8585641,
     "ast_hash": "22bca4fabfded8ee4c3e214061f10cb3",
     "semantic_hash": "22bca4fabfded8ee4c3e214061f10cb3"
   },
   "backend/app/src/integrationTest/kotlin/telex/llm/CatalogRefresherIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.1340904,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585708,
     "ast_hash": "1ae7a25d80552ea0266612cd0c390545",
     "semantic_hash": "1ae7a25d80552ea0266612cd0c390545"
   },
   "backend/app/src/integrationTest/kotlin/telex/llm/CatalogSnapshotStoreIT.kt": {
-    "mtime": 1791225781.8338609,
-    "seen": 1791225860.1340923,
+    "mtime": 1791232539.3981502,
+    "seen": 1791232561.8585713,
     "ast_hash": "20982a0c148769f898b5174e7bbbcb5a",
     "semantic_hash": "20982a0c148769f898b5174e7bbbcb5a"
   },
   "backend/app/src/integrationTest/kotlin/telex/llm/LlmPropertiesIT.kt": {
-    "mtime": 1791225781.8338609,
-    "seen": 1791225860.1340935,
+    "mtime": 1791232539.3981502,
+    "seen": 1791232561.8585718,
     "ast_hash": "3ef3c9b40ccccef5c5b3bdb4fb715769",
     "semantic_hash": "3ef3c9b40ccccef5c5b3bdb4fb715769"
   },
   "backend/app/src/integrationTest/kotlin/telex/llm/OpenRouterProviderIT.kt": {
-    "mtime": 1791225781.8338609,
-    "seen": 1791225860.1340952,
+    "mtime": 1791232539.3981502,
+    "seen": 1791232561.8585722,
     "ast_hash": "22ce7e93a08cf04b065cd6cf62fc8ac2",
     "semantic_hash": "22ce7e93a08cf04b065cd6cf62fc8ac2"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/ModelsReadApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341176,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585827,
     "ast_hash": "a0f9e1cb6309c37e2405ca201e7ba5a1",
     "semantic_hash": "a0f9e1cb6309c37e2405ca201e7ba5a1"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/ModelsWriteApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341193,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585832,
     "ast_hash": "03796dab985d64dab1e94c80a8b0b80b",
     "semantic_hash": "03796dab985d64dab1e94c80a8b0b80b"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/ModelsWriteLimitsApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341207,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.858584,
     "ast_hash": "694de4cabd41ca2821c61e9b1378e239",
     "semantic_hash": "694de4cabd41ca2821c61e9b1378e239"
   },
   "backend/app/src/main/kotlin/telex/agents/ModelCallFinished.kt": {
-    "mtime": 1791225781.835871,
-    "seen": 1791225860.1341367,
+    "mtime": 1791232539.3999398,
+    "seen": 1791232561.8585901,
     "ast_hash": "dcc7715b3b5c418c4b3ddeaac448e970",
     "semantic_hash": "dcc7715b3b5c418c4b3ddeaac448e970"
   },
   "backend/app/src/main/kotlin/telex/agents/ModelCatalogView.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.1341379,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585906,
     "ast_hash": "176af47ac88ff3f146b662f1565ffed4",
     "semantic_hash": "176af47ac88ff3f146b662f1565ffed4"
   },
   "backend/app/src/main/kotlin/telex/agents/ModelProfileDeleted.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.1341393,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585913,
     "ast_hash": "41f35ec251510ffe37618343d7169ce5",
     "semantic_hash": "41f35ec251510ffe37618343d7169ce5"
   },
   "backend/app/src/main/kotlin/telex/agents/ModelProfileId.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.134141,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585918,
     "ast_hash": "d175dedbdfd8516de6b5405ee9725e6e",
     "semantic_hash": "d175dedbdfd8516de6b5405ee9725e6e"
   },
   "backend/app/src/main/kotlin/telex/agents/ModelProfiles.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.1341426,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585923,
     "ast_hash": "cc6ea6aa5ecb634724eb859f95b1ad7c",
     "semantic_hash": "cc6ea6aa5ecb634724eb859f95b1ad7c"
   },
   "backend/app/src/main/kotlin/telex/agents/ModelSlotKind.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.1341445,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585927,
     "ast_hash": "256584058a5b9ccda8f76ab3c37042bf",
     "semantic_hash": "256584058a5b9ccda8f76ab3c37042bf"
   },
   "backend/app/src/main/kotlin/telex/agents/ProfileCalls.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.134146,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585932,
     "ast_hash": "980b15188b5b0a193c3995478b94563a",
     "semantic_hash": "980b15188b5b0a193c3995478b94563a"
   },
   "backend/app/src/main/kotlin/telex/agents/ProfileRef.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.1341476,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.8585937,
     "ast_hash": "c2d2c77b55e577561738d24d783d7424",
     "semantic_hash": "c2d2c77b55e577561738d24d783d7424"
   },
   "backend/app/src/main/kotlin/telex/agents/ProfileViews.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.1341488,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.858594,
     "ast_hash": "9bac268543fa61c52e7f385a601eac34",
     "semantic_hash": "9bac268543fa61c52e7f385a601eac34"
   },
   "backend/app/src/main/kotlin/telex/agents/ProfileWriteProblems.kt": {
-    "mtime": 1791225781.8359256,
-    "seen": 1791225860.134152,
+    "mtime": 1791232539.400006,
+    "seen": 1791232561.858595,
     "ast_hash": "b65c09b72e2742f1abb1933b6dbf2e65",
     "semantic_hash": "b65c09b72e2742f1abb1933b6dbf2e65"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/call/CallRecordRepository.kt": {
-    "mtime": 1791225781.8361328,
-    "seen": 1791225860.1341534,
+    "mtime": 1791232539.4002337,
+    "seen": 1791232561.8585954,
     "ast_hash": "21f408254ba0c4b593a45bd81269dcbd",
     "semantic_hash": "21f408254ba0c4b593a45bd81269dcbd"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/call/ProfileCallService.kt": {
-    "mtime": 1791225781.8361738,
-    "seen": 1791225860.134155,
+    "mtime": 1791232539.4002814,
+    "seen": 1791232561.8585958,
     "ast_hash": "f367f3390a8d02433b6a00bf12d6d7a0",
     "semantic_hash": "f367f3390a8d02433b6a00bf12d6d7a0"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/DefaultProfileRepository.kt": {
-    "mtime": 1791225781.8361738,
-    "seen": 1791225860.134156,
+    "mtime": 1791232539.4002814,
+    "seen": 1791232561.858596,
     "ast_hash": "aaba45105eaedb5d248b3ad244c56f23",
     "semantic_hash": "aaba45105eaedb5d248b3ad244c56f23"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/FieldProblems.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341581,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8585966,
     "ast_hash": "9fc61a9627675d2c0a6540f494402bd8",
     "semantic_hash": "9fc61a9627675d2c0a6540f494402bd8"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/ModelProfile.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341596,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8585973,
     "ast_hash": "48b73ceb51b5b7579a5be97a0da215ce",
     "semantic_hash": "48b73ceb51b5b7579a5be97a0da215ce"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/OverrideValidator.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341615,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.858598,
     "ast_hash": "7e52d22de6518ffe530763d6a1a45fd2",
     "semantic_hash": "7e52d22de6518ffe530763d6a1a45fd2"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/PriceEstimate.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.134163,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8585985,
     "ast_hash": "70791e7d49685a8fcb000966408f8841",
     "semantic_hash": "70791e7d49685a8fcb000966408f8841"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileCommands.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341646,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.858599,
     "ast_hash": "7c64fe80022c7b1f27ab22caef88309e",
     "semantic_hash": "7c64fe80022c7b1f27ab22caef88309e"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileQueries.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.134166,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8585992,
     "ast_hash": "88799401e5d317fece1b5f17f5d22f65",
     "semantic_hash": "88799401e5d317fece1b5f17f5d22f65"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileRepository.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341677,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8585997,
     "ast_hash": "dfb17270fb7dfb70baa8935af7085625",
     "semantic_hash": "dfb17270fb7dfb70baa8935af7085625"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/ProfileRules.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341689,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8586004,
     "ast_hash": "58c6a390876453e59f7bfafe93c915fd",
     "semantic_hash": "58c6a390876453e59f7bfafe93c915fd"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/SlotResolution.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341703,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8586009,
     "ast_hash": "146386e01b713e4bb16c32539c332e00",
     "semantic_hash": "146386e01b713e4bb16c32539c332e00"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/SystemProfileProperties.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.134172,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.8586016,
     "ast_hash": "fd2bc79ba71db3ab3064fd68d924b5b0",
     "semantic_hash": "fd2bc79ba71db3ab3064fd68d924b5b0"
   },
   "backend/app/src/main/kotlin/telex/agents/internal/profile/SystemProfiles.kt": {
-    "mtime": 1791225781.8362656,
-    "seen": 1791225860.1341734,
+    "mtime": 1791232539.4003725,
+    "seen": 1791232561.858602,
     "ast_hash": "4855dc4f623db556b6c69004f98266c7",
     "semantic_hash": "4855dc4f623db556b6c69004f98266c7"
   },
   "backend/app/src/main/kotlin/telex/llm/Attempt.kt": {
-    "mtime": 1791225781.8376331,
-    "seen": 1791225860.134224,
+    "mtime": 1791232539.4018574,
+    "seen": 1791232561.858621,
     "ast_hash": "cec269cb32c4b8f40dfc0423202db74e",
     "semantic_hash": "cec269cb32c4b8f40dfc0423202db74e"
   },
   "backend/app/src/main/kotlin/telex/llm/CatalogModel.kt": {
-    "mtime": 1791225781.8377025,
-    "seen": 1791225860.1342256,
+    "mtime": 1791232539.401945,
+    "seen": 1791232561.8586214,
     "ast_hash": "a3f4153182879187a653df7fbba9ddbd",
     "semantic_hash": "a3f4153182879187a653df7fbba9ddbd"
   },
   "backend/app/src/main/kotlin/telex/llm/ModelCalls.kt": {
-    "mtime": 1791225781.8377025,
-    "seen": 1791225860.1342273,
+    "mtime": 1791232539.401945,
+    "seen": 1791232561.8586223,
     "ast_hash": "6cca89a920cd8b2e60433efa8cf322d9",
     "semantic_hash": "6cca89a920cd8b2e60433efa8cf322d9"
   },
   "backend/app/src/main/kotlin/telex/llm/ModelCatalog.kt": {
-    "mtime": 1791225781.8377025,
-    "seen": 1791225860.1342292,
+    "mtime": 1791232539.401945,
+    "seen": 1791232561.8586228,
     "ast_hash": "d9b6b282b976266e100ce923e92896f1",
     "semantic_hash": "d9b6b282b976266e100ce923e92896f1"
   },
   "backend/app/src/main/kotlin/telex/llm/ModelCatalogRefreshed.kt": {
-    "mtime": 1791225781.8377025,
-    "seen": 1791225860.1342306,
+    "mtime": 1791232539.401945,
+    "seen": 1791232561.8586233,
     "ast_hash": "603bbfdb6f83bdb57fe77df9760f9e75",
     "semantic_hash": "603bbfdb6f83bdb57fe77df9760f9e75"
   },
   "backend/app/src/main/kotlin/telex/llm/ModelId.kt": {
-    "mtime": 1791225781.8377025,
-    "seen": 1791225860.134232,
+    "mtime": 1791232539.401945,
+    "seen": 1791232561.8586237,
     "ast_hash": "348abc1d5c9a015cf98db6d50eb9ca4d",
     "semantic_hash": "348abc1d5c9a015cf98db6d50eb9ca4d"
   },
   "backend/app/src/main/kotlin/telex/llm/ModelSlotKind.kt": {
-    "mtime": 1791225781.8377025,
-    "seen": 1791225860.1342337,
+    "mtime": 1791232539.401945,
+    "seen": 1791232561.8586242,
     "ast_hash": "d4edbfbd14a0f15fe052fe771ccea7e9",
     "semantic_hash": "d4edbfbd14a0f15fe052fe771ccea7e9"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/call/FallbackLoop.kt": {
-    "mtime": 1791225781.8378267,
-    "seen": 1791225860.1342351,
+    "mtime": 1791232539.4021049,
+    "seen": 1791232561.858625,
     "ast_hash": "423e92c4b1fde3e0c75e8073432b4101",
     "semantic_hash": "423e92c4b1fde3e0c75e8073432b4101"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/call/ModelCallsConfig.kt": {
-    "mtime": 1791225781.8378649,
-    "seen": 1791225860.134236,
+    "mtime": 1791232539.4021497,
+    "seen": 1791232561.8586252,
     "ast_hash": "1b4cf7a2c990d4ec765e5afb2aa81488",
     "semantic_hash": "1b4cf7a2c990d4ec765e5afb2aa81488"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/call/ModelProvider.kt": {
-    "mtime": 1791225781.8378649,
-    "seen": 1791225860.1342375,
+    "mtime": 1791232539.4021497,
+    "seen": 1791232561.858626,
     "ast_hash": "2e6b801dabadede39c4368a67e88acaa",
     "semantic_hash": "2e6b801dabadede39c4368a67e88acaa"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/catalog/CatalogHolder.kt": {
-    "mtime": 1791225781.8378649,
-    "seen": 1791225860.134239,
+    "mtime": 1791232539.4021497,
+    "seen": 1791232561.8586266,
     "ast_hash": "aadc83874bcef3b81b0826b106fbeeba",
     "semantic_hash": "aadc83874bcef3b81b0826b106fbeeba"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/catalog/CatalogRefresher.kt": {
-    "mtime": 1791225781.837939,
-    "seen": 1791225860.1342409,
+    "mtime": 1791232539.402245,
+    "seen": 1791232561.858627,
     "ast_hash": "d86576d1c6892dc19adf68ac16daf667",
     "semantic_hash": "d86576d1c6892dc19adf68ac16daf667"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/catalog/CatalogSnapshotStore.kt": {
-    "mtime": 1791225781.837939,
-    "seen": 1791225860.1342425,
+    "mtime": 1791232539.402245,
+    "seen": 1791232561.8586276,
     "ast_hash": "1bd06d6fae3efe1f21dac520f7823289",
     "semantic_hash": "1bd06d6fae3efe1f21dac520f7823289"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/openrouter/LlmProperties.kt": {
-    "mtime": 1791225781.837939,
-    "seen": 1791225860.134245,
+    "mtime": 1791232539.402245,
+    "seen": 1791232561.858628,
     "ast_hash": "2f7dfded9c3dd76cca2607e4608a9fc3",
     "semantic_hash": "2f7dfded9c3dd76cca2607e4608a9fc3"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/openrouter/ModelListParser.kt": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.134246,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586285,
     "ast_hash": "52372250f386502bfc2c532c0a4f721d",
     "semantic_hash": "52372250f386502bfc2c532c0a4f721d"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterErrors.kt": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.1342483,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586292,
     "ast_hash": "1b9ea9c7f91943a183464d716171cdb6",
     "semantic_hash": "1b9ea9c7f91943a183464d716171cdb6"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterModelsClient.kt": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.1342492,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586297,
     "ast_hash": "a567a0f950e30427b036b0914ba21ba3",
     "semantic_hash": "a567a0f950e30427b036b0914ba21ba3"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterProperties.kt": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.1342504,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586302,
     "ast_hash": "f95097141af6b74c4076057167d4c1bf",
     "semantic_hash": "f95097141af6b74c4076057167d4c1bf"
   },
   "backend/app/src/main/kotlin/telex/llm/internal/openrouter/OpenRouterProvider.kt": {
-    "mtime": 1791225781.8380628,
-    "seen": 1791225860.134252,
+    "mtime": 1791232539.4023638,
+    "seen": 1791232561.8586307,
     "ast_hash": "034c33fdf3e2866fb98f0a3b3c0cf773",
     "semantic_hash": "034c33fdf3e2866fb98f0a3b3c0cf773"
   },
   "backend/app/src/main/kotlin/telex/web/api/ModelsController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343215,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586617,
     "ast_hash": "aab9cfdff5de6cbab35abd519ae61f09",
     "semantic_hash": "aab9cfdff5de6cbab35abd519ae61f09"
   },
   "backend/app/src/main/kotlin/telex/web/api/ModelsDtos.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.134323,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586624,
     "ast_hash": "611eee8558d6067b1ce7ee8813edff52",
     "semantic_hash": "611eee8558d6067b1ce7ee8813edff52"
   },
   "backend/app/src/main/kotlin/telex/web/api/ModelsMappers.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.134324,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586626,
     "ast_hash": "ac6bfd731cf80a6a12b69d98e514f632",
     "semantic_hash": "ac6bfd731cf80a6a12b69d98e514f632"
   },
   "backend/app/src/main/resources/db/migration/V202610031200__create_model_catalog.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.134356,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.858676,
     "ast_hash": "508c44dc94cae4d268da80955ee76588",
     "semantic_hash": "508c44dc94cae4d268da80955ee76588"
   },
   "backend/app/src/main/resources/db/migration/V202610031201__create_model_profile.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.134357,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586764,
     "ast_hash": "3660cde7ef8f784e3a8a8914561f2463",
     "semantic_hash": "3660cde7ef8f784e3a8a8914561f2463"
   },
   "backend/app/src/main/resources/db/migration/V202610031202__create_default_model_profile.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343582,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.858677,
     "ast_hash": "bb3f3c5dbf45ef06abe656205f7b3493",
     "semantic_hash": "bb3f3c5dbf45ef06abe656205f7b3493"
   },
   "backend/app/src/main/resources/db/migration/V202610031203__create_model_call.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343596,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586774,
     "ast_hash": "0401143774fe8a8171df33b721fc45e5",
     "semantic_hash": "0401143774fe8a8171df33b721fc45e5"
   },
   "backend/app/src/main/resources/db/rollback/U202610031200__create_model_catalog.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343737,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.858684,
     "ast_hash": "03eb06e0a3504bee1ebcb25d370665a1",
     "semantic_hash": "03eb06e0a3504bee1ebcb25d370665a1"
   },
   "backend/app/src/main/resources/db/rollback/U202610031201__create_model_profile.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343749,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586848,
     "ast_hash": "0a2c885f6e2a90f05fb191d5c4f95aaa",
     "semantic_hash": "0a2c885f6e2a90f05fb191d5c4f95aaa"
   },
   "backend/app/src/main/resources/db/rollback/U202610031202__create_default_model_profile.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.134377,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586853,
     "ast_hash": "c8e4c7201deac023c5a5d7a413f44baf",
     "semantic_hash": "c8e4c7201deac023c5a5d7a413f44baf"
   },
   "backend/app/src/main/resources/db/rollback/U202610031203__create_model_call.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343784,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586857,
     "ast_hash": "5c6618a5a3ed102da9af37b358040489",
     "semantic_hash": "5c6618a5a3ed102da9af37b358040489"
   },
   "backend/app/src/test/kotlin/telex/agents/internal/profile/OverrideValidatorTest.kt": {
-    "mtime": 1791225781.8414903,
-    "seen": 1791225860.1343858,
+    "mtime": 1791232539.4060726,
+    "seen": 1791232561.8586895,
     "ast_hash": "fffe5dfece6c440a9f9d4be29aa33862",
     "semantic_hash": "fffe5dfece6c440a9f9d4be29aa33862"
   },
   "backend/app/src/test/kotlin/telex/agents/internal/profile/PriceEstimateTest.kt": {
-    "mtime": 1791225781.8415582,
-    "seen": 1791225860.1343873,
+    "mtime": 1791232539.40615,
+    "seen": 1791232561.85869,
     "ast_hash": "c4d5ab126ad8a5b20baa6c00f68e467c",
     "semantic_hash": "c4d5ab126ad8a5b20baa6c00f68e467c"
   },
   "backend/app/src/test/kotlin/telex/agents/internal/profile/ProfileRulesTest.kt": {
-    "mtime": 1791225781.8415582,
-    "seen": 1791225860.1343884,
+    "mtime": 1791232539.40615,
+    "seen": 1791232561.8586905,
     "ast_hash": "36172f9cb873f297ca27030cf93ed164",
     "semantic_hash": "36172f9cb873f297ca27030cf93ed164"
   },
   "backend/app/src/test/kotlin/telex/agents/internal/profile/SlotResolutionTest.kt": {
-    "mtime": 1791225781.8415582,
-    "seen": 1791225860.1343899,
+    "mtime": 1791232539.40615,
+    "seen": 1791232561.858691,
     "ast_hash": "5e4f0ce398eb2f8723f657c81f9c0bcd",
     "semantic_hash": "5e4f0ce398eb2f8723f657c81f9c0bcd"
   },
   "backend/app/src/test/kotlin/telex/agents/internal/profile/SystemProfilesTest.kt": {
-    "mtime": 1791225781.8415582,
-    "seen": 1791225860.1343908,
+    "mtime": 1791232539.40615,
+    "seen": 1791232561.8586917,
     "ast_hash": "d23f55734cb4de70d7da55117bc33a7d",
     "semantic_hash": "d23f55734cb4de70d7da55117bc33a7d"
   },
   "backend/app/src/test/kotlin/telex/llm/CatalogModelTest.kt": {
-    "mtime": 1791225781.8418021,
-    "seen": 1791225860.134403,
+    "mtime": 1791232539.4064183,
+    "seen": 1791232561.8586967,
     "ast_hash": "9a14960c7c8a0b8a550a07123a22e3ca",
     "semantic_hash": "9a14960c7c8a0b8a550a07123a22e3ca"
   },
   "backend/app/src/test/kotlin/telex/llm/ModelListParserTest.kt": {
-    "mtime": 1791225781.842039,
-    "seen": 1791225860.1344042,
+    "mtime": 1791232539.40669,
+    "seen": 1791232561.8586972,
     "ast_hash": "b78a99d255d49ddc27b1a46a674a8f57",
     "semantic_hash": "b78a99d255d49ddc27b1a46a674a8f57"
   },
   "backend/app/src/test/kotlin/telex/llm/OpenRouterErrorsTest.kt": {
-    "mtime": 1791225781.842039,
-    "seen": 1791225860.1344059,
+    "mtime": 1791232539.40669,
+    "seen": 1791232561.8586977,
     "ast_hash": "32e5edd43564e7ee591c2eae7942350a",
     "semantic_hash": "32e5edd43564e7ee591c2eae7942350a"
   },
   "backend/app/src/test/kotlin/telex/llm/call/FallbackLoopTest.kt": {
-    "mtime": 1791225781.842039,
-    "seen": 1791225860.1344073,
+    "mtime": 1791232539.40669,
+    "seen": 1791232561.8586986,
     "ast_hash": "2669f4ee55aff86b0dad6aab850e4431",
     "semantic_hash": "2669f4ee55aff86b0dad6aab850e4431"
   },
   "backend/app/src/test/resources/openrouter/models.json": {
-    "mtime": 1791225781.843022,
-    "seen": 1791225860.1344264,
+    "mtime": 1791232539.4076977,
+    "seen": 1791232561.8587074,
     "ast_hash": "cafbd38dfdea62199ce80db7e2aa9dc8",
     "semantic_hash": "cafbd38dfdea62199ce80db7e2aa9dc8"
   },
   "docs/features/model-profiles/migrations/01_create_model_catalog.down.sql": {
-    "mtime": 1791225781.866771,
-    "seen": 1791225860.1344655,
+    "mtime": 1791232539.4282987,
+    "seen": 1791232561.8587253,
     "ast_hash": "03eb06e0a3504bee1ebcb25d370665a1",
     "semantic_hash": "03eb06e0a3504bee1ebcb25d370665a1"
   },
   "docs/features/model-profiles/migrations/01_create_model_catalog.up.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344674,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587258,
     "ast_hash": "508c44dc94cae4d268da80955ee76588",
     "semantic_hash": "508c44dc94cae4d268da80955ee76588"
   },
   "docs/features/model-profiles/migrations/02_create_model_profile.down.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344688,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587265,
     "ast_hash": "0a2c885f6e2a90f05fb191d5c4f95aaa",
     "semantic_hash": "0a2c885f6e2a90f05fb191d5c4f95aaa"
   },
   "docs/features/model-profiles/migrations/02_create_model_profile.up.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344702,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.858727,
     "ast_hash": "3660cde7ef8f784e3a8a8914561f2463",
     "semantic_hash": "3660cde7ef8f784e3a8a8914561f2463"
   },
   "docs/features/model-profiles/migrations/03_create_default_model_profile.down.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344714,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587277,
     "ast_hash": "c8e4c7201deac023c5a5d7a413f44baf",
     "semantic_hash": "c8e4c7201deac023c5a5d7a413f44baf"
   },
   "docs/features/model-profiles/migrations/03_create_default_model_profile.up.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344724,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587282,
     "ast_hash": "bb3f3c5dbf45ef06abe656205f7b3493",
     "semantic_hash": "bb3f3c5dbf45ef06abe656205f7b3493"
   },
   "docs/features/model-profiles/migrations/04_create_model_call.down.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.134474,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587286,
     "ast_hash": "5c6618a5a3ed102da9af37b358040489",
     "semantic_hash": "5c6618a5a3ed102da9af37b358040489"
   },
   "docs/features/model-profiles/migrations/04_create_model_call.up.sql": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344752,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587291,
     "ast_hash": "0401143774fe8a8171df33b721fc45e5",
     "semantic_hash": "0401143774fe8a8171df33b721fc45e5"
   },
   "docs/features/model-profiles/tasks.json": {
-    "mtime": 1791225781.8671463,
-    "seen": 1791225860.1344767,
+    "mtime": 1791232539.4286108,
+    "seen": 1791232561.8587298,
     "ast_hash": "6a63c53f054c1f489210aed7623f765a",
     "semantic_hash": "6a63c53f054c1f489210aed7623f765a"
   },
   "e2e/support/models.ts": {
-    "mtime": 1791225781.8823943,
-    "seen": 1791225860.1345072,
+    "mtime": 1791232539.442055,
+    "seen": 1791232561.858744,
     "ast_hash": "d4f64254cbd0911e30f6de2c4b3ee733",
     "semantic_hash": "d4f64254cbd0911e30f6de2c4b3ee733"
   },
   "e2e/tests/models.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345124,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587458,
     "ast_hash": "b16db0170bece422e161f92cb33b3c81",
     "semantic_hash": "b16db0170bece422e161f92cb33b3c81"
   },
   "e2e/wiremock/__files/models.json": {
-    "mtime": 1791225781.8830836,
-    "seen": 1791225860.1345263,
+    "mtime": 1791232539.442679,
+    "seen": 1791232561.8587518,
     "ast_hash": "e7a45eb9dc94f62784652bbf61b6dd9d",
     "semantic_hash": "e7a45eb9dc94f62784652bbf61b6dd9d"
   },
   "e2e/wiremock/generate-models.mjs": {
-    "mtime": 1791225781.8830836,
-    "seen": 1791225860.1345274,
+    "mtime": 1791232539.442679,
+    "seen": 1791232561.8587523,
     "ast_hash": "882ca3f9e8aa4fd114ebe9573912f3de",
     "semantic_hash": "882ca3f9e8aa4fd114ebe9573912f3de"
   },
   "e2e/wiremock/mappings/models.json": {
-    "mtime": 1791225781.8830836,
-    "seen": 1791225860.134529,
+    "mtime": 1791232539.442679,
+    "seen": 1791232561.8587527,
     "ast_hash": "c267784051eab07095c7d6a8e7d5f1e1",
     "semantic_hash": "c267784051eab07095c7d6a8e7d5f1e1"
   },
   "frontend/src/api/models.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345575,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.858764,
     "ast_hash": "f82bfb13dd3854217fb01b69100eb970",
     "semantic_hash": "f82bfb13dd3854217fb01b69100eb970"
   },
   "frontend/src/components/ChainEditor/ChainEditor.test.tsx": {
-    "mtime": 1791225781.8861318,
-    "seen": 1791225860.1345794,
+    "mtime": 1791232539.4452252,
+    "seen": 1791232561.8587728,
     "ast_hash": "f7356f86b3b04daee4940a0e74a49c13",
     "semantic_hash": "f7356f86b3b04daee4940a0e74a49c13"
   },
   "frontend/src/components/ChainEditor/ChainEditor.tsx": {
-    "mtime": 1791225781.8862615,
-    "seen": 1791225860.134581,
+    "mtime": 1791232539.445359,
+    "seen": 1791232561.8587732,
     "ast_hash": "b60a547cf715cac92745be37d231e3ae",
     "semantic_hash": "b60a547cf715cac92745be37d231e3ae"
   },
   "frontend/src/components/Cost/Cost.test.tsx": {
-    "mtime": 1791225781.886418,
-    "seen": 1791225860.1345873,
+    "mtime": 1791232539.4455318,
+    "seen": 1791232561.8587766,
     "ast_hash": "96ab4501283bb1e2030e23ba0104ca27",
     "semantic_hash": "96ab4501283bb1e2030e23ba0104ca27"
   },
   "frontend/src/components/Cost/Cost.tsx": {
-    "mtime": 1791225781.8864853,
-    "seen": 1791225860.1345887,
+    "mtime": 1791232539.4456077,
+    "seen": 1791232561.858777,
     "ast_hash": "dea2c57d187eef72eabf0c27d4f5e009",
     "semantic_hash": "dea2c57d187eef72eabf0c27d4f5e009"
   },
   "frontend/src/components/Cost/formatCost.ts": {
-    "mtime": 1791225781.8864853,
-    "seen": 1791225860.13459,
+    "mtime": 1791232539.4456077,
+    "seen": 1791232561.8587775,
     "ast_hash": "0ac51b7aecae9bd80ec1718a8e4bdb45",
     "semantic_hash": "0ac51b7aecae9bd80ec1718a8e4bdb45"
   },
   "frontend/src/components/DataTable/DataTable.test.tsx": {
-    "mtime": 1791225781.8864853,
-    "seen": 1791225860.1345913,
+    "mtime": 1791232539.4456077,
+    "seen": 1791232561.8587785,
     "ast_hash": "d75939d0136bf20a2b33d950e922a3b1",
     "semantic_hash": "d75939d0136bf20a2b33d950e922a3b1"
   },
   "frontend/src/components/DataTable/DataTable.tsx": {
-    "mtime": 1791225781.8865619,
-    "seen": 1791225860.1345923,
+    "mtime": 1791232539.4456975,
+    "seen": 1791232561.858779,
     "ast_hash": "737565684532f66d2c15e49de17a16f7",
     "semantic_hash": "737565684532f66d2c15e49de17a16f7"
   },
   "frontend/src/components/FilterBar/FilterBar.test.tsx": {
-    "mtime": 1791225781.8865619,
-    "seen": 1791225860.134595,
+    "mtime": 1791232539.4456975,
+    "seen": 1791232561.85878,
     "ast_hash": "ca221a1703414f7d718c812aaa2f8b44",
     "semantic_hash": "ca221a1703414f7d718c812aaa2f8b44"
   },
   "frontend/src/components/FilterBar/FilterBar.tsx": {
-    "mtime": 1791225781.8866587,
-    "seen": 1791225860.134596,
+    "mtime": 1791232539.4458115,
+    "seen": 1791232561.8587804,
     "ast_hash": "33b04d9b5022d85b400c1b0fc80f42e2",
     "semantic_hash": "33b04d9b5022d85b400c1b0fc80f42e2"
   },
   "frontend/src/components/ModelChooser/ModelChooser.test.tsx": {
-    "mtime": 1791225781.8867683,
-    "seen": 1791225860.1346023,
+    "mtime": 1791232539.4459455,
+    "seen": 1791232561.8587835,
     "ast_hash": "68282029faf15fb2ac34b3730737627e",
     "semantic_hash": "68282029faf15fb2ac34b3730737627e"
   },
   "frontend/src/components/ModelChooser/ModelChooser.tsx": {
-    "mtime": 1791225781.886886,
-    "seen": 1791225860.1346037,
+    "mtime": 1791232539.4460704,
+    "seen": 1791232561.858784,
     "ast_hash": "9d1eea36ed92fe0ed2a12e9462a940e4",
     "semantic_hash": "9d1eea36ed92fe0ed2a12e9462a940e4"
   },
   "frontend/src/components/ModelProfileCard/ModelProfileCard.test.tsx": {
-    "mtime": 1791225781.886886,
-    "seen": 1791225860.1346054,
+    "mtime": 1791232539.4460704,
+    "seen": 1791232561.8587844,
     "ast_hash": "f981d100cce3e160d8e31058986ed39c",
     "semantic_hash": "f981d100cce3e160d8e31058986ed39c"
   },
   "frontend/src/components/ModelProfileCard/ModelProfileCard.tsx": {
-    "mtime": 1791225781.8869903,
-    "seen": 1791225860.1346068,
+    "mtime": 1791232539.4461663,
+    "seen": 1791232561.8587854,
     "ast_hash": "5f91f9278497b64565f593ea51c502e0",
     "semantic_hash": "5f91f9278497b64565f593ea51c502e0"
   },
   "frontend/src/components/ModelProfilePicker/ModelProfilePicker.test.tsx": {
-    "mtime": 1791225781.8869903,
-    "seen": 1791225860.134608,
+    "mtime": 1791232539.4461663,
+    "seen": 1791232561.8587859,
     "ast_hash": "4612d0877518e0d798457c8b67e071d3",
     "semantic_hash": "4612d0877518e0d798457c8b67e071d3"
   },
   "frontend/src/components/ModelProfilePicker/ModelProfilePicker.tsx": {
-    "mtime": 1791225781.8870773,
-    "seen": 1791225860.1346095,
+    "mtime": 1791232539.4462605,
+    "seen": 1791232561.8587863,
     "ast_hash": "3c733598a2812a2036793076f560bf7b",
     "semantic_hash": "3c733598a2812a2036793076f560bf7b"
   },
   "frontend/src/components/ModelProfilePicker/profileDisplay.tsx": {
-    "mtime": 1791225781.8870773,
-    "seen": 1791225860.1346107,
+    "mtime": 1791232539.4462605,
+    "seen": 1791232561.8587868,
     "ast_hash": "d2342ad9b37948ce39d409a3e19b4c83",
     "semantic_hash": "d2342ad9b37948ce39d409a3e19b4c83"
   },
   "frontend/src/components/ModelProfilePicker/slotText.ts": {
-    "mtime": 1791225781.8870773,
-    "seen": 1791225860.1346123,
+    "mtime": 1791232539.4462605,
+    "seen": 1791232561.858787,
     "ast_hash": "da193281612aed218ce1dafceb7ec0b3",
     "semantic_hash": "da193281612aed218ce1dafceb7ec0b3"
   },
   "frontend/src/pages/models/CatalogTab.tsx": {
-    "mtime": 1791225781.8886805,
-    "seen": 1791225860.1346507,
+    "mtime": 1791232539.4478316,
+    "seen": 1791232561.8588066,
     "ast_hash": "b42567694c8d3e3de8ae5fcb8bcaf846",
     "semantic_hash": "b42567694c8d3e3de8ae5fcb8bcaf846"
   },
   "frontend/src/pages/models/ModelsPage.test.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.134652,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.858807,
     "ast_hash": "300322c08fe94d51fe1f20c69b6ed8c1",
     "semantic_hash": "300322c08fe94d51fe1f20c69b6ed8c1"
   },
   "frontend/src/pages/models/ModelsPage.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.134653,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588076,
     "ast_hash": "51249e719c6d84f09f89258898414574",
     "semantic_hash": "51249e719c6d84f09f89258898414574"
   },
   "frontend/src/pages/models/ProfileEditorModal.test.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.1346545,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588083,
     "ast_hash": "012d5dadad57f620a413383244e68d73",
     "semantic_hash": "012d5dadad57f620a413383244e68d73"
   },
   "frontend/src/pages/models/ProfileEditorModal.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.1346557,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588088,
     "ast_hash": "0940c0e4bd1612854608cf88747a7549",
     "semantic_hash": "0940c0e4bd1612854608cf88747a7549"
   },
   "frontend/src/pages/models/ProfilesTab.test.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.134657,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588092,
     "ast_hash": "2d073e4413a996e44a397bb8ff81cac5",
     "semantic_hash": "2d073e4413a996e44a397bb8ff81cac5"
   },
   "frontend/src/pages/models/ProfilesTab.tsx": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.1346586,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588102,
     "ast_hash": "3406df8a6e834bbbd1a5bca6a28c414f",
     "semantic_hash": "3406df8a6e834bbbd1a5bca6a28c414f"
   },
   "frontend/src/pages/models/format.ts": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.1346598,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.8588104,
     "ast_hash": "996c079a77d3fb4527d5b95da0dc2f12",
     "semantic_hash": "996c079a77d3fb4527d5b95da0dc2f12"
   },
   "frontend/src/pages/models/notice.ts": {
-    "mtime": 1791225781.8887687,
-    "seen": 1791225860.134661,
+    "mtime": 1791232539.4479263,
+    "seen": 1791232561.858811,
     "ast_hash": "d4d5bb27ba9d8682716c02edb5bb23f4",
     "semantic_hash": "d4d5bb27ba9d8682716c02edb5bb23f4"
   },
@@ -4560,722 +4560,722 @@
     "semantic_hash": "07d9e6ccdf7a347e9921369f362574cd"
   },
   "backend/app/src/integrationTest/kotlin/telex/TelegramDataHygieneIT.kt": {
-    "mtime": 1791225781.8325784,
-    "seen": 1791225860.134054,
+    "mtime": 1791232539.396942,
+    "seen": 1791232561.858558,
     "ast_hash": "2b10f1202974f269efb94c7ddd73e7a0",
     "semantic_hash": "2b10f1202974f269efb94c7ddd73e7a0"
   },
   "backend/app/src/integrationTest/kotlin/telex/identity/OwnerKeysIT.kt": {
-    "mtime": 1791225781.8334517,
-    "seen": 1791225860.134076,
+    "mtime": 1791232539.3977473,
+    "seen": 1791232561.8585656,
     "ast_hash": "71af9af80a6c1c04e76df8096293a37d",
     "semantic_hash": "71af9af80a6c1c04e76df8096293a37d"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt": {
-    "mtime": 1791225781.8338609,
-    "seen": 1791225860.1340978,
+    "mtime": 1791232539.3981502,
+    "seen": 1791232561.8585737,
     "ast_hash": "9aea871b66bf91ec5fe4250056a328e7",
     "semantic_hash": "9aea871b66bf91ec5fe4250056a328e7"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.134099,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585742,
     "ast_hash": "1cf97da169c2862ae2b4718e70c2e8e5",
     "semantic_hash": "1cf97da169c2862ae2b4718e70c2e8e5"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/LinkedAccountRepositoryIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585746,
     "ast_hash": "b7a3f2804fdc0fa5e43f22db7fd87020",
     "semantic_hash": "b7a3f2804fdc0fa5e43f22db7fd87020"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingAttemptIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.134101,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.858575,
     "ast_hash": "7555440ec742472d6f8df0174e268e26",
     "semantic_hash": "7555440ec742472d6f8df0174e268e26"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.134102,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585756,
     "ast_hash": "5d6f1a626f1645e96052f9487a09758d",
     "semantic_hash": "5d6f1a626f1645e96052f9487a09758d"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingStepsIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341038,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.858576,
     "ast_hash": "a7bb26934fff80540f8b6abb886fc118",
     "semantic_hash": "a7bb26934fff80540f8b6abb886fc118"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/MessagingSchemaIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341054,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.858577,
     "ast_hash": "98215136886b95eabef98c6cc9a06600",
     "semantic_hash": "98215136886b95eabef98c6cc9a06600"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/NothingLeftBehindIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341064,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585775,
     "ast_hash": "1a5a5167e4637127b27030e4810fe714",
     "semantic_hash": "1a5a5167e4637127b27030e4810fe714"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/RealRestartIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341076,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.858578,
     "ast_hash": "f0e25ad6a146a4978fcaec2d39763b60",
     "semantic_hash": "f0e25ad6a146a4978fcaec2d39763b60"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkAnnouncementRestartIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.134109,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585784,
     "ast_hash": "04a2c2ad8508b6990dfe03823492e946",
     "semantic_hash": "04a2c2ad8508b6990dfe03823492e946"
   },
   "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.1341097,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585792,
     "ast_hash": "709b5b7c6206cc1e0f3fd8fb4a78dfbe",
     "semantic_hash": "709b5b7c6206cc1e0f3fd8fb4a78dfbe"
   },
   "backend/app/src/integrationTest/kotlin/telex/telegram/TdlibKeyAtRestIT.kt": {
-    "mtime": 1791225781.8341975,
-    "seen": 1791225860.134111,
+    "mtime": 1791232539.3984456,
+    "seen": 1791232561.8585799,
     "ast_hash": "517cb04ef303ac90d747ec13697fa719",
     "semantic_hash": "517cb04ef303ac90d747ec13697fa719"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/LinkedAccountsApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341136,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.858581,
     "ast_hash": "4dbddc0b25661df6eb8bce1101298af2",
     "semantic_hash": "4dbddc0b25661df6eb8bce1101298af2"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341147,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585818,
     "ast_hash": "3d98a1c7c6a1390c617e809f1da3bdce",
     "semantic_hash": "3d98a1c7c6a1390c617e809f1da3bdce"
   },
   "backend/app/src/integrationTest/kotlin/telex/web/LiveUpdatesIT.kt": {
-    "mtime": 1791225781.8348846,
-    "seen": 1791225860.1341162,
+    "mtime": 1791232539.39906,
+    "seen": 1791232561.8585823,
     "ast_hash": "0a04e62e608e237efec859507732ebbd",
     "semantic_hash": "0a04e62e608e237efec859507732ebbd"
   },
   "backend/app/src/main/kotlin/telex/identity/OwnerKeys.kt": {
-    "mtime": 1791225781.8367348,
-    "seen": 1791225860.134182,
+    "mtime": 1791232539.400893,
+    "seen": 1791232561.8586056,
     "ast_hash": "ffb8d862fd9178eccee0c08ad03a8074",
     "semantic_hash": "ffb8d862fd9178eccee0c08ad03a8074"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/key/AesGcm.kt": {
-    "mtime": 1791225781.8371875,
-    "seen": 1791225860.1342041,
+    "mtime": 1791232539.4013522,
+    "seen": 1791232561.858613,
     "ast_hash": "62011bb945fb895ce5c65a425b0be001",
     "semantic_hash": "62011bb945fb895ce5c65a425b0be001"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/key/MasterKey.kt": {
-    "mtime": 1791225781.8372626,
-    "seen": 1791225860.1342053,
+    "mtime": 1791232539.4014347,
+    "seen": 1791232561.8586137,
     "ast_hash": "2298f20613c41c39f8a8aed8093fce0a",
     "semantic_hash": "2298f20613c41c39f8a8aed8093fce0a"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/key/MasterKeyCheck.kt": {
-    "mtime": 1791225781.8372626,
-    "seen": 1791225860.1342068,
+    "mtime": 1791232539.4014347,
+    "seen": 1791232561.8586144,
     "ast_hash": "d644aa34f488a6e29d4bd52e6f3e7c4d",
     "semantic_hash": "d644aa34f488a6e29d4bd52e6f3e7c4d"
   },
   "backend/app/src/main/kotlin/telex/identity/internal/key/OwnerKeyRows.kt": {
-    "mtime": 1791225781.8372626,
-    "seen": 1791225860.1342077,
+    "mtime": 1791232539.4014347,
+    "seen": 1791232561.858615,
     "ast_hash": "28b2604d68900412d2cf3ffbbcba39c0",
     "semantic_hash": "28b2604d68900412d2cf3ffbbcba39c0"
   },
   "backend/app/src/main/kotlin/telex/messaging/AccountLinked.kt": {
-    "mtime": 1791225781.838282,
-    "seen": 1791225860.1342587,
+    "mtime": 1791232539.4025903,
+    "seen": 1791232561.8586333,
     "ast_hash": "9c64cbbaa2df7b8f28b7994ea0cdda32",
     "semantic_hash": "9c64cbbaa2df7b8f28b7994ea0cdda32"
   },
   "backend/app/src/main/kotlin/telex/messaging/AccountUnlinked.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.13426,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586342,
     "ast_hash": "55e58e117b93c98cde60a146a7da5747",
     "semantic_hash": "55e58e117b93c98cde60a146a7da5747"
   },
   "backend/app/src/main/kotlin/telex/messaging/ChannelId.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342611,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.858635,
     "ast_hash": "09bee3149ed876af623c838997b2246f",
     "semantic_hash": "09bee3149ed876af623c838997b2246f"
   },
   "backend/app/src/main/kotlin/telex/messaging/LinkedAccountId.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342623,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586354,
     "ast_hash": "9cb3520ed0004343d47c2a9947ff98ed",
     "semantic_hash": "9cb3520ed0004343d47c2a9947ff98ed"
   },
   "backend/app/src/main/kotlin/telex/messaging/LinkedAccountState.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342635,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586361,
     "ast_hash": "e0cda313d2c1755f6d9c89f5336de6ae",
     "semantic_hash": "e0cda313d2c1755f6d9c89f5336de6ae"
   },
   "backend/app/src/main/kotlin/telex/messaging/LinkedAccountStateChanged.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.134265,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586366,
     "ast_hash": "6ba734eaf91fe415dc6ee5cc544b7957",
     "semantic_hash": "6ba734eaf91fe415dc6ee5cc544b7957"
   },
   "backend/app/src/main/kotlin/telex/messaging/LinkedAccountSyncProgressed.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342661,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586373,
     "ast_hash": "73f528d355bbe813c5f326b649c01ed1",
     "semantic_hash": "73f528d355bbe813c5f326b649c01ed1"
   },
   "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342676,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586378,
     "ast_hash": "443840f2c3f608dc20def11c58f2c935",
     "semantic_hash": "443840f2c3f608dc20def11c58f2c935"
   },
   "backend/app/src/main/kotlin/telex/messaging/Linking.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342692,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.8586385,
     "ast_hash": "6370e3cd963b9b36b313c84812f5ac55",
     "semantic_hash": "6370e3cd963b9b36b313c84812f5ac55"
   },
   "backend/app/src/main/kotlin/telex/messaging/LinkingProblems.kt": {
-    "mtime": 1791225781.8383641,
-    "seen": 1791225860.1342702,
+    "mtime": 1791232539.4026952,
+    "seen": 1791232561.858639,
     "ast_hash": "3527a3c9e499d55ffe419a63bec4c422",
     "semantic_hash": "3527a3c9e499d55ffe419a63bec4c422"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/account/AccountDeletion.kt": {
-    "mtime": 1791225781.8386512,
-    "seen": 1791225860.1342711,
+    "mtime": 1791232539.403002,
+    "seen": 1791232561.8586397,
     "ast_hash": "30eae2de5071adbdb7e97c3351203a62",
     "semantic_hash": "30eae2de5071adbdb7e97c3351203a62"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt": {
-    "mtime": 1791225781.8386848,
-    "seen": 1791225860.1342728,
+    "mtime": 1791232539.4030433,
+    "seen": 1791232561.8586402,
     "ast_hash": "111e2d14d06015364ba846d15a4cd418",
     "semantic_hash": "111e2d14d06015364ba846d15a4cd418"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkRules.kt": {
-    "mtime": 1791225781.8386848,
-    "seen": 1791225860.1342738,
+    "mtime": 1791232539.4030433,
+    "seen": 1791232561.8586407,
     "ast_hash": "7e8862656ef7df0dfac3d1b2696cceda",
     "semantic_hash": "7e8862656ef7df0dfac3d1b2696cceda"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccount.kt": {
-    "mtime": 1791225781.8386848,
-    "seen": 1791225860.1342754,
+    "mtime": 1791232539.4030433,
+    "seen": 1791232561.8586411,
     "ast_hash": "e213a0c1b9df841e804c7d3165143033",
     "semantic_hash": "e213a0c1b9df841e804c7d3165143033"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccountRows.kt": {
-    "mtime": 1791225781.8386848,
-    "seen": 1791225860.1342764,
+    "mtime": 1791232539.4030433,
+    "seen": 1791232561.8586416,
     "ast_hash": "05686cc8bcf0a54c98269cd06824494f",
     "semantic_hash": "05686cc8bcf0a54c98269cd06824494f"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/account/SessionLostConditions.kt": {
-    "mtime": 1791225781.8386848,
-    "seen": 1791225860.1342773,
+    "mtime": 1791232539.4030433,
+    "seen": 1791232561.858642,
     "ast_hash": "66e118c86c7b277c468ec1a49b2daf2d",
     "semantic_hash": "66e118c86c7b277c468ec1a49b2daf2d"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/attempt/LinkingAttempt.kt": {
-    "mtime": 1791225781.8386848,
-    "seen": 1791225860.1342788,
+    "mtime": 1791232539.4030433,
+    "seen": 1791232561.8586426,
     "ast_hash": "b75926726f10d118190076da2ccd371a",
     "semantic_hash": "b75926726f10d118190076da2ccd371a"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/attempt/LinkingAttempts.kt": {
-    "mtime": 1791225781.8388774,
-    "seen": 1791225860.1342795,
+    "mtime": 1791232539.4032452,
+    "seen": 1791232561.8586435,
     "ast_hash": "ff6faeb1366271bd89c3a5ae0a81d16c",
     "semantic_hash": "ff6faeb1366271bd89c3a5ae0a81d16c"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/channel/ChannelRows.kt": {
-    "mtime": 1791225781.8388774,
-    "seen": 1791225860.1342804,
+    "mtime": 1791232539.4032452,
+    "seen": 1791232561.8586438,
     "ast_hash": "891028109be216e636eb50a561c56ee0",
     "semantic_hash": "891028109be216e636eb50a561c56ee0"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/channel/ChatListListener.kt": {
-    "mtime": 1791225781.838949,
-    "seen": 1791225860.1342816,
+    "mtime": 1791232539.4033263,
+    "seen": 1791232561.8586442,
     "ast_hash": "c9d115e812ffb8990602beef3bfb543d",
     "semantic_hash": "c9d115e812ffb8990602beef3bfb543d"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/channel/SyncProgressThrottle.kt": {
-    "mtime": 1791225781.838949,
-    "seen": 1791225860.134283,
+    "mtime": 1791232539.4033263,
+    "seen": 1791232561.8586447,
     "ast_hash": "d4d559bc4911824fa7c8713e053c37bf",
     "semantic_hash": "d4d559bc4911824fa7c8713e053c37bf"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/config/AccountLimit.kt": {
-    "mtime": 1791225781.838949,
-    "seen": 1791225860.134284,
+    "mtime": 1791232539.4033263,
+    "seen": 1791232561.8586452,
     "ast_hash": "3ba4e757225dfb6e1b87de2905b48960",
     "semantic_hash": "3ba4e757225dfb6e1b87de2905b48960"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/BootReconnect.kt": {
-    "mtime": 1791225781.838949,
-    "seen": 1791225860.1342852,
+    "mtime": 1791232539.4033263,
+    "seen": 1791232561.8586457,
     "ast_hash": "8143a4177bc1253be9b709549d17a395",
     "semantic_hash": "8143a4177bc1253be9b709549d17a395"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/LifecycleMetrics.kt": {
-    "mtime": 1791225781.8391266,
-    "seen": 1791225860.1342866,
+    "mtime": 1791232539.4034836,
+    "seen": 1791232561.8586462,
     "ast_hash": "ab1916cd6aaedaf9ec670435ef8306fb",
     "semantic_hash": "ab1916cd6aaedaf9ec670435ef8306fb"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/LinkedAccountStates.kt": {
-    "mtime": 1791225781.8391266,
-    "seen": 1791225860.1342878,
+    "mtime": 1791232539.4034836,
+    "seen": 1791232561.8586469,
     "ast_hash": "03a8bf3263dfa26a2eb59129d139366a",
     "semantic_hash": "03a8bf3263dfa26a2eb59129d139366a"
   },
   "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt": {
-    "mtime": 1791225781.8391266,
-    "seen": 1791225860.1342895,
+    "mtime": 1791232539.4034836,
+    "seen": 1791232561.8586473,
     "ast_hash": "7ae21085f8b1ba99f95478dd1ac942e3",
     "semantic_hash": "7ae21085f8b1ba99f95478dd1ac942e3"
   },
   "backend/app/src/main/kotlin/telex/telegram/TelegramEvents.kt": {
-    "mtime": 1791225781.8392873,
-    "seen": 1791225860.1342993,
+    "mtime": 1791232539.403671,
+    "seen": 1791232561.8586516,
     "ast_hash": "111bb5e56d8f93ebb30352335d0154ac",
     "semantic_hash": "111bb5e56d8f93ebb30352335d0154ac"
   },
   "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt": {
-    "mtime": 1791225781.8394206,
-    "seen": 1791225860.1343005,
+    "mtime": 1791232539.403827,
+    "seen": 1791232561.858652,
     "ast_hash": "a23268d1e099f447944e4ccb0fdd0a85",
     "semantic_hash": "a23268d1e099f447944e4ccb0fdd0a85"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/TelegramAdapterConfiguration.kt": {
-    "mtime": 1791225781.8394206,
-    "seen": 1791225860.1343017,
+    "mtime": 1791232539.403827,
+    "seen": 1791232561.8586526,
     "ast_hash": "710fcf663050f0952f91b6152f12f359",
     "semantic_hash": "710fcf663050f0952f91b6152f12f359"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt": {
-    "mtime": 1791225781.8395092,
-    "seen": 1791225860.1343026,
+    "mtime": 1791232539.4039316,
+    "seen": 1791232561.858653,
     "ast_hash": "019143c90390716d1e5d4310734af9b3",
     "semantic_hash": "019143c90390716d1e5d4310734af9b3"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/files/SessionDirectories.kt": {
-    "mtime": 1791225781.8395092,
-    "seen": 1791225860.1343043,
+    "mtime": 1791232539.4039316,
+    "seen": 1791232561.8586538,
     "ast_hash": "7cad9fb3ed093817098ca1cde56dd0a1",
     "semantic_hash": "7cad9fb3ed093817098ca1cde56dd0a1"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/files/SessionDirectoryRetry.kt": {
-    "mtime": 1791225781.8396382,
-    "seen": 1791225860.1343055,
+    "mtime": 1791232539.4040608,
+    "seen": 1791232561.8586545,
     "ast_hash": "ed6221bd6d61b2f2b8e94e64519cc76a",
     "semantic_hash": "ed6221bd6d61b2f2b8e94e64519cc76a"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/ChatLoadRetry.kt": {
-    "mtime": 1791225781.8396382,
-    "seen": 1791225860.1343071,
+    "mtime": 1791232539.4040608,
+    "seen": 1791232561.8586552,
     "ast_hash": "feaed2ad4d9889bae1c4854924dfef4d",
     "semantic_hash": "feaed2ad4d9889bae1c4854924dfef4d"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt": {
-    "mtime": 1791225781.8397021,
-    "seen": 1791225860.1343083,
+    "mtime": 1791232539.4041305,
+    "seen": 1791232561.8586557,
     "ast_hash": "17709d47f6c3d7b0b9cde1dd73356215",
     "semantic_hash": "17709d47f6c3d7b0b9cde1dd73356215"
   },
   "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt": {
-    "mtime": 1791225781.8397021,
-    "seen": 1791225860.1343093,
+    "mtime": 1791232539.4041305,
+    "seen": 1791232561.8586562,
     "ast_hash": "420cdec61b5212230ab019176359c4eb",
     "semantic_hash": "420cdec61b5212230ab019176359c4eb"
   },
   "backend/app/src/main/kotlin/telex/web/api/LinkedAccountsController.kt": {
-    "mtime": 1791225781.8400016,
-    "seen": 1791225860.1343172,
+    "mtime": 1791232539.4044118,
+    "seen": 1791232561.8586597,
     "ast_hash": "eaaec42a31b84d41f536e6ce676f8c29",
     "semantic_hash": "eaaec42a31b84d41f536e6ce676f8c29"
   },
   "backend/app/src/main/kotlin/telex/web/api/LinkingController.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343188,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586607,
     "ast_hash": "d9c357e2c6b459a0e868d93f2dae1709",
     "semantic_hash": "d9c357e2c6b459a0e868d93f2dae1709"
   },
   "backend/app/src/main/kotlin/telex/web/live/EmitterRegistry.kt": {
-    "mtime": 1791225781.8400722,
-    "seen": 1791225860.1343343,
+    "mtime": 1791232539.4044852,
+    "seen": 1791232561.8586667,
     "ast_hash": "0798a9b5340b358d68831a01ef3ce986",
     "semantic_hash": "0798a9b5340b358d68831a01ef3ce986"
   },
   "backend/app/src/main/kotlin/telex/web/live/LiveHint.kt": {
-    "mtime": 1791225781.8404653,
-    "seen": 1791225860.1343353,
+    "mtime": 1791232539.4048965,
+    "seen": 1791232561.8586674,
     "ast_hash": "09cf69d855ea542344a7296593040f36",
     "semantic_hash": "09cf69d855ea542344a7296593040f36"
   },
   "backend/app/src/main/kotlin/telex/web/live/LiveHintListeners.kt": {
-    "mtime": 1791225781.8404653,
-    "seen": 1791225860.1343365,
+    "mtime": 1791232539.4048965,
+    "seen": 1791232561.8586679,
     "ast_hash": "f09629193caba29a4090fc9fa0f3f5cf",
     "semantic_hash": "f09629193caba29a4090fc9fa0f3f5cf"
   },
   "backend/app/src/main/kotlin/telex/web/live/LiveUpdatesController.kt": {
-    "mtime": 1791225781.8404653,
-    "seen": 1791225860.1343374,
+    "mtime": 1791232539.4048965,
+    "seen": 1791232561.8586683,
     "ast_hash": "dae8cfed43da55b55110525f4d5923f1",
     "semantic_hash": "dae8cfed43da55b55110525f4d5923f1"
   },
   "backend/app/src/main/resources/db/migration/V202610051800__create_owner_key.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343608,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586783,
     "ast_hash": "82ad68f745206e5325c4624ce2e8a670",
     "semantic_hash": "82ad68f745206e5325c4624ce2e8a670"
   },
   "backend/app/src/main/resources/db/migration/V202610051801__create_linked_account.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343617,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586788,
     "ast_hash": "42f55ba8db41842346ec65ed7c87e3d3",
     "semantic_hash": "42f55ba8db41842346ec65ed7c87e3d3"
   },
   "backend/app/src/main/resources/db/migration/V202610051802__create_channel.sql": {
-    "mtime": 1791225781.8408399,
-    "seen": 1791225860.1343627,
+    "mtime": 1791232539.4053004,
+    "seen": 1791232561.8586793,
     "ast_hash": "906b11509af24a8d95349f7d95fb4231",
     "semantic_hash": "906b11509af24a8d95349f7d95fb4231"
   },
   "backend/app/src/main/resources/db/rollback/U202610051800__create_owner_key.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343796,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586862,
     "ast_hash": "8086464b145beb058ead277eed71df52",
     "semantic_hash": "8086464b145beb058ead277eed71df52"
   },
   "backend/app/src/main/resources/db/rollback/U202610051801__create_linked_account.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343806,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586867,
     "ast_hash": "e001c328c22d41fa6c15deed1a2b40de",
     "semantic_hash": "e001c328c22d41fa6c15deed1a2b40de"
   },
   "backend/app/src/main/resources/db/rollback/U202610051802__create_channel.sql": {
-    "mtime": 1791225781.8411684,
-    "seen": 1791225860.1343813,
+    "mtime": 1791232539.405647,
+    "seen": 1791232561.8586872,
     "ast_hash": "9896e55c5dcb6784613d10e4c447e39a",
     "semantic_hash": "9896e55c5dcb6784613d10e4c447e39a"
   },
   "backend/app/src/test/kotlin/telex/OperatorConfigTest.kt": {
-    "mtime": 1791225781.8414235,
-    "seen": 1791225860.1343849,
+    "mtime": 1791232539.4059958,
+    "seen": 1791232561.858689,
     "ast_hash": "db969e98b1c295ff5be5d2045f015b42",
     "semantic_hash": "db969e98b1c295ff5be5d2045f015b42"
   },
   "backend/app/src/test/kotlin/telex/identity/internal/key/AesGcmTest.kt": {
-    "mtime": 1791225781.8418021,
-    "seen": 1791225860.1343985,
+    "mtime": 1791232539.4064183,
+    "seen": 1791232561.858695,
     "ast_hash": "c6e130d6967e6caae7281018a5458ebd",
     "semantic_hash": "c6e130d6967e6caae7281018a5458ebd"
   },
   "backend/app/src/test/kotlin/telex/messaging/internal/account/LinkRulesTest.kt": {
-    "mtime": 1791225781.842261,
-    "seen": 1791225860.1344092,
+    "mtime": 1791232539.4069328,
+    "seen": 1791232561.8586996,
     "ast_hash": "9a4a42f1be0ceaabb19007fa51586508",
     "semantic_hash": "9a4a42f1be0ceaabb19007fa51586508"
   },
   "backend/app/src/test/kotlin/telex/messaging/internal/channel/SyncProgressThrottleTest.kt": {
-    "mtime": 1791225781.842261,
-    "seen": 1791225860.1344104,
+    "mtime": 1791232539.4069328,
+    "seen": 1791232561.8587,
     "ast_hash": "4dc26cb20385e76b27a1a5b539a687ce",
     "semantic_hash": "4dc26cb20385e76b27a1a5b539a687ce"
   },
   "backend/app/src/test/kotlin/telex/messaging/internal/lifecycle/BootReconnectTest.kt": {
-    "mtime": 1791225781.842261,
-    "seen": 1791225860.1344116,
+    "mtime": 1791232539.4069328,
+    "seen": 1791232561.8587008,
     "ast_hash": "774654e5585dfce43547e38d7196399e",
     "semantic_hash": "774654e5585dfce43547e38d7196399e"
   },
   "backend/app/src/test/kotlin/telex/telegram/FakeTelegramTest.kt": {
-    "mtime": 1791225781.842261,
-    "seen": 1791225860.1344142,
+    "mtime": 1791232539.4069328,
+    "seen": 1791232561.8587017,
     "ast_hash": "2dda0011b22f9f669830cf16597f9d19",
     "semantic_hash": "2dda0011b22f9f669830cf16597f9d19"
   },
   "backend/app/src/test/kotlin/telex/telegram/internal/files/SessionDirectoriesTest.kt": {
-    "mtime": 1791225781.8425322,
-    "seen": 1791225860.1344151,
+    "mtime": 1791232539.407225,
+    "seen": 1791232561.8587024,
     "ast_hash": "7365c593b0fa472a7b159b27270bfb31",
     "semantic_hash": "7365c593b0fa472a7b159b27270bfb31"
   },
   "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/ChatLoadRetryTest.kt": {
-    "mtime": 1791225781.8425322,
-    "seen": 1791225860.1344163,
+    "mtime": 1791232539.407225,
+    "seen": 1791232561.8587031,
     "ast_hash": "9efbe33fe80bb1b38e2b2ec6800106eb",
     "semantic_hash": "9efbe33fe80bb1b38e2b2ec6800106eb"
   },
   "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/ScriptedTdlib.kt": {
-    "mtime": 1791225781.8426232,
-    "seen": 1791225860.1344178,
+    "mtime": 1791232539.40734,
+    "seen": 1791232561.8587036,
     "ast_hash": "1fbc78fa2922bb530d41405fbabb095f",
     "semantic_hash": "1fbc78fa2922bb530d41405fbabb095f"
   },
   "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt": {
-    "mtime": 1791225781.8426232,
-    "seen": 1791225860.1344185,
+    "mtime": 1791232539.40734,
+    "seen": 1791232561.858704,
     "ast_hash": "6d0124b6e540e2f026f16f536923693f",
     "semantic_hash": "6d0124b6e540e2f026f16f536923693f"
   },
   "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt": {
-    "mtime": 1791225781.8426232,
-    "seen": 1791225860.1344194,
+    "mtime": 1791232539.40734,
+    "seen": 1791232561.8587046,
     "ast_hash": "ce5c53839311b71bfec60bff734e94a2",
     "semantic_hash": "ce5c53839311b71bfec60bff734e94a2"
   },
   "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt": {
-    "mtime": 1791225781.8426232,
-    "seen": 1791225860.1344204,
+    "mtime": 1791232539.40734,
+    "seen": 1791232561.858705,
     "ast_hash": "8efc7beb4efc3815c4bf7893d6b905d3",
     "semantic_hash": "8efc7beb4efc3815c4bf7893d6b905d3"
   },
   "backend/app/src/test/kotlin/telex/web/live/EmitterRegistryTest.kt": {
-    "mtime": 1791225781.8428967,
-    "seen": 1791225860.1344252,
+    "mtime": 1791232539.4075859,
+    "seen": 1791232561.858707,
     "ast_hash": "e9a565a66569e4a583b3dba41dfd7a6d",
     "semantic_hash": "e9a565a66569e4a583b3dba41dfd7a6d"
   },
   "backend/telegram-tdlib/src/main/kotlin/telex/telegram/tdlib/TdlightFacade.kt": {
-    "mtime": 1791225781.843243,
-    "seen": 1791225860.1344302,
+    "mtime": 1791232539.4079816,
+    "seen": 1791232561.8587096,
     "ast_hash": "9a361d875ec8f8411d8ba9ed36bffaa7",
     "semantic_hash": "9a361d875ec8f8411d8ba9ed36bffaa7"
   },
   "backend/telegram-tdlib/src/test/kotlin/telex/telegram/tdlib/TdlightFacadeTest.kt": {
-    "mtime": 1791225781.8433366,
-    "seen": 1791225860.134431,
+    "mtime": 1791232539.4080946,
+    "seen": 1791232561.8587103,
     "ast_hash": "7083996d75b913a465a8fdb9bfa92ac1",
     "semantic_hash": "7083996d75b913a465a8fdb9bfa92ac1"
   },
   "docs/features/telegram-link/migrations/01_create_owner_key.down.sql": {
-    "mtime": 1791225781.8750293,
-    "seen": 1791225860.1344924,
+    "mtime": 1791232539.4354253,
+    "seen": 1791232561.8587363,
     "ast_hash": "8086464b145beb058ead277eed71df52",
     "semantic_hash": "8086464b145beb058ead277eed71df52"
   },
   "docs/features/telegram-link/migrations/01_create_owner_key.up.sql": {
-    "mtime": 1791225781.8753738,
-    "seen": 1791225860.1344934,
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.858737,
     "ast_hash": "82ad68f745206e5325c4624ce2e8a670",
     "semantic_hash": "82ad68f745206e5325c4624ce2e8a670"
   },
   "docs/features/telegram-link/migrations/02_create_linked_account.down.sql": {
-    "mtime": 1791225781.8753738,
-    "seen": 1791225860.1344943,
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.8587375,
     "ast_hash": "e001c328c22d41fa6c15deed1a2b40de",
     "semantic_hash": "e001c328c22d41fa6c15deed1a2b40de"
   },
   "docs/features/telegram-link/migrations/02_create_linked_account.up.sql": {
-    "mtime": 1791225781.8753738,
-    "seen": 1791225860.1344953,
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.858738,
     "ast_hash": "42f55ba8db41842346ec65ed7c87e3d3",
     "semantic_hash": "42f55ba8db41842346ec65ed7c87e3d3"
   },
   "docs/features/telegram-link/migrations/03_create_channel.down.sql": {
-    "mtime": 1791225781.8753738,
-    "seen": 1791225860.134496,
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.8587384,
     "ast_hash": "9896e55c5dcb6784613d10e4c447e39a",
     "semantic_hash": "9896e55c5dcb6784613d10e4c447e39a"
   },
   "docs/features/telegram-link/migrations/03_create_channel.up.sql": {
-    "mtime": 1791225781.8753738,
-    "seen": 1791225860.1344967,
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.858739,
     "ast_hash": "906b11509af24a8d95349f7d95fb4231",
     "semantic_hash": "906b11509af24a8d95349f7d95fb4231"
   },
   "docs/features/telegram-link/tasks.json": {
-    "mtime": 1791225781.8753738,
-    "seen": 1791225860.1344981,
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.8587394,
     "ast_hash": "4697f39e83e2428aff07240875d8041c",
     "semantic_hash": "4697f39e83e2428aff07240875d8041c"
   },
   "e2e/support/global-setup.ts": {
-    "mtime": 1791225781.8823943,
-    "seen": 1791225860.1345048,
+    "mtime": 1791232539.442055,
+    "seen": 1791232561.8587425,
     "ast_hash": "e665d87e481ec9533e1bc40076054516",
     "semantic_hash": "e665d87e481ec9533e1bc40076054516"
   },
   "e2e/support/telegram.ts": {
-    "mtime": 1791225781.8823943,
-    "seen": 1791225860.1345098,
+    "mtime": 1791232539.442055,
+    "seen": 1791232561.8587449,
     "ast_hash": "d58ac9e637bbeb0235ac6eee2f258d94",
     "semantic_hash": "d58ac9e637bbeb0235ac6eee2f258d94"
   },
   "e2e/tests/telegram-link.spec.ts": {
-    "mtime": 1791225781.8826368,
-    "seen": 1791225860.1345224,
+    "mtime": 1791232539.4422824,
+    "seen": 1791232561.8587499,
     "ast_hash": "fdc7ab02d931ce7f1e0a374f03f1b899",
     "semantic_hash": "fdc7ab02d931ce7f1e0a374f03f1b899"
   },
   "frontend/src/api/linkedAccounts.test.tsx": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345465,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587599,
     "ast_hash": "795d27c90670d26b72ee387d7ce3623c",
     "semantic_hash": "795d27c90670d26b72ee387d7ce3623c"
   },
   "frontend/src/api/linkedAccounts.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134548,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587604,
     "ast_hash": "aafa4415f861084680853d7647a15d5b",
     "semantic_hash": "aafa4415f861084680853d7647a15d5b"
   },
   "frontend/src/api/linking.test.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134549,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587613,
     "ast_hash": "0e7126ca420c2dd1b61ac068606f046e",
     "semantic_hash": "0e7126ca420c2dd1b61ac068606f046e"
   },
   "frontend/src/api/linking.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.13455,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587618,
     "ast_hash": "b5dc4f38dbd7ef3fda3814df47fc5d95",
     "semantic_hash": "b5dc4f38dbd7ef3fda3814df47fc5d95"
   },
   "frontend/src/api/linkingRefusal.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134551,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587623,
     "ast_hash": "d2a8ba23c7751a56e539413a5dbdfa45",
     "semantic_hash": "d2a8ba23c7751a56e539413a5dbdfa45"
   },
   "frontend/src/api/live.test.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.134552,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587627,
     "ast_hash": "70878fe9be79d8b6d3ee00fcccdc0e47",
     "semantic_hash": "70878fe9be79d8b6d3ee00fcccdc0e47"
   },
   "frontend/src/api/live.ts": {
-    "mtime": 1791225781.8834846,
-    "seen": 1791225860.1345532,
+    "mtime": 1791232539.4431229,
+    "seen": 1791232561.8587632,
     "ast_hash": "7eb6b239255496af535a9f9c84903823",
     "semantic_hash": "7eb6b239255496af535a9f9c84903823"
   },
   "frontend/src/components/CodeInput/CodeInput.test.tsx": {
-    "mtime": 1791225781.8862615,
-    "seen": 1791225860.134582,
+    "mtime": 1791232539.445359,
+    "seen": 1791232561.858774,
     "ast_hash": "37afbb437f3edc8e2efa464e208de812",
     "semantic_hash": "37afbb437f3edc8e2efa464e208de812"
   },
   "frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.test.tsx": {
-    "mtime": 1791225781.8866587,
-    "seen": 1791225860.1345983,
+    "mtime": 1791232539.4458115,
+    "seen": 1791232561.8587818,
     "ast_hash": "5792bd4847706ed2e638d7c86149bb50",
     "semantic_hash": "5792bd4847706ed2e638d7c86149bb50"
   },
   "frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.tsx": {
-    "mtime": 1791225781.8867683,
-    "seen": 1791225860.1345992,
+    "mtime": 1791232539.4459455,
+    "seen": 1791232561.8587823,
     "ast_hash": "561eea25bf0ebc29cff3a3a4421ca668",
     "semantic_hash": "561eea25bf0ebc29cff3a3a4421ca668"
   },
   "frontend/src/pages/accounts/AccountsPage.test.tsx": {
-    "mtime": 1791225781.8876047,
-    "seen": 1791225860.1346247,
+    "mtime": 1791232539.4467928,
+    "seen": 1791232561.858793,
     "ast_hash": "7686baa28eb0f28b6cd3dd52989cc006",
     "semantic_hash": "7686baa28eb0f28b6cd3dd52989cc006"
   },
   "frontend/src/pages/accounts/AccountsPage.tsx": {
-    "mtime": 1791225781.887691,
-    "seen": 1791225860.1346262,
+    "mtime": 1791232539.4468799,
+    "seen": 1791232561.8587937,
     "ast_hash": "4f4290c68db2ef06d18bdcbec52b7218",
     "semantic_hash": "4f4290c68db2ef06d18bdcbec52b7218"
   },
   "frontend/src/pages/connect-telegram/CancelButton.tsx": {
-    "mtime": 1791225781.887996,
-    "seen": 1791225860.1346352,
+    "mtime": 1791232539.4471958,
+    "seen": 1791232561.8587985,
     "ast_hash": "7502553aeed439928df298a5e3252052",
     "semantic_hash": "7502553aeed439928df298a5e3252052"
   },
   "frontend/src/pages/connect-telegram/CodeStep.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.1346366,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8587992,
     "ast_hash": "751875c29e63e4f388a1b710050717f7",
     "semantic_hash": "751875c29e63e4f388a1b710050717f7"
   },
   "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.1346376,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8588,
     "ast_hash": "1f00b4eb8f1b298150e840070cc3db7f",
     "semantic_hash": "1f00b4eb8f1b298150e840070cc3db7f"
   },
   "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.1346388,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8588004,
     "ast_hash": "a8427fe9a6dac35a28ba6167033e1bc6",
     "semantic_hash": "a8427fe9a6dac35a28ba6167033e1bc6"
   },
   "frontend/src/pages/connect-telegram/Outcomes.test.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.1346395,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.858801,
     "ast_hash": "fc43951dc52fa82ba7f8b6dfbb0291da",
     "semantic_hash": "fc43951dc52fa82ba7f8b6dfbb0291da"
   },
   "frontend/src/pages/connect-telegram/Outcomes.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.134641,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8588014,
     "ast_hash": "884d56fb69f6c2af9f9240f342f82331",
     "semantic_hash": "884d56fb69f6c2af9f9240f342f82331"
   },
   "frontend/src/pages/connect-telegram/PasswordStep.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.134642,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8588018,
     "ast_hash": "2dac08fe13eb0740d336d3637b7fc539",
     "semantic_hash": "2dac08fe13eb0740d336d3637b7fc539"
   },
   "frontend/src/pages/connect-telegram/PhoneStep.tsx": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.1346428,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8588023,
     "ast_hash": "043e563093f66c2d7b9b3d32d4289795",
     "semantic_hash": "043e563093f66c2d7b9b3d32d4289795"
   },
   "frontend/src/pages/connect-telegram/outcome.ts": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.134644,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.858803,
     "ast_hash": "ead5a45037d677a7807eb196951e94f9",
     "semantic_hash": "ead5a45037d677a7807eb196951e94f9"
   },
   "frontend/src/pages/connect-telegram/steps.ts": {
-    "mtime": 1791225781.8880675,
-    "seen": 1791225860.134645,
+    "mtime": 1791232539.4472733,
+    "seen": 1791232561.8588035,
     "ast_hash": "9f4c031cf7a72938f7ce1725494b2e76",
     "semantic_hash": "9f4c031cf7a72938f7ce1725494b2e76"
   },
   "frontend/src/pages/settings/SettingsPage.test.tsx": {
-    "mtime": 1791225781.8893547,
-    "seen": 1791225860.1346693,
+    "mtime": 1791232539.4484105,
+    "seen": 1791232561.858816,
     "ast_hash": "7eb30156d9d09bf82a1e411009f3b231",
     "semantic_hash": "7eb30156d9d09bf82a1e411009f3b231"
   },
   "frontend/src/pages/useArrivalToast.ts": {
-    "mtime": 1791225781.8898282,
-    "seen": 1791225860.134682,
+    "mtime": 1791232539.4488935,
+    "seen": 1791232561.8588212,
     "ast_hash": "310710e7ac423b51fa7c933a54e4c3d4",
     "semantic_hash": "310710e7ac423b51fa7c933a54e4c3d4"
   },
   "frontend/src/shell/StatusBanner/PulseBanner.tsx": {
-    "mtime": 1791225781.890013,
-    "seen": 1791225860.1346872,
+    "mtime": 1791232539.4490776,
+    "seen": 1791232561.8588238,
     "ast_hash": "9f13c06143d83f87336aad0605313391",
     "semantic_hash": "9f13c06143d83f87336aad0605313391"
   },
   "frontend/src/shell/accountDisconnected.tsx": {
-    "mtime": 1791225781.8901522,
-    "seen": 1791225860.134691,
+    "mtime": 1791232539.4492185,
+    "seen": 1791232561.858825,
     "ast_hash": "cf38ce9808e3eb337713570ed34db8e2",
     "semantic_hash": "cf38ce9808e3eb337713570ed34db8e2"
   },
@@ -5950,5 +5950,125 @@
     "seen": 1791225860.1348338,
     "ast_hash": "86d47075b9a63844c9ce0a77bbf7e3e5",
     "semantic_hash": "86d47075b9a63844c9ce0a77bbf7e3e5"
+  },
+  ".claude/commands/fix-loop.md": {
+    "mtime": 1791232539.3961823,
+    "seen": 1791232561.858837,
+    "ast_hash": "39f3d7858624a322e27b1f655ff3b214",
+    "semantic_hash": "39f3d7858624a322e27b1f655ff3b214"
+  },
+  ".claude/commands/rebase-master.md": {
+    "mtime": 1791232539.3963542,
+    "seen": 1791232561.858838,
+    "ast_hash": "1504b67bd2afaede18c00221654b1dcd",
+    "semantic_hash": "1504b67bd2afaede18c00221654b1dcd"
+  },
+  "docs/features/app-shell/_review/review-2026-10-03-6.md": {
+    "mtime": 1791232539.424594,
+    "seen": 1791232561.8588412,
+    "ast_hash": "9354584e1a7247e9211be0aa79ad10a3",
+    "semantic_hash": "9354584e1a7247e9211be0aa79ad10a3"
+  },
+  "docs/features/model-profiles/_review/review-2026-10-03-r3.md": {
+    "mtime": 1791232539.42782,
+    "seen": 1791232561.858842,
+    "ast_hash": "dbe0a2b4f284f126372af34f6742e9ae",
+    "semantic_hash": "dbe0a2b4f284f126372af34f6742e9ae"
+  },
+  "docs/features/model-profiles/_ship/pr-body.md": {
+    "mtime": 1791232539.4279704,
+    "seen": 1791232561.8588557,
+    "ast_hash": "41f058879d122d421eac05dedc3aceb2",
+    "semantic_hash": "41f058879d122d421eac05dedc3aceb2"
+  },
+  "docs/features/model-profiles/tasks/t01-promote-model-profiles-migrations.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.8588564,
+    "ast_hash": "c9a947332b8f0dfe6f1a5971a47b6e3f",
+    "semantic_hash": "c9a947332b8f0dfe6f1a5971a47b6e3f"
+  },
+  "docs/features/model-profiles/tasks/t02-llm-catalog-types-and-parser.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.8588574,
+    "ast_hash": "e7155cb9f3b22741dcf97b088c1d41e3",
+    "semantic_hash": "e7155cb9f3b22741dcf97b088c1d41e3"
+  },
+  "docs/features/model-profiles/tasks/t03-catalog-snapshot-store.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.8588586,
+    "ast_hash": "03434b1c7a8866296536db559562bce1",
+    "semantic_hash": "03434b1c7a8866296536db559562bce1"
+  },
+  "docs/features/model-profiles/tasks/t04-catalog-refresher.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.8588593,
+    "ast_hash": "53c8b112240a60e26ba9cc44f8a5c491",
+    "semantic_hash": "53c8b112240a60e26ba9cc44f8a5c491"
+  },
+  "docs/features/model-profiles/tasks/t05-fallback-loop.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.85886,
+    "ast_hash": "7eb5c3bf4a6104db938ba356588b6a55",
+    "semantic_hash": "7eb5c3bf4a6104db938ba356588b6a55"
+  },
+  "docs/features/model-profiles/tasks/t06-openrouter-call-adapter.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.8588605,
+    "ast_hash": "6d0a76424d2e1978ccf153b9b41c5d90",
+    "semantic_hash": "6d0a76424d2e1978ccf153b9b41c5d90"
+  },
+  "docs/features/model-profiles/tasks/t10-profile-repositories.md": {
+    "mtime": 1791232539.42928,
+    "seen": 1791232561.8588612,
+    "ast_hash": "af98900a6bb447adce50f3a96c11b54d",
+    "semantic_hash": "af98900a6bb447adce50f3a96c11b54d"
+  },
+  "docs/features/telegram-link/_audit/data-model-2026-10-03.md": {
+    "mtime": 1791232539.4341574,
+    "seen": 1791232561.8588622,
+    "ast_hash": "9a1f15599d74e21707e949c74dc5988d",
+    "semantic_hash": "9a1f15599d74e21707e949c74dc5988d"
+  },
+  "docs/features/telegram-link/_review/review-2026-10-05-r6.md": {
+    "mtime": 1791232539.4343212,
+    "seen": 1791232561.8588626,
+    "ast_hash": "cd48808c545d2f561aa5de1b5de91b63",
+    "semantic_hash": "cd48808c545d2f561aa5de1b5de91b63"
+  },
+  "docs/features/telegram-link/_ship/changelog.md": {
+    "mtime": 1791232539.4343212,
+    "seen": 1791232561.858863,
+    "ast_hash": "f69d893d6761dc9aedd9177de1040be5",
+    "semantic_hash": "f69d893d6761dc9aedd9177de1040be5"
+  },
+  "docs/features/telegram-link/_ship/pr-body.md": {
+    "mtime": 1791232539.4350996,
+    "seen": 1791232561.8588636,
+    "ast_hash": "a949b904db4f43b7f9c52c0d90940570",
+    "semantic_hash": "a949b904db4f43b7f9c52c0d90940570"
+  },
+  "docs/features/telegram-link/contracts/api-sync-report.md": {
+    "mtime": 1791232539.4351969,
+    "seen": 1791232561.858864,
+    "ast_hash": "bd9450ff3b496b4cf1fb619356790f5a",
+    "semantic_hash": "bd9450ff3b496b4cf1fb619356790f5a"
+  },
+  "docs/features/telegram-link/data-model.md": {
+    "mtime": 1791232539.4354253,
+    "seen": 1791232561.8588645,
+    "ast_hash": "39bbe40c19159e7b4785a1b1df5ac33a",
+    "semantic_hash": "39bbe40c19159e7b4785a1b1df5ac33a"
+  },
+  "docs/features/telegram-link/spike.md": {
+    "mtime": 1791232539.4357083,
+    "seen": 1791232561.8588653,
+    "ast_hash": "0057fb05e6d5d2fd677342da3f5cafe7",
+    "semantic_hash": "0057fb05e6d5d2fd677342da3f5cafe7"
+  },
+  "docs/features/telegram-link/test-plan.md": {
+    "mtime": 1791232539.4389427,
+    "seen": 1791232561.8588657,
+    "ast_hash": "8d38fb59dbc3d3d9ee726db829526929",
+    "semantic_hash": "8d38fb59dbc3d3d9ee726db829526929"
   }
 }

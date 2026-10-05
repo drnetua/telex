@@ -1,0 +1,1 @@
+{"nodes": [{"id": "claude_commands_fix_loop_md", "label": "Fix Loop Command", "file_type": "document", "source_file": ".claude/commands/fix-loop.md", "rationale": "Defines the review-fix-re-review loop for SDD features with specific guardrails to prevent hangs and build breaks."}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_spike", "label": "telegram-link \u2014 TDLight spike (T1)", "file_type": "document", "source_file": "docs/features/telegram-link/spike.md", "rationale": "Validates the use of TDLight Java library for Telegram integration, confirming native library loading and multi-client support."}], "edges": [], "hyperedges": []}
