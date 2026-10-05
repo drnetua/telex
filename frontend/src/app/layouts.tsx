@@ -78,9 +78,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
   if (!me.data) return <LoadState state="loading" rows={3} />;
   return (
     <>
-      <AppShell email={me.data.email}>
-        {children}
-      </AppShell>
+      <AppShell email={me.data.email}>{children}</AppShell>
       <ThemeSaveToast />
     </>
   );

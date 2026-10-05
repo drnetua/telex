@@ -96,7 +96,8 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     return (response.status === 204 ? undefined : await response.clone().json()) as T;
   }
   let code = "internal-error";
-  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } & ProblemExtras = {};
+  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } & ProblemExtras =
+    {};
   try {
     const body = (await response.json()) as {
       code?: string;
