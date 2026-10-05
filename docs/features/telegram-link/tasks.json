@@ -1726,6 +1726,70 @@
         "docs/features/telegram-link/tasks/tracker.md"
       ],
       "file": "docs/features/telegram-link/tasks/t82-docs-sync-r9.md"
+    },
+    {
+      "id": "T83",
+      "title": "The SCR-02 wait card announces the retry time in the Owner's zone, even when the zone arrives after the card",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The wait card's announcement and visible text both give the retry time in the Owner's saved zone, whenever me arrives.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t83-wait-announcement-owner-zone.md"
+    },
+    {
+      "id": "T84",
+      "title": "The SCR-02 code and password steps' submitting labels each have a test",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-01",
+        "AC-106"
+      ],
+      "dod": "Every SCR-02 submitting label has a component test of its label, aria-busy, read-only field and disabled Cancel.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t84-submitting-busy-labels-tested.md"
+    },
+    {
+      "id": "T85",
+      "title": "Vitest runs in UTC, and a malformed Retry-After falls back to retryAt",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The zone tests hold on any host, and a malformed Retry-After is proven to fall back to retryAt.",
+      "files_hint": [
+        "frontend/vite.config.ts",
+        "frontend/src/api/linking.test.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t85-zone-pinned-and-retry-after-guard.md"
+    },
+    {
+      "id": "T86",
+      "title": "Sync the test plan and task files with the tenth-review fixes, and file T78 under tests",
+      "layer": "docs",
+      "deps": [
+        "T83",
+        "T84",
+        "T85"
+      ],
+      "acs": [],
+      "dod": "T78 is a tests task everywhere; test-plan.md describes T83–T85; tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/tasks/t78-unlink-connected-e2e.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t86-docs-sync-r10.md"
     }
   ]
 }
