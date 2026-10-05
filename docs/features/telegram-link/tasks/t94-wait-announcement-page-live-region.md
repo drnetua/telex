@@ -36,3 +36,9 @@ Component (Vitest): the live region exists and is empty before the 429 (on the p
 A polite live region is in the page from the wizard's mount, before any wait card; the wait card's start sentence (in the Owner's zone, once me has settled) and the 0:00 sentence are written there through React state, with no imperative textContent write. Per-task gate clean. No test weakened.
 
 **Fallback:** [spec.md](../spec.md) · [sad.md](../sad.md) · [data-model.md](../data-model.md) · [openapi.yaml](../contracts/openapi.yaml) · [events.md](../contracts/events.md) · [screens.md](../screens.md) · [adr/](../adr/)
+
+## How it was done
+
+- The region is a `role="status"` div that the page's `Card` wrapper renders after its children. Every branch of `ConnectTelegramPage` returns a `Card`, so React keeps the region as the same node from mount. The tests check that the wait card writes into that same node (`toBe(region)`).
+- `WaitState` takes an `announce` callback (the page's `setAnnouncement`). An unmount cleanup clears the region and resets the `announced` ref, so a StrictMode remount says the start sentence again.
+- The loading-state test (`ConnectTelegramPage.test.tsx`, "shows the loading state…") now picks `getByRole("status", { busy: true })`, because the wizard's region is also a `status` while `LoadState` shows. The assertion itself is unchanged.

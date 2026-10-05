@@ -25,10 +25,19 @@ interface WaitStateProps {
   starting: boolean;
   onBack: () => void;
   onStartAgain: () => void;
+  /** Writes the wizard's polite live region, which is in the page before this card and outlives it. */
+  announce: (text: string) => void;
 }
 
 /** Countdown to Telegram's retry time; the live region speaks at the start and at the end only. */
-export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: WaitStateProps) {
+export function WaitState({
+  retryAt,
+  until,
+  starting,
+  onBack,
+  onStartAgain,
+  announce,
+}: WaitStateProps) {
   const t = messages.linking;
   const me = useMe();
   const timeZone = me.data?.timeZone ?? null;
@@ -38,21 +47,27 @@ export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: Wa
   const over = remaining === 0;
   const card = useRef<HTMLDivElement>(null);
   const backHadFocus = useRef(false);
-  const status = useRef<HTMLSpanElement>(null);
   const announced = useRef(false);
 
-  // The live region is always inserted empty and filled after mount: one inserted with its text is not reliably
+  // The wizard's region was in the page, empty, before this card: a region that arrives with its text is not reliably
   // spoken. It speaks once at the start, when the Owner's zone is known (or failed to load), and once at 0:00.
   useEffect(() => {
-    const region = status.current;
-    if (region === null) return;
     if (over) {
-      region.textContent = t.waitOver;
+      announce(t.waitOver);
     } else if (settled && !announced.current) {
       announced.current = true;
-      region.textContent = t.waitBody(time, minutesSeconds(remaining));
+      announce(t.waitBody(time, minutesSeconds(remaining)));
     }
-  }, [over, settled, t, time, remaining]);
+  }, [announce, over, settled, t, time, remaining]);
+
+  // Leaving the card silences the region; a remount (StrictMode) speaks the start again.
+  useEffect(
+    () => () => {
+      announced.current = false;
+      announce("");
+    },
+    [announce],
+  );
 
   // Back is replaced by Start again at 0:00; when that drops the focused button, focus returns to the heading.
   useEffect(() => {
@@ -92,7 +107,6 @@ export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: Wa
         }
       >
         <span aria-hidden={!over}>{visible}</span>
-        <span ref={status} role="status" className="visually-hidden" />
       </EmptyState>
     </div>
   );

@@ -61,6 +61,8 @@ export function ConnectTelegramPage() {
   const accounts = useLinkedAccounts();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [starting, setStarting] = useState(false);
+  // What the wizard's polite live region says; only the wait card writes it.
+  const [announcement, setAnnouncement] = useState("");
   // Bumped each time an outcome or load-failed card is left, so the step that replaces it takes focus (not the first load).
   const [refocus, setRefocus] = useState(0);
   const bumpRefocus = useCallback(() => setRefocus((n) => n + 1), []);
@@ -226,7 +228,7 @@ export function ConnectTelegramPage() {
     const back = () => leave(origin());
     const target = known?.targetLinkedAccountId;
     return (
-      <Card>
+      <Card announcement={announcement}>
         {shownOutcome.kind === "wait" ? (
           <WaitState
             retryAt={shownOutcome.retryAt}
@@ -234,6 +236,7 @@ export function ConnectTelegramPage() {
             starting={starting}
             onBack={back}
             onStartAgain={() => void startAgain()}
+            announce={setAnnouncement}
           />
         ) : null}
         {shownOutcome.kind === "refused" ? (
@@ -260,7 +263,7 @@ export function ConnectTelegramPage() {
   if (!attempt) {
     if (loadFailedShown) {
       return (
-        <Card>
+        <Card announcement={announcement}>
           <LoadFailedState
             onRetry={() => {
               bumpRefocus();
@@ -272,7 +275,7 @@ export function ConnectTelegramPage() {
       );
     }
     return (
-      <Card>
+      <Card announcement={announcement}>
         <LoadState state="loading" rows={3} />
       </Card>
     );
@@ -289,7 +292,7 @@ export function ConnectTelegramPage() {
   };
 
   return (
-    <Card>
+    <Card announcement={announcement}>
       <Title attempt={attempt} focus={refocus} />
       {attempt.step === "phone" ? <PhoneStep key="phone" {...props} /> : null}
       {attempt.step === "code" ? <CodeStep key="code" {...props} /> : null}
@@ -299,7 +302,15 @@ export function ConnectTelegramPage() {
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
-  // The card itself comes from OnboardingLayout.
-  return <>{children}</>;
+function Card({ children, announcement }: { children: React.ReactNode; announcement: string }) {
+  // The card itself comes from OnboardingLayout. Every branch renders a Card, so the polite region stays the same node
+  // from the wizard's mount: the wait card's sentences land in a region the browser already exposes.
+  return (
+    <>
+      {children}
+      <div role="status" className="visually-hidden">
+        {announcement}
+      </div>
+    </>
+  );
 }

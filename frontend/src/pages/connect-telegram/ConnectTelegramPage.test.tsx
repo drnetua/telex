@@ -112,7 +112,8 @@ describe("SCR-02 phone step", () => {
       vi.fn(() => new Promise(() => undefined)),
     );
     setup();
-    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    // the wizard's own polite region is in the page too, so pick the busy one
+    expect(screen.getByRole("status", { busy: true })).toHaveAttribute("aria-busy", "true");
   });
 
   it("blocks an empty number and focuses the field", async () => {
@@ -924,13 +925,19 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
       [ME]: [me("Asia/Tokyo")],
     });
     setup();
+    // the polite region is in the page from the wizard's mount, empty, before any wait card
+    await screen.findByLabelText("Phone number");
+    const region = screen.getByRole("status");
+    expect(region).toBeEmptyDOMElement();
     await submitPhone();
     expect(
       await screen.findByText("Telegram asks you to wait. You can try again at 12:00, in 2:00.", {
         selector: "[aria-hidden='true']",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
+    // the card speaks through that same region, not one it brought along
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region).toHaveTextContent(
       "Telegram asks you to wait. You can try again at 12:00, in 2:00.",
     );
   });
@@ -953,17 +960,20 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
       }),
     );
     setup();
+    await screen.findByLabelText("Phone number");
+    const region = screen.getByRole("status");
     await submitPhone();
     await screen.findByRole("heading", { name: "Too many attempts" });
     // nothing is spoken until the Owner's zone is known
-    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region).toBeEmptyDOMElement();
     await act(async () => answerMe(me("Asia/Tokyo")));
     expect(
       await screen.findByText("Telegram asks you to wait. You can try again at 12:00, in 2:00.", {
         selector: "[aria-hidden='true']",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(region).toHaveTextContent(
       "Telegram asks you to wait. You can try again at 12:00, in 2:00.",
     );
   });
@@ -993,6 +1003,28 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
       screen.getByText("You can try again now.", { selector: "[aria-hidden='false']" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start again" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("You can try again now.");
+  });
+
+  it("clears the wait announcement when Start again leaves the card (AC-02)", async () => {
+    const retryAt = fakeWaitClock();
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [json(429, { code: "telegram-wait-required", retryAt })],
+      [START]: [json(201, attempt())],
+      [ME]: [me(null)],
+    });
+    setup();
+    await screen.findByLabelText("Phone number");
+    const region = screen.getByRole("status");
+    await submitPhone();
+    await screen.findByRole("heading", { name: "Too many attempts" });
+    passWait();
+    expect(region).toHaveTextContent("You can try again now.");
+    await act(async () => screen.getByRole("button", { name: "Start again" }).click());
+    expect(await screen.findByLabelText("Phone number")).toHaveValue("");
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region).toBeEmptyDOMElement();
   });
 
   it("does not turn the focused Back into Start again at 0:00 on the wait card (AC-02)", async () => {

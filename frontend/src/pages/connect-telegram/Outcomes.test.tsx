@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
-import { type ReactNode, useLayoutEffect } from "react";
+import { type ReactNode, useLayoutEffect, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { meKey } from "../../api/account";
 import { RefusedState, WaitState } from "./Outcomes";
@@ -15,23 +15,49 @@ function FirstCommit({ seen, children }: { seen: string[]; children: ReactNode }
   return children;
 }
 
+/** Stands in for the wizard: its polite region is in the page before the wait card and outlives it. */
+function Wizard({
+  retryAt,
+  card,
+  firstCommit,
+}: {
+  retryAt: string;
+  card: boolean;
+  firstCommit: string[];
+}) {
+  const [announcement, setAnnouncement] = useState("");
+  return (
+    <>
+      {card ? (
+        <FirstCommit seen={firstCommit}>
+          <WaitState
+            retryAt={retryAt}
+            until={Date.parse(retryAt)}
+            starting={false}
+            onBack={vi.fn()}
+            onStartAgain={vi.fn()}
+            announce={setAnnouncement}
+          />
+        </FirstCommit>
+      ) : null}
+      <div role="status" className="visually-hidden">
+        {announcement}
+      </div>
+    </>
+  );
+}
+
 /** The wait card reads the Owner's zone; none saved here, so it shows the device's. */
 function renderWait(retryAt: string, firstCommit: string[] = []) {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
   client.setQueryData(meKey, { ownerId: "o1", email: "ann@example.com", timeZone: null });
-  return render(
+  const page = (card: boolean) => (
     <QueryClientProvider client={client}>
-      <FirstCommit seen={firstCommit}>
-        <WaitState
-          retryAt={retryAt}
-          until={Date.parse(retryAt)}
-          starting={false}
-          onBack={vi.fn()}
-          onStartAgain={vi.fn()}
-        />
-      </FirstCommit>
-    </QueryClientProvider>,
+      <Wizard retryAt={retryAt} card={card} firstCommit={firstCommit} />
+    </QueryClientProvider>
   );
+  const view = render(page(true));
+  return { ...view, leave: () => view.rerender(page(false)) };
 }
 
 describe("SCR-02 wait state", () => {
@@ -72,6 +98,17 @@ describe("SCR-02 wait state", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Telegram asks you to wait. You can try again at 10:01, in 1:05.",
     );
+  });
+
+  it("writes into the wizard's live region and clears it when the card is left (AC-02)", () => {
+    const { leave } = renderWait("2026-01-01T10:01:05");
+    // the card brings no live region of its own
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status")).toHaveTextContent(/in 1:05\.$/);
+    act(() => void vi.advanceTimersByTime(65_000));
+    expect(screen.getByRole("status")).toHaveTextContent("You can try again now.");
+    leave();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 });
 
