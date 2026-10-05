@@ -1874,6 +1874,79 @@
         "docs/features/telegram-link/tasks/tracker.md"
       ],
       "file": "docs/features/telegram-link/tasks/t91-docs-sync-r11.md"
+    },
+    {
+      "id": "T92",
+      "title": "A chat-list load that fails while the connection stays up is retried after a bounded backoff",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "A chat-list load that stops while the session is authorized and connected is retried once after a bounded backoff (Telegram's retry-after when given), one load at a time, never after close or during teleX's own log out.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t92-chat-load-retried-after-backoff.md"
+    },
+    {
+      "id": "T93",
+      "title": "The chat-load restart's guards and the Updating resume each have a test, and the moved tests leave no dead code",
+      "layer": "tests",
+      "deps": [
+        "T92"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-116",
+        "AC-122"
+      ],
+      "dod": "Removing the syncStarted guard, the authorization guard, or the Updating resume each turns a tdlight test red; a restart is skipped during teleX's own log out; TdlightTelegramSessionsTest has no unused imports or helpers.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t93-chat-load-resume-guards-tested.md"
+    },
+    {
+      "id": "T94",
+      "title": "The SCR-02 wait card announces through a live region that the wizard renders from mount",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "A polite live region is in the page from the wizard's mount, before any wait card; the wait card's start sentence (in the Owner's zone, once me has settled) and the 0:00 sentence are written there through React state, with no imperative textContent write.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t94-wait-announcement-page-live-region.md"
+    },
+    {
+      "id": "T95",
+      "title": "Sync the test plan, sad, screens and task files with the twelfth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T92",
+        "T93",
+        "T94"
+      ],
+      "acs": [],
+      "dod": "test-plan.md describes the backoff retry, the restart guards, the Updating resume and the page-level live region; sad Flow 11 and screens.md SCR-02 wait match; tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t95-docs-sync-r12.md"
     }
   ]
 }

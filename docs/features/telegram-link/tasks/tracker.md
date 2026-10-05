@@ -96,5 +96,9 @@
 | T89 | The SCR-02 wait card fills its announcement after the live region is in the page, and leaves it empty until the zone settles | ui | Anton Husiev | XS | — | done |
 | T90 | Vitest runs in a non-UTC zone, so the device-zone fallback is tested | tests | Anton Husiev | XS | — | done |
 | T91 | Sync the test plan, sad and task files with the eleventh-review fixes | docs | Anton Husiev | XS | T87, T88, T89, T90 | done |
+| T92 | A chat-list load that fails while the connection stays up is retried after a bounded backoff | infra | Anton Husiev | XS | — | todo |
+| T93 | The chat-load restart's guards and the Updating resume each have a test, and the moved tests leave no dead code | tests | Anton Husiev | XS | T92 | todo |
+| T94 | The SCR-02 wait card announces through a live region that the wizard renders from mount | ui | Anton Husiev | XS | — | todo |
+| T95 | Sync the test plan, sad, screens and task files with the twelfth-review fixes | docs | Anton Husiev | XS | T92, T93, T94 | todo |
 
-**Total:** 91 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews, T77–T82 from the ninth 2026-10-05 review, T83–T86 from the tenth, and T87–T91 from the eleventh.
+**Total:** 95 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews, T77–T82 from the ninth 2026-10-05 review, T83–T86 from the tenth, T87–T91 from the eleventh, and T92–T95 from the twelfth.
