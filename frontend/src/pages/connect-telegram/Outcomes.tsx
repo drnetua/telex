@@ -34,12 +34,25 @@ export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: Wa
   const timeZone = me.data?.timeZone ?? null;
   const [remaining, setRemaining] = useState(() => secondsUntil(until));
   const time = clock(retryAt, timeZone);
-  // Spoken once, but only when the Owner's zone is known (or failed to load): the layout above may not have loaded it yet.
-  const [text, setText] = useState<string | null>(null);
-  if (text === null && !me.isPending) setText(t.waitBody(time, minutesSeconds(remaining)));
+  const settled = !me.isPending;
   const over = remaining === 0;
   const card = useRef<HTMLDivElement>(null);
   const backHadFocus = useRef(false);
+  const status = useRef<HTMLSpanElement>(null);
+  const announced = useRef(false);
+
+  // The live region is always inserted empty and filled after mount: one inserted with its text is not reliably
+  // spoken. It speaks once at the start, when the Owner's zone is known (or failed to load), and once at 0:00.
+  useEffect(() => {
+    const region = status.current;
+    if (region === null) return;
+    if (over) {
+      region.textContent = t.waitOver;
+    } else if (settled && !announced.current) {
+      announced.current = true;
+      region.textContent = t.waitBody(time, minutesSeconds(remaining));
+    }
+  }, [over, settled, t, time, remaining]);
 
   // Back is replaced by Start again at 0:00; when that drops the focused button, focus returns to the heading.
   useEffect(() => {
@@ -79,9 +92,7 @@ export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: Wa
         }
       >
         <span aria-hidden={!over}>{visible}</span>
-        <span role="status" className="visually-hidden">
-          {over ? t.waitOver : text}
-        </span>
+        <span ref={status} role="status" className="visually-hidden" />
       </EmptyState>
     </div>
   );

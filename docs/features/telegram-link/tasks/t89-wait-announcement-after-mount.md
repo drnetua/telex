@@ -37,3 +37,9 @@ Component (Vitest):
 The role=status region is always inserted empty and filled after mount, once me has settled; tests assert it is empty before me settles and filled after, on both the cached and the late-me paths. Per-task gate clean. No test weakened.
 
 **Fallback:** [spec.md](../spec.md) · [sad.md](../sad.md) · [data-model.md](../data-model.md) · [openapi.yaml](../contracts/openapi.yaml) · [events.md](../contracts/events.md) · [screens.md](../screens.md) · [adr/](../adr/)
+
+## How it was done
+
+- The brief says "fill it in an effect after mount". A `setState` in an effect is refused by ESLint (`react-hooks/set-state-in-effect`), so the `role="status"` span has no React children: an effect writes its `textContent` once `me` has settled, and again with "You can try again now." at 0:00. A ref keeps the start announcement to one.
+- The first-commit check is a `useLayoutEffect` probe wrapped around `WaitState` in `Outcomes.test.tsx`. It records the region's text before any passive effect runs.
+- The new late-`/me` assertion already passed on the old code, which waited for `me` too. Mutation check: dropping the `settled` guard turns it red (`ConnectTelegramPage.test.tsx:959`, `toBeEmptyDOMElement`).

@@ -955,6 +955,8 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     setup();
     await submitPhone();
     await screen.findByRole("heading", { name: "Too many attempts" });
+    // nothing is spoken until the Owner's zone is known
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
     await act(async () => answerMe(me("Asia/Tokyo")));
     expect(
       await screen.findByText("Telegram asks you to wait. You can try again at 12:00, in 2:00.", {
