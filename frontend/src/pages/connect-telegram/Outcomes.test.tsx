@@ -1,20 +1,32 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { meKey } from "../../api/account";
 import { RefusedState, WaitState } from "./Outcomes";
+
+/** The wait card reads the Owner's zone; none saved here, so it shows the device's. */
+function renderWait(retryAt: string) {
+  const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
+  client.setQueryData(meKey, { ownerId: "o1", email: "ann@example.com", timeZone: null });
+  return render(
+    <QueryClientProvider client={client}>
+      <WaitState
+        retryAt={retryAt}
+        until={Date.parse(retryAt)}
+        starting={false}
+        onBack={vi.fn()}
+        onStartAgain={vi.fn()}
+      />
+    </QueryClientProvider>,
+  );
+}
 
 describe("SCR-02 wait state", () => {
   beforeEach(() => vi.useFakeTimers({ now: new Date("2026-01-01T10:00:00") }));
   afterEach(() => vi.useRealTimers());
 
   it("counts down every second and offers Start again at zero", () => {
-    render(
-      <WaitState
-        retryAt="2026-01-01T10:01:05"
-        starting={false}
-        onBack={vi.fn()}
-        onStartAgain={vi.fn()}
-      />,
-    );
+    renderWait("2026-01-01T10:01:05");
     expect(screen.getByRole("heading", { name: "Too many attempts" })).toBeVisible();
     expect(
       screen.getByText("Telegram asks you to wait. You can try again at 10:01, in 1:05.", {
@@ -45,14 +57,7 @@ describe("screens.md component fixes", () => {
   afterEach(() => vi.useRealTimers());
 
   it("S11: the wait-state Back button is secondary, not ghost", () => {
-    render(
-      <WaitState
-        retryAt="2026-01-01T10:01:05"
-        starting={false}
-        onBack={vi.fn()}
-        onStartAgain={vi.fn()}
-      />,
-    );
+    renderWait("2026-01-01T10:01:05");
     const back = screen.getByRole("button", { name: "Back" });
     expect(back).toHaveClass("btn-outline-secondary");
     expect(back).not.toHaveClass("btn-ghost-secondary");

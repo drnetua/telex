@@ -1,34 +1,39 @@
 import { useEffect, useRef, useState } from "react";
+import { useMe } from "../../api/account";
 import { Button } from "../../components/Button/Button";
 import { EmptyState } from "../../components/EmptyState/EmptyState";
 import type { IconName } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
+import { formatInstant } from "../../shell/time";
 import type { RefusalCode } from "./outcome";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const minutesSeconds = (total: number) => `${Math.floor(total / 60)}:${pad(total % 60)}`;
 
-function secondsUntil(retryAt: string): number {
-  return Math.max(0, Math.ceil((new Date(retryAt).getTime() - Date.now()) / 1000));
+function secondsUntil(until: number): number {
+  return Math.max(0, Math.ceil((until - Date.now()) / 1000));
 }
 
-function clock(retryAt: string): string {
-  const at = new Date(retryAt);
-  return `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+/** HH:mm in the Owner's saved zone, like every other time teleX shows. */
+function clock(retryAt: string, timeZone: string | null): string {
+  return formatInstant(retryAt, timeZone, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
 interface WaitStateProps {
   retryAt: string;
+  until: number;
   starting: boolean;
   onBack: () => void;
   onStartAgain: () => void;
 }
 
 /** Countdown to Telegram's retry time; the live region speaks at the start and at the end only. */
-export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitStateProps) {
+export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: WaitStateProps) {
   const t = messages.linking;
-  const [remaining, setRemaining] = useState(() => secondsUntil(retryAt));
-  const [text] = useState(() => t.waitBody(clock(retryAt), minutesSeconds(remaining)));
+  const timeZone = useMe().data?.timeZone ?? null;
+  const [remaining, setRemaining] = useState(() => secondsUntil(until));
+  const time = clock(retryAt, timeZone);
+  const [text] = useState(() => t.waitBody(time, minutesSeconds(remaining)));
   const over = remaining === 0;
   const card = useRef<HTMLDivElement>(null);
   const backHadFocus = useRef(false);
@@ -45,12 +50,12 @@ export function WaitState({ retryAt, starting, onBack, onStartAgain }: WaitState
     const timer = setInterval(() => {
       // Sampled before the swap: removing the focused Back moves focus to <body> and loses this fact.
       backHadFocus.current = card.current?.contains(document.activeElement) ?? false;
-      setRemaining(secondsUntil(retryAt));
+      setRemaining(secondsUntil(until));
     }, 1000);
     return () => clearInterval(timer);
-  }, [retryAt, over]);
+  }, [until, over]);
 
-  const visible = over ? t.waitOver : t.waitBody(clock(retryAt), minutesSeconds(remaining));
+  const visible = over ? t.waitOver : t.waitBody(time, minutesSeconds(remaining));
   return (
     <div ref={card}>
       <EmptyState

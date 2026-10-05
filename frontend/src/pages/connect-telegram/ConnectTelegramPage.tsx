@@ -157,7 +157,12 @@ export function ConnectTelegramPage() {
     if (!(error instanceof ApiFailure)) return false;
     setLast(attempt);
     if (error.status === 429 && error.code === "telegram-wait-required" && error.extras.retryAt) {
-      setOutcome({ kind: "wait", retryAt: error.extras.retryAt });
+      const { retryAt, retryAfterSeconds } = error.extras;
+      const until =
+        retryAfterSeconds === undefined
+          ? Date.parse(retryAt)
+          : Date.now() + retryAfterSeconds * 1000;
+      setOutcome({ kind: "wait", retryAt, until });
     } else if (error.status === 409 && REFUSAL_CODES.includes(error.code)) {
       setOutcome({ kind: "refused", code: error.code as RefusalCode, limit: error.extras.limit });
     } else if (endsAttempt(error)) {
@@ -225,6 +230,7 @@ export function ConnectTelegramPage() {
         {shownOutcome.kind === "wait" ? (
           <WaitState
             retryAt={shownOutcome.retryAt}
+            until={shownOutcome.until}
             starting={starting}
             onBack={back}
             onStartAgain={() => void startAgain()}

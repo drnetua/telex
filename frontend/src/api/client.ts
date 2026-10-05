@@ -11,6 +11,8 @@ export interface FieldError {
 /** Problem extensions of telegram-link. */
 export interface ProblemExtras {
   retryAt?: string;
+  /** The `Retry-After` header: seconds to wait from when the answer arrived, free of clock skew. */
+  retryAfterSeconds?: number;
   passwordHint?: string | null;
   limit?: number;
   step?: "phone" | "code" | "password";
@@ -66,6 +68,11 @@ function routeFor(status: number, code: string): FailureRoute | undefined {
   return undefined;
 }
 
+function retryAfter(response: Response): number | undefined {
+  const value = response.headers.get("Retry-After");
+  return value !== null && /^\d+$/.test(value.trim()) ? Number(value.trim()) : undefined;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): Promise<T> {
   const { background, timeoutMs = TIMEOUT_MS, ...init } = options;
@@ -111,6 +118,7 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     Array.isArray(problem.errors) ? problem.errors : [],
     {
       retryAt: problem.retryAt,
+      retryAfterSeconds: retryAfter(response),
       passwordHint: problem.passwordHint,
       limit: problem.limit,
       step: problem.step,

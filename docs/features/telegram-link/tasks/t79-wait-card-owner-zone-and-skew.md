@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/Outcomes.tsx", "frontend/src/a
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (ninth pass) — W15, W16"
-status: "todo"
+status: "done"
 ---
 
 # T79 — The SCR-02 wait card shows the retry time in the Owner's zone and counts down from Retry-After

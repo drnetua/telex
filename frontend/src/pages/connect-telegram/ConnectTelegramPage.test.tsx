@@ -833,6 +833,61 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
     expect(await screen.findByRole("heading", { name: "Connect your Telegram" })).toHaveFocus();
   });
 
+  const ME = "GET /api/v1/me";
+  const me = (timeZone: string | null) =>
+    json(200, { ownerId: "o1", email: "ann@example.com", timeZone });
+  const waitReply = (retryAt: string, retryAfter: number) =>
+    new Response(JSON.stringify({ code: "telegram-wait-required", retryAt }), {
+      status: 429,
+      headers: { "Content-Type": "application/problem+json", "Retry-After": String(retryAfter) },
+    });
+
+  it("shows the retry time in the Owner's saved zone, not the device's (AC-02)", async () => {
+    vi.useFakeTimers({
+      toFake: ["setInterval", "clearInterval", "Date"],
+      now: new Date("2026-10-05T02:58:00Z"),
+    });
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [waitReply("2026-10-05T03:00:00Z", 120)],
+      [ME]: [me("Asia/Tokyo")],
+    });
+    setup();
+    await submitPhone();
+    expect(
+      await screen.findByText("Telegram asks you to wait. You can try again at 12:00, in 2:00.", {
+        selector: "[aria-hidden='true']",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("counts down from Retry-After whatever the device clock says (AC-02)", async () => {
+    // the device clock runs 10 minutes ahead of the server's
+    vi.useFakeTimers({
+      toFake: ["setInterval", "clearInterval", "Date"],
+      now: new Date("2026-10-05T03:08:00Z"),
+    });
+    mockApi({
+      [A]: [json(200, attempt())],
+      [PHONE]: [waitReply("2026-10-05T03:00:00Z", 120)],
+      [ME]: [me("Asia/Tokyo")],
+    });
+    setup();
+    await submitPhone();
+    expect(
+      await screen.findByText("Telegram asks you to wait. You can try again at 12:00, in 2:00.", {
+        selector: "[aria-hidden='true']",
+      }),
+    ).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(119_000));
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(
+      screen.getByText("You can try again now.", { selector: "[aria-hidden='false']" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start again" })).toBeInTheDocument();
+  });
+
   it("does not turn the focused Back into Start again at 0:00 on the wait card (AC-02)", async () => {
     const retryAt = fakeWaitClock();
     mockApi({
