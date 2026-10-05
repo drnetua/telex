@@ -627,12 +627,13 @@ components:
             type: "urn:telex:error:linking-attempt-not-found"
             title: "Not Found"
             status: 404
-            detail: "There is no open linking attempt."
+            detail: "This linking attempt ended."
             code: "linking-attempt-not-found"
     TelegramWaitRequired:
       description: |
         Telegram limits attempts for this number and gives a wait. The attempt is ended and its Telegram session
-        destroyed; the SPA counts down to `retryAt` (AC-02). Starting again with the same number before then
+        destroyed; the SPA shows `retryAt` in the Owner's zone and counts down `Retry-After` seconds from when the
+        answer arrived, so a device clock that is off doesn't move it (AC-02). Starting again with the same number before then
         answers this again from Telegram, without a code being sent. teleX stores nothing about the wait.
       headers:
         Retry-After:

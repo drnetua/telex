@@ -4,7 +4,7 @@ title: "An e2e test unlinks a connected account and sees the unlinked Toast and 
 layer: "e2e"
 deps: []
 blocks: ["T82"]
-acs: ["AC-111"]
+acs: ["AC-111", "AC-113"]
 files_hint: ["e2e/tests/telegram-link.spec.ts"]
 owner: "Anton Husiev"
 estimate: "XS"
@@ -18,7 +18,7 @@ status: "done"
 
 Follow-up from the ninth-pass review: [`_review/review-2026-10-05.md`](../_review/review-2026-10-05.md), E1 (resolved "Fix now" by the user). Read those rows first. The ACs below are the source of truth: read them verbatim in [spec.md §5](../spec.md).
 
-- **ACs:** AC-111
+- **ACs:** AC-111, AC-113
 - **Blocked by:** — · **Blocks:** T82
 
 ## What to change

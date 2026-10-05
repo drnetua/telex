@@ -86,6 +86,6 @@
 | T79 | The SCR-02 wait card shows the retry time in the Owner's zone and counts down from Retry-After | ui | Anton Husiev | XS | — | done |
 | T80 | The unlink dialog names the chat count in correct English, and leaves it out at zero | ui | Anton Husiev | XS | — | done |
 | T81 | An unlink takes any pending interrupt just before the delete, including when there is no sign-out | app | Anton Husiev | XS | — | done |
-| T82 | Sync the README, contract, screens, test plan and task files with the ninth-review fixes | docs | Anton Husiev | XS | T77, T78, T79, T80, T81 | todo |
+| T82 | Sync the README, contract, screens, test plan and task files with the ninth-review fixes | docs | Anton Husiev | XS | T77, T78, T79, T80, T81 | done |
 
 **Total:** 82 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews, and T77–T82 from the 2026-10-05 review.

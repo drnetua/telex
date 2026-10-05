@@ -19,6 +19,7 @@ status: "done"
 Follow-up from the independent review: [`_review/review-2026-10-03.md`](../_review/review-2026-10-03.md), findings **Q6** (resolved "Fix now" by the user). Read those rows in the review record first — they carry the cited `file:line` and the failure scenario. The ACs below are the source of truth for what the tests assert: read them verbatim in [spec.md §5](../spec.md) and the states in [screens.md](../screens.md).
 
 - **ACs:** AC-116, AC-117, AC-122
+- **Screens:** SCR-10 `live`, SCR-60 `live` (the rows update in place after the stream reopens)
 - **Blocked by:** — · **Blocks:** T38
 
 ## What to change

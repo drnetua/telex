@@ -30,6 +30,10 @@ Follow-up from the eighth-pass review: [`_review/review-2026-10-04-r8.md`](../_r
 
 Test-only. Check that each strengthened test still fails under the mutation it guards: W14, the guard the focus tests pin; S2, `telegram-unavailable` removed from `SCREEN_HANDLED_503`.
 
+## Deviation (recorded 2026-10-05, ninth review D22)
+
+The tests don't use `shouldAdvanceTime`. `fakeWaitClock()` fakes only `setInterval`, `clearInterval` and `Date`, with no auto-advance, and `passWait()` advances 2000 ms by hand inside `act`. Nothing ticks until the test says so, which is more deterministic than an auto-advancing clock.
+
 ## Definition of Done
 
 Both focus tests pass deterministically, without depending on the real clock. The Inbox case fails if the 503 is treated as a connection failure. `pnpm run check` is clean.

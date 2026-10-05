@@ -32,6 +32,10 @@ Integration (`UnlinkIT`):
 - K16: on a virtual thread, unlink an account whose session boot hasn't reopened (`simulateStop`). The `rows` spy interrupts the thread inside `sealedKey`. Assert no failure, `signOutConfirmed == false`, the rows are gone and the flag is set on return. Today it fails with `JDBC rollback failed`.
 - K17: in the existing interrupted-sign-out case, assert the fake's close and destroy did not run on an interrupted thread. Check it red by moving the restore before the close.
 
+## Deviation (recorded 2026-10-05, ninth review D22)
+
+The code took the pending interrupt at the end of `signOut` (`if (Thread.interrupted()) onInterrupt()`), not just before the delete. That covers both sign-outs, but not an unlink that skips the sign-out (a Session lost account, or no `TelegramSessions` bean). T81 adds the check just before `deleteOrClose` as well, so every path into the delete is covered.
+
 ## Definition of Done
 
 An unlink deletes the account however an interrupt reaches it during the sign-out, and the session is closed and destroyed before the interrupt is handed back. Per-task gate clean. No test weakened.

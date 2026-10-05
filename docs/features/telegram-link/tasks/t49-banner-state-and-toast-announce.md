@@ -19,6 +19,7 @@ status: "done"
 Follow-up from the second-pass review: [`_review/review-2026-10-04-r2.md`](../_review/review-2026-10-04-r2.md), findings **B2, B3, B5** (resolved "Fix now" by the user). Read those rows in the review record first — they carry the cited `file:line` and the failure scenario. The ACs below are the source of truth for what the tests assert: read them verbatim in [spec.md §5](../spec.md).
 
 - **ACs:** AC-122, AC-117, AC-111, AC-114
+- **Screens:** SCR-10 `banner` and `linked`; SCR-60 `row: session-lost`, `start-refused`, `unlinked` and `linked`; SCR-02 `success` (the banner above the card and the arrival Toast)
 - **Blocked by:** — · **Blocks:** T50
 
 ## What to change

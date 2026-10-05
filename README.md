@@ -32,14 +32,18 @@ and linking says it isn't set up on this installation yet.
 
 1. Create an app at <https://my.telegram.org> (API development tools). Set `TELEX_TELEGRAM_API_ID` and
    `TELEX_TELEGRAM_API_HASH` to its values.
-2. Generate the master key with `openssl rand -base64 32` and set it as `TELEX_MASTER_KEY`. It seals every Owner's
+2. Generate the master key **once** with `openssl rand -base64 32` and set it as `TELEX_MASTER_KEY` on every start.
+   teleX refuses to start with a different key once one has sealed a session key. It seals every Owner's
    Telegram session key. **If you lose it, every linked session is lost** and every Owner must sign in to Telegram
    again. Keep a copy outside the server. Recovery from a truly lost key is explicit: start once with
    `TELEX_MASTER_KEY_RESET=true` and the new key, then remove the flag.
 3. Optional: `TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER` (default 3).
 
 ```bash
-export TELEX_TELEGRAM_API_ID=... TELEX_TELEGRAM_API_HASH=... TELEX_MASTER_KEY="$(openssl rand -base64 32)"
+# once: generate the key into a file outside the repository
+(umask 077 && openssl rand -base64 32 > ~/telex-master.key)
+# every start: the same key
+export TELEX_TELEGRAM_API_ID=... TELEX_TELEGRAM_API_HASH=... TELEX_MASTER_KEY="$(cat ~/telex-master.key)"
 docker compose up
 ```
 

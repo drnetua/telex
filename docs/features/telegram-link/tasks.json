@@ -1647,7 +1647,8 @@
       "layer": "e2e",
       "deps": [],
       "acs": [
-        "AC-111"
+        "AC-111",
+        "AC-113"
       ],
       "dod": "An e2e test tagged AC-111 links an account, unlinks it while it is connected, and checks the info Toast and SCR-10's Connect Telegram at both widths.",
       "files_hint": [

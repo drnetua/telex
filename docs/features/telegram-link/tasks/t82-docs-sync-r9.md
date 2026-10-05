@@ -9,7 +9,7 @@ files_hint: ["README.md", "docs/features/telegram-link/contracts/openapi.yaml", 
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (ninth pass) — D19, D20, D21, D22 (docs part)"
-status: "todo"
+status: "done"
 ---
 
 # T82 — Sync the README, contract, screens, test plan and task files with the ninth-review fixes
