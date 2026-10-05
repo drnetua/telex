@@ -94,6 +94,7 @@ internal class TdlightSession(
     private var loadStarted = false
     private val counts = HashMap<TdlibChatList, Int>()
     private var loadCompleted = false
+    private var loadFailures = 0
     private val chats = LinkedHashMap<Long, ChatEntry>()
     private val dirtyUpserts = LinkedHashSet<Long>()
     private val dirtyRemoved = LinkedHashSet<Long>()
@@ -411,14 +412,56 @@ internal class TdlightSession(
         Thread.ofVirtual().name("telegram-chat-load-", 0).start { loadChats() }
     }
 
-    /** A load that stopped during an outage starts again once Telegram is reachable (AC-116, AC-121). */
+    /**
+     * A load that stopped starts again once Telegram is reachable (AC-116, AC-121), never while teleX's own log out
+     * runs.
+     */
     private fun resumeChatLoad() {
-        if (syncStarted && !loadCompleted && isAuthorized()) startChatLoad()
+        if (syncStarted && !loadCompleted && mayLoad()) startChatLoad()
+    }
+
+    /** Signed in and not in teleX's own log out: a chat-list load may run. */
+    private fun mayLoad() = isAuthorized() && !loggingOut
+
+    /** Connected as far as teleX knows: the last announced state is Ready (Updating counts as Ready). */
+    private fun connected() = lastState == SessionState.Ready
+
+    /**
+     * Telegram's `retry after N` when the load was flooded, else a delay that doubles per failure; both capped, so a
+     * load that keeps failing is never retried in a tight loop.
+     */
+    private fun retryDelay(
+        failure: Exception,
+        failures: Int,
+    ): Duration {
+        val retryAfter =
+            (failure as? LoadFailed)
+                ?.failure
+                ?.takeIf { it.code == TOO_MANY_REQUESTS }
+                ?.let { RETRY_AFTER.find(it.message) }
+                ?.groupValues
+                ?.get(1)
+                ?.toLongOrNull()
+        val seconds =
+            retryAfter ?: (RETRY_BASE_SECONDS shl (failures - 1).coerceAtMost(RETRY_MAX_DOUBLINGS))
+        return Duration.ofSeconds(seconds.coerceIn(1, RETRY_MAX_SECONDS))
+    }
+
+    /**
+     * A load that stopped while the session stays connected gets no connection update to restart it, so it is retried
+     * once after [delay]; a session that ends meanwhile is not retried, and the retry keeps one load at a time.
+     */
+    private fun retryChatLoad(delay: Duration) {
+        try {
+            over.get(delay.toMillis(), TimeUnit.MILLISECONDS)
+        } catch (_: TimeoutException) {
+            synchronized(this) { if (connected()) resumeChatLoad() }
+        }
     }
 
     /**
      * Loads the main and archived lists; TDLib answers 404 when a list is fully loaded. A load that stops without
-     * completing can be started again by the next connection Ready.
+     * completing is started again by the next connection Ready, or after a backoff when the connection stays up.
      */
     @Suppress("TooGenericExceptionCaught") // a failed load is logged; the list stays incomplete until the next start
     private fun loadChats() {
@@ -433,20 +476,29 @@ internal class TdlightSession(
                             ).get(LOAD_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     synchronized(this) { flush() }
                     val allLoaded = response is TdlibResponse.Failure && response.code == NOT_FOUND
-                    check(allLoaded || response !is TdlibResponse.Failure) {
-                        "loadChats failed with ${(response as TdlibResponse.Failure).code}"
-                    }
+                    if (!allLoaded && response is TdlibResponse.Failure) throw LoadFailed(response)
                 } while (!allLoaded)
             }
             synchronized(this) {
                 loadCompleted = true
+                loadFailures = 0
                 flush(force = true)
             }
         } catch (e: Exception) {
             log.warn("Chat list load for {} stopped: {}", id.value, e.javaClass.simpleName)
-            synchronized(this) { loadStarted = false }
+            val delay =
+                synchronized(this) {
+                    loadStarted = false
+                    if (connected() && mayLoad()) retryDelay(e, ++loadFailures) else null
+                }
+            delay?.let(::retryChatLoad)
         }
     }
+
+    /** TDLib answered a chat-list load with an error other than "all loaded". */
+    private class LoadFailed(
+        val failure: TdlibResponse.Failure,
+    ) : IllegalStateException("loadChats failed with ${failure.code}")
 
     private fun publish(task: () -> Unit) {
         try {
@@ -468,5 +520,10 @@ internal class TdlightSession(
         const val LOAD_BATCH = 100
         const val LOAD_TIMEOUT_SECONDS = 60L
         const val NOT_FOUND = 404
+        const val TOO_MANY_REQUESTS = 429
+        const val RETRY_BASE_SECONDS = 5L
+        const val RETRY_MAX_DOUBLINGS = 6
+        const val RETRY_MAX_SECONDS = 300L
+        val RETRY_AFTER = Regex("retry after (\\d+)")
     }
 }

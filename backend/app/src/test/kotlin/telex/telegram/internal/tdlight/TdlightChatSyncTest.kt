@@ -261,7 +261,80 @@ class TdlightChatSyncTest {
             .isEqualTo(2)
     }
 
+    /** The first main-list load is flooded (429, retry after 1 s), later ones complete; LogOut never finishes. */
+    private fun floodFirstLoad() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        var mainLoads = 0
+        tdlib.respond = { client, request ->
+            val mainLoad = request is TdlibRequest.LoadChats && request.list == TdlibChatList.Main
+            if (mainLoad && mainLoads++ == 0) {
+                client.emit(TdlibUpdate.NewChat(chat(1)))
+                TdlibResponse.Failure(429, "Too Many Requests: retry after 1")
+            } else if (request is TdlibRequest.LoadChats) {
+                TdlibResponse.Failure(404, "Not Found")
+            } else if (request == TdlibRequest.LogOut) {
+                client.emit(auth("authorizationStateLoggingOut"))
+                TdlibResponse.Ok("ok")
+            } else {
+                null
+            }
+        }
+    }
+
+    private fun mainLoads(client: ScriptedTdlib.Client) =
+        client.requests.filterIsInstance<TdlibRequest.LoadChats>().count { it.list == TdlibChatList.Main }
+
+    @Test
+    fun `a flooded chat-list load is retried after Telegram's retry-after, connection unchanged (AC-116, AC-121)`() {
+        floodFirstLoad()
+        create().reopen(TelegramSessionId(telex.shared.Uuid7.next()), key)
+        val client = tdlib.clients.single()
+        await().untilAsserted { assertThat(chats()).isNotEmpty() }
+        Thread.sleep(SETTLE_MILLIS)
+        assertThat(mainLoads(client)).isEqualTo(1)
+        assertThat(chats().none { it.loadCompleted }).isTrue()
+
+        await().untilAsserted { assertThat(chats().lastOrNull()?.loadCompleted).isTrue() }
+        assertThat(mainLoads(client)).isEqualTo(2)
+        assertThat(chats().last().loadedChatIds).containsExactly(1L)
+        client.emit(TdlibUpdate.ChatTitle(1, "Renamed"))
+        await().untilAsserted { assertThat(chats().last().upserted.map { it.title }).containsExactly("Renamed") }
+    }
+
+    @Test
+    fun `a chat-list load retry that is still waiting when the session closes is not sent (AC-116)`() {
+        floodFirstLoad()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        await().until { mainLoads(client) == 1 }
+
+        sessions.close(id)
+
+        Thread.sleep(RETRY_WAIT_MILLIS)
+        assertThat(client.requests.filterIsInstance<TdlibRequest.LoadChats>()).hasSize(1)
+    }
+
+    @Test
+    fun `a chat-list load retry is not sent while teleX's own log out runs (AC-116, AC-113)`() {
+        floodFirstLoad()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        await().until { mainLoads(client) == 1 }
+
+        Thread.ofVirtual().start { sessions.logOut(id, Duration.ofSeconds(LOG_OUT_SECONDS)) }
+        await().until { TdlibRequest.LogOut in client.requests }
+
+        Thread.sleep(RETRY_WAIT_MILLIS)
+        assertThat(client.requests.filterIsInstance<TdlibRequest.LoadChats>()).hasSize(1)
+    }
+
     private companion object {
         const val SETTLE_MILLIS = 300L
+        const val RETRY_WAIT_MILLIS = 1_600L
+        const val LOG_OUT_SECONDS = 4L
     }
 }

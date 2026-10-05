@@ -36,3 +36,9 @@ Unit, in `TdlightChatSyncTest`: `LoadChats(Main)` answers `Failure(429, "Too Man
 A chat-list load that stops while the session is authorized and connected is retried once after a bounded backoff (Telegram's retry-after when given), one load at a time, never after close or during teleX's own log out. Per-task gate clean. No test weakened.
 
 **Fallback:** [spec.md](../spec.md) · [sad.md](../sad.md) · [data-model.md](../data-model.md) · [openapi.yaml](../contracts/openapi.yaml) · [events.md](../contracts/events.md) · [screens.md](../screens.md) · [adr/](../adr/)
+
+## How it was done
+
+- The retry waits on the session's `over` future, so a close wakes it early and no request is sent. When it wakes, it calls `resumeChatLoad` only while the last state is still Ready. Non-429 failures back off 5 s, doubling up to 300 s. A 429's `retry after N` is clamped to 1–300 s. The counter resets when a load completes.
+- The DoD rules out a retry during teleX's own log out, so the `loggingOut` guard (planned for T93) went into `resumeChatLoad` here. A third test covers it: a log out starts while the retry waits, and no new `LoadChats` is sent. Mutation: with the guard removed, that test fails.
+- The close test passes if either guard stays: the early wake on `over`, or `isAuthorized()` in `resumeChatLoad`. T93's "fail, close, then Ready" test checks `isAuthorized()` on its own.
