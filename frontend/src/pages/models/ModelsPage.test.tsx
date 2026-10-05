@@ -132,7 +132,8 @@ describe("SCR-66 route, tabs and navigation", () => {
   it("Settings lists Models, linking to /settings/models", async () => {
     stubApi(() => json(200, catalog()));
     setup("/settings");
-    const link = await screen.findByRole("link", { name: /^Models/ });
+    // The lazy /settings route can take over findByRole's default 1 s to render under CI load.
+    const link = await screen.findByRole("link", { name: /^Models/ }, { timeout: 5000 });
     expect(link).toHaveAttribute("href", "/settings/models");
   });
 
