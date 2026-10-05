@@ -25,6 +25,39 @@ Passkeys work on `localhost` or over HTTPS, not over plain HTTP on a LAN address
 
 Smoke test (starts the stack, requests an email, reads it from Mailpit): `./scripts/smoke.sh`.
 
+## Telegram setup (Operator)
+
+Owners can link Telegram accounts only after you, the Operator, finish this step. Until then teleX starts normally
+and linking says it isn't set up on this installation yet.
+
+1. Create an app at <https://my.telegram.org> (API development tools). Set `TELEX_TELEGRAM_API_ID` and
+   `TELEX_TELEGRAM_API_HASH` to its values.
+2. Generate the master key **once** with `openssl rand -base64 32` and set it as `TELEX_MASTER_KEY` on every start.
+   teleX refuses to start with a different key once one has sealed a session key. It seals every Owner's
+   Telegram session key. **If you lose it, every linked session is lost** and every Owner must sign in to Telegram
+   again. Keep a copy outside the server. Recovery from a truly lost key is explicit: start once with
+   `TELEX_MASTER_KEY_RESET=true` and the new key, then remove the flag.
+3. Optional: `TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER` (default 3).
+
+```bash
+# once: generate the key into a file outside the repository
+(umask 077 && openssl rand -base64 32 > ~/telex-master.key)
+# every start: the same key
+export TELEX_TELEGRAM_API_ID=... TELEX_TELEGRAM_API_HASH=... TELEX_MASTER_KEY="$(cat ~/telex-master.key)"
+docker compose up
+```
+
+Session files live in the `telex-tdlib` volume (`/var/lib/telex/tdlib`, `TELEX_TELEGRAM_SESSIONS_DIR`). Back it up
+together with the Postgres volume or not at all: a session directory without its key in Postgres is unreadable, and
+Postgres without the directories sends every account to "Session lost".
+
+What you can see: none of this setup, nor the configuration or logs it produces, contains any Owner's Telegram name,
+phone number or chats. Owners should know that the installation's operator is trusted: whoever holds the database and
+the master key controls the stored sessions.
+
+`TELEX_TELEGRAM_ADAPTER=fake` (the default under the `local` profile) replaces Telegram with an in-memory stand-in
+for development and tests. It is never for real use.
+
 ## Developer loop
 
 ```bash

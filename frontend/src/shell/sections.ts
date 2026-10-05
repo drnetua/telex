@@ -31,7 +31,10 @@ export const sections: readonly Section[] = [
 ];
 
 /** Addresses that sit under a section without being its own entry, e.g. Profile and security under Settings. */
-const owned: Readonly<Record<string, SectionId>> = { "/profile": "settings" };
+const owned: Readonly<Record<string, SectionId>> = {
+  "/profile": "settings",
+  "/accounts": "settings",
+};
 
 export function currentSection(pathname: string): Section | undefined {
   const underPath = (base: string) => pathname === base || pathname.startsWith(`${base}/`);

@@ -117,6 +117,19 @@ class SessionRows(
                 )
             }.list()
 
+    fun isLive(
+        id: SignInSessionId,
+        idleCutoff: Instant,
+        ageCutoff: Instant,
+    ): Boolean =
+        jdbc
+            .sql(
+                "SELECT EXISTS (SELECT 1 FROM sign_in_session WHERE id = ? AND ended_at IS NULL " +
+                    "AND last_activity_at > ? AND started_at > ?)",
+            ).params(id.value, ts(idleCutoff), ts(ageCutoff))
+            .query(Boolean::class.java)
+            .single()
+
     /** Ends one live session of this Owner; false when it is not theirs, not live or absent. */
     fun endOwned(
         ownerId: OwnerId,

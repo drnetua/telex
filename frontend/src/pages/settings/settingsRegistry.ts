@@ -12,6 +12,13 @@ export interface SettingsEntry {
 /** Settings registry: later epics add their row here without touching the shell (QG-3a). */
 export const settingsEntries: readonly SettingsEntry[] = [
   {
+    id: "accounts",
+    path: "/accounts",
+    icon: "brand-telegram",
+    title: messages.settings.accounts.title,
+    hint: messages.settings.accounts.hint,
+  },
+  {
     id: "profile",
     path: "/profile",
     icon: "user",

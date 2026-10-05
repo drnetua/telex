@@ -107,7 +107,7 @@ Sep 28, 2026 · @Anton Husiev
 | AI-абстракція | **Spring AI** | `ChatClient`, tools, advisors, chat memory, `VectorStore` |
 | LLM-доступ | **OpenRouter** | OpenAI-сумісний endpoint; один ключ — text, vision, image, embeddings; вибір моделі пер агент |
 | Рішення | **TypeSafe Jev** через `spring-ai-starter-typesafe` 0.1.0 | Noul / Choice / Score, готові advisors |
-| Telegram | **TDLib Java Interface** (JNI `tdjni`) | вхід як user; збирати нативну бібліотеку в Docker-образі; `api_id` / `api_hash` з my.telegram.org |
+| Telegram | **TDLight Java** (форк TDLib з готовими нативними бібліотеками в Maven; ADR-0004) | вхід як user; без збірки C++ в образі; `api_id` / `api_hash` з my.telegram.org |
 | Фронтенд | **React + TypeScript** | Vite, TanStack Query, Tailwind; збирається Gradle-таскою й роздається як static з Spring Web |
 | Реалтайм | SSE | нові повідомлення, статус Run, апруви; команди — REST |
 | Сховище | PostgreSQL + pgvector, Flyway | один двигун для даних, подій Modulith і ембедінгів |
@@ -135,7 +135,7 @@ Sep 28, 2026 · @Anton Husiev
 
 | Подія | Публікує | Слухає |
 | --- | --- | --- |
-| `AccountLinked` / `AccountUnlinked` | telegram | messaging, agents, audit |
+| `AccountLinked` / `AccountUnlinked` | messaging | messaging, agents, audit |
 | `ConsentGranted` / `ConsentRevoked` | identity | agents (вмикання / зупинка), audit |
 | `OwnerBotLinked` / `OwnerBotBlocked` | bot | identity, web |
 | `MessageReceived` | telegram | messaging, triage, web (SSE) |
@@ -153,7 +153,7 @@ Sep 28, 2026 · @Anton Husiev
 
 **Три архітектурні правила (кандидати в constitution):**
 
-1. Жоден модуль, окрім `telegram`, не імпортує `org.drinkless.tdlib.*`.
+1. Жоден модуль, окрім `telegram`, не імпортує `it.tdlight.*`.
 2. Кожен виклик інструменту проходить перевірку Scope у `tools`, а не в промпті.
 3. Кожен Run має Owner, бюджет і запис у `audit` — без винятків.
 

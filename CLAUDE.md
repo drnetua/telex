@@ -49,7 +49,7 @@ Precompiled script plugins can't use the generated `libs` accessors; use `libs.v
 ## Layout and code conventions
 
 - `backend/app` — the one Spring Boot app. Each Modulith module is a direct sub-package of `telex` (`web`, `identity`, `messaging`, `triage`, `agents`, `tools`, `tasks`, `scheduling`, `audit`, `telegram`, `llm`, `decision`, `bot`, `mail`) with a `package-info.java` declaring `@ApplicationModule(allowedDependencies)`: `web` → core modules; core → core + integration; integration → `shared` only. Public API + events at the module root, everything else in `internal`. `telex.shared` is an OPEN kernel (typed ids, problems) with no Spring beans. `ModularityTest` runs `verify()` and writes module docs to `backend/app/build/spring-modulith-docs`.
-- `backend/telegram-tdlib` — Kotlin facade (`telex.telegram.tdlib`) over TDLib; the TDLib binding is its `implementation` dependency, so `org.drinkless.tdlib.*` can't reach `backend/app` (ADR-0002). Empty until the E02 spike.
+- `backend/telegram-tdlib` — Kotlin facade (`telex.telegram.tdlib`) over TDLib; the TDLight Java binding (ADR-0004) is its `implementation` dependency, so `it.tdlight.*` can't reach `backend/app` (ADR-0002); natives for linux x64/arm64 and macOS arm64 ship as runtime jars. The JVM needs `--enable-native-access=ALL-UNNAMED` (set in the Dockerfile).
 - `frontend/` — React + TypeScript + Vite + Tabler SPA; `pnpm run build` output is copied into the app's `static/` and served by `telex.web.SpaHosting` (client routes fall back to `index.html`; `/api/**` and missing assets stay 404). UI copy lives in `frontend/src/messages.ts`.
 - **IDs:** app-generated UUIDv7 via `telex.shared.Uuid7.next()`, typed per aggregate as `@JvmInline value class XId(override val value: UUID) : TypedId` (ADR-0003).
 - **Errors:** RFC 9457 `application/problem+json` with `type = urn:telex:error:<code>`, `code` (a kebab-case DNS-1123 label, e.g. `validation-failed`) and `errors[]`; domain errors extend `telex.shared.DomainProblem`, rendered by `telex.web.ProblemHandler`.
@@ -69,7 +69,7 @@ Spring Boot 4 + Kotlin modular monolith on **Spring Modulith**, 14 modules commu
 Core principle — **System 1 / System 2: Jev decides, the LLM generates.** Every incoming message goes through a cheap local prefilter and a Jev triage (`Noul`/`Choice`/`Score`); only a confident yes wakes an LLM agent, and low confidence routes to the human review queue rather than refusal.
 
 Architectural rules (constitution candidates):
-1. No module other than `telegram` imports `org.drinkless.tdlib.*`.
+1. No module other than `telegram` imports `it.tdlight.*`.
 2. Every tool call is Scope-checked in `tools` code, never in the prompt. Scope, private-zone and consent checks live in code.
 3. Every Run has an Owner, a budget and an `audit` record.
 

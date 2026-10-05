@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Icon, type IconName } from "../Icon/Icon";
 
 interface EmptyStateProps {
@@ -9,6 +9,8 @@ interface EmptyStateProps {
   children?: ReactNode;
   action?: ReactNode;
   headingLevel?: 1 | 2;
+  /** Moves focus to the title on mount, for a card that replaces what the user was working in. */
+  focusTitle?: boolean;
 }
 
 export function EmptyState({
@@ -18,14 +20,23 @@ export function EmptyState({
   children,
   action,
   headingLevel = 1,
+  focusTitle = false,
 }: EmptyStateProps) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focusTitle) heading.current?.focus();
+  }, [focusTitle]);
   return (
     <div className="empty" data-kind={kind}>
       <div className="empty-icon">
         <Icon name={icon} size={40} />
       </div>
-      {title ? <Heading className="empty-title">{title}</Heading> : null}
+      {title ? (
+        <Heading className="empty-title" ref={heading} tabIndex={focusTitle ? -1 : undefined}>
+          {title}
+        </Heading>
+      ) : null}
       {children ? <p className="empty-subtitle text-secondary">{children}</p> : null}
       {action ? <div className="empty-action">{action}</div> : null}
     </div>

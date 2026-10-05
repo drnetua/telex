@@ -1,0 +1,1971 @@
+{
+  "slug": "telegram-link",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Prove TDLight on JDK 25 and land the binding behind the TdlibFacade (spike)",
+      "layer": "infra",
+      "deps": [],
+      "acs": [],
+      "dod": "TDLight natives load on eclipse-temurin:25-jre (linux x64) and on macOS, two facade clients run in one process, a test-server sign-in completes, and spike.md records image growth, memory per client and the idle-session-termination timing.",
+      "files_hint": [
+        "gradle/libs.versions.toml",
+        "backend/telegram-tdlib/",
+        "Dockerfile",
+        "CLAUDE.md",
+        "docs/docs/01-tech-spec.md",
+        "docs/features/telegram-link/spike.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t01-tdlight-spike-and-facade.md"
+    },
+    {
+      "id": "T2",
+      "title": "Promote the owner_key, linked_account and channel migrations into the live Flyway tree",
+      "layer": "migration",
+      "deps": [],
+      "acs": [
+        "AC-04",
+        "AC-108",
+        "AC-111"
+      ],
+      "dod": "The three staged pairs are promoted to db/migration V…__*.sql + db/rollback U…__*.sql, MigrationRollbackIT applies up → down → up for all of them, and a schema IT proves the telegram_user_id uniqueness and the channel cascade.",
+      "files_hint": [
+        "docs/features/telegram-link/migrations/01_create_owner_key.up.sql",
+        "docs/features/telegram-link/migrations/01_create_owner_key.down.sql",
+        "docs/features/telegram-link/migrations/02_create_linked_account.up.sql",
+        "docs/features/telegram-link/migrations/02_create_linked_account.down.sql",
+        "docs/features/telegram-link/migrations/03_create_channel.up.sql",
+        "docs/features/telegram-link/migrations/03_create_channel.down.sql"
+      ],
+      "file": "docs/features/telegram-link/tasks/t02-promote-telegram-link-migrations.md"
+    },
+    {
+      "id": "T3",
+      "title": "Add OwnerKeys envelope encryption with the master-key check and reset, and SignInSessions.isLive",
+      "layer": "app",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-110",
+        "AC-119"
+      ],
+      "dod": "OwnerKeys seals and opens with AES-256-GCM bound to an AAD, lazily creates the Owner key, refuses to start on a missing or wrong master key once a key exists, reports \"not set up\" on a fresh installation without one, performs the explicit reset, and SignInSessions.isLive answers per session — all covered by unit + integration tests.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/identity/OwnerKeys.kt",
+        "backend/app/src/main/kotlin/telex/identity/internal/key/",
+        "backend/app/src/main/kotlin/telex/identity/SignInSessions.kt",
+        "backend/app/src/integrationTest/kotlin/telex/identity/OwnerKeysIT.kt",
+        "backend/app/src/test/kotlin/telex/identity/internal/key/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t03-identity-owner-keys-and-session-liveness.md"
+    },
+    {
+      "id": "T4",
+      "title": "Define the TelegramSessions port, its in-process events and the fake Telegram adapter",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122"
+      ],
+      "dod": "The TelegramSessions port and its port types and events exist at the telegram module root, the fake adapter (selected by telex.telegram.adapter=fake) scripts codes, 2FA, flood waits, banned/unregistered numbers, connectivity drops, session termination and N chats, and unit tests drive every scripted branch.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessionId.kt",
+        "backend/app/src/main/kotlin/telex/telegram/SignInOutcome.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessionStateChanged.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramChatsChanged.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/",
+        "backend/app/src/main/kotlin/telex/telegram/internal/TelegramAdapterConfiguration.kt",
+        "backend/app/src/test/kotlin/telex/telegram/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t04-telegram-port-and-fake-adapter.md"
+    },
+    {
+      "id": "T5",
+      "title": "Manage Telegram session directories: per-session dir, destroy with one-minute retry, startup orphan sweep",
+      "layer": "infra",
+      "deps": [
+        "T4"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-112"
+      ],
+      "dod": "Every Telegram session gets one directory under telex.telegram.sessions-dir, destroy deletes it and retries failures every minute, and sweepOrphans(referenced) deletes every directory not in the referenced set — covered by unit tests on a temp directory.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/files/",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/",
+        "backend/app/src/test/kotlin/telex/telegram/internal/files/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t05-telegram-session-directories.md"
+    },
+    {
+      "id": "T6",
+      "title": "Implement the tdlight adapter: TDLib auth states, errors and chat list mapped to the port",
+      "layer": "infra",
+      "deps": [
+        "T1",
+        "T5"
+      ],
+      "acs": [
+        "AC-36",
+        "AC-121"
+      ],
+      "dod": "The tdlight adapter implements every TelegramSessions operation over TdlibFacade, maps authorization/connection states to Ready/Connecting/Closed and TDLib errors to port outcomes, streams the main + archived chat list as TelegramChatsChanged batches, and an IT proves the raw TDLib key appears nowhere in the DB, logs or session volume.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/",
+        "backend/telegram-tdlib/",
+        "backend/app/src/integrationTest/kotlin/telex/telegram/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t06-tdlight-adapter.md"
+    },
+    {
+      "id": "T7",
+      "title": "Build the LinkedAccount aggregate: rules, states, masked phone, repository, events and the account limit",
+      "layer": "domain",
+      "deps": [
+        "T2"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-108",
+        "AC-115",
+        "AC-03"
+      ],
+      "dod": "The LinkedAccount aggregate decides new-link / signed-in-again / refuse (other Owner, already linked, limit, mismatch) by Telegram identity, its JdbcClient repository serves every data-model access pattern Owner-scoped (including the chat count and the advisory-locked limit count), and the four messaging event types exist — covered by unit tests and a repository IT.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccountId.kt",
+        "backend/app/src/main/kotlin/telex/messaging/ChannelId.kt",
+        "backend/app/src/main/kotlin/telex/messaging/AccountLinked.kt",
+        "backend/app/src/main/kotlin/telex/messaging/AccountUnlinked.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccountStateChanged.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccountSyncProgressed.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/",
+        "backend/app/src/main/kotlin/telex/messaging/internal/config/",
+        "backend/app/src/test/kotlin/telex/messaging/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkedAccountRepositoryIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t07-linked-account-aggregate.md"
+    },
+    {
+      "id": "T8",
+      "title": "Start, resume, cancel and expire the in-memory linking attempt (one per Owner)",
+      "layer": "app",
+      "deps": [
+        "T3",
+        "T4",
+        "T7"
+      ],
+      "acs": [
+        "AC-109",
+        "AC-110",
+        "AC-119",
+        "AC-114"
+      ],
+      "dod": "Linking.start/get/cancel enforce one open attempt per Owner, refuse when linking isn't set up or the limit is reached, resume an open attempt from any tab, and the one-minute sweep discards attempts after 15 min without a step or when their Sign-in Session is no longer live, always destroying the attempt's Telegram session — covered by an ApplicationModuleTest on the fake adapter with a fixed clock.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/attempt/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingAttemptIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t08-linking-attempt-lifecycle.md"
+    },
+    {
+      "id": "T9",
+      "title": "Run the phone, code, resend and password steps with Telegram's refusals and waits",
+      "layer": "app",
+      "deps": [
+        "T8"
+      ],
+      "acs": [
+        "AC-02",
+        "AC-106",
+        "AC-107"
+      ],
+      "dod": "Linking.submitPhone/resendCode/submitCode/submitPassword check ownership, live Sign-in Session and step, map every Telegram outcome to the step's result or domain problem (wait ends the attempt with retryAt), never store or log the typed values, and an ApplicationModuleTest covers every branch on the fake adapter.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/attempt/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingStepsIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t09-linking-wizard-steps.md"
+    },
+    {
+      "id": "T10",
+      "title": "Complete an authorized attempt: link a new account, sign in again, or refuse and log out",
+      "layer": "app",
+      "deps": [
+        "T5",
+        "T9"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-04",
+        "AC-108",
+        "AC-115",
+        "AC-117"
+      ],
+      "dod": "On Telegram authorizing an attempt, messaging either inserts a Connected Linked Account with the sealed TDLib key and AccountLinked, swaps the new session into the Session-lost target with LinkedAccountStateChanged, or logs out and destroys the new session with the right refusal — inside one transaction under the Owner's advisory lock — covered by an ApplicationModuleTest on the fake adapter.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/attempt/",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t10-complete-authorized-attempt.md"
+    },
+    {
+      "id": "T11",
+      "title": "Unlink an account: bounded sign-out, one-transaction delete with AccountUnlinked, then destroy the session",
+      "layer": "app",
+      "deps": [
+        "T5",
+        "T7"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-112",
+        "AC-113"
+      ],
+      "dod": "LinkedAccounts.unlink logs the session out with a 10 s bound, deletes the account, its sealed key and its chat list and records AccountUnlinked in one transaction, discards a Sign-in-again attempt that targets it, destroys the session directory after commit and reports signOutConfirmed — covered by an ApplicationModuleTest for the confirmed and unreachable cases.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t11-unlink-linked-account.md"
+    },
+    {
+      "id": "T12",
+      "title": "Reconnect accounts on boot and follow Telegram's session state (Connected, Reconnecting, Session lost)",
+      "layer": "app",
+      "deps": [
+        "T3",
+        "T5",
+        "T7"
+      ],
+      "acs": [
+        "AC-36",
+        "AC-118",
+        "AC-117",
+        "AC-122"
+      ],
+      "dod": "On boot messaging applies a master-key reset if one happened, sweeps orphan session directories, reopens every non-Session-lost account in parallel, and maps TelegramSessionStateChanged (newer sequence only) to the stored state with LinkedAccountStateChanged on a real change — covered by an ApplicationModuleTest with two accounts and a controlled clock.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t12-account-lifecycle-and-reconnect.md"
+    },
+    {
+      "id": "T13",
+      "title": "Sync each account's chat list into channel rows with throttled progress events",
+      "layer": "app",
+      "deps": [
+        "T4",
+        "T7"
+      ],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "TelegramChatsChanged upserts and removes channel rows by (linked_account_id, telegram_chat_id), stores chats_total and chat_sync_completed_at, and publishes LinkedAccountSyncProgressed at most once per second per account with a trailing publish — covered by an ApplicationModuleTest with a 500-chat fake account, including resume after a restart.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t13-chat-list-sync.md"
+    },
+    {
+      "id": "T14",
+      "title": "Expose list and unlink of my Linked Accounts, and back getMe.linkedAccountCount with messaging",
+      "layer": "ports",
+      "deps": [
+        "T7",
+        "T11"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-110",
+        "AC-113",
+        "AC-114"
+      ],
+      "dod": "GET /api/v1/linked-accounts and DELETE /api/v1/linked-accounts/{id} answer exactly the contract (Owner-scoped, 404 not-found for anything not the caller's, signOutConfirmed), getMe.linkedAccountCount comes from messaging, and an IT validates every response against openapi.yaml.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/LinkedAccountsController.kt",
+        "backend/app/src/main/kotlin/telex/web/api/MeController.kt",
+        "backend/app/src/main/kotlin/telex/identity/OwnerProfiles.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkedAccountsApiIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t14-linked-accounts-endpoints.md"
+    },
+    {
+      "id": "T15",
+      "title": "Expose the linking-attempt endpoints with the contract's problem codes, validation and Retry-After",
+      "layer": "ports",
+      "deps": [
+        "T10"
+      ],
+      "acs": [
+        "AC-02",
+        "AC-106",
+        "AC-107",
+        "AC-109",
+        "AC-119"
+      ],
+      "dod": "The seven linking operations answer exactly openapi.yaml (status, problem code, extensions retryAt/passwordHint/limit/step, Retry-After, validation-failed), request values never reach logs, and an IT validates every documented response on the fake adapter.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/api/LinkingController.kt",
+        "backend/app/src/main/kotlin/telex/web/ProblemHandler.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t15-linking-endpoints.md"
+    },
+    {
+      "id": "T16",
+      "title": "Serve the live-update SSE stream of invalidation hints per Owner",
+      "layer": "ports",
+      "deps": [
+        "T7"
+      ],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122"
+      ],
+      "dod": "GET /api/v1/live-updates streams `event: hint` / `data: linked-accounts` to every open tab of the affected Owner after each messaging account event (≤ 1 per second per Owner), sends a 25 s heartbeat with the contract headers, never bumps session activity and closes when the Sign-in Session ends — covered by an IT.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/live/",
+        "backend/app/src/main/kotlin/telex/web/security/",
+        "backend/app/src/integrationTest/kotlin/telex/web/LiveUpdatesIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t16-live-updates-sse.md"
+    },
+    {
+      "id": "T17",
+      "title": "Wire the Operator config, the session volume and the README Telegram setup step",
+      "layer": "wiring",
+      "deps": [
+        "T3",
+        "T6"
+      ],
+      "acs": [
+        "AC-119",
+        "AC-120"
+      ],
+      "dod": "application.yaml binds every TELEX_* setting of the feature, the local profile uses the fake adapter unless real credentials are set, compose mounts the telex-tdlib volume and passes the variables, the README has the Operator's Telegram setup step, and the tech-spec event table and sad §8 Events reflect messaging as publisher and the in-process telegram events.",
+      "files_hint": [
+        "backend/app/src/main/resources/application.yaml",
+        "backend/app/src/main/resources/application-local.yaml",
+        "compose.yaml",
+        "README.md",
+        "docs/docs/01-tech-spec.md",
+        "docs/features/telegram-link/sad.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t17-operator-config-and-readme.md"
+    },
+    {
+      "id": "T18",
+      "title": "Add the SPA API clients, the single SSE live-update client and all new copy",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122"
+      ],
+      "dod": "Typed clients for the ten operations, a single EventSource client that invalidates the linked-accounts query on a hint and everything on reconnect, background refetches with X-Telex-Background, and every string from screens.md in messages.ts (linking, accounts, banner groups + the 15 new problem codes) — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/api/linkedAccounts.ts",
+        "frontend/src/api/linking.ts",
+        "frontend/src/api/live.ts",
+        "frontend/src/api/client.ts",
+        "frontend/src/App.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t18-spa-api-live-client-and-copy.md"
+    },
+    {
+      "id": "T19",
+      "title": "Build LinkedAccountSummary, port StatusBanner, extend CodeInput, Icon and PageFrame",
+      "layer": "ui",
+      "deps": [
+        "T18"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-122"
+      ],
+      "dod": "LinkedAccountSummary renders every account state (line and row variants) with icon + words and the sync line, StatusBanner shows the account-disconnected condition for one or several lost accounts with its action, CodeInput takes length and label, Icon has unlink, PageFrame has the Accounts button and the banner slot — covered by Vitest at the component level.",
+      "files_hint": [
+        "frontend/src/components/LinkedAccountSummary/",
+        "frontend/src/components/StatusBanner/",
+        "frontend/src/components/CodeInput/",
+        "frontend/src/components/Icon/",
+        "frontend/src/components/PageFrame/",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t19-account-components-banner-and-frame.md"
+    },
+    {
+      "id": "T20",
+      "title": "Build the SCR-02 wizard steps: phone, code, password with their validation and refusals",
+      "layer": "ui",
+      "deps": [
+        "T19"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-106",
+        "AC-107"
+      ],
+      "dod": "SCR-02 renders the step the server answers and implements the loading, phone, phone-validation, phone-refused, code, code-validation, code-wrong, code-expired, resending, resent, password, password-validation, password-wrong, submitting, telegram-unavailable and step-mismatch states — covered by Vitest at 360 px and 1280 px layouts.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/",
+        "frontend/src/app/AppRoutes.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t20-connect-telegram-wizard-steps.md"
+    },
+    {
+      "id": "T21",
+      "title": "Build the SCR-02 outcomes: wait countdown, refusals, attempt ended, cancel and success",
+      "layer": "ui",
+      "deps": [
+        "T20"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-108",
+        "AC-109",
+        "AC-115",
+        "AC-117"
+      ],
+      "dod": "SCR-02 implements the wait, refused-other-owner, refused-already-linked, refused-limit, refused-mismatch, attempt-ended, starting-again, cancelling, success and error states, with the countdown announced only at start and end — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t21-connect-telegram-wizard-outcomes.md"
+    },
+    {
+      "id": "T22",
+      "title": "Make SCR-10 Inbox start linking and list one line per Linked Account",
+      "layer": "ui",
+      "deps": [
+        "T19"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-119"
+      ],
+      "dod": "SCR-10 implements loading, default (empty) with a working Connect Telegram, starting, start-refused, resumed, with-accounts, linked, live, banner and error states, driven by listMyLinkedAccounts instead of Me.linkedAccountCount — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/pages/inbox/",
+        "frontend/src/app/AppRoutes.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t22-inbox-connect-telegram-and-account-lines.md"
+    },
+    {
+      "id": "T23",
+      "title": "Build SCR-60 Accounts: the list with states, Add account, Sign in again and the unlink dialog",
+      "layer": "ui",
+      "deps": [
+        "T19"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-111",
+        "AC-113",
+        "AC-114"
+      ],
+      "dod": "SCR-60 implements loading, default list with every row state, empty, starting, start-refused, resumed, unlink-confirm, unlinking, unlinked, unlinked-unconfirmed, unlink-gone, linked, live, banner and error — covered by Vitest.",
+      "files_hint": [
+        "frontend/src/pages/accounts/",
+        "frontend/src/app/AppRoutes.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t23-accounts-page-and-unlink-dialog.md"
+    },
+    {
+      "id": "T24",
+      "title": "Prove nothing is left behind or leaked: unlink dump, restart delivery, registry and log scans",
+      "layer": "tests",
+      "deps": [
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T16"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-112",
+        "AC-120"
+      ],
+      "dod": "Integration tests on the fake adapter prove an unlink (confirmed and unreachable) leaves no identifying row, key or session dir, a crash after the commit is cleaned by the startup sweep, AccountUnlinked is delivered after a restart, and no event_publication payload, log line or metric tag carries a phone, name, Telegram id, chat title, code or password.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/messaging/NothingLeftBehindIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkAnnouncementRestartIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/TelegramDataHygieneIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t24-nothing-left-behind-integration-tests.md"
+    },
+    {
+      "id": "T25",
+      "title": "Add Playwright end-to-end tests of linking, live state and unlink at 360 px and 1280 px with axe",
+      "layer": "tests",
+      "deps": [
+        "T14",
+        "T15",
+        "T17",
+        "T21",
+        "T22",
+        "T23"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-109",
+        "AC-117",
+        "AC-122"
+      ],
+      "dod": "Playwright on the fake adapter at 360 px and 1280 px links an account with 2FA, hits a wrong code and a wait, reloads and opens a second tab mid-wizard, sees Session lost with the banner and signs in again, unlinks, and the axe scan reports 0 violations on every screen state visited.",
+      "files_hint": [
+        "e2e/tests/telegram-link.spec.ts",
+        "e2e/support/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t25-end-to-end-browser-tests.md"
+    },
+    {
+      "id": "T26",
+      "title": "Publish sync progress inside a transaction, write the sync time from the Clock, time the sync once",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "Sync progress reaches the SPA as a live hint with no surrounding transaction in the test; no incomplete event_publication rows after a sync; completedAt equals the fixed Clock; the duration timer has exactly one sample per completed sync.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/ChatListListener.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/SyncProgressThrottle.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/ChannelRows.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LiveUpdatesIT.kt",
+        "backend/app/src/test/kotlin/telex/messaging/internal/channel/SyncProgressThrottleTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t26-sync-progress-in-transaction.md"
+    },
+    {
+      "id": "T27",
+      "title": "Start chat sync only after the Linked Account is committed, report Telegram's real total, drop chats left meanwhile",
+      "layer": "app",
+      "deps": [
+        "T26"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-116",
+        "AC-117",
+        "AC-121"
+      ],
+      "dod": "A freshly linked account (and a signed-in-again one) syncs its full chat list with both adapters; total is Telegram's total or null; stale chats removed on load completion; no test asserts the old buggy behaviour.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramEvents.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt",
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/ChatListListener.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/channel/ChannelRows.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/NothingLeftBehindIT.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/ScriptedTdlib.kt",
+        "backend/app/src/test/kotlin/telex/telegram/FakeTelegramTest.kt",
+        "backend/telegram-tdlib/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t27-chat-sync-after-commit.md"
+    },
+    {
+      "id": "T28",
+      "title": "Unlink: report an unconfirmed sign-out for Session lost, and sign out the session the delete actually removed",
+      "layer": "app",
+      "deps": [
+        "T27"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113"
+      ],
+      "dod": "Session lost unlink reports unconfirmed with both adapters; the unlink/sign-in-again race leaves nothing behind.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccountRows.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/AccountDeletion.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t28-unlink-confirmation-and-race.md"
+    },
+    {
+      "id": "T29",
+      "title": "Linking refusals: end the attempt on an unregistered number, 503 when Telegram does not answer at start, clear codeLength, whitespace phone is 422",
+      "layer": "app",
+      "deps": [
+        "T28",
+        "T34"
+      ],
+      "acs": [
+        "AC-107",
+        "AC-106",
+        "AC-119"
+      ],
+      "dod": "No 500 on any refusal path; contract validator passes on the new responses; SPA shows the refusal at the code step.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkingProblems.kt",
+        "backend/app/src/main/kotlin/telex/web/api/LinkingController.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingStepsIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "frontend/src/pages/connect-telegram/CodeStep.tsx",
+        "frontend/src/pages/connect-telegram/outcome.ts",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t29-linking-refusals-and-contract.md"
+    },
+    {
+      "id": "T30",
+      "title": "Log out sign-ins Telegram authorized but teleX did not finish, and never hang on a failed client open",
+      "layer": "infra",
+      "deps": [
+        "T29"
+      ],
+      "acs": [
+        "AC-109",
+        "AC-04"
+      ],
+      "dod": "No authorized-but-abandoned session survives a discard; shutdown never hangs on a failed open.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingAttemptIT.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t30-session-hygiene.md"
+    },
+    {
+      "id": "T31",
+      "title": "Make the SSE emitter registry add and remove atomic per Owner",
+      "layer": "ports",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122"
+      ],
+      "dod": "No orphaned streams under concurrent open/remove.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/web/live/EmitterRegistry.kt",
+        "backend/app/src/test/kotlin/telex/web/live/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t31-emitter-registry-atomic.md"
+    },
+    {
+      "id": "T32",
+      "title": "Cover the remaining contract responses over HTTP, run completions concurrently, and restart the app for real",
+      "layer": "tests",
+      "deps": [
+        "T30",
+        "T31"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-115",
+        "AC-117",
+        "AC-36",
+        "AC-112"
+      ],
+      "dod": "Every declared response of the feature's operations is seen by the contract validator at least once; the race paths and a real restart are exercised.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkedAccountsApiIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LiveUpdatesIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/ContractValidator.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkAnnouncementRestartIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t32-contract-coverage-and-race-tests.md"
+    },
+    {
+      "id": "T33",
+      "title": "Bring sad §6/§7, the api-sync open questions and the screens.md registry in line with the code",
+      "layer": "docs",
+      "deps": [
+        "T30",
+        "T36"
+      ],
+      "acs": [],
+      "dod": "No artifact contradicts the code on these points; OQs ticked.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/contracts/api-sync-report.md",
+        "docs/features/telegram-link/screens.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t33-docs-sync.md"
+    },
+    {
+      "id": "T34",
+      "title": "SPA failures: domain 503 refusals stay on the page, SCR-02 never throws in render, step errors always give feedback, cache the new account",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-119",
+        "AC-109",
+        "AC-01"
+      ],
+      "dod": "AC-119 refusal visible in the real app shell; no render-throw; every failure gives feedback.",
+      "files_hint": [
+        "frontend/src/api/client.ts",
+        "frontend/src/app/queryClient.ts",
+        "frontend/src/app/FailureBoundary.tsx",
+        "frontend/src/api/linking.test.ts",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/PhoneStep.tsx",
+        "frontend/src/pages/connect-telegram/CodeStep.tsx",
+        "frontend/src/pages/connect-telegram/PasswordStep.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t34-spa-failure-routing.md"
+    },
+    {
+      "id": "T35",
+      "title": "SCR-60 and the banner: linked Toast, Reconnecting and Session lost notes, banner refusals, unlink focus, one-shot arrival Toast, icon and copy fixes",
+      "layer": "ui",
+      "deps": [
+        "T34",
+        "T29"
+      ],
+      "acs": [
+        "AC-114",
+        "AC-117",
+        "AC-122",
+        "AC-111",
+        "AC-106"
+      ],
+      "dod": "Every SCR-60 and banner state in screens.md renders; a11y focus correct.",
+      "files_hint": [
+        "frontend/src/pages/accounts/AccountsPage.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx",
+        "frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.tsx",
+        "frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.test.tsx",
+        "frontend/src/components/StatusBanner/AccountDisconnectedBanner.tsx",
+        "frontend/src/components/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/pages/connect-telegram/PasswordStep.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t35-accounts-banner-states.md"
+    },
+    {
+      "id": "T36",
+      "title": "Render SCR-02 in the confirmed onboarding card layout",
+      "layer": "ui",
+      "deps": [
+        "T35"
+      ],
+      "acs": [
+        "AC-01"
+      ],
+      "dod": "SCR-02 matches screens.md shared conventions at phone and desktop widths.",
+      "files_hint": [
+        "frontend/src/app/AppRoutes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/app/"
+      ],
+      "file": "docs/features/telegram-link/tasks/t36-scr02-onboarding-layout.md"
+    },
+    {
+      "id": "T37",
+      "title": "Reopen the live-update stream when the browser has closed it, with capped backoff",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-117",
+        "AC-122"
+      ],
+      "dod": "Live state recovers after a teleX restart without a refocus.",
+      "files_hint": [
+        "frontend/src/api/live.ts",
+        "frontend/src/api/live.test.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t37-live-client-reconnect.md"
+    },
+    {
+      "id": "T38",
+      "title": "End-to-end: complete Sign in again, Reconnecting to Connected, banner goes away, AC-119, password and phone refusals",
+      "layer": "tests",
+      "deps": [
+        "T27",
+        "T29",
+        "T30",
+        "T35",
+        "T36",
+        "T37"
+      ],
+      "acs": [
+        "AC-117",
+        "AC-122",
+        "AC-119",
+        "AC-106",
+        "AC-107",
+        "AC-01",
+        "AC-116"
+      ],
+      "dod": "The T25 DoD is met in full (sign in again completed) plus the paths above, at 360 px and 1280 px, 0 axe violations.",
+      "files_hint": [
+        "e2e/tests/telegram-link.spec.ts",
+        "e2e/support/",
+        "e2e/playwright.config.ts",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t38-e2e-missing-paths.md"
+    },
+    {
+      "id": "T39",
+      "title": "Sign in again racing an unlink never reports success on a deleted account or leaves an authorized session behind",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-111",
+        "AC-117",
+        "AC-04"
+      ],
+      "dod": "The race leaves nothing behind and never reports success; the UnlinkIT race test fails if the replacement-session branch is removed.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccountRows.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/AccountDeletion.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t39-sign-in-again-unlink-race.md"
+    },
+    {
+      "id": "T40",
+      "title": "Real adapter: logOut is false for a closed session, and the chat total ignores folder counts",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-116"
+      ],
+      "dod": "Fake and real adapters agree on `logOut` for every not-open session; the total is Telegram's Main + Archive count.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/fake/FakeTelegramTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t40-tdlight-logout-and-total.md"
+    },
+    {
+      "id": "T41",
+      "title": "Unregistered number with no replacement session answers 422, and Resend ends the attempt on every phone refusal",
+      "layer": "app",
+      "deps": [
+        "T39"
+      ],
+      "acs": [
+        "AC-107"
+      ],
+      "dod": "No 503 on an attempt that has already ended; server and SPA agree that every phone refusal ends the attempt.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingStepsIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t41-unregistered-and-resend-refusals.md"
+    },
+    {
+      "id": "T42",
+      "title": "Make the sync-in-transaction and AC-110 tests able to fail on their regressions",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-110"
+      ],
+      "dod": "Each test fails when its guarded behaviour is removed and passes on the current code.",
+      "files_hint": [
+        "backend/app/src/integrationTest/kotlin/telex/messaging/ChatSyncIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkedAccountsApiIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t42-strengthen-sync-and-session-end-tests.md"
+    },
+    {
+      "id": "T43",
+      "title": "Report Session lost through the shell's Status Banner, with the account name and a working Sign in again",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117"
+      ],
+      "dod": "One C-04 banner in the shell for every condition including Session lost; AC-122 banner behaviour unchanged for the Owner; N6 fixed; e2e green at both widths.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/SessionLostConditions.kt",
+        "backend/app/src/main/kotlin/telex/shared/StatusConditionSource.kt",
+        "backend/app/src/main/kotlin/telex/web/api/PulseController.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/PulseIT.kt",
+        "frontend/src/shell/conditions.ts",
+        "frontend/src/shell/conditions.test.ts",
+        "frontend/src/shell/StatusBanner/StatusBanner.tsx",
+        "frontend/src/shell/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/shell/AppShell/AppShell.tsx",
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/app/layouts.test.tsx",
+        "frontend/src/components/StatusBanner/AccountDisconnectedBanner.tsx",
+        "frontend/src/components/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/messages.ts",
+        "e2e/tests/telegram-link.spec.ts",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t43-session-lost-banner-in-shell.md"
+    },
+    {
+      "id": "T44",
+      "title": "SPA polish: unlink focus, a dismissible SCR-02 load-failure Toast with Retry, one Toast slot, one refusal lookup, stronger tests",
+      "layer": "ui",
+      "deps": [
+        "T43"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-114",
+        "AC-119",
+        "AC-116"
+      ],
+      "dod": "All four UI defects fixed with tests; the two tests can fail on their regressions; `pnpm run check` clean.",
+      "files_hint": [
+        "frontend/src/pages/accounts/AccountsPage.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/components/Toast/Toast.tsx",
+        "frontend/src/components/Toast/Toast.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/api/linkingRefusal.ts",
+        "frontend/src/components/LinkedAccountSummary/LinkedAccountSummary.test.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t44-spa-focus-toasts-and-tests.md"
+    },
+    {
+      "id": "T45",
+      "title": "Bring screens.md, sad §7, data-model, events.md, the contract and spec §8 in line with the code",
+      "layer": "docs",
+      "deps": [
+        "T39",
+        "T40",
+        "T41",
+        "T43",
+        "T44"
+      ],
+      "acs": [],
+      "dod": "Every D1–D5 item matches the code; no stale PageFrame reference remains in screens.md.",
+      "files_hint": [
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/data-model.md",
+        "docs/features/telegram-link/contracts/events.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/spec.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t45-docs-contract-sync.md"
+    },
+    {
+      "id": "T46",
+      "title": "Say which phone refusal ended the attempt, and end a sign in again whose account was unlinked meanwhile as not found",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-107",
+        "AC-117",
+        "AC-04"
+      ],
+      "dod": "The Owner always sees the real reason a phone refusal ended the attempt; the race never claims a different account; contract records both outcomes.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt",
+        "backend/app/src/main/kotlin/telex/messaging/Linking.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt",
+        "backend/app/src/integrationTest/kotlin/telex/web/LinkingApiIT.kt",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/PhoneStep.tsx",
+        "frontend/src/pages/connect-telegram/steps.ts",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx",
+        "frontend/src/messages.ts",
+        "docs/features/telegram-link/contracts/openapi.yaml"
+      ],
+      "file": "docs/features/telegram-link/tasks/t46-phone-refusal-reason-and-race-outcome.md"
+    },
+    {
+      "id": "T47",
+      "title": "Sign out a reopened session that has not reached Ready yet instead of skipping it",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "Unlink right after a restart signs the session out; no ended session is ever confirmed.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t47-logout-waits-for-ready.md"
+    },
+    {
+      "id": "T48",
+      "title": "SCR-02 survives a failed pulse, and a failed load shows an inline state with Try again and Back",
+      "layer": "ui",
+      "deps": [
+        "T46"
+      ],
+      "acs": [
+        "AC-122",
+        "AC-109"
+      ],
+      "dod": "No pulse failure ever hides the wizard; a failed load always offers a way forward.",
+      "files_hint": [
+        "frontend/src/shell/pulse.ts",
+        "frontend/src/shell/pulse.test.tsx",
+        "frontend/src/api/client.ts",
+        "frontend/src/app/layouts.tsx",
+        "frontend/src/app/layouts.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/messages.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t48-scr02-pulse-and-load-failed.md"
+    },
+    {
+      "id": "T49",
+      "title": "Banner: no false generic text, Sign in again outcome survives reorder and refetch, Toasts are announced",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117",
+        "AC-111",
+        "AC-114"
+      ],
+      "dod": "The banner never shows text its data contradicts; the action's outcome is never lost; info Toasts are announced.",
+      "files_hint": [
+        "frontend/src/shell/accountDisconnected.tsx",
+        "frontend/src/shell/StatusBanner/StatusBanner.tsx",
+        "frontend/src/shell/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/shell/conditions.ts",
+        "frontend/src/components/Toast/Toast.tsx",
+        "frontend/src/components/Toast/Toast.test.tsx",
+        "frontend/src/pages/accounts/AccountsPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t49-banner-state-and-toast-announce.md"
+    },
+    {
+      "id": "T50",
+      "title": "Record the shell banner extension and the two live channels in the ADRs, and sync sad, the contract and screens.md",
+      "layer": "docs",
+      "deps": [
+        "T46",
+        "T47",
+        "T48",
+        "T49"
+      ],
+      "acs": [],
+      "dod": "ADRs, sad, contract and screens.md describe the code as built; no open sad §11 risk on the live channel.",
+      "files_hint": [
+        "docs/features/app-shell/adr/0006-extend-the-shell-through-client-section-and-server-condition-registries.md",
+        "docs/features/telegram-link/adr/0005-push-live-state-to-the-spa-as-sse-invalidation-hints.md",
+        "docs/features/app-shell/adr/0002-poll-one-background-pulse-every-3-seconds-for-live-signals.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/spec.md",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t50-adr-and-docs-sync.md"
+    },
+    {
+      "id": "T51",
+      "title": "teleX's own sign-out on unlink is not a Session lost, and is confirmed only when Telegram finishes it",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111",
+        "AC-122"
+      ],
+      "dod": "Unlinking never flips the account to Session lost or closes the client mid-logout; signOutConfirmed is true only when TDLib finished the logout; the logOut tests have no sleeps.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t51-own-logout-is-not-session-lost.md"
+    },
+    {
+      "id": "T52",
+      "title": "An unlink during boot reopen leaves no live session, and the real resendCode reports phone refusals",
+      "layer": "infra",
+      "deps": [
+        "T51"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113",
+        "AC-107"
+      ],
+      "dod": "No TDLib client keeps running for an account unlinked while boot was reopening it; real resend refusals for invalid/banned numbers end the attempt as AC-107 says; port KDoc lists the outcomes.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/BootReconnect.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t52-unlink-during-reopen-and-resend-refusals.md"
+    },
+    {
+      "id": "T53",
+      "title": "Banner Toast keeps its node, error Toasts are not nested live regions, a pulse 403 in the shell routes again, pulse tests cover 503/504",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117",
+        "AC-111",
+        "AC-114",
+        "app-shell/AC-176"
+      ],
+      "dod": "A banner refusal Toast is announced once; an error Toast has no live-region ancestor besides its own; inside the shell a pulse 403 goes to SCR-93 as app-shell screens.md says; failed-pulse tests cover 0/502/503/504 and clean up in afterEach.",
+      "files_hint": [
+        "frontend/src/shell/StatusBanner/StatusBanner.tsx",
+        "frontend/src/shell/StatusBanner/StatusBanner.test.tsx",
+        "frontend/src/components/Toast/Toast.tsx",
+        "frontend/src/components/Toast/Toast.test.tsx",
+        "frontend/src/shell/pulse.ts",
+        "frontend/src/shell/pulse.test.tsx",
+        "frontend/src/app/layouts.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t53-banner-toast-and-pulse-polish.md"
+    },
+    {
+      "id": "T54",
+      "title": "SCR-02 moves focus to the outcome card, Playwright covers the refusal-ended and load-failed states, and a 401 mid-wizard reaches SCR-92",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-107",
+        "AC-109",
+        "AC-110"
+      ],
+      "dod": "A keyboard/screen-reader user hears the outcome card that replaces a step; the ended card naming the refusal runs in Playwright at both widths; a Vitest case drives SCR-02 to the session-ended screen on 401.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "e2e/tests/telegram-link.spec.ts",
+        "e2e/support/telegram.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t54-scr02-focus-e2e-and-ac110.md"
+    },
+    {
+      "id": "T55",
+      "title": "Sync sad §7 tags, ux-flows, the sad coverage row and screens.md with the code, and record the third-review changes",
+      "layer": "docs",
+      "deps": [
+        "T51",
+        "T52",
+        "T53",
+        "T54"
+      ],
+      "acs": [],
+      "dod": "sad, ux-flows, screens.md, the contract and spec §8 describe the code as built after T51–T54.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/ux-flows.md",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/spec.md",
+        "docs/features/app-shell/screens.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t55-docs-sync-r3.md"
+    },
+    {
+      "id": "T56",
+      "title": "A session whose unlink failed after teleX's own sign-out still reports its state, and the fake behaves the same",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-117",
+        "AC-113"
+      ],
+      "dod": "If deletion.delete throws after logOut, the account is not left with a muted dead client: it reaches Session lost (or its session is closed) instead of staying connected/reconnecting forever; the tdlight adapter and the fake agree after an unconfirmed logOut.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/FakeTelegramTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t56-own-logout-state-after-failed-unlink.md"
+    },
+    {
+      "id": "T57",
+      "title": "An unlink during the boot reopen window still signs teleX out of Telegram, and a failed reopen leaves no directory",
+      "layer": "infra",
+      "deps": [
+        "T56"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113"
+      ],
+      "dod": "An unlink that races a boot reopen (reopen in flight, or before boot read the row) sends LogOut when Telegram is reachable, so signOutConfirmed is true and no teleX device stays in Telegram's active sessions; a reopen that fails after an unlink leaves no session directory.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/BootReconnect.kt",
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t57-unlink-during-boot-reopen-signs-out.md"
+    },
+    {
+      "id": "T58",
+      "title": "The real code step ends the attempt on an invalid or banned number instead of answering 503",
+      "layer": "infra",
+      "deps": [
+        "T57"
+      ],
+      "acs": [
+        "AC-107"
+      ],
+      "dod": "checkAuthenticationCode failing with PHONE_NUMBER_INVALID / PHONE_NUMBER_BANNED / PHONE_NUMBER_UNOCCUPIED maps to the phone refusal outcomes (flood first), as resend does since T52; the port KDoc lists them.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/main/kotlin/telex/telegram/TelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t58-code-step-phone-refusals.md"
+    },
+    {
+      "id": "T59",
+      "title": "SCR-02 moves focus back to the step after an outcome card, the wait card's buttons don't swap under focus, and the AC-110 and focus tests are sound",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-107",
+        "AC-109",
+        "AC-02",
+        "AC-108",
+        "AC-110"
+      ],
+      "dod": "Start again / Try again move focus to the step heading; at 0:00 the focused Back button is not silently replaced by Start again; the first AC-110 case mocks every request it triggers; the focus tests carry the ACs they cover.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/PhoneStep.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t59-scr02-focus-back-to-step-and-test-hygiene.md"
+    },
+    {
+      "id": "T60",
+      "title": "Sync screens.md, events.md, the T54 record, sad, ux-flows and spec with the fourth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T56",
+        "T57",
+        "T58",
+        "T59"
+      ],
+      "acs": [],
+      "dod": "screens.md, events.md, sad, ux-flows, spec §8 and the T54 record describe the code as built after T56–T59.",
+      "files_hint": [
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/contracts/events.md",
+        "docs/features/telegram-link/tasks/t54-scr02-focus-e2e-and-ac110.md",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/ux-flows.md",
+        "docs/features/telegram-link/spec.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t60-docs-sync-r4.md"
+    },
+    {
+      "id": "T61",
+      "title": "An unlink whose sealed key can't be opened still deletes the account and reports the sign-out unconfirmed",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink of an account whose sealed key fails to decrypt (wrong key, tampered or truncated value) answers 200 with signOutConfirmed=false and deletes the account; no checked exception from the key path escapes unlink as a 500.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t61-unlink-with-unopenable-key.md"
+    },
+    {
+      "id": "T62",
+      "title": "A failed delete after the sign-out leaves the account Session lost when Telegram confirmed it, and keeps an unconfirmed session running",
+      "layer": "infra",
+      "deps": [
+        "T61"
+      ],
+      "acs": [
+        "AC-122",
+        "AC-113"
+      ],
+      "dod": "If deletion.delete throws after a confirmed sign-out, the account is Session lost (its session closed) rather than connected/reconnecting with no client; after an unconfirmed sign-out the session is not closed and keeps reporting its state; UnlinkIT asserts the row state the Owner sees, not only the adapter's isOpen.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/lifecycle/SessionStateListener.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t62-failed-delete-after-sign-out-state.md"
+    },
+    {
+      "id": "T63",
+      "title": "The fake reopens a destroyed session signed out, as TDLib does, and the boot-race test asserts the unconfirmed sign-out",
+      "layer": "infra",
+      "deps": [
+        "T62"
+      ],
+      "acs": [
+        "AC-111",
+        "AC-113"
+      ],
+      "dod": "FakeTelegram.reopen of a session whose directory was destroyed (or never existed) comes up unauthorized and announces Closed, matching the real adapter on an empty TDLib database; the LifecycleIT boot-race case where the unlink's own reopen fails asserts signOutConfirmed=false, no open session and no directory, instead of a sign-out the real adapter can't perform.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/test/kotlin/telex/telegram/FakeTelegramTest.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LifecycleIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t63-fake-reopen-of-destroyed-session.md"
+    },
+    {
+      "id": "T64",
+      "title": "SCR-02 never focuses the step heading on the first load, and focuses it on every card-to-step change, including the banner's Sign in again",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-109",
+        "AC-122"
+      ],
+      "dod": "A test proves the first load of SCR-02 doesn't move focus to the step heading; the heading takes focus each time a step replaces an outcome or load-failed card, including when the Status Banner's Sign in again clears an outcome card, regardless of what happened earlier on the page.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t64-scr02-step-focus-per-transition.md"
+    },
+    {
+      "id": "T65",
+      "title": "Sync sad, tracker, test-plan and spec with the fifth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T61",
+        "T62",
+        "T63",
+        "T64"
+      ],
+      "acs": [],
+      "dod": "The sad AC-107 row and Flow 6 heading include the code-check refusal; the tracker table is one table; test-plan names the shell StatusBanner instead of PageFrame; sad flow 2 / screens describe the K9–K10 failure paths and the W12 focus rule as built.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/spec.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t65-docs-sync-r5.md"
+    },
+    {
+      "id": "T66",
+      "title": "Boot signs out a session reopened for an account unlinked meanwhile, and a unit test pins it",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-111"
+      ],
+      "dod": "A unit test fails if BootReconnect stops signing out, closing or destroying (in that order) a session it reopened for an account that was unlinked meanwhile, and shows close and destroy still run when the sign-out throws.",
+      "files_hint": [
+        "backend/app/src/test/kotlin/telex/messaging/internal/lifecycle/BootReconnectTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t66-boot-drop-if-unlinked-signs-out.md"
+    },
+    {
+      "id": "T67",
+      "title": "An interrupted log out unmutes the session, and closing it on an interrupted thread doesn't throw",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122",
+        "AC-113"
+      ],
+      "dod": "A log out that is interrupted while waiting for TDLib leaves the session unmuted (a later Closed is announced), and closing a session on an interrupted thread disposes it without throwing.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessions.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t67-logout-interrupt-unmutes.md"
+    },
+    {
+      "id": "T68",
+      "title": "SCR-02 does not focus the step heading when one step replaces another, and a test pins the guard",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-109",
+        "AC-122"
+      ],
+      "dod": "A component test fails if SCR-02 moves focus to the step heading when one wizard step replaces another (phone to code), while Start again still focuses it.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t68-scr02-no-refocus-between-steps.md"
+    },
+    {
+      "id": "T69",
+      "title": "Sync sad, test-plan, ux-flows, task statuses and T53's AC with the sixth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T66",
+        "T67",
+        "T68"
+      ],
+      "acs": [],
+      "dod": "sad flow 3 says the boot-side sign-out can fail on a destroyed directory and holds the empty-database note; t01-t25 frontmatter matches the tracker; test-plan lists the four unlink failure paths; the ux-flows focus rule matches screens.md; T53's foreign AC is qualified as app-shell/AC-176.",
+      "files_hint": [
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/ux-flows.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t69-docs-sync-r6.md"
+    },
+    {
+      "id": "T70",
+      "title": "An unlink whose sign-out is interrupted still deletes the account and puts the interrupt back only at the end",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink whose sign-out is interrupted deletes the account, answers signOutConfirmed=false, and leaves the thread's interrupt flag set when it returns.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t70-interrupted-unlink-still-deletes.md"
+    },
+    {
+      "id": "T71",
+      "title": "SCR-10 and SCR-60 each pin the start-refused toast for 503 telegram-unavailable",
+      "layer": "ui",
+      "deps": [],
+      "acs": [],
+      "dod": "Both pages have a test that fails if the telegram-unavailable start refusal stops showing its toast or opens the wizard.",
+      "files_hint": [
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t71-start-refused-telegram-unavailable.md"
+    },
+    {
+      "id": "T72",
+      "title": "Correct the AC-121 citations and the interrupted-unlink claims after the seventh review",
+      "layer": "docs",
+      "deps": [
+        "T70",
+        "T71"
+      ],
+      "acs": [],
+      "dod": "No telegram-link artifact cites AC-121 for an unlink behaviour; the test plan, tracker and T67 describe the interrupted unlink as T70's IT proves it. tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/tasks/t62-failed-delete-after-sign-out-state.md",
+        "docs/features/telegram-link/tasks/t67-logout-interrupt-unmutes.md",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightLogOutTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t72-docs-sync-r7.md"
+    },
+    {
+      "id": "T73",
+      "title": "Sign in again refreshes the account's masked phone along with its name",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-108",
+        "AC-117",
+        "AC-01"
+      ],
+      "dod": "After sign in again, the account row holds the masked phone Telegram reports now.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkedAccountRows.kt",
+        "backend/app/src/main/kotlin/telex/messaging/internal/account/LinkCompletion.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/LinkingCompletionIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t73-sign-in-again-refreshes-phone.md"
+    },
+    {
+      "id": "T74",
+      "title": "An unlink deletes the account whatever way an interrupt arrives, and closes and destroys before handing it back",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink deletes the account however an interrupt reaches it during the sign-out, and the session is closed and destroyed before the interrupt is handed back.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/main/kotlin/telex/telegram/internal/fake/FakeTelegram.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t74-unlink-interrupt-edges.md"
+    },
+    {
+      "id": "T75",
+      "title": "The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "Both focus tests pass deterministically, without depending on the real clock. The Inbox case fails if the 503 is treated as a connection failure.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/pages/inbox/InboxPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t75-wait-focus-fake-timers-and-inbox-banner.md"
+    },
+    {
+      "id": "T76",
+      "title": "Sync the data model, test plan and tracker with the eighth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T73",
+        "T74",
+        "T75"
+      ],
+      "acs": [],
+      "dod": "The data model, test plan and tracker describe what T73–T75 prove. tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/data-model.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t76-docs-sync-r8.md"
+    },
+    {
+      "id": "T77",
+      "title": "The SCR-10, SCR-60 and SCR-02 busy states each have a test of their label",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-01",
+        "AC-114",
+        "AC-117",
+        "AC-111",
+        "AC-02",
+        "AC-109"
+      ],
+      "dod": "A test holds each request open and finds the busy label, aria-busy and the disabled sibling buttons for SCR-10 starting, SCR-60 starting and unlinking, and SCR-02 resending and starting-again.",
+      "files_hint": [
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t77-busy-states-tested.md"
+    },
+    {
+      "id": "T78",
+      "title": "An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-111",
+        "AC-113"
+      ],
+      "dod": "An e2e test tagged AC-111 links an account, unlinks it while it is connected, and checks the info Toast and SCR-10's Connect Telegram at both widths.",
+      "files_hint": [
+        "e2e/tests/telegram-link.spec.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t78-unlink-connected-e2e.md"
+    },
+    {
+      "id": "T79",
+      "title": "The SCR-02 wait card shows the retry time in the Owner's zone and counts down from Retry-After",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The wait card's HH:mm uses the Owner's saved time zone, and its countdown runs from when the answer arrived plus Retry-After, whatever the device clock says.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/api/client.ts",
+        "frontend/src/api/client.test.ts",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t79-wait-card-owner-zone-and-skew.md"
+    },
+    {
+      "id": "T80",
+      "title": "The unlink dialog names the chat count in correct English, and leaves it out at zero",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-111"
+      ],
+      "dod": "The SCR-60 unlink dialog reads \"the 1 chat it synced\" for one chat, \"the N chats\" for more, and has no count clause at zero; screens.md matches.",
+      "files_hint": [
+        "frontend/src/messages.ts",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t80-unlink-copy-plural.md"
+    },
+    {
+      "id": "T81",
+      "title": "An unlink takes any pending interrupt just before the delete, including when there is no sign-out",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink deletes the account when the thread is interrupted and the sign-out is skipped (a Session lost account), and the interrupt is handed back at the end.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t81-unlink-interrupt-before-delete.md"
+    },
+    {
+      "id": "T82",
+      "title": "Sync the README, contract, screens, test plan and task files with the ninth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T77",
+        "T78",
+        "T79",
+        "T80",
+        "T81"
+      ],
+      "acs": [],
+      "dod": "The README generates the master key once; the openapi example matches the server; T37 and T49 cite their SCR states; t74/t75 record how they were done; screens.md and test-plan.md describe T77–T81; tasks.json matches every task file.",
+      "files_hint": [
+        "README.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t82-docs-sync-r9.md"
+    },
+    {
+      "id": "T83",
+      "title": "The SCR-02 wait card announces the retry time in the Owner's zone, even when the zone arrives after the card",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The wait card's announcement and visible text both give the retry time in the Owner's saved zone, whenever me arrives.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t83-wait-announcement-owner-zone.md"
+    },
+    {
+      "id": "T84",
+      "title": "The SCR-02 code and password steps' submitting labels each have a test",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-01",
+        "AC-106"
+      ],
+      "dod": "Every SCR-02 submitting label has a component test of its label, aria-busy, read-only field and disabled Cancel.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t84-submitting-busy-labels-tested.md"
+    },
+    {
+      "id": "T85",
+      "title": "Vitest runs in UTC, and a malformed Retry-After falls back to retryAt",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The zone tests hold on any host, and a malformed Retry-After is proven to fall back to retryAt.",
+      "files_hint": [
+        "frontend/vite.config.ts",
+        "frontend/src/api/linking.test.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t85-zone-pinned-and-retry-after-guard.md"
+    },
+    {
+      "id": "T86",
+      "title": "Sync the test plan and task files with the tenth-review fixes, and file T78 under tests",
+      "layer": "docs",
+      "deps": [
+        "T83",
+        "T84",
+        "T85"
+      ],
+      "acs": [],
+      "dod": "T78 is a tests task everywhere; test-plan.md describes T83–T85; tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md",
+        "docs/features/telegram-link/tasks/t78-unlink-connected-e2e.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t86-docs-sync-r10.md"
+    },
+    {
+      "id": "T87",
+      "title": "A chat-list load that failed starts again on the next connection Ready, so sync and live chat changes resume",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122",
+        "AC-36"
+      ],
+      "dod": "A chat-list load that times out or fails is started again on the next connection Ready while the account is authorized; once it completes, later chat changes are stored.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t87-chat-load-retried-on-ready.md"
+    },
+    {
+      "id": "T88",
+      "title": "TDLib's Updating connection state counts as connected, not Reconnecting",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122"
+      ],
+      "dod": "connectionStateUpdating maps to Ready, so an account catching up with Telegram shows Connected; only Connecting, ConnectingToProxy and WaitingForNetwork show Reconnecting.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t88-connection-updating-is-connected.md"
+    },
+    {
+      "id": "T89",
+      "title": "The SCR-02 wait card fills its announcement after the live region is in the page, and leaves it empty until the zone settles",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The role=status region is always inserted empty and filled after mount, once me has settled; tests assert it is empty before me settles and filled after, on both the cached and the late-me paths.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t89-wait-announcement-after-mount.md"
+    },
+    {
+      "id": "T90",
+      "title": "Vitest runs in a non-UTC zone, so the device-zone fallback is tested",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "Vitest pins TZ to Asia/Kathmandu; changing the formatInstant fallback from the device zone to UTC turns a test red.",
+      "files_hint": [
+        "frontend/vite.config.ts",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t90-test-zone-not-utc.md"
+    },
+    {
+      "id": "T91",
+      "title": "Sync the test plan, sad and task files with the eleventh-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T87",
+        "T88",
+        "T89",
+        "T90"
+      ],
+      "acs": [],
+      "dod": "test-plan.md uses the screens.md ended-card copy and describes T87–T90; sad matches the reload and Updating behaviour; tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t91-docs-sync-r11.md"
+    },
+    {
+      "id": "T92",
+      "title": "A chat-list load that fails while the connection stays up is retried after a bounded backoff",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "A chat-list load that stops while the session is authorized and connected is retried once after a bounded backoff (Telegram's retry-after when given), one load at a time, never after close or during teleX's own log out.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t92-chat-load-retried-after-backoff.md"
+    },
+    {
+      "id": "T93",
+      "title": "The chat-load restart's guards and the Updating resume each have a test, and the moved tests leave no dead code",
+      "layer": "tests",
+      "deps": [
+        "T92"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-116",
+        "AC-122"
+      ],
+      "dod": "Removing the syncStarted guard, the authorization guard, or the Updating resume each turns a tdlight test red; a restart is skipped during teleX's own log out; TdlightTelegramSessionsTest has no unused imports or helpers.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t93-chat-load-resume-guards-tested.md"
+    },
+    {
+      "id": "T94",
+      "title": "The SCR-02 wait card announces through a live region that the wizard renders from mount",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "A polite live region is in the page from the wizard's mount, before any wait card; the wait card's start sentence (in the Owner's zone, once me has settled) and the 0:00 sentence are written there through React state, with no imperative textContent write.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t94-wait-announcement-page-live-region.md"
+    },
+    {
+      "id": "T95",
+      "title": "Sync the test plan, sad, screens and task files with the twelfth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T92",
+        "T93",
+        "T94"
+      ],
+      "acs": [],
+      "dod": "test-plan.md describes the backoff retry, the restart guards, the Updating resume and the page-level live region; sad Flow 11 and screens.md SCR-02 wait match; tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t95-docs-sync-r12.md"
+    },
+    {
+      "id": "T96",
+      "title": "The chat-load retry's Telegram retry-after, doubling and caps each have a test",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121"
+      ],
+      "dod": "Ignoring Telegram's retry-after, removing the doubling, or removing the 1–300 s clamp each turns a tdlight test red; test-plan row 88 claims only what the tests show; tasks.json matches every task file.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightChatSyncTest.kt",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t96-chat-load-retry-delay-tested.md"
+    }
+  ]
+}

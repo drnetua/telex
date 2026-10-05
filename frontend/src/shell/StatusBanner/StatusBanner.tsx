@@ -1,23 +1,28 @@
-import { useState, useSyncExternalStore } from "react";
+import { Fragment, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Button } from "../../components/Button/Button";
 import { Icon } from "../../components/Icon/Icon";
 import { messages } from "../../messages";
 import { connectivity, retryNow } from "../connectivity";
-import { orderConditions, type Condition } from "../conditions";
+import {
+  orderConditions,
+  useConditionLives,
+  type Condition,
+  type ConditionAction,
+  type ConditionLive,
+} from "../conditions";
 
 const m = messages.shell.banner;
 
 function Action({
-  condition,
+  action,
   busy,
   onRetry,
 }: {
-  condition: Condition;
+  action: ConditionAction;
   busy: boolean;
   onRetry: () => void;
 }) {
-  const { action } = condition;
   if (action.kind === "link") {
     return (
       <Link to={action.to} className="btn btn-sm btn-secondary">
@@ -25,10 +30,49 @@ function Action({
       </Link>
     );
   }
+  if (action.kind === "button") {
+    return (
+      <Button className="btn-secondary btn-sm" busy={action.busy} onClick={action.onClick}>
+        {action.label}
+      </Button>
+    );
+  }
   return (
     <Button className="btn-secondary btn-sm" busy={busy} onClick={onRetry}>
       {busy ? m.tryingAgain : m.tryAgain}
     </Button>
+  );
+}
+
+/** One condition's line, resolved from the live data the banner holds for its code. */
+function ConditionLine({
+  condition,
+  live,
+  as: Tag,
+  busy,
+  stillDown,
+  onRetry,
+  children,
+}: {
+  condition: Condition;
+  live: ConditionLive;
+  as: "div" | "li";
+  busy: boolean;
+  stillDown: boolean;
+  onRetry: () => void;
+  children?: ReactNode;
+}) {
+  const action = live.action ?? condition.action;
+  // The still-down text belongs to a connectivity failure that survived a retry.
+  const text =
+    action.kind === "retry" && stillDown ? m.stillDown : (live.message ?? condition.message);
+  return (
+    <Tag className="d-flex align-items-center gap-2 flex-wrap">
+      <Icon name={condition.icon} size={20} />
+      <span className="flex-grow-1">{text}</span>
+      {children}
+      <Action action={action} busy={busy} onRetry={onRetry} />
+    </Tag>
   );
 }
 
@@ -43,13 +87,18 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
   const [busy, setBusy] = useState(false);
   const [stillDown, setStillDown] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const lives = useConditionLives(conditions);
 
   if (link === "online" && stillDown) setStillDown(false);
 
-  const codes = link === "online" ? conditions : [link, ...conditions];
+  // Loaded data that contradicts the pulse silences the condition; connectivity codes have no live data.
+  const reported = conditions.filter((code) => !lives.get(code)?.inactive);
+  const codes = link === "online" ? reported : [link, ...reported];
+  const notices = Array.from(lives, ([code, live]) => (
+    <Fragment key={code}>{live.notice}</Fragment>
+  ));
   const ordered = orderConditions(codes);
   const [top, ...rest] = ordered;
-  if (!top) return <div role="status" />;
 
   const onRetry = () => {
     setBusy(true);
@@ -59,39 +108,49 @@ export function StatusBanner({ conditions }: StatusBannerProps) {
       .finally(() => setBusy(false));
   };
 
-  // The still-down text belongs to a connectivity failure that survived a retry.
-  const text =
-    link !== "online" && top.action.kind === "retry" && stillDown ? m.stillDown : top.message;
-
+  // One stable structure: the notices keep their position (and so their DOM nodes) when the condition line comes or
+  // goes, so a refusal Toast is never remounted and announced twice.
   return (
     <div role="status">
-      <div className="alert alert-warning rounded-0 mb-0 border-0">
-        <div className="d-flex align-items-center gap-2 flex-wrap">
-          <Icon name={top.icon} size={20} />
-          <span className="flex-grow-1">{text}</span>
-          {rest.length > 0 ? (
-            <Button
-              className="btn-link"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {m.more(rest.length)}
-            </Button>
+      {top ? (
+        <div className="alert alert-warning rounded-0 mb-0 border-0">
+          <ConditionLine
+            key={top.code}
+            condition={top}
+            live={lives.get(top.code) ?? {}}
+            as="div"
+            busy={busy}
+            stillDown={stillDown}
+            onRetry={onRetry}
+          >
+            {rest.length > 0 ? (
+              <Button
+                className="btn-link"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((v) => !v)}
+              >
+                {m.more(rest.length)}
+              </Button>
+            ) : null}
+          </ConditionLine>
+          {expanded && rest.length > 0 ? (
+            <ul className="list-unstyled mb-0 mt-2 d-flex flex-column gap-2">
+              {rest.map((condition) => (
+                <ConditionLine
+                  key={condition.code}
+                  condition={condition}
+                  live={lives.get(condition.code) ?? {}}
+                  as="li"
+                  busy={busy}
+                  stillDown={false}
+                  onRetry={onRetry}
+                />
+              ))}
+            </ul>
           ) : null}
-          <Action condition={top} busy={busy} onRetry={onRetry} />
         </div>
-        {expanded && rest.length > 0 ? (
-          <ul className="list-unstyled mb-0 mt-2 d-flex flex-column gap-2">
-            {rest.map((condition) => (
-              <li key={condition.code} className="d-flex align-items-center gap-2 flex-wrap">
-                <Icon name={condition.icon} size={20} />
-                <span className="flex-grow-1">{condition.message}</span>
-                <Action condition={condition} busy={busy} onRetry={onRetry} />
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
+      ) : null}
+      {notices}
     </div>
   );
 }

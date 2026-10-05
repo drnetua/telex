@@ -8,6 +8,16 @@ export interface FieldError {
   message: string;
 }
 
+/** Problem extensions of telegram-link. */
+export interface ProblemExtras {
+  retryAt?: string;
+  /** The `Retry-After` header: seconds to wait from when the answer arrived, free of clock skew. */
+  retryAfterSeconds?: number;
+  passwordHint?: string | null;
+  limit?: number;
+  step?: "phone" | "code" | "password";
+}
+
 export class ApiFailure extends Error {
   constructor(
     readonly status: number,
@@ -16,6 +26,7 @@ export class ApiFailure extends Error {
     readonly attemptsLeft?: number,
     readonly email?: string,
     readonly errors: FieldError[] = [],
+    readonly extras: ProblemExtras = {},
   ) {
     super(`${status} ${code}`);
   }
@@ -40,7 +51,12 @@ export function isConnectivityStatus(status: number): boolean {
   return status === 0 || status === 502 || status === 503 || status === 504;
 }
 
+/** 503 refusals a screen shows where the Owner chose the action (AC-119); they never take over the app. */
+const SCREEN_HANDLED_503 = ["telegram-linking-not-set-up", "telegram-unavailable"];
+
 function routeFor(status: number, code: string): FailureRoute | undefined {
+  // A domain 503 is an answer from teleX, not a connectivity failure, so it is checked first.
+  if (status === 503 && SCREEN_HANDLED_503.includes(code)) return undefined;
   if (isConnectivityStatus(status)) {
     if (!isShellActive()) return "unavailable";
     connectivity.reportNoAnswer();
@@ -50,6 +66,11 @@ function routeFor(status: number, code: string): FailureRoute | undefined {
   if (status === 401 && code === "session-ended") return "session-ended";
   if (status === 403 || status >= 500) return "unavailable";
   return undefined;
+}
+
+function retryAfter(response: Response): number | undefined {
+  const value = response.headers.get("Retry-After");
+  return value !== null && /^\d+$/.test(value.trim()) ? Number(value.trim()) : undefined;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,14 +96,15 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     return (response.status === 204 ? undefined : await response.clone().json()) as T;
   }
   let code = "internal-error";
-  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } = {};
+  let problem: { attemptsLeft?: number; email?: string; errors?: FieldError[] } & ProblemExtras =
+    {};
   try {
     const body = (await response.json()) as {
       code?: string;
       attemptsLeft?: number;
       email?: string;
       errors?: FieldError[];
-    };
+    } & ProblemExtras;
     code = body.code ?? code;
     problem = body;
   } catch {
@@ -95,5 +117,12 @@ export async function apiFetch<T = any>(url: string, options: ApiOptions = {}): 
     problem.attemptsLeft,
     problem.email,
     Array.isArray(problem.errors) ? problem.errors : [],
+    {
+      retryAt: problem.retryAt,
+      retryAfterSeconds: retryAfter(response),
+      passwordHint: problem.passwordHint,
+      limit: problem.limit,
+      step: problem.step,
+    },
   );
 }

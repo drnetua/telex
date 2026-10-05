@@ -21,6 +21,10 @@ spotless = "8.10.3"
 swagger-request-validator = "3.0.0"
 # https://mvnrepository.com/artifact/org.wiremock/wiremock-standalone
 wiremock = "3.13.1"
+# https://mvn.mchv.eu/repository/mchv/it/tdlight/tdlight-java/ (the pair tdlight-java-bom 3.5.5 pins with the natives)
+tdlight-java = "3.5.5+td.1.8.66"
+# https://mvn.mchv.eu/repository/mchv/it/tdlight/tdlight-natives/
+tdlight-natives = "4.0.591"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -58,3 +62,6 @@ testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-jun
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 swagger-request-validator-core = { module = "com.atlassian.oai:swagger-request-validator-core", version.ref = "swagger-request-validator" }
 wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+tdlight-java = { module = "it.tdlight:tdlight-java", version.ref = "tdlight-java" }
+tdlight-natives = { module = "it.tdlight:tdlight-natives", version.ref = "tdlight-natives" }

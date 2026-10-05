@@ -4,6 +4,7 @@
 services:
   app:
     build: .
+    image: ${TELEX_APP_IMAGE:-telex-app}
     ports:
       - "8080:8080"
     environment:
@@ -13,6 +14,17 @@ services:
       TELEX_MAIL_HOST: mailpit
       TELEX_MAIL_PORT: "1025"
       TELEX_PUBLIC_URL: ${TELEX_PUBLIC_URL:-http://localhost:8080}
+      # Telegram linking stays "not set up" until the Operator gives these (README, "Telegram setup").
+      # `fake` replaces Telegram with an in-memory stand-in (the e2e suite); never for real use.
+      TELEX_TELEGRAM_ADAPTER: ${TELEX_TELEGRAM_ADAPTER:-tdlight}
+      TELEX_TELEGRAM_API_ID: ${TELEX_TELEGRAM_API_ID:-}
+      TELEX_TELEGRAM_API_HASH: ${TELEX_TELEGRAM_API_HASH:-}
+      TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER: ${TELEX_TELEGRAM_MAX_ACCOUNTS_PER_OWNER:-3}
+      TELEX_MASTER_KEY: ${TELEX_MASTER_KEY:-}
+      TELEX_MASTER_KEY_RESET: ${TELEX_MASTER_KEY_RESET:-false}
+      TELEX_TELEGRAM_SESSIONS_DIR: /var/lib/telex/tdlib
+    volumes:
+      - telex-tdlib:/var/lib/telex/tdlib
     # `docker compose up --wait` (CI e2e, smoke script) returns only once the app answers. The JRE image has no curl
     # and its sh has no /dev/tcp, so the probe is a plain HTTP request over bash.
     healthcheck:
@@ -33,6 +45,41 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+
+  # Second installation on :8081 started without Telegram app credentials (the e2e suite checks AC-119 against it).
+  # Same image and database as `app`, so it starts only once `app` has migrated: `--profile unconfigured`.
+  app-unconfigured:
+    profiles: [unconfigured]
+    image: ${TELEX_APP_IMAGE:-telex-app}
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: "8081"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/telex
+      SPRING_DATASOURCE_USERNAME: telex
+      SPRING_DATASOURCE_PASSWORD: telex
+      TELEX_MAIL_HOST: mailpit
+      TELEX_MAIL_PORT: "1025"
+      TELEX_PUBLIC_URL: http://localhost:8081
+      TELEX_TELEGRAM_ADAPTER: fake
+      TELEX_MASTER_KEY: ${TELEX_MASTER_KEY:-}
+      TELEX_TELEGRAM_SESSIONS_DIR: /var/lib/telex/tdlib-unconfigured
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8081 &&
+          printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 &&
+          head -n 1 <&3 | grep -q ' 200 '
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
 
   mailpit:
     image: axllent/mailpit
@@ -58,3 +105,4 @@ services:
 
 volumes:
   postgres-data:
+  telex-tdlib:

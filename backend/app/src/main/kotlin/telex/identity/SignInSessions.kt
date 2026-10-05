@@ -94,6 +94,13 @@ class SignInSessions(
         }
     }
 
+    /** Whether the session is live now (not ended, within the idle and age limits); never bumps activity. */
+    @Transactional(readOnly = true)
+    fun isLive(id: SignInSessionId): Boolean {
+        val now = clock.instant()
+        return rows.isLive(id, now.minus(IDLE_LIMIT), now.minus(MAX_AGE))
+    }
+
     @Transactional
     fun endByKey(key: String?) {
         if (key != null) rows.endByKeyHash(Secrets.sha256(key), clock.instant())

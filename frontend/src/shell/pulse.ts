@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ApiFailure, apiFetch, isConnectivityStatus } from "../api/client";
-import { connectivity } from "./connectivity";
+import { connectivity, isShellActive } from "./connectivity";
 
 export interface Pulse {
   inboxCount: number;
@@ -24,12 +24,19 @@ export async function fetchPulse(): Promise<Pulse> {
     return pulse;
   } catch (error) {
     if (error instanceof ApiFailure) {
-      if (isConnectivityStatus(error.status)) connectivity.reportNoAnswer();
-      else if (error.status >= 500) {
-        // AC-176 limits the full page to actions: a pulse 5xx is "not responding", the screen stays.
+      // A background pulse never takes over a screen (AC-122, AC-176): connectivity failures and 5xx are
+      // "not responding" on the banner, whether or not the shell is mounted (SCR-02 has none), so the
+      // rethrown failure carries no route. Sign-in / session-ended keep theirs.
+      if (isConnectivityStatus(error.status) || error.status >= 500) {
         connectivity.reportNoAnswer();
         throw new ApiFailure(error.status, error.code);
-      } else connectivity.reportAnswered();
+      }
+      connectivity.reportAnswered();
+      // Inside the shell any other answered failure (a 403) keeps its route: SCR-93 with Retry (app-shell screens.md).
+      // Where the shell is not mounted (SCR-02) it must not take over the wizard.
+      if (!isShellActive() && error.route !== "sign-in" && error.route !== "session-ended") {
+        throw new ApiFailure(error.status, error.code);
+      }
     }
     throw error;
   }

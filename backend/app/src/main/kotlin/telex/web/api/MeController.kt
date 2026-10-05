@@ -13,6 +13,7 @@ import telex.identity.OwnerProfiles
 import telex.identity.Preferences
 import telex.identity.SignedInOwner
 import telex.identity.Theme
+import telex.messaging.LinkedAccounts
 import telex.shared.DomainProblem
 import telex.shared.FieldProblem
 import java.util.UUID
@@ -46,6 +47,7 @@ private val changeableKeys = setOf("theme", "timeZone")
 class MeController(
     private val profiles: OwnerProfiles,
     private val preferences: OwnerPreferences,
+    private val accounts: LinkedAccounts,
 ) {
     @GetMapping
     fun me(
@@ -57,7 +59,7 @@ class MeController(
         return MeBody(
             me.ownerId.value,
             me.email,
-            me.linkedAccountCount,
+            accounts.countMine(principal.ownerId),
             me.theme.wire,
             me.timeZone,
             me.timeZoneIsFallback,

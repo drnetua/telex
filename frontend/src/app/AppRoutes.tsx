@@ -9,7 +9,7 @@ import { SignInPage } from "../pages/sign-in/SignInPage";
 import { NotFoundPage } from "../pages/system/NotFoundPage";
 import { SessionEndedPage } from "../pages/system/SessionEndedPage";
 import { sections, type SectionId } from "../shell/sections";
-import { AppLayout, AuthLayout, BareSystemLayout } from "./layouts";
+import { AppLayout, AuthLayout, BareSystemLayout, OnboardingLayout } from "./layouts";
 import { SectionRoute } from "./SectionRoute";
 
 type Loader = () => Promise<{ default: ComponentType }>;
@@ -32,6 +32,14 @@ const profile: Loader = () =>
     default: m.ProfileSecurityPage,
   }));
 
+const accounts: Loader = () =>
+  import("../pages/accounts/AccountsPage").then((m) => ({ default: m.AccountsPage }));
+
+const connectTelegram: Loader = () =>
+  import("../pages/connect-telegram/ConnectTelegramPage").then((m) => ({
+    default: m.ConnectTelegramPage,
+  }));
+
 /** One stable loader per section, generated from the registry. */
 const sectionLoaders = sections.map((s) => ({
   section: s,
@@ -50,6 +58,12 @@ export function AppRoutes() {
         <Route path="/sign-in/link" element={<ConfirmLinkPage />} />
         <Route path="/welcome/passkey" element={<CreatePasskeyPage />} />
       </Route>
+      <Route element={<OnboardingLayout />}>
+        <Route
+          path="/connect-telegram"
+          element={<SectionRoute key="connect-telegram" load={connectTelegram} />}
+        />
+      </Route>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
         {sectionLoaders.map(({ section, load }) => (
@@ -59,6 +73,7 @@ export function AppRoutes() {
             element={<SectionRoute key={section.id} load={load} />}
           />
         ))}
+        <Route path="/accounts" element={<SectionRoute key="accounts" load={accounts} />} />
         <Route path="/profile" element={<SectionRoute key="profile" load={profile} />} />
       </Route>
       {/* ModelsPage frames itself (AppFrame) so that SCR-91 can render bare, outside the app frame. */}

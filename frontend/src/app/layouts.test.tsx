@@ -1,8 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { readFileSync, statSync } from "node:fs";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { AppRoutes } from "./AppRoutes";
+import { createAppQueryClient } from "./queryClient";
+import { FailureBoundary } from "./FailureBoundary";
+import { resetConnectivity } from "../shell/connectivity";
 import { AppLayout, AuthLayout } from "./layouts";
 
 describe("layouts (AC-83, AC-100)", () => {
@@ -70,5 +74,215 @@ describe("layouts (AC-83, AC-100)", () => {
     expect(await screen.findByRole("navigation", { name: "Main" })).toBeInTheDocument();
     expect(screen.getByText("content")).toBeInTheDocument();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("SCR-02 onboarding layout (AC-01, S10)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetConnectivity();
+  });
+
+  const lost = {
+    id: "a1",
+    displayName: "Anna",
+    phone: { countryCode: "380", lastDigits: "42" },
+    state: "session_lost",
+    chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+    linkedAt: "x",
+  };
+
+  function renderConnect(conditions: string[]) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("linking-attempt"))
+          return Promise.resolve(
+            new Response("{}", {
+              status: 404,
+              headers: { "Content-Type": "application/problem+json" },
+            }),
+          );
+        const body = url.includes("pulse") ? { inboxCount: 0, conditions } : { items: [lost] };
+        return Promise.resolve(
+          new Response(JSON.stringify(body), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }),
+    );
+    return render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/connect-telegram"]}>
+          <AppRoutes />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  }
+
+  it("renders /connect-telegram in the onboarding card: logo, no app shell, the shell's banner above the card", async () => {
+    const { container } = renderConnect(["account-disconnected"]);
+    expect(screen.getByRole("img", { name: "teleX" })).toHaveAttribute("width", "96");
+    expect(container.querySelector("header.navbar")).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
+    expect(screen.getAllByRole("status").filter((e) => e.textContent)).toHaveLength(1);
+    const card = container.querySelector(".card");
+    expect(card).not.toBeNull();
+    expect(container.querySelectorAll(".card")).toHaveLength(1);
+    expect(banner.compareDocumentPosition(card!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it.each([
+    ["a pulse that gets no answer", () => Promise.reject(new TypeError("network"))],
+    ["a pulse answered 502", () => Promise.resolve(new Response("{}", { status: 502 }))],
+    ["a pulse answered 503", () => Promise.resolve(new Response("{}", { status: 503 }))],
+    ["a pulse answered 504", () => Promise.resolve(new Response("{}", { status: 504 }))],
+  ])("AC-122: %s keeps the wizard and shows the banner, never SCR-93", async (_n, pulse) => {
+    // The wizard is on screen before the pulse fails (a failed pulse pauses queries that start later).
+    let attemptLoaded: () => void = () => undefined;
+    const loaded = new Promise<void>((resolve) => (attemptLoaded = resolve));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("pulse")) return loaded.then(pulse);
+        if (url.includes("linking-attempt")) {
+          setTimeout(attemptLoaded, 100);
+          return Promise.resolve(
+            Response.json({
+              step: "phone",
+              origin: "inbox",
+              targetLinkedAccountId: null,
+              codeLength: null,
+              passwordHint: null,
+            }),
+          );
+        }
+        return Promise.resolve(Response.json({ items: [] }));
+      }),
+    );
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <MemoryRouter initialEntries={["/connect-telegram"]}>
+          <FailureBoundary>
+            <AppRoutes />
+          </FailureBoundary>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("teleX isn't responding.")).toBeVisible();
+    expect(await screen.findByLabelText("Phone number")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "teleX is unavailable" })).toBeNull();
+  });
+
+  it("shows no banner on SCR-02 when the pulse reports no condition", async () => {
+    renderConnect([]);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("pulse"), expect.anything()),
+    );
+    expect(screen.queryByText(/Anna.s Telegram is disconnected/)).toBeNull();
+  });
+});
+
+describe("AppLayout with Linked Accounts (AC-122)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows the Session lost banner from the pulse inside the shell, above the page", async () => {
+    const lost = {
+      id: "a1",
+      displayName: "Anna",
+      phone: { countryCode: "380", lastDigits: "42" },
+      state: "session_lost",
+      chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+      linkedAt: "x",
+    };
+    const body = (url: string) =>
+      url.includes("linked-accounts")
+        ? { items: [lost] }
+        : url.includes("pulse")
+          ? { inboxCount: 0, conditions: ["account-disconnected"] }
+          : { ownerId: "o1", email: "me@example.com", theme: "system", linkedAccountCount: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) =>
+        Promise.resolve(
+          new Response(JSON.stringify(body(String(input))), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      ),
+    );
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/inbox"]}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/inbox" element={<h1>Inbox page</h1>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const banner = await screen.findByText(/Anna.s Telegram is disconnected/);
+    expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
+    const page = screen.getByRole("heading", { name: "Inbox page" });
+    expect(banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in again" })).toBeEnabled();
+  });
+
+  it("renders no page-level banner and no empty wrapper when the pulse reports no condition", async () => {
+    const lost = {
+      id: "a1",
+      displayName: "Anna",
+      phone: { countryCode: "380", lastDigits: "42" },
+      state: "session_lost",
+      chatSync: { chatsSynced: 0, chatsTotal: null, completedAt: null },
+      linkedAt: "x",
+    };
+    const body = (url: string) =>
+      url.includes("linked-accounts")
+        ? { items: [lost] }
+        : url.includes("pulse")
+          ? { inboxCount: 0, conditions: [] }
+          : { ownerId: "o1", email: "me@example.com", theme: "system", linkedAccountCount: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: RequestInfo | URL) =>
+        Promise.resolve(
+          new Response(JSON.stringify(body(String(input))), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      ),
+    );
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/inbox"]}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/inbox" element={<h1>Inbox page</h1>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const page = await screen.findByRole("heading", { name: "Inbox page" });
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("pulse"), expect.anything()),
+    );
+    expect(screen.queryByText(/Anna.s Telegram is disconnected/)).toBeNull();
+    expect(page.previousElementSibling).toBeNull();
   });
 });

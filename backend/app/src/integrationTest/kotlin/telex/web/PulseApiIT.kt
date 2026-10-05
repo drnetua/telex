@@ -24,6 +24,7 @@ import java.net.http.HttpResponse
 import java.sql.Timestamp
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 
 /** Shared plumbing for the pulse ITs: Owners, sessions and contract-checked calls against the app-shell contract. */
 abstract class PulseApiSupport(
@@ -42,6 +43,7 @@ abstract class PulseApiSupport(
     @BeforeEach
     fun reset() {
         clock.set(Instant.parse("2026-10-02T14:00:00Z"))
+        jdbc.execute("DELETE FROM linked_account")
         jdbc.execute("DELETE FROM sign_in_session")
         jdbc.execute("DELETE FROM owner")
     }
@@ -82,6 +84,27 @@ abstract class PulseApiSupport(
         return response
     }
 
+    protected fun ownerOf(email: String): OwnerId = owners.findOrCreate(email, email, clock.instant()).first
+
+    protected fun insertAccount(
+        owner: OwnerId,
+        telegramUserId: Long,
+        state: String,
+    ) {
+        val lost = state == "session_lost"
+        jdbc.update(
+            "INSERT INTO linked_account (id, owner_id, telegram_user_id, telegram_session_id, tdlib_key_sealed, " +
+                "display_name, phone_country_code, phone_last_digits, state, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, 'Work', '99', '00', ?, now())",
+            UUID.randomUUID(),
+            owner.value,
+            telegramUserId,
+            if (lost) null else UUID.randomUUID(),
+            if (lost) null else ByteArray(SEALED_BYTES) { 1 },
+            state,
+        )
+    }
+
     protected fun pulse(key: String?) = call("GET", "/api/v1/pulse", key, background = true)
 }
 
@@ -97,6 +120,19 @@ class PulseApiIT(
 
         assertThat(r.statusCode()).isEqualTo(200)
         assertThat(r.body()).contains("\"inboxCount\":0", "\"conditions\":[]")
+    }
+
+    @Test
+    fun `AC-122 the pulse reports account-disconnected for the Owner with a Session lost account only`() {
+        val lost = start("lost@mail.com")
+        val other = start("other@mail.com")
+        val connected = start("connected@mail.com")
+        insertAccount(ownerOf("lost@mail.com"), 1001, "session_lost")
+        insertAccount(ownerOf("connected@mail.com"), 1002, "connected")
+
+        assertThat(pulse(lost.key).body()).contains("\"conditions\":[\"account-disconnected\"]")
+        assertThat(pulse(other.key).body()).contains("\"conditions\":[]")
+        assertThat(pulse(connected.key).body()).contains("\"conditions\":[]")
     }
 
     @Test
@@ -212,3 +248,5 @@ class PulseFixtureApiIT(
         assertThat(r.statusCode()).isEqualTo(401)
     }
 }
+
+private const val SEALED_BYTES = 60

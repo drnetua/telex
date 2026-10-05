@@ -2,10 +2,13 @@ import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.TELEX_BASE_URL ?? "http://localhost:8080";
 
-// The suite runs against `docker compose -f compose.yaml -f compose.e2e.yaml up` (app :8080, Mailpit :8025, `e2e` Spring
-// profile on); it does not start the stack.
+// The suite runs against `docker compose -f compose.yaml -f compose.e2e.yaml --profile unconfigured up` (app :8080 with
+// the `e2e` Spring profile, the installation without Telegram credentials :8081 for AC-119, Mailpit :8025); it does
+// not start the stack.
 export default defineConfig({
   testDir: "./tests",
+  // claims unique Telegram test numbers for the whole run (support/telegram.ts)
+  globalSetup: "./support/global-setup.ts",
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,

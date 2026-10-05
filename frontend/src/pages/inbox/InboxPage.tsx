@@ -1,38 +1,75 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { useMe } from "../../api/account";
-import { EmptyState } from "../../components/EmptyState/EmptyState";
-import { LoadState } from "../../components/LoadState/LoadState";
+import { useNavigate } from "react-router";
+import { refusalFor } from "../../api/linkingRefusal";
+import { useLinkedAccounts } from "../../api/linkedAccounts";
+import { linkingAttemptKey, useStartLinking } from "../../api/linking";
 import { Button } from "../../components/Button/Button";
+import { EmptyState } from "../../components/EmptyState/EmptyState";
+import { LinkedAccountSummary } from "../../components/LinkedAccountSummary/LinkedAccountSummary";
+import { LoadState } from "../../components/LoadState/LoadState";
 import { Toast } from "../../components/Toast/Toast";
 import { messages } from "../../messages";
+import { useArrivalToast } from "../useArrivalToast";
 
 export function InboxPage() {
-  const me = useMe();
-  const [toastShown, setToastShown] = useState(false);
-  const dismiss = useCallback(() => setToastShown(false), []);
+  const accounts = useLinkedAccounts();
+  const start = useStartLinking();
+  const client = useQueryClient();
+  const navigate = useNavigate();
   const text = messages.inbox;
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const dismissRefusal = useCallback(() => setRefusal(null), []);
+  const { arrival, dismiss: dismissArrival } = useArrivalToast();
 
-  if (!me.data) return <LoadState state="loading" />;
+  const connect = () => {
+    setRefusal(null);
+    start.mutate(
+      { origin: "inbox" },
+      {
+        onSuccess: (attempt) => {
+          client.setQueryData(linkingAttemptKey, attempt);
+          void navigate("/connect-telegram");
+        },
+        onError: (error) => {
+          const message = refusalFor(error);
+          if (message) setTimeout(() => setRefusal(message), 0);
+        },
+      },
+    );
+  };
+
+  if (!accounts.data) return <LoadState state="loading" />;
   return (
     <>
       <h1 className="page-title mb-4">{text.title}</h1>
-      <EmptyState
-        kind="first"
-        icon="brand-telegram"
-        action={
-          <Button
-            onClick={() => {
-              setToastShown(false);
-              setTimeout(() => setToastShown(true), 0);
-            }}
-          >
-            {text.connect}
-          </Button>
-        }
-      >
-        {text.empty}
-      </EmptyState>
-      {toastShown ? <Toast message={text.note} onDismiss={dismiss} /> : null}
+      {accounts.data.length === 0 ? (
+        <EmptyState
+          kind="first"
+          icon="brand-telegram"
+          action={
+            <Button busy={start.isPending} onClick={connect}>
+              {start.isPending ? messages.linking.starting : text.connect}
+            </Button>
+          }
+        >
+          {text.empty}
+        </EmptyState>
+      ) : (
+        <div className="card">
+          <div className="list-group list-group-flush">
+            {accounts.data.map((account) => (
+              <div className="list-group-item" key={account.id}>
+                <LinkedAccountSummary account={account} variant="line" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {arrival ? (
+        <Toast message={arrival.message} tone={arrival.tone} onDismiss={dismissArrival} />
+      ) : null}
+      {refusal ? <Toast message={refusal} tone="error" onDismiss={dismissRefusal} /> : null}
     </>
   );
 }

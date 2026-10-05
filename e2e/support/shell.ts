@@ -26,6 +26,7 @@ export const unbuiltSections = sectionList.filter((s) => !s.built);
 export const shellScreens = [
   ...sectionList.map((s) => ({ name: s.name, path: s.path as string })),
   { name: "Profile and security", path: "/profile" },
+  { name: "Accounts", path: "/accounts" },
 ];
 
 /** The 5 s budget for the counter and the banners (spec §6). */

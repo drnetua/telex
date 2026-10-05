@@ -1,10 +1,25 @@
+import type { ReactNode } from "react";
 import type { IconName } from "../components/Icon/Icon";
 import { messages } from "../messages";
+import { useAccountDisconnected } from "./accountDisconnected";
 
 const c = messages.shell.banner;
 
-/** What a condition offers: retry the connection, or go somewhere to fix the cause. */
-export type ConditionAction = { kind: "retry" } | { kind: "link"; label: string; to: string };
+/** What a condition offers: retry the connection, go somewhere to fix the cause, or run its own action. */
+export type ConditionAction =
+  | { kind: "retry" }
+  | { kind: "link"; label: string; to: string }
+  | { kind: "button"; label: string; onClick: () => void; busy?: boolean };
+
+/** What a condition resolves at render time from live data; whatever it leaves out falls back to the catalog. */
+export interface ConditionLive {
+  message?: string;
+  action?: ConditionAction;
+  /** Loaded data says the condition no longer holds, whatever the pulse still reports: the banner drops it. */
+  inactive?: boolean;
+  /** Rendered with the banner, e.g. a Toast for a refused action; it outlives the condition's line. */
+  notice?: ReactNode;
+}
 
 export interface Condition {
   code: string;
@@ -26,9 +41,9 @@ const catalog: readonly Entry[] = [
   { code: "not-responding", icon: "cloud-off", message: c.conditions.notResponding, action: retry },
   {
     code: "account-disconnected",
-    icon: "wifi-off",
+    icon: "alert-circle",
     message: c.conditions.accountDisconnected,
-    action: { kind: "link", label: c.actions.reconnect, to: "/settings" },
+    action: { kind: "link", label: messages.banner.openAccounts, to: "/accounts" },
   },
   {
     code: "bot-blocked",
@@ -61,6 +76,16 @@ const catalog: readonly Entry[] = [
     action: { kind: "link", label: c.actions.details, to: "/inbox" },
   },
 ].map((entry, importance) => ({ ...entry, importance }) as Entry);
+
+/**
+ * Live data per condition code. The banner calls this once, so a condition's mutation state and Toast survive the
+ * line being outranked or dropped mid-action (ADR-0006 amendment). A later epic adds its hook here.
+ */
+export function useConditionLives(codes: readonly string[]): ReadonlyMap<string, ConditionLive> {
+  // The list is fetched only while the pulse reports the condition, so other screens never depend on it.
+  const accountDisconnected = useAccountDisconnected(codes.includes("account-disconnected"));
+  return new Map([["account-disconnected", accountDisconnected]]);
+}
 
 const byCode = new Map(catalog.map((e) => [e.code, e]));
 const logged = new Set<string>();

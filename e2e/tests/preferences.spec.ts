@@ -351,7 +351,10 @@ test("AC-184: picking Kyiv saves it, dates follow it, and another device shows i
   await searchBox(picker).fill("Kyiv");
   await picker.getByRole("option", { name: /Europe\/Kyiv/ }).click();
   await expect(
-    first.page.getByRole("status").filter({ hasText: "Time zone saved." }),
+    // an info Toast is written into the persistent polite live region (Toast.tsx)
+    first.page
+      .locator("[aria-live=polite]")
+      .filter({ hasText: "Time zone saved." }),
   ).toBeVisible();
   await expect(zoneCard(first.page)).toContainText("Europe/Kyiv");
   await expect(first.page.getByText("Created 1 Jan 2026")).toBeVisible();

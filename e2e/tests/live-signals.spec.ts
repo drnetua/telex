@@ -15,7 +15,9 @@ const OFFLINE =
   "You're offline. teleX will update when your connection is back.";
 const NOT_RESPONDING = "teleX isn't responding.";
 const STILL_DOWN = "Still can't reach teleX. It keeps trying on its own.";
-const DISCONNECTED = "Your account is disconnected from Telegram.";
+// A fixture code with no live data: the account-disconnected banner is dropped once the (empty) Linked Account list
+// loads (telegram-link screens.md, AC-122), so AC-178 orders the next code in the catalog.
+const BOT_BLOCKED = "The teleX bot is blocked in Telegram.";
 const BUDGET = "Your assistant budget is used up.";
 
 /** Marks this document so a later check can tell a reload from live updates. */
@@ -302,11 +304,13 @@ test("AC-178: fixture conditions alone show the most important one with +N more"
   await signUp(page);
   await setPulseFixture(page, {
     inboxCount: 0,
-    conditions: ["budget-exhausted", "account-disconnected"],
+    conditions: ["budget-exhausted", "bot-blocked"],
   });
-  const banner = bannerOf(page, DISCONNECTED);
+  const banner = bannerOf(page, BOT_BLOCKED);
   await expect(banner).toBeVisible({ timeout: SIGNAL_BUDGET_MS });
-  await expect(banner.getByRole("link", { name: "Reconnect" })).toBeVisible();
+  await expect(
+    banner.getByRole("link", { name: "Open bot settings" }),
+  ).toBeVisible();
   await expect(banner.getByRole("button", { name: "+1 more" })).toBeVisible();
 
   await setPulseFixture(page, { inboxCount: 0, conditions: [] });
@@ -320,22 +324,24 @@ test("AC-178: offline outranks fixture conditions, and +2 more lists the others 
   await signUp(page);
   await setPulseFixture(page, {
     inboxCount: 0,
-    conditions: ["account-disconnected", "budget-exhausted"],
+    conditions: ["bot-blocked", "budget-exhausted"],
   });
-  await expect(bannerOf(page, DISCONNECTED)).toBeVisible({
+  await expect(bannerOf(page, BOT_BLOCKED)).toBeVisible({
     timeout: SIGNAL_BUDGET_MS,
   });
 
   await context.setOffline(true);
   const banner = bannerOf(page, OFFLINE);
   await expect(banner).toBeVisible({ timeout: SIGNAL_BUDGET_MS });
-  await expect(banner.getByText(DISCONNECTED)).toHaveCount(0);
+  await expect(banner.getByText(BOT_BLOCKED)).toHaveCount(0);
 
   await banner.getByRole("button", { name: "+2 more" }).click();
   const list = banner.getByRole("list");
-  await expect(list.getByText(DISCONNECTED)).toBeVisible();
+  await expect(list.getByText(BOT_BLOCKED)).toBeVisible();
   await expect(list.getByText(BUDGET)).toBeVisible();
-  await expect(list.getByRole("link", { name: "Reconnect" })).toBeVisible();
+  await expect(
+    list.getByRole("link", { name: "Open bot settings" }),
+  ).toBeVisible();
   await expect(list.getByRole("link", { name: "Open budget" })).toBeVisible();
   await expect(
     banner.getByRole("button", { name: /close|dismiss/i }),

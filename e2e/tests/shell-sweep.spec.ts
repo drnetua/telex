@@ -49,12 +49,12 @@ for (const theme of themes) {
     await setTheme(page, theme);
     await setPulseFixture(page, {
       inboxCount: 120,
-      conditions: ["account-disconnected", "budget-exhausted"],
+      conditions: ["bot-blocked", "budget-exhausted"],
     });
     for (const screen of shellScreens) {
       await page.goto(screen.path);
       await expect(
-        page.getByText("Your account is disconnected from Telegram."),
+        page.getByText("The teleX bot is blocked in Telegram."),
       ).toBeVisible();
       await expect(page.getByRole("button", { name: "+1 more" })).toBeVisible();
       await expect(

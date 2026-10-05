@@ -1,0 +1,316 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
+import { ApiFailure } from "../../api/client";
+import { refusalFor } from "../../api/linkingRefusal";
+import {
+  formatMaskedPhone,
+  linkedAccountsKey,
+  listMyLinkedAccounts,
+  useLinkedAccounts,
+} from "../../api/linkedAccounts";
+import {
+  cancelMyLinkingAttempt,
+  getMyLinkingAttempt,
+  linkingAttemptKey,
+  type LinkingAttempt,
+  type LinkingOrigin,
+  startMyLinkingAttempt,
+  useLinkingAttempt,
+} from "../../api/linking";
+import { LoadState } from "../../components/LoadState/LoadState";
+import { Toast } from "../../components/Toast/Toast";
+import { messages } from "../../messages";
+import { routeFailure } from "../auth/failure";
+import { CodeStep } from "./CodeStep";
+import { PasswordStep } from "./PasswordStep";
+import { PhoneStep } from "./PhoneStep";
+import { AttemptEndedState, LoadFailedState, RefusedState, WaitState } from "./Outcomes";
+import { REFUSAL_CODES, type Outcome, type RefusalCode } from "./outcome";
+import { endsAttempt, type FinishedResult } from "./steps";
+
+interface Notice {
+  message: string;
+  tone: "info" | "error";
+}
+
+function Title({ attempt, focus }: { attempt: LinkingAttempt; focus: number }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focus > 0) heading.current?.focus();
+  }, [focus]);
+  const accounts = useLinkedAccounts();
+  const target = attempt.targetLinkedAccountId
+    ? accounts.data?.find((a) => a.id === attempt.targetLinkedAccountId)
+    : undefined;
+  return (
+    <h1 className="h2 text-center" ref={heading} tabIndex={-1}>
+      {target
+        ? messages.linking.titleAgain(target.displayName, formatMaskedPhone(target.phone))
+        : messages.linking.title}
+    </h1>
+  );
+}
+
+export function ConnectTelegramPage() {
+  const query = useLinkingAttempt();
+  const client = useQueryClient();
+  const navigate = useNavigate();
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const dismiss = useCallback(() => setNotice(null), []);
+  const accounts = useLinkedAccounts();
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [starting, setStarting] = useState(false);
+  // What the wizard's polite live region says; only the wait card writes it.
+  const [announcement, setAnnouncement] = useState("");
+  // Bumped each time an outcome or load-failed card is left, so the step that replaces it takes focus (not the first load).
+  const [refocus, setRefocus] = useState(0);
+  const bumpRefocus = useCallback(() => setRefocus((n) => n + 1), []);
+  // The subscription below must know whether an outcome or load-failed card is on screen, without re-subscribing.
+  const cardShown = useRef(false);
+  const attempt = query.data;
+  const [last, setLast] = useState<LinkingAttempt | undefined>(undefined);
+  const known = attempt ?? last;
+
+  // A fresh attempt put in the cache from outside (the Status Banner's Sign in again) replaces any outcome card.
+  // Structural sharing keeps the old reference for an equal attempt, so listen for the write itself.
+  useEffect(
+    () =>
+      client.getQueryCache().subscribe((event) => {
+        if (
+          event.type === "updated" &&
+          event.action.type === "success" &&
+          event.action.manual &&
+          event.query.queryKey[0] === linkingAttemptKey[0] &&
+          event.action.data
+        ) {
+          if (cardShown.current) bumpRefocus();
+          setOutcome(null);
+        }
+      }),
+    [client, bumpRefocus],
+  );
+
+  const show = (message: string, tone: Notice["tone"]) => {
+    setNotice(null);
+    setTimeout(() => setNotice({ message, tone }), 0);
+  };
+
+  const leave = (origin: LinkingOrigin, toast?: string) =>
+    void navigate(origin === "accounts" ? "/accounts" : "/inbox", {
+      replace: true,
+      state: toast ? { toast } : undefined,
+    });
+  const origin = (): LinkingOrigin => known?.origin ?? "inbox";
+
+  const finished = async (result: FinishedResult) => {
+    let toast: string | undefined;
+    try {
+      const list = await listMyLinkedAccounts();
+      // The page we leave to renders this list on first paint, not the pre-link one.
+      client.setQueryData(linkedAccountsKey, list);
+      const linked = list.find((a) => a.id === result.linkedAccountId);
+      if (linked) {
+        toast =
+          result.outcome === "linked"
+            ? messages.linking.connected(linked.displayName)
+            : messages.linking.connectedAgain(linked.displayName);
+      }
+    } catch {
+      // the account is linked either way; the toast is only a courtesy
+    }
+    leave(result.origin, toast);
+  };
+
+  const startAgain = async (withTarget = true) => {
+    const target = withTarget ? known?.targetLinkedAccountId : null;
+    setStarting(true);
+    try {
+      const fresh = await startMyLinkingAttempt({
+        origin: origin(),
+        ...(target ? { targetLinkedAccountId: target } : {}),
+      });
+      client.setQueryData(linkingAttemptKey, fresh);
+      bumpRefocus();
+      setOutcome(null);
+    } catch (error) {
+      const text = refusalFor(error);
+      if (
+        target &&
+        error instanceof ApiFailure &&
+        error.status === 404 &&
+        error.code === "not-found"
+      ) {
+        // The account to sign in again was unlinked meanwhile: a plain add is all that is left.
+        await startAgain(false);
+        return;
+      }
+      if (text) show(text, "error");
+      else if (!routeFailure(error, async () => startAgain(withTarget))) {
+        show(messages.linking.genericError, "error");
+      }
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  /** Ends the wizard on the outcome a 429, 409 or 404 stands for; false for anything else. */
+  const outcomeOf = (error: unknown): boolean => {
+    if (!(error instanceof ApiFailure)) return false;
+    setLast(attempt);
+    if (error.status === 429 && error.code === "telegram-wait-required" && error.extras.retryAt) {
+      const { retryAt, retryAfterSeconds } = error.extras;
+      const until =
+        retryAfterSeconds === undefined
+          ? Date.parse(retryAt)
+          : Date.now() + retryAfterSeconds * 1000;
+      setOutcome({ kind: "wait", retryAt, until });
+    } else if (error.status === 409 && REFUSAL_CODES.includes(error.code)) {
+      setOutcome({ kind: "refused", code: error.code as RefusalCode, limit: error.extras.limit });
+    } else if (endsAttempt(error)) {
+      setOutcome({ kind: "ended", reason: error.code });
+    } else if (error.status === 404 && error.code === "linking-attempt-not-found") {
+      setOutcome({ kind: "ended" });
+    } else return false;
+    return true;
+  };
+
+  const common = (error: unknown, retry: () => void): void => {
+    if (outcomeOf(error)) return;
+    if (error instanceof ApiFailure && error.code === "telegram-unavailable") {
+      show(messages.linking.problems["telegram-unavailable"], "error");
+    } else if (error instanceof ApiFailure && error.code === "linking-step-mismatch") {
+      getMyLinkingAttempt()
+        .then((fresh) => {
+          client.setQueryData(linkingAttemptKey, fresh);
+          show(messages.linking.stepDone, "info");
+        })
+        .catch((e: unknown) => common(e, retry));
+    } else if (!routeFailure(error, async () => retry())) {
+      show(messages.linking.genericError, "error");
+    }
+  };
+
+  /** An unregistered number can end the attempt at the phone step (no fresh session): ask the server. */
+  const phoneRefused = (error: unknown) => {
+    if (!(error instanceof ApiFailure) || error.code !== "telegram-phone-unregistered") return;
+    getMyLinkingAttempt().catch((e: unknown) => {
+      if (e instanceof ApiFailure && e.status === 404 && e.code === "linking-attempt-not-found") {
+        setLast(attempt);
+        setOutcome({ kind: "ended", reason: error.code });
+      }
+    });
+  };
+
+  const cancel = async () => {
+    try {
+      await cancelMyLinkingAttempt();
+    } catch (error) {
+      common(error, () => void cancel());
+      return;
+    }
+    leave(origin());
+  };
+
+  const ended =
+    query.error instanceof ApiFailure &&
+    query.error.status === 404 &&
+    query.error.code === "linking-attempt-not-found";
+  const shownOutcome: Outcome | null = outcome ?? (ended && !attempt ? { kind: "ended" } : null);
+  // A failed load: routable failures reach the failure bus, others get an inline state with a way forward.
+  const loadFailed =
+    !attempt && query.error && !(query.error instanceof ApiFailure && query.error.route);
+  const loadFailedShown = Boolean(loadFailed) && !query.isFetching;
+  useEffect(() => {
+    cardShown.current = shownOutcome !== null || loadFailedShown;
+  });
+  if (shownOutcome) {
+    const back = () => leave(origin());
+    const target = known?.targetLinkedAccountId;
+    return (
+      <Card announcement={announcement}>
+        {shownOutcome.kind === "wait" ? (
+          <WaitState
+            retryAt={shownOutcome.retryAt}
+            until={shownOutcome.until}
+            starting={starting}
+            onBack={back}
+            onStartAgain={() => void startAgain()}
+            announce={setAnnouncement}
+          />
+        ) : null}
+        {shownOutcome.kind === "refused" ? (
+          <RefusedState
+            code={shownOutcome.code}
+            limit={shownOutcome.limit}
+            displayName={accounts.data?.find((a) => a.id === target)?.displayName}
+            onBack={back}
+            onOpenAccounts={() => leave("accounts")}
+          />
+        ) : null}
+        {shownOutcome.kind === "ended" ? (
+          <AttemptEndedState
+            reason={shownOutcome.reason}
+            starting={starting}
+            onBack={back}
+            onStartAgain={() => void startAgain()}
+          />
+        ) : null}
+        {notice ? <Toast message={notice.message} tone={notice.tone} onDismiss={dismiss} /> : null}
+      </Card>
+    );
+  }
+  if (!attempt) {
+    if (loadFailedShown) {
+      return (
+        <Card announcement={announcement}>
+          <LoadFailedState
+            onRetry={() => {
+              bumpRefocus();
+              void query.refetch();
+            }}
+            onBack={() => leave(origin())}
+          />
+        </Card>
+      );
+    }
+    return (
+      <Card announcement={announcement}>
+        <LoadState state="loading" rows={3} />
+      </Card>
+    );
+  }
+
+  const props = {
+    attempt,
+    onNext: (next: LinkingAttempt) => client.setQueryData(linkingAttemptKey, next),
+    onFinished: (result: FinishedResult) => void finished(result),
+    onCommonFailure: common,
+    onInfo: (message: string) => show(message, "info"),
+    onCancel: cancel,
+    onPhoneRefused: phoneRefused,
+  };
+
+  return (
+    <Card announcement={announcement}>
+      <Title attempt={attempt} focus={refocus} />
+      {attempt.step === "phone" ? <PhoneStep key="phone" {...props} /> : null}
+      {attempt.step === "code" ? <CodeStep key="code" {...props} /> : null}
+      {attempt.step === "password" ? <PasswordStep key="password" {...props} /> : null}
+      {notice ? <Toast message={notice.message} tone={notice.tone} onDismiss={dismiss} /> : null}
+    </Card>
+  );
+}
+
+function Card({ children, announcement }: { children: React.ReactNode; announcement: string }) {
+  // The card itself comes from OnboardingLayout. Every branch renders a Card, so the polite region stays the same node
+  // from the wizard's mount: the wait card's sentences land in a region the browser already exposes.
+  return (
+    <>
+      {children}
+      <div role="status" className="visually-hidden">
+        {announcement}
+      </div>
+    </>
+  );
+}

@@ -6,6 +6,9 @@ spring:
     password: telex
 
 telex:
+  telegram:
+    adapter: ${TELEX_TELEGRAM_ADAPTER:fake} # set TELEX_TELEGRAM_ADAPTER=tdlight with real credentials to link for real
+    sessions-dir: ${TELEX_TELEGRAM_SESSIONS_DIR:build/tdlib}
   webauthn:
     # The Vite dev server origin (ADR-0006): passkeys work through `pnpm dev` only in the local profile.
     extra-origins: http://localhost:5173
