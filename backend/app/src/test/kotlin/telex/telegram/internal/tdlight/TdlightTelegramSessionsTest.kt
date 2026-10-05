@@ -9,18 +9,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.test.util.ReflectionTestUtils
-import telex.telegram.ChatType
 import telex.telegram.SessionState
 import telex.telegram.SignInOutcome
-import telex.telegram.TelegramChatsChanged
 import telex.telegram.TelegramSessionId
 import telex.telegram.TelegramSessionStateChanged
 import telex.telegram.TelegramUnavailable
 import telex.telegram.internal.files.SessionDirectories
-import telex.telegram.tdlib.TdlibChat
-import telex.telegram.tdlib.TdlibChatList
-import telex.telegram.tdlib.TdlibChatPosition
-import telex.telegram.tdlib.TdlibChatType
 import telex.telegram.tdlib.TdlibRequest
 import telex.telegram.tdlib.TdlibResponse
 import telex.telegram.tdlib.TdlibUpdate
@@ -63,20 +57,11 @@ class TdlightTelegramSessionsTest {
 
     private fun states() = events.filterIsInstance<TelegramSessionStateChanged>()
 
-    private fun chats() = events.filterIsInstance<TelegramChatsChanged>()
-
     private fun auth(
         state: String,
         codeLength: Int? = null,
         hint: String? = null,
     ) = TdlibUpdate.AuthorizationState(state, codeLength, hint)
-
-    private fun chat(
-        id: Long,
-        title: String = "Chat $id",
-        order: Long = id,
-        list: TdlibChatList = TdlibChatList.Main,
-    ) = TdlibChat(id, TdlibChatType.Supergroup, title, 0, listOf(TdlibChatPosition(list, order)))
 
     /** A number ending 0 is invalid, 1 banned, 2 flood-waited and 3 unregistered; any other signs in. */
     private fun answerOnlyChatLoads() {

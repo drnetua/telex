@@ -37,3 +37,9 @@ Mutation checks: removing `syncStarted &&`, removing `isAuthorized()`, resuming 
 Removing the syncStarted guard, the authorization guard, or the Updating resume each turns a tdlight test red; a restart is skipped during teleX's own log out; TdlightTelegramSessionsTest has no unused imports or helpers. Per-task gate clean. No test weakened.
 
 **Fallback:** [spec.md](../spec.md) · [sad.md](../sad.md) · [data-model.md](../data-model.md) · [openapi.yaml](../contracts/openapi.yaml) · [events.md](../contracts/events.md) · [screens.md](../screens.md) · [adr/](../adr/)
+
+## How it was done
+
+- T92 had already added the `loggingOut` guard to `resumeChatLoad`, through `mayLoad()`, so T93 changes no production code. T93 adds one test for the connection path: a load fails, a log out starts, then Connecting and Ready arrive, and no new `LoadChats` is sent.
+- The Updating test checks that the load completes within 3 s. The first backoff is 5 s, so only `connectionStateUpdating` can have finished the load in that time.
+- Each test passed on its first run against the existing guards. Each of the four mutations named in the brief then failed a test: `syncStarted &&` (the startSync test), `isAuthorized()` (fail, close, then Ready), resume on `CONNECTION_READY` only (the Updating test), and `!loggingOut` (both log-out tests).

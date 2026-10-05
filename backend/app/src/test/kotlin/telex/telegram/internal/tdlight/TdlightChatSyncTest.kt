@@ -134,6 +134,8 @@ class TdlightChatSyncTest {
 
         client.emit(auth("authorizationStateReady"))
         client.emit(TdlibUpdate.NewChat(chat(1)))
+        client.emit(TdlibUpdate.ConnectionState("connectionStateUpdating"))
+        client.emit(TdlibUpdate.ConnectionState("connectionStateReady"))
         Thread.sleep(SETTLE_MILLIS)
 
         assertThat(states()).isEmpty()
@@ -261,6 +263,84 @@ class TdlightChatSyncTest {
             .isEqualTo(2)
     }
 
+    /** The first main-list load fails with a 500, later ones complete; LogOut never finishes. */
+    private fun failFirstLoad() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        var mainLoads = 0
+        tdlib.respond = { client, request ->
+            val mainLoad = request is TdlibRequest.LoadChats && request.list == TdlibChatList.Main
+            if (mainLoad && mainLoads++ == 0) {
+                client.emit(TdlibUpdate.NewChat(chat(1)))
+                TdlibResponse.Failure(500, "Request aborted")
+            } else if (request is TdlibRequest.LoadChats) {
+                TdlibResponse.Failure(404, "Not Found")
+            } else if (request == TdlibRequest.LogOut) {
+                client.emit(auth("authorizationStateLoggingOut"))
+                TdlibResponse.Ok("ok")
+            } else {
+                null
+            }
+        }
+    }
+
+    /** Reconnects [client]: Connecting, then [state]. */
+    private fun reconnect(
+        client: ScriptedTdlib.Client,
+        state: String = "connectionStateReady",
+    ) {
+        client.emit(TdlibUpdate.ConnectionState("connectionStateConnecting"))
+        client.emit(TdlibUpdate.ConnectionState(state))
+    }
+
+    @Test
+    fun `a failed chat-list load is resumed by connectionStateUpdating alone, before any backoff (AC-122, AC-116)`() {
+        failFirstLoad()
+        create().reopen(TelegramSessionId(telex.shared.Uuid7.next()), key)
+        val client = tdlib.clients.single()
+        await().until { mainLoads(client) == 1 }
+        Thread.sleep(SETTLE_MILLIS)
+
+        reconnect(client, "connectionStateUpdating")
+
+        await().atMost(Duration.ofMillis(BEFORE_BACKOFF_MILLIS)).untilAsserted {
+            assertThat(chats().lastOrNull()?.loadCompleted).isTrue()
+        }
+        assertThat(chats().last().loadedChatIds).containsExactly(1L)
+    }
+
+    @Test
+    fun `a failed chat-list load is not restarted by a Ready that comes after the session closed (AC-116)`() {
+        failFirstLoad()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        await().until { mainLoads(client) == 1 }
+
+        sessions.close(id)
+        reconnect(client)
+
+        Thread.sleep(SETTLE_MILLIS)
+        assertThat(client.requests.filterIsInstance<TdlibRequest.LoadChats>()).hasSize(1)
+    }
+
+    @Test
+    fun `a failed chat-list load is not restarted by a Ready while teleX's own log out runs (AC-116, AC-113)`() {
+        failFirstLoad()
+        val sessions = create()
+        val id = TelegramSessionId(telex.shared.Uuid7.next())
+        sessions.reopen(id, key)
+        val client = tdlib.clients.single()
+        await().until { mainLoads(client) == 1 }
+        Thread.ofVirtual().start { sessions.logOut(id, Duration.ofSeconds(LOG_OUT_SECONDS)) }
+        await().until { TdlibRequest.LogOut in client.requests }
+
+        reconnect(client)
+
+        Thread.sleep(SETTLE_MILLIS)
+        assertThat(client.requests.filterIsInstance<TdlibRequest.LoadChats>()).hasSize(1)
+    }
+
     /** The first main-list load is flooded (429, retry after 1 s), later ones complete; LogOut never finishes. */
     private fun floodFirstLoad() {
         tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
@@ -336,5 +416,8 @@ class TdlightChatSyncTest {
         const val SETTLE_MILLIS = 300L
         const val RETRY_WAIT_MILLIS = 1_600L
         const val LOG_OUT_SECONDS = 4L
+
+        /** Shorter than the first backoff (5 s), so only a connection update can have completed the load. */
+        const val BEFORE_BACKOFF_MILLIS = 3_000L
     }
 }
