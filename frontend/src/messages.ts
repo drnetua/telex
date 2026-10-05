@@ -1,3 +1,5 @@
+const chatCount = (n: number) => `${n} chat${n === 1 ? "" : "s"}`;
+
 /** The one message catalog for UI copy: English, sentence case, no emoji. */
 export const messages = {
   appName: "teleX",
@@ -439,14 +441,14 @@ export const messages = {
       "The session was ended in Telegram. Sign in again to bring this account back with everything attached.",
     syncing: (synced: number, total: number) => `Syncing chats: ${synced} of ${total}`,
     syncingUnknown: "Syncing chats",
-    chats: (n: number) => `${n} chat${n === 1 ? "" : "s"}`,
+    chats: chatCount,
     chatsOf: (synced: number, total: number) => `${synced} of ${total} chats`,
     signInAgain: "Sign in again",
     starting: "Starting",
     unlink: "Unlink",
     unlinkTitle: (displayName: string) => `Unlink ${displayName}?`,
     unlinkBody: (chats: number) =>
-      `teleX will sign out of this Telegram account and delete its session and the ${chats} chats it synced. To use it in teleX again, you'll link it from the start.`,
+      `teleX will sign out of this Telegram account and delete its session${chats > 0 ? ` and the ${chatCount(chats)} it synced` : ""}. To use it in teleX again, you'll link it from the start.`,
     unlinkConfirm: "Unlink account",
     unlinking: "Unlinking",
     unlinkKeep: "Keep account",

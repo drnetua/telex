@@ -212,6 +212,26 @@ describe("SCR-60 Accounts", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it.each([
+    [
+      1,
+      "teleX will sign out of this Telegram account and delete its session and the 1 chat it synced. To use it in teleX again, you'll link it from the start.",
+    ],
+    [
+      0,
+      "teleX will sign out of this Telegram account and delete its session. To use it in teleX again, you'll link it from the start.",
+    ],
+  ])("AC-111: unlink confirm names %i synced chats in plain English", async (chats, body) => {
+    const one = {
+      ...account("a1", "Ann"),
+      chatSync: { ...account("a1", "Ann").chatSync, chatsSynced: chats },
+    };
+    setup({ accounts: () => [one] });
+    await userEvent.click(await screen.findByRole("button", { name: "Unlink" }));
+    const dialog = screen.getByRole("dialog", { name: "Unlink Ann?" });
+    expect(within(dialog).getByText(body)).toBeInTheDocument();
+  });
+
   it("AC-111: confirmed unlink deletes, refetches and shows an info toast", async () => {
     let gone = false;
     const fetchMock = setup({

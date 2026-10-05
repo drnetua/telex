@@ -9,7 +9,7 @@ files_hint: ["frontend/src/messages.ts", "frontend/src/pages/accounts/AccountsPa
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (ninth pass) — W17"
-status: "todo"
+status: "done"
 ---
 
 # T80 — The unlink dialog names the chat count in correct English, and leaves it out at zero

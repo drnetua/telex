@@ -84,7 +84,7 @@
 | T77 | The SCR-10, SCR-60 and SCR-02 busy states each have a test of their label | ui | Anton Husiev | XS | — | todo |
 | T78 | An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram | e2e | Anton Husiev | XS | — | todo |
 | T79 | The SCR-02 wait card shows the retry time in the Owner's zone and counts down from Retry-After | ui | Anton Husiev | XS | — | todo |
-| T80 | The unlink dialog names the chat count in correct English, and leaves it out at zero | ui | Anton Husiev | XS | — | todo |
+| T80 | The unlink dialog names the chat count in correct English, and leaves it out at zero | ui | Anton Husiev | XS | — | done |
 | T81 | An unlink takes any pending interrupt just before the delete, including when there is no sign-out | app | Anton Husiev | XS | — | done |
 | T82 | Sync the README, contract, screens, test plan and task files with the ninth-review fixes | docs | Anton Husiev | XS | T77, T78, T79, T80, T81 | todo |
 
