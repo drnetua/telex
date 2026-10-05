@@ -30,10 +30,13 @@ interface WaitStateProps {
 /** Countdown to Telegram's retry time; the live region speaks at the start and at the end only. */
 export function WaitState({ retryAt, until, starting, onBack, onStartAgain }: WaitStateProps) {
   const t = messages.linking;
-  const timeZone = useMe().data?.timeZone ?? null;
+  const me = useMe();
+  const timeZone = me.data?.timeZone ?? null;
   const [remaining, setRemaining] = useState(() => secondsUntil(until));
   const time = clock(retryAt, timeZone);
-  const [text] = useState(() => t.waitBody(time, minutesSeconds(remaining)));
+  // Spoken once, but only when the Owner's zone is known (or failed to load): the layout above may not have loaded it yet.
+  const [text, setText] = useState<string | null>(null);
+  if (text === null && !me.isPending) setText(t.waitBody(time, minutesSeconds(remaining)));
   const over = remaining === 0;
   const card = useRef<HTMLDivElement>(null);
   const backHadFocus = useRef(false);

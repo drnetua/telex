@@ -903,6 +903,40 @@ describe("SCR-02 outcome cards take focus (AC-107, AC-109)", () => {
         selector: "[aria-hidden='true']",
       }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Telegram asks you to wait. You can try again at 12:00, in 2:00.",
+    );
+  });
+
+  it("announces the retry time in the Owner's zone when it arrives after the card (AC-02)", async () => {
+    vi.useFakeTimers({
+      toFake: ["setInterval", "clearInterval", "Date"],
+      now: new Date("2026-10-05T02:58:00Z"),
+    });
+    let answerMe: (r: Response) => void = () => undefined;
+    const meReply = new Promise<Response>((resolve) => (answerMe = resolve));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) => {
+        const key = `${init?.method ?? "GET"} ${url}`;
+        if (key === ME) return meReply;
+        if (key === PHONE) return Promise.resolve(waitReply("2026-10-05T03:00:00Z", 120));
+        if (key === A) return Promise.resolve(json(200, attempt()));
+        return new Promise<Response>(() => undefined);
+      }),
+    );
+    setup();
+    await submitPhone();
+    await screen.findByRole("heading", { name: "Too many attempts" });
+    await act(async () => answerMe(me("Asia/Tokyo")));
+    expect(
+      await screen.findByText("Telegram asks you to wait. You can try again at 12:00, in 2:00.", {
+        selector: "[aria-hidden='true']",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Telegram asks you to wait. You can try again at 12:00, in 2:00.",
+    );
   });
 
   it("counts down from Retry-After whatever the device clock says (AC-02)", async () => {
