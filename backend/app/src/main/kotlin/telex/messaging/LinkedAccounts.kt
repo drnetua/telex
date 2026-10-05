@@ -84,6 +84,8 @@ class LinkedAccounts(
             var confirmed =
                 account.state != LinkedAccountState.SESSION_LOST && signedOut != null && sessions != null &&
                     signOut(sessions, signedOut, account) { interrupted = true }
+            // an interrupt the sign-out didn't take (it was skipped, or the interrupt came after it) fails the delete
+            if (Thread.interrupted()) interrupted = true
             val removed = deleteOrClose(owner, id, sessions, signedOut, confirmed) ?: throw LinkedAccountNotFound()
             val session = removed.session
             if (session != null && sessions != null) {

@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt", "b
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (ninth pass) — D22 (code part)"
-status: "todo"
+status: "done"
 ---
 
 # T81 — An unlink takes any pending interrupt just before the delete, including when there is no sign-out

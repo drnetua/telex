@@ -386,6 +386,41 @@ class UnlinkIT {
     }
 
     @Test
+    fun `AC-113 AC-111 an interrupt pending when there is no sign-out still deletes the account`() {
+        val owner = owner()
+        val account = connected(owner)
+        jdbc.update("UPDATE linked_account SET state = 'session_lost' WHERE id = ?", account.id.value)
+        // the interrupt lands right after the read; a Session lost account skips the sign-out that would take it
+        Mockito
+            .doAnswer { call ->
+                val read = call.callRealMethod()
+                Thread.currentThread().interrupt()
+                read
+            }.`when`(rows)
+            .getMine(owner, account.id)
+        var result: UnlinkResult? = null
+        var failure: Throwable? = null
+        var interruptedOnReturn = false
+
+        val unlinking =
+            Thread.ofVirtual().start {
+                try {
+                    result = accounts.unlink(owner, account.id)
+                } catch (e: Throwable) {
+                    failure = e
+                }
+                interruptedOnReturn = Thread.currentThread().isInterrupted
+            }
+        unlinking.join()
+
+        assertThat(failure).isNull()
+        assertThat(result?.signOutConfirmed).isFalse()
+        assertThat(count("linked_account")).isZero()
+        assertThat(count("channel")).isZero()
+        assertThat(interruptedOnReturn).describedAs("interrupt handed back").isTrue()
+    }
+
+    @Test
     fun `AC-111 a session swapped in between the read and the delete is signed out, closed and destroyed`() {
         val owner = owner()
         val account = connected(owner)
