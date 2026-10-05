@@ -455,6 +455,26 @@ class TdlightTelegramSessionsTest {
     }
 
     @Test
+    fun `Updating is connected and catching up, so it is Ready and never Connecting (AC-122)`() {
+        tdlib.onOpen = { it.emit(auth("authorizationStateReady")) }
+        answerOnlyChatLoads()
+        create().reopen(TelegramSessionId(telex.shared.Uuid7.next()), key)
+        val client = tdlib.clients.single()
+
+        client.emit(TdlibUpdate.ConnectionState("connectionStateUpdating"))
+        client.emit(TdlibUpdate.ConnectionState("connectionStateConnectingToProxy"))
+        client.emit(TdlibUpdate.ConnectionState("connectionStateUpdating"))
+
+        await().untilAsserted {
+            assertThat(states().map { it.state })
+                .containsExactly(SessionState.Ready, SessionState.Connecting, SessionState.Ready)
+        }
+        Thread.sleep(SETTLE_MILLIS)
+        assertThat(states().map { it.state })
+            .containsExactly(SessionState.Ready, SessionState.Connecting, SessionState.Ready)
+    }
+
+    @Test
     fun `a stored session Telegram ended while teleX was stopped is Closed on reopen`() {
         tdlib.onOpen = { it.emit(auth("authorizationStateWaitPhoneNumber")) }
         val id = TelegramSessionId(telex.shared.Uuid7.next())

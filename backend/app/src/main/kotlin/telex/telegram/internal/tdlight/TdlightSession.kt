@@ -267,7 +267,8 @@ internal class TdlightSession(
 
     private fun onConnection(update: TdlibUpdate.ConnectionState) {
         if (!authorized || lost) return
-        val connected = update.state == CONNECTION_READY
+        // Updating is connected and catching up; only Connecting, ConnectingToProxy and WaitingForNetwork are not
+        val connected = update.state == CONNECTION_READY || update.state == CONNECTION_UPDATING
         emitState(if (connected) SessionState.Ready else SessionState.Connecting)
         if (connected) resumeChatLoad()
     }
@@ -463,6 +464,7 @@ internal class TdlightSession(
         const val STATE_READY = "authorizationStateReady"
         const val STATE_LOGGING_OUT = "authorizationStateLoggingOut"
         const val CONNECTION_READY = "connectionStateReady"
+        const val CONNECTION_UPDATING = "connectionStateUpdating"
         const val LOAD_BATCH = 100
         const val LOAD_TIMEOUT_SECONDS = 60L
         const val NOT_FOUND = 404
