@@ -82,14 +82,14 @@
 | T75 | The SCR-02 wait-card focus tests control the clock, and the SCR-10 503 test pins that no connection banner shows | ui | Anton Husiev | XS | — | done |
 | T76 | Sync the data model, test plan and tracker with the eighth-review fixes | docs | Anton Husiev | XS | T73, T74, T75 | done |
 | T77 | The SCR-10, SCR-60 and SCR-02 busy states each have a test of their label | ui | Anton Husiev | XS | — | done |
-| T78 | An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram | e2e | Anton Husiev | XS | — | done |
+| T78 | An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram | tests | Anton Husiev | XS | — | done |
 | T79 | The SCR-02 wait card shows the retry time in the Owner's zone and counts down from Retry-After | ui | Anton Husiev | XS | — | done |
 | T80 | The unlink dialog names the chat count in correct English, and leaves it out at zero | ui | Anton Husiev | XS | — | done |
 | T81 | An unlink takes any pending interrupt just before the delete, including when there is no sign-out | app | Anton Husiev | XS | — | done |
 | T82 | Sync the README, contract, screens, test plan and task files with the ninth-review fixes | docs | Anton Husiev | XS | T77, T78, T79, T80, T81 | done |
-| T83 | The SCR-02 wait card announces the retry time in the Owner's zone, even when the zone arrives after the card | ui | Anton Husiev | XS | — | todo |
-| T84 | The SCR-02 code and password steps' submitting labels each have a test | tests | Anton Husiev | XS | — | todo |
-| T85 | Vitest runs in UTC, and a malformed Retry-After falls back to retryAt | tests | Anton Husiev | XS | — | todo |
-| T86 | Sync the test plan and task files with the tenth-review fixes, and file T78 under tests | docs | Anton Husiev | XS | T83, T84, T85 | todo |
+| T83 | The SCR-02 wait card announces the retry time in the Owner's zone, even when the zone arrives after the card | ui | Anton Husiev | XS | — | done |
+| T84 | The SCR-02 code and password steps' submitting labels each have a test | tests | Anton Husiev | XS | — | done |
+| T85 | Vitest runs in UTC, and a malformed Retry-After falls back to retryAt | tests | Anton Husiev | XS | — | done |
+| T86 | Sync the test plan and task files with the tenth-review fixes, and file T78 under tests | docs | Anton Husiev | XS | T83, T84, T85 | done |
 
 **Total:** 86 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews, T77–T82 from the ninth 2026-10-05 review, and T83–T86 from the tenth.

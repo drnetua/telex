@@ -9,7 +9,7 @@ files_hint: ["frontend/vite.config.ts", "frontend/src/api/linking.test.ts"]
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (tenth pass) — T1, T2"
-status: "todo"
+status: "done"
 ---
 
 # T85 — Vitest runs in UTC, and a malformed Retry-After falls back to retryAt

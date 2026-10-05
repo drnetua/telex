@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"]
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (tenth pass) — S4"
-status: "todo"
+status: "done"
 ---
 
 # T84 — The SCR-02 code and password steps' submitting labels each have a test

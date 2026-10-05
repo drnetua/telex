@@ -1,7 +1,7 @@
 ---
 id: T78
 title: "An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram"
-layer: "e2e"
+layer: "tests"
 deps: []
 blocks: ["T82"]
 acs: ["AC-111", "AC-113"]

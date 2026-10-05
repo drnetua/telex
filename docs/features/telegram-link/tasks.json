@@ -1644,7 +1644,7 @@
     {
       "id": "T78",
       "title": "An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram",
-      "layer": "e2e",
+      "layer": "tests",
       "deps": [],
       "acs": [
         "AC-111",

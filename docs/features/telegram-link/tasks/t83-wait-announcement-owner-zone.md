@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/Outcomes.tsx", "frontend/src/p
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (tenth pass) — W18"
-status: "todo"
+status: "done"
 ---
 
 # T83 — The SCR-02 wait card announces the retry time in the Owner's zone, even when the zone arrives after the card
@@ -31,6 +31,10 @@ Follow-up from the tenth-pass review: [`_review/review-2026-10-05-r2.md`](../_re
 Component (Vitest), in `ConnectTelegramPage.test.tsx`:
 - The Owner's zone is `Asia/Tokyo`, and `GET /me` answers only after the 429 has shown the card. The `role="status"` text reads "… try again at 12:00, in 2:00." Today it reads the device's time.
 - The existing Tokyo test also asserts the `role="status"` text.
+
+## How it was done
+
+`Outcomes.tsx` keeps the sentence in state, empty until `useMe()` is no longer pending, and fills it once in render. The wait card's own `/me` request still routes a 5xx to SCR-93, like a first-load `/me` failure on every other page. That was left as it is on purpose: teleX failing to answer `/me` is a teleX failure, not something the wait card should hide.
 
 ## Definition of Done
 

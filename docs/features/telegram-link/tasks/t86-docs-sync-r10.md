@@ -9,7 +9,7 @@ files_hint: ["docs/features/telegram-link/test-plan.md", "docs/features/telegram
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (tenth pass) — D23"
-status: "todo"
+status: "done"
 ---
 
 # T86 — Sync the test plan and task files with the tenth-review fixes, and file T78 under tests
