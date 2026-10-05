@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t11_unlink_linked_account", "label": "T11 \u2014 Unlink an account", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t11-unlink-linked-account.md", "rationale": "Ensures total deletion of account data and Telegram sign-out, leaving no trace of access in teleX."}], "edges": [], "hyperedges": []}

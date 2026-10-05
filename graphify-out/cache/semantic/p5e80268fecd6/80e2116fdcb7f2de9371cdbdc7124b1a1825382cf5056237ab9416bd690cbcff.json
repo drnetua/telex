@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t20_connect_telegram_wizard_steps", "label": "T20 \u2014 Build the SCR-02 wizard steps", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t20-connect-telegram-wizard-steps.md", "rationale": "Implements the interactive steps of the linking wizard in the SPA."}], "edges": [], "hyperedges": []}

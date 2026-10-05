@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t16_live_updates_sse", "label": "T16 \u2014 Serve the live-update SSE stream", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t16-live-updates-sse.md", "rationale": "Pushes invalidation hints to the SPA via SSE to trigger background refetches of state."}], "edges": [], "hyperedges": []}

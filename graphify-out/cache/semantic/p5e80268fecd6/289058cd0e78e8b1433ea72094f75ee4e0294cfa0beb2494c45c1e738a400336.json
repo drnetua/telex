@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t21_connect_telegram_wizard_outcomes", "label": "T21 \u2014 Build the SCR-02 outcomes", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t21-connect-telegram-wizard-outcomes.md", "rationale": "Handles the terminal states of the linking wizard (success, refusal, wait)."}], "edges": [], "hyperedges": []}

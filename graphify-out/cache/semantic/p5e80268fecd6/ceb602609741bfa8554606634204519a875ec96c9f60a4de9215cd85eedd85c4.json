@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t25_end_to_end_browser_tests", "label": "T25 \u2014 Add Playwright end-to-end tests", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t25-end-to-end-browser-tests.md", "rationale": "E2E tests covering the full user journey, accessibility, and responsive layouts."}], "edges": [], "hyperedges": []}

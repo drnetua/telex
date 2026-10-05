@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t38_e2e_missing_paths", "label": "T38 \u2014 E2E: complete Sign in again and refusals", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t38-e2e-missing-paths.md", "rationale": "Expands E2E coverage to include re-sign-in, connectivity drops, and specific refusals."}], "edges": [], "hyperedges": []}

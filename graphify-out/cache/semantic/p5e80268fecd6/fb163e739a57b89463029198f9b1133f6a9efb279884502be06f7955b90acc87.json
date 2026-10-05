@@ -1,0 +1,1 @@
+{"nodes": [{"id": "identity_ownerpreferences", "label": "OwnerPreferences", "file_type": "code", "source_file": "docs/features/app-shell/tasks/t03-owner-preferences.md", "rationale": "Domain service for managing theme and timezone."}], "edges": [], "hyperedges": []}

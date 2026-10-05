@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t27_chat_sync_after_commit", "label": "T27 \u2014 Start chat sync only after commit", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t27-chat-sync-after-commit.md", "rationale": "Ensures chat synchronization only begins once the account record is safely persisted."}], "edges": [], "hyperedges": []}

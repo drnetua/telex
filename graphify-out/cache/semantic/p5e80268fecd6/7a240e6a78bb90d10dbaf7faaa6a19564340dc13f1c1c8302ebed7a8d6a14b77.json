@@ -1,0 +1,1 @@
+{"nodes": [{"id": "backend_app_src_main_resources_application_yaml", "label": "application.yaml", "file_type": "code", "source_file": "backend/app/src/main/resources/application.yaml", "rationale": "Main Spring Boot configuration file."}], "edges": [], "hyperedges": []}

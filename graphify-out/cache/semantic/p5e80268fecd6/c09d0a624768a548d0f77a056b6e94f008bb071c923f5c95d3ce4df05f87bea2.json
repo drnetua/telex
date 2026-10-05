@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t31_emitter_registry_atomic", "label": "T31 \u2014 Make SSE emitter registry atomic", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t31-emitter-registry-atomic.md", "rationale": "Fixes a concurrency bug in the SSE registry to prevent orphaned streams."}], "edges": [], "hyperedges": []}

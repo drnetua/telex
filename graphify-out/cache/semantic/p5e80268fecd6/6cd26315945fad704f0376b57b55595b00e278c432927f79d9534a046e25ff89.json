@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_features_telegram_link_tasks_t37_live_client_reconnect", "label": "T37 \u2014 Reopen live-update stream with backoff", "file_type": "document", "source_file": "docs/features/telegram-link/tasks/t37-live-client-reconnect.md", "rationale": "Ensures the SSE client recovers from server restarts or proxy timeouts."}], "edges": [], "hyperedges": []}

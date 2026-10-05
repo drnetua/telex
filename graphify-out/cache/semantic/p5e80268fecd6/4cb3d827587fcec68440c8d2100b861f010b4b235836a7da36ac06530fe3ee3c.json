@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [], "hyperedges": [{"id": "app_shell_extension_pattern", "label": "App Shell Extension Pattern", "nodes": ["telex_web", "telex_inbox", "telex_shared"], "relation": "implement", "confidence": "EXTRACTED", "confidence_score": 0.9, "source_file": "docs/features/app-shell/adr/0006-extend-the-shell-through-client-section-and-server-condition-registries.md"}]}
