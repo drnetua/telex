@@ -119,6 +119,24 @@ describe("linked account and linking clients", () => {
     });
   });
 
+  it.each(["Wed, 21 Oct 2026 07:28:00 GMT", "abc", "-5", "1.5"])(
+    "drops a Retry-After that is not whole seconds (%s), so the wait falls back to retryAt (AC-02)",
+    async (header) => {
+      f.mockResolvedValue(
+        new Response(
+          JSON.stringify({ code: "telegram-wait-required", retryAt: "2026-10-03T10:15:00Z" }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/problem+json", "Retry-After": header },
+          },
+        ),
+      );
+      const error = (await submitLinkingCode("1").catch((e: unknown) => e)) as ApiFailure;
+      expect(error.extras.retryAt).toBe("2026-10-03T10:15:00Z");
+      expect(error.extras.retryAfterSeconds).toBeUndefined();
+    },
+  );
+
   it("routes only unmapped failures; screen-handled codes carry no route", async () => {
     f.mockResolvedValue(problem(503, { code: "telegram-unavailable" }));
     await expect(submitLinkingPhone("1")).rejects.toMatchObject({ route: undefined });

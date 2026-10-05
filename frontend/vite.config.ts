@@ -2,6 +2,9 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+// Tests run in UTC whatever the host's zone, so a test can pick an Owner zone that differs from the device's.
+process.env.TZ = "UTC";
+
 export default defineConfig({
   plugins: [react()],
   server: {
