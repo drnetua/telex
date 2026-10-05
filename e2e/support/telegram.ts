@@ -1,4 +1,6 @@
 import { expect, type Page } from "@playwright/test";
+import { closeSync, openSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * Scenarios of the `fake` Telegram adapter, picked by the first six digits of its test-number shape `PPPPPXYYYY`
@@ -31,7 +33,16 @@ export const WRONG_CODE = "11111";
 export const EXPIRED_CODE = "00000";
 export const PASSWORD = "secret";
 
-/** A unique test number: Telegram accounts are unique per installation, so every test brings its own. */
+/** Suffixes 10..909: YYYY is also the account's chat count, so it stays small enough to sync quickly. */
+const FIRST_SUFFIX = 10;
+const SUFFIXES = 900;
+
+/**
+ * A test number no other test of this run uses: Telegram accounts are unique per installation, and the suite runs
+ * fully parallel in two projects (with retries) against one installation. Each number is claimed by creating a file
+ * exclusively in the run's claim directory (`global-setup.ts`), which every worker shares; the scan starts at the
+ * run's random offset. Single machine only: shards would each have their own directory.
+ */
 export function testNumber(
   scenario: (typeof SCENARIO)[keyof typeof SCENARIO],
 ): {
@@ -39,12 +50,28 @@ export function testNumber(
   displayName: string;
   chats: number;
 } {
-  const chats = String(Math.floor(Math.random() * 900) + 10).padStart(4, "0");
-  return {
-    digits: `${scenario}${chats}`,
-    displayName: `Test user ${chats}`,
-    chats: Number(chats),
-  };
+  const dir = process.env.TELEX_E2E_NUMBER_CLAIMS;
+  if (!dir)
+    throw new Error(
+      "TELEX_E2E_NUMBER_CLAIMS is not set: run the suite through playwright.config.ts",
+    );
+  const offset = Number(process.env.TELEX_E2E_NUMBER_OFFSET ?? "0");
+  for (let i = 0; i < SUFFIXES; i++) {
+    const n = FIRST_SUFFIX + ((offset + i) % SUFFIXES);
+    try {
+      closeSync(openSync(join(dir, `${scenario}-${n}`), "wx"));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") continue;
+      throw error;
+    }
+    const chats = String(n).padStart(4, "0");
+    return {
+      digits: `${scenario}${chats}`,
+      displayName: `Test user ${chats}`,
+      chats: n,
+    };
+  }
+  throw new Error(`no free test number left for scenario ${scenario}`);
 }
 
 export async function typeCode(page: Page, code: string): Promise<void> {

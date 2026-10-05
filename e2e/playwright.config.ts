@@ -7,6 +7,8 @@ const baseURL = process.env.TELEX_BASE_URL ?? "http://localhost:8080";
 // not start the stack.
 export default defineConfig({
   testDir: "./tests",
+  // claims unique Telegram test numbers for the whole run (support/telegram.ts)
+  globalSetup: "./support/global-setup.ts",
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
