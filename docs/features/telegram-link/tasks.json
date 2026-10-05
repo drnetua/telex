@@ -1619,6 +1619,109 @@
         "docs/features/telegram-link/tasks/tracker.md"
       ],
       "file": "docs/features/telegram-link/tasks/t76-docs-sync-r8.md"
+    },
+    {
+      "id": "T77",
+      "title": "The SCR-10, SCR-60 and SCR-02 busy states each have a test of their label",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-01",
+        "AC-111",
+        "AC-02"
+      ],
+      "dod": "A test holds each request open and finds the busy label, aria-busy and the disabled sibling buttons for SCR-10 starting, SCR-60 starting and unlinking, and SCR-02 resending and starting-again.",
+      "files_hint": [
+        "frontend/src/pages/inbox/InboxPage.test.tsx",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t77-busy-states-tested.md"
+    },
+    {
+      "id": "T78",
+      "title": "An e2e test unlinks a connected account and sees the unlinked Toast and Connect Telegram",
+      "layer": "e2e",
+      "deps": [],
+      "acs": [
+        "AC-111"
+      ],
+      "dod": "An e2e test tagged AC-111 links an account, unlinks it while it is connected, and checks the info Toast and SCR-10's Connect Telegram at both widths.",
+      "files_hint": [
+        "e2e/tests/telegram-link.spec.ts"
+      ],
+      "file": "docs/features/telegram-link/tasks/t78-unlink-connected-e2e.md"
+    },
+    {
+      "id": "T79",
+      "title": "The SCR-02 wait card shows the retry time in the Owner's zone and counts down from Retry-After",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The wait card's HH:mm uses the Owner's saved time zone, and its countdown runs from when the answer arrived plus Retry-After, whatever the device clock says.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/api/client.ts",
+        "frontend/src/api/client.test.ts",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t79-wait-card-owner-zone-and-skew.md"
+    },
+    {
+      "id": "T80",
+      "title": "The unlink dialog names the chat count in correct English, and leaves it out at zero",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-111"
+      ],
+      "dod": "The SCR-60 unlink dialog reads \"the 1 chat it synced\" for one chat, \"the N chats\" for more, and has no count clause at zero; screens.md matches.",
+      "files_hint": [
+        "frontend/src/messages.ts",
+        "frontend/src/pages/accounts/AccountsPage.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t80-unlink-copy-plural.md"
+    },
+    {
+      "id": "T81",
+      "title": "An unlink takes any pending interrupt just before the delete, including when there is no sign-out",
+      "layer": "app",
+      "deps": [],
+      "acs": [
+        "AC-113",
+        "AC-111"
+      ],
+      "dod": "An unlink deletes the account when the thread is interrupted and the sign-out is skipped (a Session lost account), and the interrupt is handed back at the end.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/messaging/LinkedAccounts.kt",
+        "backend/app/src/integrationTest/kotlin/telex/messaging/UnlinkIT.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t81-unlink-interrupt-before-delete.md"
+    },
+    {
+      "id": "T82",
+      "title": "Sync the README, contract, screens, test plan and task files with the ninth-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T77",
+        "T78",
+        "T79",
+        "T80",
+        "T81"
+      ],
+      "acs": [],
+      "dod": "The README generates the master key once; the openapi example matches the server; T37 and T49 cite their SCR states; t74/t75 record how they were done; screens.md and test-plan.md describe T77–T81; tasks.json matches every task file.",
+      "files_hint": [
+        "README.md",
+        "docs/features/telegram-link/contracts/openapi.yaml",
+        "docs/features/telegram-link/screens.md",
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t82-docs-sync-r9.md"
     }
   ]
 }
