@@ -37,6 +37,7 @@ export function CodeInput({
   }, [focusSignal]);
 
   function fill(index: number, raw: string) {
+    if (readOnly) return;
     const digits = raw.replace(/\D/g, "");
     if (!digits) return;
     const next = (value.slice(0, index) + digits).slice(0, length);
@@ -46,10 +47,13 @@ export function CodeInput({
 
   function onPaste(index: number, e: ClipboardEvent<HTMLInputElement>) {
     e.preventDefault();
+    // A read-only field (a submit in flight) keeps its digits: paste and Backspace are custom, not blocked natively.
+    if (readOnly) return;
     fill(index, e.clipboardData.getData("text"));
   }
 
   function onKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
+    if (readOnly) return;
     if (e.key === "Backspace" && !value[index] && index > 0) {
       onChange(value.slice(0, index - 1));
       refs.current[index - 1]?.focus();
@@ -80,6 +84,7 @@ export function CodeInput({
             value={value[i] ?? ""}
             readOnly={readOnly}
             onChange={(e) => {
+              if (readOnly) return;
               if (e.target.value === "") onChange(value.slice(0, i) + value.slice(i + 1));
               else fill(i, e.target.value);
             }}
