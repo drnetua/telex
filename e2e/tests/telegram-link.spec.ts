@@ -195,7 +195,8 @@ test("AC-111: unlinking a connected account signs it out, says so and returns to
 
   await accountLine(page, displayName).click();
   await expect(page).toHaveURL(/\/accounts$/);
-  await expect(page.getByText("Connected")).toBeVisible();
+  // exact: the "… is connected." Toast may still be showing
+  await expect(page.getByText("Connected", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Unlink" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toContainText(`Unlink ${displayName}?`);
