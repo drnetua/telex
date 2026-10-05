@@ -1790,6 +1790,90 @@
         "docs/features/telegram-link/tasks/t78-unlink-connected-e2e.md"
       ],
       "file": "docs/features/telegram-link/tasks/t86-docs-sync-r10.md"
+    },
+    {
+      "id": "T87",
+      "title": "A chat-list load that failed starts again on the next connection Ready, so sync and live chat changes resume",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-116",
+        "AC-121",
+        "AC-122",
+        "AC-36"
+      ],
+      "dod": "A chat-list load that times out or fails is started again on the next connection Ready while the account is authorized; once it completes, later chat changes are stored.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t87-chat-load-retried-on-ready.md"
+    },
+    {
+      "id": "T88",
+      "title": "TDLib's Updating connection state counts as connected, not Reconnecting",
+      "layer": "infra",
+      "deps": [],
+      "acs": [
+        "AC-122"
+      ],
+      "dod": "connectionStateUpdating maps to Ready, so an account catching up with Telegram shows Connected; only Connecting, ConnectingToProxy and WaitingForNetwork show Reconnecting.",
+      "files_hint": [
+        "backend/app/src/main/kotlin/telex/telegram/internal/tdlight/TdlightSession.kt",
+        "backend/app/src/test/kotlin/telex/telegram/internal/tdlight/TdlightTelegramSessionsTest.kt"
+      ],
+      "file": "docs/features/telegram-link/tasks/t88-connection-updating-is-connected.md"
+    },
+    {
+      "id": "T89",
+      "title": "The SCR-02 wait card fills its announcement after the live region is in the page, and leaves it empty until the zone settles",
+      "layer": "ui",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "The role=status region is always inserted empty and filled after mount, once me has settled; tests assert it is empty before me settles and filled after, on both the cached and the late-me paths.",
+      "files_hint": [
+        "frontend/src/pages/connect-telegram/Outcomes.tsx",
+        "frontend/src/pages/connect-telegram/ConnectTelegramPage.test.tsx",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t89-wait-announcement-after-mount.md"
+    },
+    {
+      "id": "T90",
+      "title": "Vitest runs in a non-UTC zone, so the device-zone fallback is tested",
+      "layer": "tests",
+      "deps": [],
+      "acs": [
+        "AC-02"
+      ],
+      "dod": "Vitest pins TZ to Asia/Kathmandu; changing the formatInstant fallback from the device zone to UTC turns a test red.",
+      "files_hint": [
+        "frontend/vite.config.ts",
+        "frontend/src/pages/connect-telegram/Outcomes.test.tsx"
+      ],
+      "file": "docs/features/telegram-link/tasks/t90-test-zone-not-utc.md"
+    },
+    {
+      "id": "T91",
+      "title": "Sync the test plan, sad and task files with the eleventh-review fixes",
+      "layer": "docs",
+      "deps": [
+        "T87",
+        "T88",
+        "T89",
+        "T90"
+      ],
+      "acs": [],
+      "dod": "test-plan.md uses the screens.md ended-card copy and describes T87–T90; sad matches the reload and Updating behaviour; tasks.json matches every task file.",
+      "files_hint": [
+        "docs/features/telegram-link/test-plan.md",
+        "docs/features/telegram-link/sad.md",
+        "docs/features/telegram-link/tasks.json",
+        "docs/features/telegram-link/tasks/tracker.md"
+      ],
+      "file": "docs/features/telegram-link/tasks/t91-docs-sync-r11.md"
     }
   ]
 }
