@@ -9,7 +9,7 @@ files_hint: ["frontend/vite.config.ts", "frontend/src/pages/connect-telegram/Out
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (eleventh pass) — T3"
-status: "todo"
+status: "done"
 ---
 
 # T90 — Vitest runs in a non-UTC zone, so the device-zone fallback is tested

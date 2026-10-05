@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (eleventh pass) — H-W20"
-status: "todo"
+status: "done"
 ---
 
 # T88 — TDLib's Updating connection state counts as connected, not Reconnecting

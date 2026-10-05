@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (eleventh pass) — H-W19"
-status: "todo"
+status: "done"
 ---
 
 # T87 — A chat-list load that failed starts again on the next connection Ready, so sync and live chat changes resume

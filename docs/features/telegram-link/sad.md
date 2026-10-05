@@ -121,7 +121,7 @@ C4Context
 3. **TDLight behind the facade, a fake adapter beside it, and the spike first.** The prebuilt TDLight natives retire roadmap D1 without a C++ build. The `fake` Telegram adapter makes every AC testable and runs the Playwright e2e and Telegram-free local runs. → [ADR-0004](adr/0004-use-tdlight-java-behind-the-tdlib-facade-with-a-fake-telegram-adapter.md)
 4. **Telegram decides the state, and the browser hears it live.** The account state follows TDLib's own signals:
    - authorization ready → Connected;
-   - connection lost → Reconnecting;
+   - connection ready or updating (connected and catching up) → Connected; connecting or waiting for the network → Reconnecting;
    - only authorization closed (the session was ended in or by Telegram) → Session lost.
 
    So an outage never looks like a lost session (quality goal 2). State changes reach open pages as SSE invalidation hints, with REST as the only data path. → [ADR-0005](adr/0005-push-live-state-to-the-spa-as-sse-invalidation-hints.md)
@@ -740,7 +740,7 @@ sequenceDiagram
     S-->>U: hint linked-accounts
     U-->>O: the number of chats
     Note over O,S: the sync runs in the service whether or not a page is open, and a page opened later reads the current counts
-    Note over S,X: a restart mid-sync resumes from the stored counts, not from zero, and TDLib retries by itself after an outage
+    Note over S,X: a restart mid-sync resumes from the stored counts, not from zero, and a chat-list load that failed (an outage of over 60 s) starts again on the next connection Ready
     loop while the account is connected
         X-->>S: a chat joined, left or renamed, or new messages changed a chat's order or unread count
         S->>D: upsert or remove the chat-list row and update the count

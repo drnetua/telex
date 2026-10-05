@@ -91,10 +91,10 @@
 | T84 | The SCR-02 code and password steps' submitting labels each have a test | tests | Anton Husiev | XS | — | done |
 | T85 | Vitest runs in UTC, and a malformed Retry-After falls back to retryAt | tests | Anton Husiev | XS | — | done |
 | T86 | Sync the test plan and task files with the tenth-review fixes, and file T78 under tests | docs | Anton Husiev | XS | T83, T84, T85 | done |
-| T87 | A chat-list load that failed starts again on the next connection Ready, so sync and live chat changes resume | infra | Anton Husiev | XS | — | todo |
-| T88 | TDLib's Updating connection state counts as connected, not Reconnecting | infra | Anton Husiev | XS | — | todo |
-| T89 | The SCR-02 wait card fills its announcement after the live region is in the page, and leaves it empty until the zone settles | ui | Anton Husiev | XS | — | todo |
-| T90 | Vitest runs in a non-UTC zone, so the device-zone fallback is tested | tests | Anton Husiev | XS | — | todo |
-| T91 | Sync the test plan, sad and task files with the eleventh-review fixes | docs | Anton Husiev | XS | T87, T88, T89, T90 | todo |
+| T87 | A chat-list load that failed starts again on the next connection Ready, so sync and live chat changes resume | infra | Anton Husiev | XS | — | done |
+| T88 | TDLib's Updating connection state counts as connected, not Reconnecting | infra | Anton Husiev | XS | — | done |
+| T89 | The SCR-02 wait card fills its announcement after the live region is in the page, and leaves it empty until the zone settles | ui | Anton Husiev | XS | — | done |
+| T90 | Vitest runs in a non-UTC zone, so the device-zone fallback is tested | tests | Anton Husiev | XS | — | done |
+| T91 | Sync the test plan, sad and task files with the eleventh-review fixes | docs | Anton Husiev | XS | T87, T88, T89, T90 | done |
 
 **Total:** 91 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews, T77–T82 from the ninth 2026-10-05 review, T83–T86 from the tenth, and T87–T91 from the eleventh.

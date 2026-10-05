@@ -9,7 +9,7 @@ files_hint: ["frontend/src/pages/connect-telegram/Outcomes.tsx", "frontend/src/p
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (eleventh pass) — H-W22, T4"
-status: "todo"
+status: "done"
 ---
 
 # T89 — The SCR-02 wait card fills its announcement after the live region is in the page, and leaves it empty until the zone settles
