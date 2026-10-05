@@ -427,27 +427,6 @@ internal class TdlightSession(
     private fun connected() = lastState == SessionState.Ready
 
     /**
-     * Telegram's `retry after N` when the load was flooded, else a delay that doubles per failure; both capped, so a
-     * load that keeps failing is never retried in a tight loop.
-     */
-    private fun retryDelay(
-        failure: Exception,
-        failures: Int,
-    ): Duration {
-        val retryAfter =
-            (failure as? LoadFailed)
-                ?.failure
-                ?.takeIf { it.code == TOO_MANY_REQUESTS }
-                ?.let { RETRY_AFTER.find(it.message) }
-                ?.groupValues
-                ?.get(1)
-                ?.toLongOrNull()
-        val seconds =
-            retryAfter ?: (RETRY_BASE_SECONDS shl (failures - 1).coerceAtMost(RETRY_MAX_DOUBLINGS))
-        return Duration.ofSeconds(seconds.coerceIn(1, RETRY_MAX_SECONDS))
-    }
-
-    /**
      * A load that stopped while the session stays connected gets no connection update to restart it, so it is retried
      * once after [delay]; a session that ends meanwhile is not retried, and the retry keeps one load at a time.
      */
@@ -489,7 +468,8 @@ internal class TdlightSession(
             val delay =
                 synchronized(this) {
                     loadStarted = false
-                    if (connected() && mayLoad()) retryDelay(e, ++loadFailures) else null
+                    val retry = connected() && mayLoad()
+                    if (retry) ChatLoadRetry.delay((e as? LoadFailed)?.failure, ++loadFailures) else null
                 }
             delay?.let(::retryChatLoad)
         }
@@ -520,10 +500,5 @@ internal class TdlightSession(
         const val LOAD_BATCH = 100
         const val LOAD_TIMEOUT_SECONDS = 60L
         const val NOT_FOUND = 404
-        const val TOO_MANY_REQUESTS = 429
-        const val RETRY_BASE_SECONDS = 5L
-        const val RETRY_MAX_DOUBLINGS = 6
-        const val RETRY_MAX_SECONDS = 300L
-        val RETRY_AFTER = Regex("retry after (\\d+)")
     }
 }

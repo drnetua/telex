@@ -100,6 +100,6 @@
 | T93 | The chat-load restart's guards and the Updating resume each have a test, and the moved tests leave no dead code | tests | Anton Husiev | XS | T92 | done |
 | T94 | The SCR-02 wait card announces through a live region that the wizard renders from mount | ui | Anton Husiev | XS | — | done |
 | T95 | Sync the test plan, sad, screens and task files with the twelfth-review fixes | docs | Anton Husiev | XS | T92, T93, T94 | done |
-| T96 | The chat-load retry's Telegram retry-after, doubling and caps each have a test | tests | Anton Husiev | XS | — | todo |
+| T96 | The chat-load retry's Telegram retry-after, doubling and caps each have a test | tests | Anton Husiev | XS | — | done |
 
 **Total:** 96 tasks — T1–T25 from the breakdown, T26–T38 follow-ups from review 2026-10-03, T39–T45, T46–T50, T51–T55, T56–T60, T61–T65, T66–T69, T70–T72 and T73–T76 follow-ups from the eight 2026-10-04 reviews, T77–T82 from the ninth 2026-10-05 review, T83–T86 from the tenth, T87–T91 from the eleventh, T92–T95 from the twelfth, and T96 from the thirteenth.

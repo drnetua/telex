@@ -374,7 +374,9 @@ class TdlightChatSyncTest {
         assertThat(mainLoads(client)).isEqualTo(1)
         assertThat(chats().none { it.loadCompleted }).isTrue()
 
-        await().untilAsserted { assertThat(chats().lastOrNull()?.loadCompleted).isTrue() }
+        await().atMost(Duration.ofMillis(BEFORE_BACKOFF_MILLIS)).untilAsserted {
+            assertThat(chats().lastOrNull()?.loadCompleted).isTrue()
+        }
         assertThat(mainLoads(client)).isEqualTo(2)
         assertThat(chats().last().loadedChatIds).containsExactly(1L)
         client.emit(TdlibUpdate.ChatTitle(1, "Renamed"))

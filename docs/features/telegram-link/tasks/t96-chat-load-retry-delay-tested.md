@@ -9,7 +9,7 @@ files_hint: ["backend/app/src/main/kotlin/telex/telegram/internal/tdlight/Tdligh
 owner: "Anton Husiev"
 estimate: "XS"
 source: "review 2026-10-05 (thirteenth pass) — T6, T7"
-status: "todo"
+status: "done"
 ---
 
 # T96 — The chat-load retry's Telegram retry-after, doubling and caps each have a test
